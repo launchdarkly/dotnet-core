@@ -1,0 +1,46 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "./src",
+          "files": [
+            "**/*.csproj",
+            "**/bin/**/**LaunchDarkly**.dll"
+          ]
+        }
+      ],
+      "dest": "./api",
+      "namespaceLayout": "nested"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "docs/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "docs",
+    "template": [
+      "default"
+    ],
+    "globalMetadata": {
+      "_appName": "LaunchDarkly Dotnet Client SDK",
+      "_appTitle": "LaunchDarkly Dotnet Client SDK",
+      "_enableSearch": true,
+      "pdf": false
+    }
+  }
+}

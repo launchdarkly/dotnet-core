@@ -18,6 +18,10 @@ runs:
               6.0
               7.0
 
+    - name: Restore Workloads
+      shell: bash
+      run: dotnet workload restore ${{ inputs.project_file }}
+
     - name: Restore Dependencies
       shell: bash
       run: dotnet restore ${{ inputs.project_file }}
@@ -31,4 +35,4 @@ runs:
       shell: bash
       run: |
         dotnet restore ${{ inputs.test_project_file }}
-        dotnet test --framework=net6.0  ${{ inputs.test_project_file }}
+        dotnet test --framework=net6.0 ${{ inputs.test_project_file }}

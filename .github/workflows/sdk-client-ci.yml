@@ -9,11 +9,11 @@ on:
     paths-ignore:
       - '**.md'
 
-# TODO: Figure out mechanism to skip iOS framework on ubuntu and windows and re-add ubuntu and windows
 jobs:
   build-and-test:
     strategy:
       matrix:
+        # TODO: Figure out mechanism to skip iOS framework on ubuntu and windows and re-add ubuntu and windows
         os: [macos-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -23,14 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download snk for signing assemblies
-        shell: bash
-        run: aws s3 cp s3://launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk LaunchDarkly.ClientSdk.snk
-
       - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.0.1
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
+
+      - name: Download snk
+        shell: bash
+        run: aws s3 cp s3://launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk LaunchDarkly.ClientSdk.snk
 
       - uses: ./.github/actions/ci
         with:

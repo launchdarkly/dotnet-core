@@ -4,19 +4,19 @@
   "include-component-in-tag": true,
   "packages": {
     "pkgs/sdk/server": {
-      "release-type": "simple",
-      "bump-minor-pre-major": true,
-      "include-v-in-tag": false,
-      "include-component-in-tag": false,
+      "package-name": "LaunchDarkly.ServerSdk",
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.csproj"
       ]
     },
+    "pkgs/sdk/client": {
+      "package-name": "LaunchDarkly.ClientSdk",
+      "extra-files": [
+        "src/LaunchDarkly.ClientSdk.csproj"
+      ]
+    },
     "pkgs/telemetry": {
-      "release-type": "simple",
-      "package-name": "telemetry",
-      "bump-minor-pre-major": true,
-      "include-v-in-tag": false,
+      "package-name": "LaunchDarkly.ServerSdk.Telemetry",
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Telemetry.csproj"
       ]

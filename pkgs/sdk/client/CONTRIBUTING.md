@@ -21,15 +21,17 @@ The .NET Standard target requires only the .NET Core 2.1 SDK or higher. The iOS,
 To build the SDK (for all target platforms) without running any tests:
 
 ```
-msbuild /restore src/LaunchDarkly.ClientSdk/LaunchDarkly.ClientSdk.csproj
+dotnet workload restore src/LaunchDarkly.ClientSdk.csproj
+dotnet restore src/LaunchDarkly.ClientSdk.csproj
+dotnet build src/LaunchDarkly.ClientSdk.csproj
 ```
 
 Currently this command can only be run on MacOS, because that is the only platform that allows building for all of the targets (.NET Standard, Android, and iOS).
 
-To build the SDK for only one of the supported platforms, add `/p:TargetFramework=X` where `X` is one of the items in the `<TargetFrameworks>` list of `LaunchDarkly.XamarinSdk.csproj`: `netstandard2.0` for .NET Standard 2.0, `MonoAndroid81` for Android 8.1, etc.:
+To build the SDK for only one of the supported platforms, add `/p:TargetFramework=X` where `X` is one of the items in the `<TargetFrameworks>` list of `LaunchDarkly.ClientSdk.csproj`: `netstandard2.0` for .NET Standard 2.0, `net7.0-android` for Android, etc.:
 
 ```
-msbuild /restore /p:TargetFramework=netstandard2.0 src/LaunchDarkly.ClientSdk/LaunchDarkly.ClientSdk.csproj
+dotnet build /p:TargetFramework=net7.0-ios src/LaunchDarkly.ClientSdk.csproj
 ```
 
 Note that the main project, `src/LaunchDarkly.ClientSdk`, contains source files that are built for all platforms (ending in just `.cs`, or `.shared.cs`), and also a smaller amount of code that is conditionally compiled for platform-specific functionality. The latter is all in the `PlatformSpecific` folder. We use `#ifdef` directives only for small sections that differ slightly between platform versions; otherwise the conditional compilation is done according to filename suffix (`.android.cs`, etc.) based on rules in the `.csproj` file.
@@ -39,15 +41,9 @@ Note that the main project, `src/LaunchDarkly.ClientSdk`, contains source files 
 The .NET Standard unit tests cover all of the non-platform-specific functionality, as well as behavior specific to .NET Standard (e.g. caching flags in the filesystem). They can be run with only the basic Xamarin framework installed, via the `dotnet` tool:
 
 ```
-msbuild /p:TargetFramework=netstandard2.0 src/LaunchDarkly.ClientSdk
+dotnet build src/LaunchDarkly.ClientSdk.csproj
 dotnet test tests/LaunchDarkly.ClientSdk.Tests/LaunchDarkly.ClientSdk.Tests.csproj
 ```
-
-The equivalent test suites in Android or iOS must be run in an Android or iOS emulator. The projects `tests/LaunchDarkly.ClientSdk.Android.Tests` and `tests/LaunchDarkly.ClientSdk.iOS.Tests` consist of applications based on the `xunit.runner.devices` tool, which show the test results visually in the emulator and also write the results to the emulator's system log. The actual unit test code is just the same tests from the main `tests/LaunchDarkly.ClientSdk.Tests` project, but running them in this way exercises the mobile-specific behavior for those platforms (e.g. caching flags in user preferences).
-
-You can run the mobile test projects from Visual Studio (the iOS tests require MacOS); there is also a somewhat complicated process for running them from the command line, which is what the CI build does (see `.circleci/config.yml`).
-
-Note that the mobile unit tests currently do not cover background-mode behavior or connectivity detection.
 
 To run the SDK contract test suite, in Linux or MacOS (see [`contract-tests/README.md`](./contract-tests/README.md)):
 
@@ -55,12 +51,8 @@ To run the SDK contract test suite, in Linux or MacOS (see [`contract-tests/READ
 make contract-tests
 ```
 
-### Packaging/releasing
+The equivalent test suites for MAUI (Android or iOS) must be run in an Android or iOS emulator. The project `test/LaunchDarkly.ClientSdk.Device.Tests` consist of a test applications based on the `xunit.runner.devices` tool, which show the test results visually in the emulator and also write the results to the emulator's system log. The actual unit test code is just the same tests from the main `tests/LaunchDarkly.ClientSdk.Tests` project, but running them in this way exercises the mobile-specific behavior for those platforms (e.g. caching flags in user preferences).
 
-Releases are done through LaunchDarkly's standard project releaser tool. The scripts in `.ldrelease` implement most of this process, because unlike our other .NET projects which can be built with the .NET 5 SDK in a Linux container, this one currently must be built on a MacOS host in CircleCI. Do not modify these scripts unless you are very sure what you're doing.
+You can run the mobile test projects from Visual Studio (the iOS tests require MacOS); there is also a somewhat complicated process for running them from the command line, which is what the CI build does (see `.circleci/config.yml`).
 
-If you need to do a manual package build for any reason, you can do it (on MacOS) using the same command shown above under "Building", but adding the option `/t:pack`. However, this will not include Authenticode signing; therefore, please do not publish a GA release of the package from a manual build. If it's absolutely necessary to do so, consult with the SDK team to find out how to access the code-signing certificate.
-
-### Building a temporary package
-
-If you need to build a `.nupkg` for testing another application (in cases where linking directly to this project is not an option), run `./scripts/build-test-package.sh`. This will create a package with a unique version string in `./test-packages`. You can then set your other project to use `test-packages` as a NuGet package source.
+Note that the mobile unit tests currently do not cover background-mode behavior or connectivity detection.

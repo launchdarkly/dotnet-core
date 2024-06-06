@@ -113,7 +113,7 @@
         </Compile>
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
-        <AssemblyOriginatorKeyFile>../../LaunchDarkly.ClientSdk.snk</AssemblyOriginatorKeyFile>
+        <AssemblyOriginatorKeyFile>../../LaunchDarkly.snk</AssemblyOriginatorKeyFile>
         <SignAssembly>true</SignAssembly>
     </PropertyGroup>
 

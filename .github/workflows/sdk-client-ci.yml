@@ -23,6 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download snk for signing assemblies
+        shell: bash
+        run: aws s3 cp s3://launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk LaunchDarkly.ClientSdk.snk
+
       - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.0.1
         name: Get secrets
         with:

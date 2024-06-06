@@ -13,7 +13,7 @@ runs:
   steps:
     - name: Download release files (e.g. for signing)
       shell: bash
-      run: aws s3 cp s3://launchdarkly-releaser/dotnet/ ./
+      run: aws s3 cp s3://launchdarkly-releaser/dotnet/ . --recursive
 
     - name: Setup dotnet build tools
       uses: actions/setup-dotnet@v4

@@ -11,6 +11,10 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Download release files (e.g. for signing)
+      shell: bash
+      run: aws s3 cp s3://launchdarkly-releaser/dotnet/ ./
+
     - name: Setup dotnet build tools
       uses: actions/setup-dotnet@v4
       with:

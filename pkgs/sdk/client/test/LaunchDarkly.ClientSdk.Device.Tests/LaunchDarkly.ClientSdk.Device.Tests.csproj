@@ -60,7 +60,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="LaunchDarkly.TestHelpers" Version="2.0.0" />
-		<ProjectReference Include="..\..\src\LaunchDarkly.ClientSdk\LaunchDarkly.ClientSdk.csproj" />
+		<ProjectReference Include="..\..\src\LaunchDarkly.ClientSdk.csproj" />
 
 		<!-- Import all source files from the main test project, except for generated code
 		that may be in "bin" or "obj".

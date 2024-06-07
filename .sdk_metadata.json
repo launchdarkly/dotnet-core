@@ -13,6 +13,14 @@
           "introduced": "8.3"
         }
       }
+    },
+    "dotnet-client-sdk": {
+      "name": ".NET Client SDK",
+      "type": "client-side",
+      "path": "pkgs/sdk/client",
+      "languages": [
+        "C#"
+      ]
     }
   }
 }

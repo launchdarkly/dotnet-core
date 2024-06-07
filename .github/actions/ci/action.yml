@@ -14,27 +14,25 @@ runs:
     - name: Setup dotnet build tools
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 6.0
+        dotnet-version: | 
+              6.0
+              7.0
+
+    - name: Restore Workloads
+      shell: bash
+      run: dotnet workload restore ${{ inputs.project_file }}
 
     - name: Restore Dependencies
       shell: bash
       run: dotnet restore ${{ inputs.project_file }}
 
-    - name: Build for NetStandard2.0
+    - name: Build
       shell: bash
-      run: dotnet build -p:Configuration=debug -p:TargetFramework=netstandard2.0 ${{ inputs.project_file }}
+      run: dotnet build -p:Configuration=debug ${{ inputs.project_file }}
 
-    - name: Build for Net6
-      shell: bash
-      run: dotnet build -p:Configuration=debug -p:TargetFramework=net6.0 ${{ inputs.project_file }}
-
-    - name: Build for Net462
-      shell: bash
-      run: dotnet build -p:Configuration=debug -p:TargetFramework=net462 ${{ inputs.project_file }}
-
-    - name: Run Unit Tests for Net6
+    - name: Run Unit Tests
       if: ${{ inputs.test_project_file != '' }}
       shell: bash
       run: |
         dotnet restore ${{ inputs.test_project_file }}
-        dotnet test --framework=net6.0  ${{ inputs.test_project_file }}
+        dotnet test --framework=net6.0 ${{ inputs.test_project_file }}

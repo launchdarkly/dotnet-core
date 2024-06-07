@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.810.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.ClientSdk", "..\src\LaunchDarkly.ClientSdk\LaunchDarkly.ClientSdk.csproj", "{6AD8F034-7096-4420-953F-68F529F2B300}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestService", "TestService.csproj", "{D69B2FDF-76D3-475B-971E-64120FD84401}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6AD8F034-7096-4420-953F-68F529F2B300}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AD8F034-7096-4420-953F-68F529F2B300}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AD8F034-7096-4420-953F-68F529F2B300}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AD8F034-7096-4420-953F-68F529F2B300}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D69B2FDF-76D3-475B-971E-64120FD84401}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D69B2FDF-76D3-475B-971E-64120FD84401}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D69B2FDF-76D3-475B-971E-64120FD84401}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D69B2FDF-76D3-475B-971E-64120FD84401}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {934189FE-533F-429D-87E8-A2311F8730A6}
+	EndGlobalSection
+EndGlobal

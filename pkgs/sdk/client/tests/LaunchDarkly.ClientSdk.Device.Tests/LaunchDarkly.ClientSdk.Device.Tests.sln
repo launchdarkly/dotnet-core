@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1706.6
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.ClientSdk.Device.Tests", "LaunchDarkly.ClientSdk.Device.Tests.csproj", "{EAD27208-B680-415B-B93C-3606CD62B302}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EAD27208-B680-415B-B93C-3606CD62B302}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAD27208-B680-415B-B93C-3606CD62B302}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAD27208-B680-415B-B93C-3606CD62B302}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAD27208-B680-415B-B93C-3606CD62B302}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6A3D7A01-9533-4035-ADA4-76CA0C14DADC}
+	EndGlobalSection
+EndGlobal

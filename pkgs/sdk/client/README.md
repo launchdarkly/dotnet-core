@@ -33,7 +33,7 @@ Refer to the [SDK documentation](https://docs.launchdarkly.com/sdk/client-side/d
 
 Read our [documentation](https://docs.launchdarkly.com) for in-depth instructions on configuring and using LaunchDarkly. You can also head straight to the [complete reference guide for this SDK](https://docs.launchdarkly.com/sdk/client-side/dotnet).
 
-The authoritative description of all types, properties, and methods is in the [generated API documentation](https://launchdarkly.github.io/dotnet-client-sdk/).
+The authoritative description of all types, properties, and methods is in the [generated API documentation](https://launchdarkly.github.io/dotnet-core/pkgs/sdk/client).
 
 ## Testing
  

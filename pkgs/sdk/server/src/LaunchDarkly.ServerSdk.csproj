@@ -22,8 +22,8 @@
     <Company>LaunchDarkly</Company>
     <Copyright>Copyright 2020 LaunchDarkly</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/launchdarkly/dotnet-server-sdk</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/launchdarkly/dotnet-server-sdk</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/launchdarkly/dotnet-core</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/launchdarkly/dotnet-core</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

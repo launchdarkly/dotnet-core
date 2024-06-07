@@ -73,6 +73,6 @@ make contract-tests
 
 ## Documentation in code
 
-All public types, methods, and properties should have documentation comments in the standard C# XML comment format. These will be automatically included in the [HTML documentation](https://launchdarkly.github.io/dotnet-server-sdk) that is generated on release; this process also uses additional Markdown content from the `docs-src/` subdirectory.
+All public types, methods, and properties should have documentation comments in the standard C# XML comment format. These will be automatically included in the documentation that is generated on release; this process also uses additional Markdown content from the respective packages `docs-src/` subdirectory.
 
-See [`docs-src/README.md`](./docs-src/README.md) for more details.
+See `docs-src/README.md` for more details.

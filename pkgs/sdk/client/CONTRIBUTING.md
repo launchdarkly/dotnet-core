@@ -53,6 +53,6 @@ make contract-tests
 
 The equivalent test suites for MAUI (Android or iOS) must be run in an Android or iOS emulator. The project `test/LaunchDarkly.ClientSdk.Device.Tests` consist of a test applications based on the `xunit.runner.devices` tool, which show the test results visually in the emulator and also write the results to the emulator's system log. The actual unit test code is just the same tests from the main `tests/LaunchDarkly.ClientSdk.Tests` project, but running them in this way exercises the mobile-specific behavior for those platforms (e.g. caching flags in user preferences).
 
-You can run the mobile test projects from Visual Studio (the iOS tests require MacOS); there is also a somewhat complicated process for running them from the command line, which is what the CI build does (see `.circleci/config.yml`).
+You can run the mobile test projects from Visual Studio (the iOS tests require MacOS).
 
 Note that the mobile unit tests currently do not cover background-mode behavior or connectivity detection.

@@ -1,7 +1,7 @@
 # LaunchDarkly monorepo for .NET SDKs and C# libs.
 
 This repository contains LaunchDarkly SDK packages for usage in .NET.
-This includes shared libraries, used by SDKs and other tools, as well as SDKs.
+This includes the SDKs, shared libraries, and other tools.
 
 ## Packages
 
@@ -38,7 +38,7 @@ We run integration tests for all our SDKs using a centralized test harness. This
  
 ## Contributing
  
-We encourage pull requests and other contributions from the community. Check out our [contributing guidelines](CONTRIBUTING.md) for instructions on how to contribute to this SDK.
+We encourage pull requests and other contributions from the community. Check out our [contributing guidelines](CONTRIBUTING.md) for instructions on how to contribute to this repository.
 
 ## About LaunchDarkly
  

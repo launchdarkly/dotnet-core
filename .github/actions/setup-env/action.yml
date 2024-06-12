@@ -1,0 +1,53 @@
+name: Setup Package Environment
+description: Based on the provided package name, this action will map and set up the necessary environment variables
+inputs:
+  pkg_name:
+    description: 'The package this will setup the environment for'
+    required: true
+
+runs:
+  using: composite
+  steps:
+      - name: Setup env variables based on pkg_name
+        env:
+          PACKAGE_NAME: ${{ inputs.pkg_name }}
+        run: |
+          local WORKSPACE_PATH=''
+          local PROJECT_FILE=''
+          local BUILD_OUTPUT_PATH=''
+          local BUILD_OUTPUT_DLL_NAME=''
+          local TEST_PROJECT_FILE=''
+          local CONTRACT_TEST_PROJECT_FILE=''
+          local CONTRACT_TEST_DLL_FILE=''
+          
+          if [[ $PACKAGE_NAME == 'LaunchDarkly.ClientSdk' ]]; then
+            WORKSPACE_PATH='pkgs/sdk/client'
+            PROJECT_FILE='pkgs/sdk/client/src/LaunchDarkly.ClientSdk.csproj'
+            TEST_PROJECT_FILE='pkgs/sdk/client/test/LaunchDarkly.ClientSdk.Tests.csproj'
+            BUILD_OUTPUT_PATH='pkgs/sdk/client/src/LaunchDarkly.ClientSdk/bin/Release/'
+            BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ClientSdk.dll'
+            CONTRACT_TEST_PROJECT_FILE='pkgs/sdk/client/contract-tests/TestService.csproj'
+            CONTRACT_TEST_DLL_FILE='pkgs/sdk/server/contract-tests/bin/debug/net6.0/ContractTestService.dll'
+
+          elif [[ $PACKAGE_NAME == 'LaunchDarkly.ServerSdk' ]]; then
+            WORKSPACE_PATH='pkgs/sdk/server'
+            PROJECT_FILE='pkgs/sdk/server/src/LaunchDarkly.ServerSdk.csproj'
+            TEST_PROJECT_FILE='pkgs/sdk/server/test/LaunchDarkly.ServerSdk.Tests.csproj'
+            BUILD_OUTPUT_PATH='pkgs/sdk/server/src/bin/Release/'
+            BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ServerSdk.dll'
+            
+          elif [[ $PACKAGE_NAME == 'LaunchDarkly.ServerSdk.Telemetry' ]]; then
+            WORKSPACE_PATH='pkgs/telemetry'
+            PROJECT_FILE='pkgs/telemetry/src/LaunchDarkly.ServerSdk.Telemetry.csproj'
+            TEST_PROJECT_FILE='pkgs/telemetry/test/LaunchDarkly.ServerSdk.Telemetry.Tests.csproj'
+            BUILD_OUTPUT_PATH='pkgs/telemetry/src/bin/Release/'
+            BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ServerSdk.Telemetry.dll'
+          fi
+          
+          echo "WORKSPACE_PATH=$WORKSPACE_PATH" >> $GITHUB_ENV
+          echo "PROJECT_FILE=$PROJECT_FILE" >> $GITHUB_ENV
+          echo "TEST_PROJECT_FILE=$TEST_PROJECT_FILE" >> $GITHUB_ENV
+          echo "BUILD_OUTPUT_PATH=$BUILD_OUTPUT_PATH" >> $GITHUB_ENV
+          echo "BUILD_OUTPUT_DLL_NAME=$BUILD_OUTPUT_DLL_NAME" >> $GITHUB_ENV
+          echo "CONTRACT_TEST_PROJECT_FILE=$CONTRACT_TEST_PROJECT_FILE" >> $GITHUB_ENV
+          echo "CONTRACT_TEST_DLL_NAME=$CONTRACT_TEST_DLL_NAME" >> $GITHUB_ENV

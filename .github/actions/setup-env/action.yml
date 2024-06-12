@@ -28,7 +28,7 @@ runs:
             BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ClientSdk.dll'
             TEST_PROJECT_FILE='pkgs/sdk/client/test/LaunchDarkly.ClientSdk.Tests/LaunchDarkly.ClientSdk.Tests.csproj'
             CONTRACT_TEST_PROJECT_FILE='pkgs/sdk/client/contract-tests/TestService.csproj'
-            CONTRACT_TEST_DLL_FILE='pkgs/sdk/server/contract-tests/bin/debug/net6.0/ContractTestService.dll'
+            CONTRACT_TEST_DLL_FILE='pkgs/sdk/client/contract-tests/bin/debug/net7.0/ContractTestService.dll
 
           elif [[ $PACKAGE_NAME == 'LaunchDarkly.ServerSdk' ]]; then
             WORKSPACE_PATH='pkgs/sdk/server'

@@ -21,7 +21,7 @@ jobs:
 
       - uses: ./.github/actions/setup-env
         with:
-          workspace_path: ${{ inputs.pkg_name }}
+          pkg_name: ${{ inputs.pkg_name }}
 
       - id: build
         name: Build and Test SDK

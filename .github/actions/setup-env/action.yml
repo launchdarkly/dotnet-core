@@ -11,6 +11,7 @@ runs:
       - name: Setup env variables based on pkg_name
         env:
           PACKAGE_NAME: ${{ inputs.pkg_name }}
+        shell: bash
         run: |
           local WORKSPACE_PATH=''
           local PROJECT_FILE=''
@@ -43,7 +44,7 @@ runs:
             BUILD_OUTPUT_PATH='pkgs/telemetry/src/bin/Release/'
             BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ServerSdk.Telemetry.dll'
           fi
-          
+
           echo "WORKSPACE_PATH=$WORKSPACE_PATH" >> $GITHUB_ENV
           echo "PROJECT_FILE=$PROJECT_FILE" >> $GITHUB_ENV
           echo "TEST_PROJECT_FILE=$TEST_PROJECT_FILE" >> $GITHUB_ENV

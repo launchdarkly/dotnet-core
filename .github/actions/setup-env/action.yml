@@ -13,13 +13,13 @@ runs:
           PACKAGE_NAME: ${{ inputs.pkg_name }}
         shell: bash
         run: |
-          local WORKSPACE_PATH=''
-          local PROJECT_FILE=''
-          local BUILD_OUTPUT_PATH=''
-          local BUILD_OUTPUT_DLL_NAME=''
-          local TEST_PROJECT_FILE=''
-          local CONTRACT_TEST_PROJECT_FILE=''
-          local CONTRACT_TEST_DLL_FILE=''
+          WORKSPACE_PATH=''
+          PROJECT_FILE=''
+          BUILD_OUTPUT_PATH=''
+          BUILD_OUTPUT_DLL_NAME=''
+          TEST_PROJECT_FILE=''
+          CONTRACT_TEST_PROJECT_FILE=''
+          CONTRACT_TEST_DLL_FILE=''
           
           if [[ $PACKAGE_NAME == 'LaunchDarkly.ClientSdk' ]]; then
             WORKSPACE_PATH='pkgs/sdk/client'
@@ -36,6 +36,8 @@ runs:
             TEST_PROJECT_FILE='pkgs/sdk/server/test/LaunchDarkly.ServerSdk.Tests.csproj'
             BUILD_OUTPUT_PATH='pkgs/sdk/server/src/bin/Release/'
             BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ServerSdk.dll'
+            CONTRACT_TEST_PROJECT_FILE=pkgs/sdk/server/contract-tests/TestService.csproj
+            CONTRACT_TEST_DLL_FILE=pkgs/sdk/server/contract-tests/bin/debug/net6.0/ContractTestService.dll
             
           elif [[ $PACKAGE_NAME == 'LaunchDarkly.ServerSdk.Telemetry' ]]; then
             WORKSPACE_PATH='pkgs/telemetry'

@@ -24,18 +24,18 @@ runs:
           if [[ $PACKAGE_NAME == 'LaunchDarkly.ClientSdk' ]]; then
             WORKSPACE_PATH='pkgs/sdk/client'
             PROJECT_FILE='pkgs/sdk/client/src/LaunchDarkly.ClientSdk.csproj'
-            TEST_PROJECT_FILE='pkgs/sdk/client/test/LaunchDarkly.ClientSdk.Tests.csproj'
             BUILD_OUTPUT_PATH='pkgs/sdk/client/src/LaunchDarkly.ClientSdk/bin/Release/'
             BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ClientSdk.dll'
+            TEST_PROJECT_FILE='pkgs/sdk/client/test/LaunchDarkly.ClientSdk.Tests/LaunchDarkly.ClientSdk.Tests.csproj'
             CONTRACT_TEST_PROJECT_FILE='pkgs/sdk/client/contract-tests/TestService.csproj'
             CONTRACT_TEST_DLL_FILE='pkgs/sdk/server/contract-tests/bin/debug/net6.0/ContractTestService.dll'
 
           elif [[ $PACKAGE_NAME == 'LaunchDarkly.ServerSdk' ]]; then
             WORKSPACE_PATH='pkgs/sdk/server'
             PROJECT_FILE='pkgs/sdk/server/src/LaunchDarkly.ServerSdk.csproj'
-            TEST_PROJECT_FILE='pkgs/sdk/server/test/LaunchDarkly.ServerSdk.Tests.csproj'
             BUILD_OUTPUT_PATH='pkgs/sdk/server/src/bin/Release/'
             BUILD_OUTPUT_DLL_NAME='LaunchDarkly.ServerSdk.dll'
+            TEST_PROJECT_FILE='pkgs/sdk/server/test/LaunchDarkly.ServerSdk.Tests.csproj'
             CONTRACT_TEST_PROJECT_FILE=pkgs/sdk/server/contract-tests/TestService.csproj
             CONTRACT_TEST_DLL_FILE=pkgs/sdk/server/contract-tests/bin/debug/net6.0/ContractTestService.dll
             

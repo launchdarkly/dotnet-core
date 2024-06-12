@@ -1,14 +1,14 @@
-# LaunchDarkly Server-Side SDK for .NET
+# LaunchDarkly monorepo for .NET SDKs and C# libs.
 
-The LaunchDarkly Server-Side SDK for .NET is designed primarily for use in multi-user systems such as web servers and applications. It follows the server-side LaunchDarkly model for multi-user contexts. It is not intended for use in desktop and embedded systems applications.
-
-For using LaunchDarkly in *client-side* .NET applications, including mobile applications and desktop applications, refer to our [.NET Client SDK](https://github.com/launchdarkly/dotnet-client-sdk).
+This repository contains LaunchDarkly SDK packages for usage in .NET.
+This includes the SDKs, shared libraries, and other tools.
 
 ## Packages
 
 | SDK Packages                              | NuGet                                                   | API Docs                                                    | Issues                        | Tests                                                      |
 |-------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|-------------------------------|------------------------------------------------------------|
 | [LaunchDarkly.ServerSdk](pkgs/sdk/server) | [![NuGet][server-nuget-badge]][server-nuget-link]       | [![Documentation][api-docs-badge]][server-api-docs-link]    | [Server SDK][server-issues]   | [![Actions Status][server-ci-badge]][server-ci-link]       |
+| [LaunchDarkly.ClientSdk](pkgs/sdk/client) | [![NuGet][client-nuget-badge]][client-nuget-link]       | [![Documentation][api-docs-badge]][client-api-docs-link]    | [Client SDK][client-issues]   | [![Actions Status][client-ci-badge]][client-ci-link]       |
 
 | Telemetry Packages                                 | NuGet                                                   | API Docs                                                    | Issues                        | Tests                                                      |
 |----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|-------------------------------|------------------------------------------------------------|
@@ -28,45 +28,9 @@ For using LaunchDarkly in *client-side* .NET applications, including mobile appl
  
 [![Twitter Follow](https://img.shields.io/twitter/follow/launchdarkly.svg?style=social&label=Follow&maxAge=2592000)](https://twitter.com/intent/follow?screen_name=launchdarkly)
 
-## Supported .NET versions
-
-This version of the SDK is built for the following targets:
-
-* .NET 6.0: runs on .NET 6.0 and above (including higher major versions).
-* .NET Framework 4.6.2: runs on .NET Framework 4.6.2 and above.
-* .NET Standard 2.0: runs in any project that is targeted to .NET Standard 2.x rather than to a specific runtime platform.
-
-The .NET build tools should automatically load the most appropriate build of the SDK for whatever platform your application or library is targeted to.
-
-The only differences in the SDK between platforms are these:
-
-* Setting a TCP connection timeout is only supported in .NET Core and .NET 6.0+. For more details, see `HttpConfigurationBuilder.ConnectTimeout`.
-* The SDK requires the `System.Text.Json` API to be available; it is built into the standard runtime library in .NET Core and .NET 6.0+, but not on other platforms, so on other platforms the SDK brings in `System.Text.Json` as a NuGet package dependency.
-
-## Getting started
-
-Refer to the [SDK documentation](https://docs.launchdarkly.com/sdk/server-side/dotnet#getting-started) for instructions on getting started with using the SDK.
-
-## Signing
-
-The published version of this assembly is digitally signed with Authenticode and [strong-named](https://docs.microsoft.com/en-us/dotnet/framework/app-domains/strong-named-assemblies). Building the code locally in the default Debug configuration does not use strong-naming and does not require a key file. The public key file is in this repository at `LaunchDarkly.pk` as well as here:
-
-```
-Public Key:
-0024000004800000940000000602000000240000525341310004000001000100f121bbf427e4d7
-edc64131a9efeefd20978dc58c285aa6f548a4282fc6d871fbebeacc13160e88566f427497b625
-56bf7ff01017b0f7c9de36869cc681b236bc0df0c85927ac8a439ecb7a6a07ae4111034e03042c
-4b1569ebc6d3ed945878cca97e1592f864ba7cc81a56b8668a6d7bbe6e44c1279db088b0fdcc35
-52f746b4
-
-Public Key Token: f86add69004e6885
-```
-
 ## Learn more
 
 Read our [documentation](https://docs.launchdarkly.com) for in-depth instructions on configuring and using LaunchDarkly. You can also head straight to the [complete reference guide for this SDK](https://docs.launchdarkly.com/sdk/server-side/dotnet).
-
-The authoritative description of all types, properties, and methods is in the [generated API documentation](https://launchdarkly.github.io/dotnet-server-sdk/pkgs/sdk/server/).
 
 ## Testing
  
@@ -74,7 +38,7 @@ We run integration tests for all our SDKs using a centralized test harness. This
  
 ## Contributing
  
-We encourage pull requests and other contributions from the community. Check out our [contributing guidelines](CONTRIBUTING.md) for instructions on how to contribute to this SDK.
+We encourage pull requests and other contributions from the community. Check out our [contributing guidelines](CONTRIBUTING.md) for instructions on how to contribute to this repository.
 
 ## About LaunchDarkly
  
@@ -93,16 +57,23 @@ We encourage pull requests and other contributions from the community. Check out
 
 [server-nuget-badge]: https://img.shields.io/nuget/v/LaunchDarkly.ServerSdk.svg?style=flat-square
 [server-nuget-link]: https://www.nuget.org/packages/LaunchDarkly.ServerSdk/
-[server-ci-badge]: https://github.com/launchdarkly/dotnet-server-sdk/actions/workflows/sdk-server-ci.yml/badge.svg
-[server-ci-link]: https://github.com/launchdarkly/dotnet-server-sdk/actions/workflows/sdk-server-ci.yml
-[server-issues]: https://github.com/launchdarkly/dotnet-server-sdk/issues?q=is%3Aissue+is%3Aopen+label%3A%22package%3A+sdk%2Fserver%22+
-[server-api-docs-link]: https://launchdarkly.github.io/dotnet-server-sdk/pkgs/sdk/server/
+[server-ci-badge]: https://github.com/launchdarkly/dotnet-core/actions/workflows/sdk-server-ci.yml/badge.svg
+[server-ci-link]: https://github.com/launchdarkly/dotnet-core/actions/workflows/sdk-server-ci.yml
+[server-issues]: https://github.com/launchdarkly/dotnet-core/issues?q=is%3Aissue+is%3Aopen+label%3A%22package%3A+sdk%2Fserver%22+
+[server-api-docs-link]: https://launchdarkly.github.io/dotnet-core/pkgs/sdk/server/
+
+[client-nuget-badge]: https://img.shields.io/nuget/v/LaunchDarkly.ClientSdk.svg?style=flat-square
+[client-nuget-link]: https://www.nuget.org/packages/LaunchDarkly.ClientSdk/
+[client-ci-badge]: https://github.com/launchdarkly/dotnet-core/actions/workflows/sdk-client-ci.yml/badge.svg
+[client-ci-link]: https://github.com/launchdarkly/dotnet-core/actions/workflows/sdk-client-ci.yml
+[client-issues]: https://github.com/launchdarkly/dotnet-core/issues?q=is%3Aissue+is%3Aopen+label%3A%22package%3A+sdk%2Fclient%22+
+[client-api-docs-link]: https://launchdarkly.github.io/dotnet-core/pkgs/sdk/client/
 
 [telemetry-nuget-badge]: https://img.shields.io/nuget/v/LaunchDarkly.ServerSdk.Telemetry.svg?style=flat-square
 [telemetry-nuget-link]: https://www.nuget.org/packages/LaunchDarkly.ServerSdk.Telemetry/
-[telemetry-ci-badge]: https://github.com/launchdarkly/dotnet-server-sdk/actions/workflows/telemetry-ci.yml/badge.svg
-[telemetry-ci-link]: https://github.com/launchdarkly/dotnet-server-sdk/actions/workflows/telemetry-ci.yml
-[telemetry-issues]: https://github.com/launchdarkly/dotnet-server-sdk/issues?q=is%3Aissue+is%3Aopen+label%3A%22package%3A+telemetry%22+
-[telemetry-api-docs-link]: https://launchdarkly.github.io/dotnet-server-sdk/pkgs/telemetry/
+[telemetry-ci-badge]: https://github.com/launchdarkly/dotnet-core/actions/workflows/telemetry-ci.yml/badge.svg
+[telemetry-ci-link]: https://github.com/launchdarkly/dotnet-core/actions/workflows/telemetry-ci.yml
+[telemetry-issues]: https://github.com/launchdarkly/dotnet-core/issues?q=is%3Aissue+is%3Aopen+label%3A%22package%3A+telemetry%22+
+[telemetry-api-docs-link]: https://launchdarkly.github.io/dotnet-core/pkgs/telemetry/
 
 [api-docs-badge]: https://img.shields.io/static/v1?label=GitHub+Pages&message=API+reference&color=00add8

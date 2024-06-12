@@ -26,8 +26,8 @@
         <Company>LaunchDarkly</Company>
         <Copyright>Copyright 2020 LaunchDarkly</Copyright>
         <LicenseExpression>Apache-2.0</LicenseExpression>
-        <PackageProjectUrl>https://github.com/launchdarkly/dotnet-client-sdk</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/launchdarkly/dotnet-client-sdk</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/launchdarkly/dotnet-core</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/launchdarkly/dotnet-core</RepositoryUrl>
         <RepositoryBranch>master</RepositoryBranch>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -113,7 +113,7 @@
         </Compile>
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
-        <AssemblyOriginatorKeyFile>../../LaunchDarkly.ClientSdk.snk</AssemblyOriginatorKeyFile>
+        <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.ClientSdk.snk</AssemblyOriginatorKeyFile>
         <SignAssembly>true</SignAssembly>
     </PropertyGroup>
 

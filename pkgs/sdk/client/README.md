@@ -1,14 +1,10 @@
 # LaunchDarkly Client-Side SDK for .NET
 
-[![NuGet](https://img.shields.io/nuget/v/LaunchDarkly.ClientSdk.svg?style=flat-square)](https://www.nuget.org/packages/LaunchDarkly.ClientSdk/)
-[![CircleCI](https://circleci.com/gh/launchdarkly/dotnet-client-sdk.svg?style=shield)](https://circleci.com/gh/launchdarkly/dotnet-client-sdk)
-[![Documentation](https://img.shields.io/static/v1?label=GitHub+Pages&message=API+reference&color=00add8)](https://launchdarkly.github.io/dotnet-client-sdk)
-
 The LaunchDarkly Client-Side SDK for .NET is designed primarily for use by code that is deployed to an end user, such as in a desktop application or a smart device. It follows the client-side LaunchDarkly model for single-user contexts (much like our mobile or JavaScript SDKs). It is not intended for use in multi-user systems such as web servers and applications.
 
 On platforms with MAUI support (Android, iOS, Mac, Windows), the SDK depends on the MAUI framework which allows .NET code to run on those devices.  However, MAUI is not the only way to run .NET code in a client-side context (see "Supported platforms" below), so the SDK has a more general name.
 
-For using LaunchDarkly in *server-side* .NET applications, refer to our [Server-Side .NET SDK](https://github.com/launchdarkly/dotnet-server-sdk).
+For using LaunchDarkly in *server-side* .NET applications, refer to our [Server-Side .NET SDK](../server).
 
 ## LaunchDarkly overview
 
@@ -37,7 +33,7 @@ Refer to the [SDK documentation](https://docs.launchdarkly.com/sdk/client-side/d
 
 Read our [documentation](https://docs.launchdarkly.com) for in-depth instructions on configuring and using LaunchDarkly. You can also head straight to the [complete reference guide for this SDK](https://docs.launchdarkly.com/sdk/client-side/dotnet).
 
-The authoritative description of all types, properties, and methods is in the [generated API documentation](https://launchdarkly.github.io/dotnet-client-sdk/).
+The authoritative description of all types, properties, and methods is in the [generated API documentation](https://launchdarkly.github.io/dotnet-core/pkgs/sdk/client).
 
 ## Testing
  

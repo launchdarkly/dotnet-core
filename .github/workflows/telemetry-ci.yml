@@ -22,9 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-env
-        with:
-          pkg_name: LaunchDarkly.ServerSdk
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: set -o allexport && source pkgs/telemetry/github_actions.env && set +o allexport
 
       - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.0.1
         name: Get secrets

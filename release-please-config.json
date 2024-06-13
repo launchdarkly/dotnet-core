@@ -1,5 +1,5 @@
 {
-  "bootstrap-sha": "7870a6ed7450d211ae822a281de45b6fc3df39c3",
+  "bootstrap-sha": "fedc48807cd2bb295f2e700352859779c0eea8c0",
   "separate-pull-requests": true,
   "include-component-in-tag": true,
   "packages": {

@@ -22,6 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat pkgs/sdk/server/github_actions.env)" >> $GITHUB_ENV
+
       - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.0.1
         name: Get secrets
         with:
@@ -29,15 +33,15 @@ jobs:
 
       - uses: ./.github/actions/ci
         with:
-          project_file: pkgs/sdk/server/src/LaunchDarkly.ServerSdk.csproj
-          test_project_file: pkgs/sdk/server/test/LaunchDarkly.ServerSdk.Tests.csproj
+          project_file: ${{ env.PROJECT_FILE}}
+          test_project_file: ${{ env.TEST_PROJECT_FILE}}
 
       - uses: ./.github/actions/contract-tests
         with:
-          service_project_file: pkgs/sdk/server/contract-tests/TestService.csproj
-          service_dll_file: pkgs/sdk/server/contract-tests/bin/debug/net6.0/ContractTestService.dll
+          service_project_file: ${{ env.CONTRACT_TEST_PROJECT_FILE}}
+          service_dll_file: ${{ env.CONTRACT_TEST_DLL_FILE}}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: ./.github/actions/build-docs
         with:
-          workspace_path: pkgs/sdk/server
+          workspace_path: ${{ env.WORKSPACE_PATH}}

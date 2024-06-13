@@ -1,57 +1,44 @@
 on:
   workflow_dispatch:
     inputs:
-      workspace_path:
-        description: 'Path to the workspace being released.'
+      pkg_workspace:
+        description: 'The package to publish'
         required: true
-        type: string
-      project_file:
-        description: 'Path to the project file.'
-        required: true
-        type: string
-      test_project_file:
-        description: 'Path to the test project file.  If provided, run unit tests, otherwise skip them.'
-        required: false
-        type: string
-  workflow_call:
-    inputs:
-      workspace_path:
-        description: 'Path to the workspace being released.'
-        required: true
-        type: string
-      project_file:
-        description: 'Path to the project file.'
-        required: true
-        type: string
-      test_project_file:
-        description: 'Path to the test project file.  If provided, run unit tests, otherwise skip them.'
-        required: false
-        type: string
+        type: choice
+        options:
+          - pkgs/sdk/client
+          - pkgs/sdk/server
+          - pkgs/telemetry
 
 name: Publish Docs
 jobs:
   build-publish:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     permissions:
       contents: write # Needed in this case to write github pages.
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat ${{ inputs.pkg_workspace }}/github_actions.env)" >> $GITHUB_ENV
+
       - id: build
         name: Build and Test SDK
         uses: ./.github/actions/ci
         with:
-          project_file: ${{ inputs.project_file }}
-          test_project_file: ${{ inputs.test_project_file }}
+          project_file: ${{ env.PROJECT_FILE }}
+          test_project_file: ${{ env.TEST_PROJECT_FILE }}
 
       - id: build-docs
         name: Build Documentation
         uses: ./.github/actions/build-docs
         with:
-          workspace_path: ${{ inputs.workspace_path }}
+          workspace_path: ${{ env.WORKSPACE_PATH }}
 
       - id: publish-docs
         name: Publish Documentation
         uses: ./.github/actions/publish-docs
         with:
-          workspace_path: ${{ inputs.workspace_path }}
+          workspace_path: ${{ env.WORKSPACE_PATH }}
           token: ${{secrets.GITHUB_TOKEN}}

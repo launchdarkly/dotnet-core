@@ -24,7 +24,7 @@ jobs:
 
       - name: Setup Env from project's Env file
         shell: bash
-        run: set -o allexport && source pkgs/telemetry/github_actions.env && set +o allexport
+        run: echo "$(cat pkgs/telemetry/github_actions.env)" >> $GITHUB_ENV
 
       - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.0.1
         name: Get secrets

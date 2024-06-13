@@ -1,14 +1,14 @@
 on:
   workflow_dispatch:
     inputs:
-      pkg_name:
+      pkg_workspace:
         description: 'The package to publish'
         required: true
         type: choice
         options:
-          - LaunchDarkly.ClientSdk
-          - LaunchDarkly.ServerSdk
-          - LaunchDarkly.ServerSdk.Telemetry
+          - pkgs/sdk/client
+          - pkgs/sdk/server
+          - pkgs/telemetry
 
 name: Publish Docs
 jobs:
@@ -19,9 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-env
-        with:
-          pkg_name: ${{ inputs.pkg_name }}
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat ${{ inputs.pkg_workspace }}/github_actions.env)" >> $GITHUB_ENV
 
       - id: build
         name: Build and Test SDK

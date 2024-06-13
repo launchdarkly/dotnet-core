@@ -2,14 +2,14 @@ name: Manual Publish Package
 on:
   workflow_dispatch:
     inputs:
-      pkg_name:
+      pkg_workspace:
         description: 'The package to publish'
         required: true
         type: choice
         options:
-          - LaunchDarkly.ServerSdk
-          - LaunchDarkly.ServerSdk.Telemetry
-          - LaunchDarkly.ClientSdk
+          - pkgs/sdk/client
+          - pkgs/sdk/server
+          - pkgs/telemetry
       dry_run:
         description: 'Is this a dry run. If so no package will be published.'
         type: boolean
@@ -33,9 +33,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-env
-        with:
-          pkg_name: ${{ inputs.pkg_name }}
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat ${{ inputs.pkg_workspace }}/github_actions.env)" >> $GITHUB_ENV
 
       - uses: ./.github/actions/full-release
         id: full-release
@@ -61,4 +61,4 @@ jobs:
     with:
       base64-subjects: "${{ needs.build.outputs.full-release-hashes }}"
       upload-assets: true
-      provenance-name: ${{inputs.pkg_name}}_provenance.intoto.jsonl
+      provenance-name: ${{inputs.pkg_workspace}}_provenance.intoto.jsonl

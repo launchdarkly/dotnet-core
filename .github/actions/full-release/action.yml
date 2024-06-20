@@ -39,7 +39,7 @@ runs:
         project_file: ${{ inputs.project_file }}
         test_project_file: ${{ inputs.test_project_file }}
 
-    - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.1.0
+    - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
       name: Get secrets
       with:
         aws_assume_role: ${{ inputs.aws_role }}

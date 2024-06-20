@@ -1,0 +1,296 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Interface IDataSourceUpdateSink | LaunchDarkly Dotnet Client SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Interface IDataSourceUpdateSink | LaunchDarkly Dotnet Client SDK ">
+    
+    <meta name="description" content="Interface that an implementation of  will use to push data into the SDK.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly Dotnet Client SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink" class="text-break">Interface IDataSourceUpdateSink</h1>
+  <div class="markdown level0 summary"><p>Interface that an implementation of <a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.IDataSource.html">IDataSource</a> will use to push data into the SDK.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.html">Client</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.html">Subsystems</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.ClientSdk.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public interface IDataSourceUpdateSink</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>The data source interacts with this object, rather than manipulating the data store directly, so
+that the SDK can perform any other necessary operations that must happen when data is updated.</p>
+</div>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_Init_LaunchDarkly_Sdk_Context_LaunchDarkly_Sdk_Client_Subsystems_DataStoreTypes_FullDataSet_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.Init(LaunchDarkly.Sdk.Context%2CLaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.FullDataSet)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Subsystems/IDataSourceUpdateSink.cs/#L26">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_Init_" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.Init*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_Init_LaunchDarkly_Sdk_Context_LaunchDarkly_Sdk_Client_Subsystems_DataStoreTypes_FullDataSet_" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.Init(LaunchDarkly.Sdk.Context,LaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.FullDataSet)">Init(Context, FullDataSet)</h4>
+  <div class="markdown level1 summary"><p>Completely overwrites the current contents of the data store with a set of items for each collection.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void Init(Context context, DataStoreTypes.FullDataSet data)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>the current evaluation context</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.html">DataStoreTypes</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.FullDataSet.html">FullDataSet</a></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>the data set</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_UpdateStatus_LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_System_Nullable_LaunchDarkly_Sdk_Client_Interfaces_DataSourceStatus_ErrorInfo__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.UpdateStatus(LaunchDarkly.Sdk.Client.Interfaces.DataSourceState%2CSystem.Nullable%7BLaunchDarkly.Sdk.Client.Interfaces.DataSourceStatus.ErrorInfo%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Subsystems/IDataSourceUpdateSink.cs/#L66">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_UpdateStatus_" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.UpdateStatus*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_UpdateStatus_LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_System_Nullable_LaunchDarkly_Sdk_Client_Interfaces_DataSourceStatus_ErrorInfo__" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.UpdateStatus(LaunchDarkly.Sdk.Client.Interfaces.DataSourceState,System.Nullable{LaunchDarkly.Sdk.Client.Interfaces.DataSourceStatus.ErrorInfo})">UpdateStatus(DataSourceState, ErrorInfo?)</h4>
+  <div class="markdown level1 summary"><p>Informs the SDK of a change in the data source's status.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceState.html">DataSourceState</a></td>
+        <td><span class="parametername">newState</span></td>
+        <td><p>the data source state</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceStatus.html">DataSourceStatus</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceStatus.ErrorInfo.html">ErrorInfo</a>?</td>
+        <td><span class="parametername">newError</span></td>
+        <td><p>information about a new error, if any</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_UpdateStatus_LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_System_Nullable_LaunchDarkly_Sdk_Client_Interfaces_DataSourceStatus_ErrorInfo___remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+Data source implementations should use this method if they have any concept of being in a valid
+state, a temporarily disconnected state, or a permanently stopped state.
+</p>
+<p>
+If <code class="paramref">newState</code> is different from the previous state, and/or <code class="paramref">newError</code>
+is non-null, the SDK will start returning the new status(adding a timestamp for the change) from
+<a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.IDataSourceStatusProvider.html#LaunchDarkly_Sdk_Client_Interfaces_IDataSourceStatusProvider_Status">Status</a>, and will trigger status change events to any
+registered listeners.
+</p>
+<p>
+A special case is that if <code class="paramref">newState</code> is <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceState.html#LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_Interrupted">Interrupted</a>,
+but the previous state was <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceState.html#LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_Initializing">Initializing</a>, the state will
+remain at <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceState.html#LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_Initializing">Initializing</a> because
+<a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceState.html#LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_Interrupted">Interrupted</a> is only meaningful after a successful startup.
+</p>
+<p>
+Data source implementations normally should not need to set the state to
+<a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.DataSourceState.html#LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_Valid">Valid</a>, because that will happen automatically if they call
+<a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.html#LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_Init_LaunchDarkly_Sdk_Context_LaunchDarkly_Sdk_Client_Subsystems_DataStoreTypes_FullDataSet_">Init(Context, FullDataSet)</a>.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_UpdateStatus_LaunchDarkly_Sdk_Client_Interfaces_DataSourceState_System_Nullable_LaunchDarkly_Sdk_Client_Interfaces_DataSourceStatus_ErrorInfo___seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.IDataSourceStatusProvider.html">IDataSourceStatusProvider</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_Upsert_LaunchDarkly_Sdk_Context_System_String_LaunchDarkly_Sdk_Client_Subsystems_DataStoreTypes_ItemDescriptor_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.Upsert(LaunchDarkly.Sdk.Context%2CSystem.String%2CLaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.ItemDescriptor)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Subsystems/IDataSourceUpdateSink.cs/#L35">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_Upsert_" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.Upsert*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink_Upsert_LaunchDarkly_Sdk_Context_System_String_LaunchDarkly_Sdk_Client_Subsystems_DataStoreTypes_ItemDescriptor_" data-uid="LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink.Upsert(LaunchDarkly.Sdk.Context,System.String,LaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.ItemDescriptor)">Upsert(Context, string, ItemDescriptor)</h4>
+  <div class="markdown level1 summary"><p>Updates or inserts an item. For updates, the object will only be updated if the existing
+version is less than the new version.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void Upsert(Context context, string key, DataStoreTypes.ItemDescriptor data)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>the current evaluation context</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the feature flag key</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.html">DataStoreTypes</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.DataStoreTypes.ItemDescriptor.html">ItemDescriptor</a></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>the item data</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Subsystems_IDataSourceUpdateSink.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Subsystems.IDataSourceUpdateSink%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Subsystems/IDataSourceUpdateSink.cs/#L18" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

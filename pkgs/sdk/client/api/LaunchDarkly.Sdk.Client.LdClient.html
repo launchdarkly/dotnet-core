@@ -1,0 +1,2720 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class LdClient | LaunchDarkly Dotnet Client SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class LdClient | LaunchDarkly Dotnet Client SDK ">
+    
+    <meta name="description" content="A client for the LaunchDarkly API. Client instances are thread-safe. Your application should instantiate a single LdClient for the lifetime of their application.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly Dotnet Client SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.Client.LdClient">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_Client_LdClient" data-uid="LaunchDarkly.Sdk.Client.LdClient" class="text-break">Class LdClient</h1>
+  <div class="markdown level0 summary"><p>A client for the LaunchDarkly API. Client instances are thread-safe. Your application should instantiate
+a single <code>LdClient</code> for the lifetime of their application.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">LdClient</span></div>
+  </div>
+  <div class="implements">
+    <h5>Implements</h5>
+    <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html">ILdClient</a></div>
+    <div><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.idisposable">IDisposable</a></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.html">Client</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.ClientSdk.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class LdClient : ILdClient, IDisposable</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>
+Like all client-side LaunchDarkly SDKs, the <code>LdClient</code> always has a single current <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Context">Context</a>.
+You specify this context at initialization time, and you can change it later with <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_">Identify(Context, TimeSpan)</a>
+or <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_">IdentifyAsync(Context)</a>. All subsequent calls to evaluation methods like
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_BoolVariation_System_String_System_Boolean_">BoolVariation(string, bool)</a> refer to the flag values for the current context.
+</p>
+<p>
+Normally, the SDK uses the exact context that you have specified in the <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Context">Context</a>. However,
+you can also tell the SDK to generate a randomized identifier and use this as the context's
+<a class="xref" href="LaunchDarkly.Sdk.Context.html#LaunchDarkly_Sdk_Context_Key">Key</a>; see <a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html#LaunchDarkly_Sdk_Client_ConfigurationBuilder_GenerateAnonymousKeys_System_Boolean_">GenerateAnonymousKeys(bool)</a>.
+</p>
+<p>
+If you use more than one <a class="xref" href="LaunchDarkly.Sdk.ContextKind.html">ContextKind</a> in your evaluation contexts, and you request a
+randomized key as described above, a different key is generated for each kind.
+</p>
+</div>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Config.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Config%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L96">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Config_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Config*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Config" data-uid="LaunchDarkly.Sdk.Client.LdClient.Config">Config</h4>
+  <div class="markdown level1 summary"><p>The <a class="xref" href="LaunchDarkly.Sdk.Client.Configuration.html">Configuration</a> instance used to set up the LdClient.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Configuration Config { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Configuration.html">Configuration</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Context.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Context%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L106">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Context_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Context*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Context" data-uid="LaunchDarkly.Sdk.Client.LdClient.Context">Context</h4>
+  <div class="markdown level1 summary"><p>The current evaluation context for all SDK operations.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Context Context { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Context_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>This is initially the context specified for <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a> or
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_">InitAsync(Configuration, Context)</a>, but can be changed later with
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_">Identify(Context, TimeSpan)</a> or <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_">IdentifyAsync(Context)</a>.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_DataSourceStatusProvider.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.DataSourceStatusProvider%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L115">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_DataSourceStatusProvider_" data-uid="LaunchDarkly.Sdk.Client.LdClient.DataSourceStatusProvider*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_DataSourceStatusProvider" data-uid="LaunchDarkly.Sdk.Client.LdClient.DataSourceStatusProvider">DataSourceStatusProvider</h4>
+  <div class="markdown level1 summary"><p>A mechanism for tracking the status of the data source.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IDataSourceStatusProvider DataSourceStatusProvider { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.IDataSourceStatusProvider.html">IDataSourceStatusProvider</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_DataSourceStatusProvider_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The data source is the mechanism that the SDK uses to get feature flag configurations, such as a
+streaming connection (the default) or poll requests. The <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.IDataSourceStatusProvider.html">IDataSourceStatusProvider</a>
+has methods for checking whether the data source is (as far as the SDK knows) currently operational,
+and tracking changes in this status. This property will never be null.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_FlagTracker.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.FlagTracker%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L118">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_FlagTracker_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FlagTracker*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_FlagTracker" data-uid="LaunchDarkly.Sdk.Client.LdClient.FlagTracker">FlagTracker</h4>
+  <div class="markdown level1 summary"><p>A mechanism for tracking changes in feature flag configurations.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IFlagTracker FlagTracker { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.IFlagTracker.html">IFlagTracker</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_FlagTracker_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.IFlagTracker.html">IFlagTracker</a> contains methods for requesting notifications about feature flag
+changes using an event listener model.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Initialized.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Initialized%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L112">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Initialized_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Initialized*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Initialized" data-uid="LaunchDarkly.Sdk.Client.LdClient.Initialized">Initialized</h4>
+  <div class="markdown level1 summary"><p>Returns a boolean value indicating LaunchDarkly connection and flag state within the client.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool Initialized { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Initialized_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+When you first start the client, once <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a> or
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_">InitAsync(Configuration, Context)</a> has returned, <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Initialized">Initialized</a> should be
+<a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a> if and only if either 1. it connected to LaunchDarkly and successfully retrieved
+flags, or 2. it started in offline mode so there's no need to connect to LaunchDarkly. If the client
+timed out trying to connect to LD, then <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Initialized">Initialized</a> is <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> (even if we
+do have cached flags).  If the client connected and got a 401 error, <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Initialized">Initialized</a> is
+<a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>. This serves the purpose of letting the app know that there was a problem of some kind.
+</p>
+<p>
+If you call <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_">Identify(Context, TimeSpan)</a> or <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_">IdentifyAsync(Context)</a>,
+<a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Initialized">Initialized</a> will become <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> until the SDK receives the new context's flags.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Instance.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Instance%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L86">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Instance_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Instance*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Instance" data-uid="LaunchDarkly.Sdk.Client.LdClient.Instance">Instance</h4>
+  <div class="markdown level1 summary"><p>The singleton instance used by your application throughout its lifetime. Once this exists, you cannot
+create a new client instance unless you first call <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Dispose">Dispose()</a> on this one.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static LdClient Instance { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Instance_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Use the static factory methods <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a> or
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_">InitAsync(Configuration, Context)</a> to set this <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Offline.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Offline%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L109">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Offline_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Offline*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Offline" data-uid="LaunchDarkly.Sdk.Client.LdClient.Offline">Offline</h4>
+  <div class="markdown level1 summary"><p>Indicates whether the SDK is configured to be always offline.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool Offline { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Offline_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This is initially <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a> if you set it to <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a> in the configuration with
+<a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html#LaunchDarkly_Sdk_Client_ConfigurationBuilder_Offline_System_Boolean_">Offline(bool)</a>. However, you can change it at any time to allow the client
+to go online, or force it to go offline, using <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_SetOffline_System_Boolean_System_TimeSpan_">SetOffline(bool, TimeSpan)</a> or
+<a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_SetOfflineAsync_System_Boolean_">SetOfflineAsync(bool)</a>.
+</p>
+<p>
+When <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Offline">Offline</a> is <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, the SDK connects to LaunchDarkly if possible, but
+this does not guarantee that the connection is successful. There is currently no mechanism to detect whether
+the SDK is currently connected to LaunchDarkly.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Version.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Version%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L91">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Version_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Version*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Version" data-uid="LaunchDarkly.Sdk.Client.LdClient.Version">Version</h4>
+  <div class="markdown level1 summary"><p>The current version string of the SDK.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Version Version { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.version">Version</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_AllFlags.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.AllFlags%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L801">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_AllFlags_" data-uid="LaunchDarkly.Sdk.Client.LdClient.AllFlags*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_AllFlags" data-uid="LaunchDarkly.Sdk.Client.LdClient.AllFlags">AllFlags()</h4>
+  <div class="markdown level1 summary"><p>Returns a map from feature flag keys to <a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a> feature flag values for the current user.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IDictionary&lt;string, LdValue&gt; AllFlags()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2">IDictionary</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>, <a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a>&gt;</td>
+        <td><p>a map from feature flag keys to values for the current user</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_AllFlags_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+If the result of a flag's value would have returned the default variation, the value in the map will contain
+<a class="xref" href="LaunchDarkly.Sdk.LdValue.html#LaunchDarkly_Sdk_LdValue_Null">Null</a>. If the client is offline or has not been initialized, an empty
+map will be returned.
+</p>
+<p>
+This method will not send analytics events back to LaunchDarkly.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_BoolVariation_System_String_System_Boolean_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.BoolVariation(System.String%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L647">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_BoolVariation_" data-uid="LaunchDarkly.Sdk.Client.LdClient.BoolVariation*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_BoolVariation_System_String_System_Boolean_" data-uid="LaunchDarkly.Sdk.Client.LdClient.BoolVariation(System.String,System.Boolean)">BoolVariation(string, bool)</h4>
+  <div class="markdown level1 summary"><p>Returns the boolean value of a feature flag for a given flag key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool BoolVariation(string key, bool defaultValue = false)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><p>the variation for the selected user, or <code>defaultValue</code> if the flag is
+disabled in the LaunchDarkly control panel</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_BoolVariationDetail_System_String_System_Boolean_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.BoolVariationDetail(System.String%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L654">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_BoolVariationDetail_" data-uid="LaunchDarkly.Sdk.Client.LdClient.BoolVariationDetail*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_BoolVariationDetail_System_String_System_Boolean_" data-uid="LaunchDarkly.Sdk.Client.LdClient.BoolVariationDetail(System.String,System.Boolean)">BoolVariationDetail(string, bool)</h4>
+  <div class="markdown level1 summary"><p>Returns the boolean value of a feature flag for a given flag key, in an object that also
+describes the way the value was determined.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public EvaluationDetail&lt;bool&gt; BoolVariationDetail(string key, bool defaultValue = false)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html">EvaluationDetail</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a>&gt;</td>
+        <td><p>an <code>EvaluationDetail</code> object</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_BoolVariationDetail_System_String_System_Boolean__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The <a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html#LaunchDarkly_Sdk_EvaluationDetail_1_Reason">Reason</a> property in the result will also be included in analytics
+events, if you are capturing detailed event data for this flag.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Dispose.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Dispose%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L920">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Dispose_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Dispose*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Dispose" data-uid="LaunchDarkly.Sdk.Client.LdClient.Dispose">Dispose()</h4>
+  <div class="markdown level1 summary"><p>Permanently shuts down the SDK client.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Dispose()</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Dispose_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This method closes all network collections, shuts down all background tasks, and releases any other
+resources being held by the SDK.
+</p>
+<p>
+If there are any pending analytics events, and if the SDK is online, it attempts to deliver the events
+to LaunchDarkly before closing.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_DoubleVariation_System_String_System_Double_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.DoubleVariation(System.String%2CSystem.Double)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L689">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_DoubleVariation_" data-uid="LaunchDarkly.Sdk.Client.LdClient.DoubleVariation*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_DoubleVariation_System_String_System_Double_" data-uid="LaunchDarkly.Sdk.Client.LdClient.DoubleVariation(System.String,System.Double)">DoubleVariation(string, double)</h4>
+  <div class="markdown level1 summary"><p>Returns the double-precision floating-point value of a feature flag for a given flag key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public double DoubleVariation(string key, double defaultValue = 0)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td><p>the variation for the selected user, or <code>defaultValue</code> if the flag is
+disabled in the LaunchDarkly control panel</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_DoubleVariationDetail_System_String_System_Double_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.DoubleVariationDetail(System.String%2CSystem.Double)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L696">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_DoubleVariationDetail_" data-uid="LaunchDarkly.Sdk.Client.LdClient.DoubleVariationDetail*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_DoubleVariationDetail_System_String_System_Double_" data-uid="LaunchDarkly.Sdk.Client.LdClient.DoubleVariationDetail(System.String,System.Double)">DoubleVariationDetail(string, double)</h4>
+  <div class="markdown level1 summary"><p>Returns the double-precision floating-point value of a feature flag for a given flag key,
+in an object that also describes the way the value was determined.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public EvaluationDetail&lt;double&gt; DoubleVariationDetail(string key, double defaultValue = 0)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html">EvaluationDetail</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a>&gt;</td>
+        <td><p>an <code>EvaluationDetail</code> object</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_DoubleVariationDetail_System_String_System_Double__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The <a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html#LaunchDarkly_Sdk_EvaluationDetail_1_Reason">Reason</a> property in the result will also be included in analytics
+events, if you are capturing detailed event data for this flag.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_FloatVariation_System_String_System_Single_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.FloatVariation(System.String%2CSystem.Single)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L675">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_FloatVariation_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FloatVariation*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_FloatVariation_System_String_System_Single_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FloatVariation(System.String,System.Single)">FloatVariation(string, float)</h4>
+  <div class="markdown level1 summary"><p>Returns the single-precision floating-point value of a feature flag for a given flag key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public float FloatVariation(string key, float defaultValue = 0)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.single">float</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.single">float</a></td>
+        <td><p>the variation for the selected user, or <code>defaultValue</code> if the flag is
+disabled in the LaunchDarkly control panel</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_FloatVariationDetail_System_String_System_Single_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.FloatVariationDetail(System.String%2CSystem.Single)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L682">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_FloatVariationDetail_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FloatVariationDetail*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_FloatVariationDetail_System_String_System_Single_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FloatVariationDetail(System.String,System.Single)">FloatVariationDetail(string, float)</h4>
+  <div class="markdown level1 summary"><p>Returns the single-precision floating-point value of a feature flag for a given flag key,
+in an object that also describes the way the value was determined.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public EvaluationDetail&lt;float&gt; FloatVariationDetail(string key, float defaultValue = 0)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.single">float</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html">EvaluationDetail</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.single">float</a>&gt;</td>
+        <td><p>an <code>EvaluationDetail</code> object</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_FloatVariationDetail_System_String_System_Single__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The <a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html#LaunchDarkly_Sdk_EvaluationDetail_1_Reason">Reason</a> property in the result will also be included in analytics
+events, if you are capturing detailed event data for this flag.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Flush.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Flush%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L843">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Flush_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Flush*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Flush" data-uid="LaunchDarkly.Sdk.Client.LdClient.Flush">Flush()</h4>
+  <div class="markdown level1 summary"><p>Tells the client that all pending analytics events (if any) should be delivered as soon
+as possible.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Flush()</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Flush_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This flush is asynchronous, so this method will return before it is complete. To wait for
+the flush to complete, use <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_FlushAndWait_System_TimeSpan_">FlushAndWait(TimeSpan)</a> instead (or, if you are done
+with the SDK, <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Dispose">Dispose()</a>).
+</p>
+<p>
+For more information, see: <a href="https://docs.launchdarkly.com/sdk/features/flush#net-client-side">
+Flushing Events</a>.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Flush_seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_FlushAndWait_System_TimeSpan_">FlushAndWait</a>(<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a>)</div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_FlushAndWaitAsync_System_TimeSpan_">FlushAndWaitAsync</a>(<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a>)</div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_FlushAndWait_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.FlushAndWait(System.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L847">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWait_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FlushAndWait*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWait_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FlushAndWait(System.TimeSpan)">FlushAndWait(TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Tells the client to deliver any pending analytics events synchronously now.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool FlushAndWait(TimeSpan timeout)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">timeout</span></td>
+        <td><p>the maximum time to wait</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><p>true if completed, false if timed out</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWait_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+Unlike <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Flush">Flush()</a>, this method waits for event delivery to finish. The timeout parameter, if
+greater than zero, specifies the maximum amount of time to wait. If the timeout elapses before
+delivery is finished, the method returns early and returns false; in this case, the SDK may still
+continue trying to deliver the events in the background.
+</p>
+<p>
+If the timeout parameter is zero or negative, the method waits as long as necessary to deliver the
+events. However, the SDK does not retry event delivery indefinitely; currently, any network error
+or server error will cause the SDK to wait one second and retry one time, after which the events
+will be discarded so that the SDK will not keep consuming more memory for events indefinitely.
+</p>
+<p>
+The method returns true if event delivery either succeeded, or definitively failed, before the
+timeout elapsed. It returns false if the timeout elapsed.
+</p>
+<p>
+This method is also implicitly called if you call <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Dispose">Dispose()</a>. The difference is
+that FlushAndWait does not shut down the SDK client.
+</p>
+<p>
+For more information, see: <a href="https://docs.launchdarkly.com/sdk/features/flush#net-server-side">
+Flushing Events</a>.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWait_System_TimeSpan__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Flush">Flush</a>()</div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_FlushAndWaitAsync_System_TimeSpan_">FlushAndWaitAsync</a>(<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a>)</div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_FlushAndWaitAsync_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.FlushAndWaitAsync(System.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L851">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWaitAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FlushAndWaitAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWaitAsync_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.FlushAndWaitAsync(System.TimeSpan)">FlushAndWaitAsync(TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Tells the client to deliver any pending analytics events now, returning a Task that can be awaited.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task&lt;bool&gt; FlushAndWaitAsync(TimeSpan timeout)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">timeout</span></td>
+        <td><p>the maximum time to wait</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a>&gt;</td>
+        <td><p>a Task that resolves to true if completed, false if timed out</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWaitAsync_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This is equivalent to <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_FlushAndWait_System_TimeSpan_">FlushAndWait(TimeSpan)</a>, but with asynchronous semantics so it
+does not block the calling thread. The difference between this and <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Flush">Flush()</a> is that you
+can await the task to simulate blocking behavior.
+</p>
+<p>
+For more information, see: <a href="https://docs.launchdarkly.com/sdk/features/flush#net-server-side">
+Flushing Events</a>.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_FlushAndWaitAsync_System_TimeSpan__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Flush">Flush</a>()</div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_FlushAndWait_System_TimeSpan_">FlushAndWait</a>(<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a>)</div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Identify(LaunchDarkly.Sdk.Context%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L855">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Identify_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Identify*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Identify(LaunchDarkly.Sdk.Context,System.TimeSpan)">Identify(Context, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Changes the current evaluation context, requests flags for that context from LaunchDarkly if we are online,
+and generates an analytics event to tell LaunchDarkly about the context.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool Identify(Context context, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>the new evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum time to wait for the new flag values</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><p>true if new flag values were obtained</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This is equivalent to <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_">IdentifyAsync(Context)</a>, but as a synchronous method.
+</p>
+<p>
+If the SDK is online, <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_">Identify(Context, TimeSpan)</a> waits to receive feature flag values for the new context from
+LaunchDarkly. If it receives the new flag values before <code>maxWaitTime</code> has elapsed, it returns
+<a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>. If the timeout elapses, it returns <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> (although the SDK might
+still receive the flag values later). If we do not need to request flags from LaunchDarkly because we are
+in offline mode, it returns <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>.
+</p>
+<p>
+If you do not want to wait, you can either set <code>maxWaitTime</code> to zero or call <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_">IdentifyAsync(Context)</a>.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_">IdentifyAsync</a>(<a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a>)</div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.IdentifyAsync(LaunchDarkly.Sdk.Context)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L861">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_IdentifyAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.IdentifyAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_IdentifyAsync_LaunchDarkly_Sdk_Context_" data-uid="LaunchDarkly.Sdk.Client.LdClient.IdentifyAsync(LaunchDarkly.Sdk.Context)">IdentifyAsync(Context)</h4>
+  <div class="markdown level1 summary"><p>Changes the current evaluation context, requests flags for that context from LaunchDarkly if we are online,
+and generates an analytics event to tell LaunchDarkly about the context.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task&lt;bool&gt; IdentifyAsync(Context context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>the new evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a>&gt;</td>
+        <td><p>a task that yields true if new flag values were obtained</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_IdentifyAsync_LaunchDarkly_Sdk_Context__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This is equivalent to <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_">Identify(Context, TimeSpan)</a>, but as an asynchronous method.
+</p>
+<p>
+If the SDK is online, the returned task is completed once the SDK has received feature flag values for the
+new user from LaunchDarkly, or received an unrecoverable error; it yields <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a> for success
+or <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> for an error. If the SDK is offline, the returned task is completed immediately
+and yields <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_IdentifyAsync_LaunchDarkly_Sdk_Context__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_Identify_LaunchDarkly_Sdk_Context_System_TimeSpan_">Identify</a>(<a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a>, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a>)</div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Init(LaunchDarkly.Sdk.Client.Configuration%2CLaunchDarkly.Sdk.Context%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L498">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Init_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init(LaunchDarkly.Sdk.Client.Configuration,LaunchDarkly.Sdk.Context,System.TimeSpan)">Init(Configuration, Context, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Creates and returns a new LdClient singleton instance, then starts the workflow for
+fetching Feature Flags.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static LdClient Init(Configuration config, Context initialContext, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Configuration.html">Configuration</a></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>the client configuration</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">initialContext</span></td>
+        <td><p>the initial evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum length of time to wait for the client to initialize;
+if this time elapses, the method will not throw an exception but will return the client in
+an uninitialized state</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a></td>
+        <td><p>the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The constructor will return the <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance once the first response from
+the LaunchDarkly service is returned, or immediately if offline, or when the the specified
+wait time elapses.  If the max wait time elapses, the returned instance will have
+an <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Initialized">Initialized</a> property of <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, but the instance will continue
+trying to get fresh feature flags.
+</p>
+<p>
+If you do not need to specify configuration options other than the mobile key, you can use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(string, AutoEnvAttributes, Context, TimeSpan)</a>.
+</p>
+<p>
+If you would rather an asynchronous version of this method, use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">InitAsync(Configuration, Context, TimeSpan)</a>.
+</p>
+<p>
+You must use one of these static factory methods to instantiate the single instance of LdClient
+for the lifetime of your application.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_System_TimeSpan_">Init(Configuration, User, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan_">Init(string, AutoEnvAttributes, User, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_">InitAsync(string, AutoEnvAttributes, Context)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Init(LaunchDarkly.Sdk.Client.Configuration%2CLaunchDarkly.Sdk.User%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L528">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Init_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init(LaunchDarkly.Sdk.Client.Configuration,LaunchDarkly.Sdk.User,System.TimeSpan)">Init(Configuration, User, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Creates and returns a new LdClient singleton instance, then starts the workflow for
+fetching Feature Flags.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;User has been superseded by Context, use Init(Configuration, Context, TimeSpan) instead.&quot;)]
+public static LdClient Init(Configuration config, User initialUser, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Configuration.html">Configuration</a></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>the client configuration</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.User.html">User</a></td>
+        <td><span class="parametername">initialUser</span></td>
+        <td><p>the initial user attributes</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum length of time to wait for the client to initialize;
+if this time elapses, the method will not throw an exception but will return the client in
+an uninitialized state</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a></td>
+        <td><p>the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>This is equivalent to <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a>, but using the
+<a class="xref" href="LaunchDarkly.Sdk.User.html">User</a> type instead of <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Context">Context</a>.</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_System_TimeSpan__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan_">Init(string, AutoEnvAttributes, User, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_">InitAsync(Configuration, User)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Init(System.String%2CLaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes%2CLaunchDarkly.Sdk.Context%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L318">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Init_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init(System.String,LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes,LaunchDarkly.Sdk.Context,System.TimeSpan)">Init(string, AutoEnvAttributes, Context, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static LdClient Init(string mobileKey, ConfigurationBuilder.AutoEnvAttributes autoEnvAttributes, Context initialContext, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">mobileKey</span></td>
+        <td><p>the mobile key given to you by LaunchDarkly</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html">ConfigurationBuilder</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes.html">AutoEnvAttributes</a></td>
+        <td><span class="parametername">autoEnvAttributes</span></td>
+        <td><p>Enable / disable Auto Environment Attributes functionality.  When enabled,
+the SDK will automatically provide data about the environment where the application is running.
+This data makes it simpler to target your mobile customers based on application name or version, or on
+device characteristics including manufacturer, model, operating system, locale, and so on. We recommend
+enabling this when you configure the SDK.  See
+<a href="https://docs.launchdarkly.com/sdk/features/environment-attributes">our documentation</a> for
+more details.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">initialContext</span></td>
+        <td><p>the initial evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum length of time to wait for the client to initialize</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a></td>
+        <td><p>the singleton <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The constructor will return the <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance once the first response from
+the LaunchDarkly service is returned, or immediately if offline, or when the the specified
+wait time elapses.  If the max wait time elapses, the returned instance will have
+an <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Initialized">Initialized</a> property of <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, but the instance will continue
+trying to get fresh feature flags.
+</p>
+<p>
+To specify additional configuration options rather than just the mobile key, use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a>.
+</p>
+<p>
+If you would rather an asynchronous version of this method, use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_">InitAsync(string, AutoEnvAttributes, Context, TimeSpan)</a>.
+</p>
+<p>
+You must use one of these static factory methods to instantiate the single instance of LdClient
+for the lifetime of your application.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan_">Init(string, AutoEnvAttributes, User, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_">InitAsync(string, AutoEnvAttributes, Context)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Init(System.String%2CLaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes%2CLaunchDarkly.Sdk.User%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L349">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Init_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Init(System.String,LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes,LaunchDarkly.Sdk.User,System.TimeSpan)">Init(string, AutoEnvAttributes, User, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;User has been superseded by Context, use Init(string, ConfigurationBuilder.AutoEnvAttributes, Context, TimeSpan) instead.&quot;)]
+public static LdClient Init(string mobileKey, ConfigurationBuilder.AutoEnvAttributes autoEnvAttributes, User initialUser, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">mobileKey</span></td>
+        <td><p>the mobile key given to you by LaunchDarkly</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html">ConfigurationBuilder</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes.html">AutoEnvAttributes</a></td>
+        <td><span class="parametername">autoEnvAttributes</span></td>
+        <td><p>Enable / disable Auto Environment Attributes functionality.  When enabled,
+the SDK will automatically provide data about the environment where the application is running.
+This data makes it simpler to target your mobile customers based on application name or version, or on
+device characteristics including manufacturer, model, operating system, locale, and so on. We recommend
+enabling this when you configure the SDK.  See
+<a href="https://docs.launchdarkly.com/sdk/features/environment-attributes">our documentation</a> for
+more details.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.User.html">User</a></td>
+        <td><span class="parametername">initialUser</span></td>
+        <td><p>the initial user attributes; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum length of time to wait for the client to initialize</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a></td>
+        <td><p>the singleton <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>This is equivalent to
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(string, AutoEnvAttributes, Context, TimeSpan)</a>, but using the
+<a class="xref" href="LaunchDarkly.Sdk.User.html">User</a> type instead of <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Context">Context</a>.</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_System_TimeSpan_">Init(Configuration, User, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_System_TimeSpan_">Init(string, AutoEnvAttributes, User, TimeSpan)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_">InitAsync(string, AutoEnvAttributes, Context)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.InitAsync(LaunchDarkly.Sdk.Client.Configuration%2CLaunchDarkly.Sdk.Context)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L558">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync(LaunchDarkly.Sdk.Client.Configuration,LaunchDarkly.Sdk.Context)">InitAsync(Configuration, Context)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags
+asynchronously.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;Initializing the LDClient without a timeout is no longer permitted to help prevent consumers from blocking their application execution by mistake when connectivity is poor.  Please use InitAsync(Configuration, Context, TimeSpan) and specify a max wait time.&quot;)]
+public static Task&lt;LdClient&gt; InitAsync(Configuration config, Context initialContext)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Configuration.html">Configuration</a></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>the client configuration</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">initialContext</span></td>
+        <td><p>the initial evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a>&gt;</td>
+        <td><p>a Task that resolves to the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The returned task will yield the <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance once the first response from
+the LaunchDarkly service is returned (or immediately if it is in offline mode).
+</p>
+<p>
+If you would rather this happen synchronously, use <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a>.
+If you do not need to specify configuration options other than the mobile key, you can use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_">InitAsync(string, AutoEnvAttributes, Context)</a>.
+</p>
+<p>
+You must use one of these static factory methods to instantiate the single instance of LdClient
+for the lifetime of your application.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_">InitAsync(Configuration, User)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_">InitAsync(string, AutoEnvAttributes, Context)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.InitAsync(LaunchDarkly.Sdk.Client.Configuration%2CLaunchDarkly.Sdk.Context%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L593">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync(LaunchDarkly.Sdk.Client.Configuration,LaunchDarkly.Sdk.Context,System.TimeSpan)">InitAsync(Configuration, Context, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags
+asynchronously.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;LdClient&gt; InitAsync(Configuration config, Context initialContext, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Configuration.html">Configuration</a></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>the client configuration</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">initialContext</span></td>
+        <td><p>the initial evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum length of time to wait for the client to initialize</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a>&gt;</td>
+        <td><p>a Task that resolves to the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The returned task will yield the <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance once the first response from
+the LaunchDarkly service is returned, or immediately if offline, or when the the specified
+wait time elapses.  If the max wait time elapses, the returned instance will have
+an <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Initialized">Initialized</a> property of <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, and the instance will continue
+trying to get fresh feature flags.
+</p>
+<p>
+If you would rather this happen synchronously, use <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a></p>
+<p>
+You must use one of these static factory methods to instantiate the single instance of LdClient
+for the lifetime of your application.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.InitAsync(LaunchDarkly.Sdk.Client.Configuration%2CLaunchDarkly.Sdk.User)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L614">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync(LaunchDarkly.Sdk.Client.Configuration,LaunchDarkly.Sdk.User)">InitAsync(Configuration, User)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags
+asynchronously.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;User has been superseded by Context, use InitAsync(Configuration, Context) instead.&quot;)]
+public static Task&lt;LdClient&gt; InitAsync(Configuration config, User initialUser)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Configuration.html">Configuration</a></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>the client configuration</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.User.html">User</a></td>
+        <td><span class="parametername">initialUser</span></td>
+        <td><p>the initial user attributes</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a>&gt;</td>
+        <td><p>a Task that resolves to the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>This is equivalent to <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_">InitAsync(Configuration, Context)</a>, but using the
+<a class="xref" href="LaunchDarkly.Sdk.User.html">User</a> type instead of <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Context">Context</a>.</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_">InitAsync(Configuration, Context)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_">InitAsync(string, AutoEnvAttributes, User)</a></div>
+      <div><a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_User_System_TimeSpan_">Init(Configuration, User, TimeSpan)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.InitAsync(System.String%2CLaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes%2CLaunchDarkly.Sdk.Context)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L387">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync(System.String,LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes,LaunchDarkly.Sdk.Context)">InitAsync(string, AutoEnvAttributes, Context)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags
+asynchronously.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;Initializing the LDClient without a timeout is no longer permitted to help prevent consumers from blocking their application execution by mistake when connectivity is poor.  Please use InitAsync(string, ConfigurationBuilder.AutoEnvAttributes, Context, TimeSpan) and specify a max wait time.&quot;)]
+public static Task&lt;LdClient&gt; InitAsync(string mobileKey, ConfigurationBuilder.AutoEnvAttributes autoEnvAttributes, Context initialContext)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">mobileKey</span></td>
+        <td><p>the mobile key given to you by LaunchDarkly</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html">ConfigurationBuilder</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes.html">AutoEnvAttributes</a></td>
+        <td><span class="parametername">autoEnvAttributes</span></td>
+        <td><p>Enable / disable Auto Environment Attributes functionality.  When enabled,
+the SDK will automatically provide data about the environment where the application is running.
+This data makes it simpler to target your mobile customers based on application name or version, or on
+device characteristics including manufacturer, model, operating system, locale, and so on. We recommend
+enabling this when you configure the SDK.  See
+<a href="https://docs.launchdarkly.com/sdk/features/environment-attributes">our documentation</a> for
+more details.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">initialContext</span></td>
+        <td><p>the initial evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a>&gt;</td>
+        <td><p>a Task that resolves to the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The returned task will yield the <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance once the first response from
+the LaunchDarkly service is returned or immediately if it is offline.
+</p>
+<p>
+To specify additional configuration options rather than just the mobile key, you can use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a> or <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_">InitAsync(Configuration, Context)</a>.
+</p>
+<p>
+If you would rather a synchronous version of this method, use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(string, AutoEnvAttributes, Context, TimeSpan)</a>.
+</p>
+<p>
+You must use one of these static factory methods to instantiate the single instance of LdClient
+for the lifetime of your application.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.InitAsync(System.String%2CLaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes%2CLaunchDarkly.Sdk.Context%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L432">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync(System.String,LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes,LaunchDarkly.Sdk.Context,System.TimeSpan)">InitAsync(string, AutoEnvAttributes, Context, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags
+asynchronously.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;LdClient&gt; InitAsync(string mobileKey, ConfigurationBuilder.AutoEnvAttributes autoEnvAttributes, Context initialContext, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">mobileKey</span></td>
+        <td><p>the mobile key given to you by LaunchDarkly</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html">ConfigurationBuilder</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes.html">AutoEnvAttributes</a></td>
+        <td><span class="parametername">autoEnvAttributes</span></td>
+        <td><p>Enable / disable Auto Environment Attributes functionality.  When enabled,
+the SDK will automatically provide data about the environment where the application is running.
+This data makes it simpler to target your mobile customers based on application name or version, or on
+device characteristics including manufacturer, model, operating system, locale, and so on. We recommend
+enabling this when you configure the SDK.  See
+<a href="https://docs.launchdarkly.com/sdk/features/environment-attributes">our documentation</a> for
+more details.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">initialContext</span></td>
+        <td><p>the initial evaluation context; see <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> for more
+about setting the context and optionally requesting a unique key for it</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum length of time to wait for the client to initialize</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a>&gt;</td>
+        <td><p>a Task that resolves to the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The returned task will yield the <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> instance once the first response from
+the LaunchDarkly service is returned, or immediately if offline, or when the the specified
+wait time elapses.  If the max wait time elapses, the returned instance will have
+an <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Initialized">Initialized</a> property of <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, and the instance will continue
+trying to get fresh feature flags.
+</p>
+<p>
+If you would rather this happen synchronously, use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(string, AutoEnvAttributes, Context, TimeSpan)</a>. To
+specify additional configuration options rather than just the mobile key, you can use
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Init_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_System_TimeSpan_">Init(Configuration, Context, TimeSpan)</a> or <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_LaunchDarkly_Sdk_Client_Configuration_LaunchDarkly_Sdk_Context_">InitAsync(Configuration, Context)</a>.
+</p>
+<p>
+You must use one of these static factory methods to instantiate the single instance of LdClient
+for the lifetime of your application.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.InitAsync(System.String%2CLaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes%2CLaunchDarkly.Sdk.User)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L458">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User_" data-uid="LaunchDarkly.Sdk.Client.LdClient.InitAsync(System.String,LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes,LaunchDarkly.Sdk.User)">InitAsync(string, AutoEnvAttributes, User)</h4>
+  <div class="markdown level1 summary"><p>Creates a new <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a> singleton instance and attempts to initialize feature flags
+asynchronously.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;User has been superseded by Context, use Init(string, ConfigurationBuilder.AutoEnvAttributes, Context) instead.&quot;)]
+public static Task&lt;LdClient&gt; InitAsync(string mobileKey, ConfigurationBuilder.AutoEnvAttributes autoEnvAttributes, User initialUser)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">mobileKey</span></td>
+        <td><p>the mobile key given to you by LaunchDarkly</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html">ConfigurationBuilder</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.AutoEnvAttributes.html">AutoEnvAttributes</a></td>
+        <td><span class="parametername">autoEnvAttributes</span></td>
+        <td><p>Enable / disable Auto Environment Attributes functionality.  When enabled,
+the SDK will automatically provide data about the environment where the application is running.
+This data makes it simpler to target your mobile customers based on application name or version, or on
+device characteristics including manufacturer, model, operating system, locale, and so on. We recommend
+enabling this when you configure the SDK.  See
+<a href="https://docs.launchdarkly.com/sdk/features/environment-attributes">our documentation</a> for
+more details.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.User.html">User</a></td>
+        <td><span class="parametername">initialUser</span></td>
+        <td><p>the initial user attributes</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html">LdClient</a>&gt;</td>
+        <td><p>a Task that resolves to the singleton LdClient instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_User__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>This is equivalent to
+<a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_InitAsync_System_String_LaunchDarkly_Sdk_Client_ConfigurationBuilder_AutoEnvAttributes_LaunchDarkly_Sdk_Context_">InitAsync(string, AutoEnvAttributes, Context)</a>, but using the
+<a class="xref" href="LaunchDarkly.Sdk.User.html">User</a> type instead of <a class="xref" href="LaunchDarkly.Sdk.Client.LdClient.html#LaunchDarkly_Sdk_Client_LdClient_Context">Context</a>.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_IntVariation_System_String_System_Int32_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.IntVariation(System.String%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L703">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_IntVariation_" data-uid="LaunchDarkly.Sdk.Client.LdClient.IntVariation*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_IntVariation_System_String_System_Int32_" data-uid="LaunchDarkly.Sdk.Client.LdClient.IntVariation(System.String,System.Int32)">IntVariation(string, int)</h4>
+  <div class="markdown level1 summary"><p>Returns the integer value of a feature flag for a given flag key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int IntVariation(string key, int defaultValue = 0)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><p>the variation for the selected user, or <code>defaultValue</code> if the flag is
+disabled in the LaunchDarkly control panel</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_IntVariationDetail_System_String_System_Int32_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.IntVariationDetail(System.String%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L710">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_IntVariationDetail_" data-uid="LaunchDarkly.Sdk.Client.LdClient.IntVariationDetail*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_IntVariationDetail_System_String_System_Int32_" data-uid="LaunchDarkly.Sdk.Client.LdClient.IntVariationDetail(System.String,System.Int32)">IntVariationDetail(string, int)</h4>
+  <div class="markdown level1 summary"><p>Returns the integer value of a feature flag for a given flag key, in an object that also
+describes the way the value was determined.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public EvaluationDetail&lt;int&gt; IntVariationDetail(string key, int defaultValue = 0)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html">EvaluationDetail</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>&gt;</td>
+        <td><p>an <code>EvaluationDetail</code> object</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_IntVariationDetail_System_String_System_Int32__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The <a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html#LaunchDarkly_Sdk_EvaluationDetail_1_Reason">Reason</a> property in the result will also be included in analytics
+events, if you are capturing detailed event data for this flag.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_JsonVariation_System_String_LaunchDarkly_Sdk_LdValue_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.JsonVariation(System.String%2CLaunchDarkly.Sdk.LdValue)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L717">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_JsonVariation_" data-uid="LaunchDarkly.Sdk.Client.LdClient.JsonVariation*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_JsonVariation_System_String_LaunchDarkly_Sdk_LdValue_" data-uid="LaunchDarkly.Sdk.Client.LdClient.JsonVariation(System.String,LaunchDarkly.Sdk.LdValue)">JsonVariation(string, LdValue)</h4>
+  <div class="markdown level1 summary"><p>Returns the JSON value of a feature flag for a given flag key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public LdValue JsonVariation(string key, LdValue defaultValue)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a></td>
+        <td><p>the variation for the selected user, or <code>defaultValue</code> if the flag is
+disabled in the LaunchDarkly control panel</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_JsonVariationDetail_System_String_LaunchDarkly_Sdk_LdValue_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.JsonVariationDetail(System.String%2CLaunchDarkly.Sdk.LdValue)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L723">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_JsonVariationDetail_" data-uid="LaunchDarkly.Sdk.Client.LdClient.JsonVariationDetail*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_JsonVariationDetail_System_String_LaunchDarkly_Sdk_LdValue_" data-uid="LaunchDarkly.Sdk.Client.LdClient.JsonVariationDetail(System.String,LaunchDarkly.Sdk.LdValue)">JsonVariationDetail(string, LdValue)</h4>
+  <div class="markdown level1 summary"><p>Returns the JSON value of a feature flag for a given flag key, in an object that also
+describes the way the value was determined.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public EvaluationDetail&lt;LdValue&gt; JsonVariationDetail(string key, LdValue defaultValue)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html">EvaluationDetail</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a>&gt;</td>
+        <td><p>an <code>EvaluationDetail</code> object</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_JsonVariationDetail_System_String_LaunchDarkly_Sdk_LdValue__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The <a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html#LaunchDarkly_Sdk_EvaluationDetail_1_Reason">Reason</a> property in the result will also be included in analytics
+events, if you are capturing detailed event data for this flag.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_SetOffline_System_Boolean_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.SetOffline(System.Boolean%2CSystem.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L634">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_SetOffline_" data-uid="LaunchDarkly.Sdk.Client.LdClient.SetOffline*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_SetOffline_System_Boolean_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Client.LdClient.SetOffline(System.Boolean,System.TimeSpan)">SetOffline(bool, TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Sets whether the SDK should be always offline.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool SetOffline(bool value, TimeSpan maxWaitTime)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">value</span></td>
+        <td><p>true if the client should be always offline</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">maxWaitTime</span></td>
+        <td><p>the maximum length of time to wait for a connection</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><p>true if a new connection was successfully made</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_SetOffline_System_Boolean_System_TimeSpan__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This is equivalent to <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_SetOfflineAsync_System_Boolean_">SetOfflineAsync(bool)</a>, but as a synchronous method.
+</p>
+<p>
+If you set the property to <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>, any existing connection will be dropped, and the
+method immediately returns <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>.
+</p>
+<p>
+If you set it to <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> when it was previously <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>, but no connection can
+be made because the network is not available, the method immediately returns <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, but the
+SDK will attempt to connect later if the network becomes available.
+</p>
+<p>
+If you set it to <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> when it was previously <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>, and the network is
+available, the SDK will attempt to connect to LaunchDarkly. If the connection succeeds within the interval
+<code>maxWaitTime</code>, the method returns <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>. If the connection permanently fails (e.g. if
+the mobile key is invalid), the method returns <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>. If the connection attempt is still in
+progress after <code>maxWaitTime</code> elapses, the method returns <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, but the connection
+might succeed later.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_SetOfflineAsync_System_Boolean_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.SetOfflineAsync(System.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L640">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_SetOfflineAsync_" data-uid="LaunchDarkly.Sdk.Client.LdClient.SetOfflineAsync*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_SetOfflineAsync_System_Boolean_" data-uid="LaunchDarkly.Sdk.Client.LdClient.SetOfflineAsync(System.Boolean)">SetOfflineAsync(bool)</h4>
+  <div class="markdown level1 summary"><p>Sets whether the SDK should be always offline.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task SetOfflineAsync(bool value)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">value</span></td>
+        <td><p>true if the client should be always offline</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></td>
+        <td><p>a task that yields true if a new connection was successfully made</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_SetOfflineAsync_System_Boolean__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This is equivalent to <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html#LaunchDarkly_Sdk_Client_Interfaces_ILdClient_SetOffline_System_Boolean_System_TimeSpan_">SetOffline(bool, TimeSpan)</a>, but as an asynchronous method.
+</p>
+<p>
+If you set the property to <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>, any existing connection will be dropped, and the
+task immediately yields <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>.
+</p>
+<p>
+If you set it to <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> when it was previously <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>, but no connection can
+be made because the network is not available, the task immediately yields <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>, but the
+SDK will attempt to connect later if the network becomes available.
+</p>
+<p>
+If you set it to <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a> when it was previously <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>, and the network is
+available, the SDK will attempt to connect to LaunchDarkly. If and when the connection succeeds, the task
+yields <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">true</a>. If and when the connection permanently fails (e.g. if the mobile key is
+invalid), the task yields <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool">false</a>.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_StringVariation_System_String_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.StringVariation(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L661">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_StringVariation_" data-uid="LaunchDarkly.Sdk.Client.LdClient.StringVariation*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_StringVariation_System_String_System_String_" data-uid="LaunchDarkly.Sdk.Client.LdClient.StringVariation(System.String,System.String)">StringVariation(string, string)</h4>
+  <div class="markdown level1 summary"><p>Returns the string value of a feature flag for a given flag key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public string StringVariation(string key, string defaultValue)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><p>the variation for the selected user, or <code>defaultValue</code> if the flag is
+disabled in the LaunchDarkly control panel</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_StringVariationDetail_System_String_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.StringVariationDetail(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L668">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_StringVariationDetail_" data-uid="LaunchDarkly.Sdk.Client.LdClient.StringVariationDetail*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_StringVariationDetail_System_String_System_String_" data-uid="LaunchDarkly.Sdk.Client.LdClient.StringVariationDetail(System.String,System.String)">StringVariationDetail(string, string)</h4>
+  <div class="markdown level1 summary"><p>Returns the string value of a feature flag for a given flag key, in an object that also
+describes the way the value was determined.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public EvaluationDetail&lt;string&gt; StringVariationDetail(string key, string defaultValue)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">key</span></td>
+        <td><p>the unique feature key for the feature flag</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">defaultValue</span></td>
+        <td><p>the default value of the flag</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html">EvaluationDetail</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td><p>an <code>EvaluationDetail</code> object</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_LdClient_StringVariationDetail_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The <a class="xref" href="LaunchDarkly.Sdk.EvaluationDetail-1.html#LaunchDarkly_Sdk_EvaluationDetail_1_Reason">Reason</a> property in the result will also be included in analytics
+events, if you are capturing detailed event data for this flag.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Track_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Track(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L839">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Track_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Track*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Track_System_String_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Track(System.String)">Track(string)</h4>
+  <div class="markdown level1 summary"><p>Tracks that current user performed an event for the given event name.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Track(string eventName)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">eventName</span></td>
+        <td><p>the name of the event</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Track_System_String_LaunchDarkly_Sdk_LdValue_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Track(System.String%2CLaunchDarkly.Sdk.LdValue)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L827">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Track_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Track*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Track_System_String_LaunchDarkly_Sdk_LdValue_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Track(System.String,LaunchDarkly.Sdk.LdValue)">Track(string, LdValue)</h4>
+  <div class="markdown level1 summary"><p>Tracks that the current user performed an event for the given event name, with additional JSON data.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Track(string eventName, LdValue data)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">eventName</span></td>
+        <td><p>the name of the event</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>a JSON value containing additional data associated with the event</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient_Track_System_String_LaunchDarkly_Sdk_LdValue_System_Double_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient.Track(System.String%2CLaunchDarkly.Sdk.LdValue%2CSystem.Double)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L814">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_LdClient_Track_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Track*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_LdClient_Track_System_String_LaunchDarkly_Sdk_LdValue_System_Double_" data-uid="LaunchDarkly.Sdk.Client.LdClient.Track(System.String,LaunchDarkly.Sdk.LdValue,System.Double)">Track(string, LdValue, double)</h4>
+  <div class="markdown level1 summary"><p>Tracks that the current user performed an event for the given event name, and associates it with a
+numeric metric value.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Track(string eventName, LdValue data, double metricValue)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">eventName</span></td>
+        <td><p>the name of the event</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>a JSON value containing additional data associated with the event; pass
+<a class="xref" href="LaunchDarkly.Sdk.LdValue.html#LaunchDarkly_Sdk_LdValue_Null">Null</a> if you do not need this value</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td><span class="parametername">metricValue</span></td>
+        <td><p>this value is used by the LaunchDarkly experimentation feature in
+numeric custom metrics, and will also be returned as part of the custom event for Data Export</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Client.Interfaces.ILdClient.html">ILdClient</a>
+  </div>
+  <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.idisposable">IDisposable</a>
+  </div>
+  <h3 id="extensionmethods">Extension Methods</h3>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Client.ILdClientExtensions.html#LaunchDarkly_Sdk_Client_ILdClientExtensions_EnumVariationDetail__1_LaunchDarkly_Sdk_Client_Interfaces_ILdClient_System_String___0_">ILdClientExtensions.EnumVariationDetail&lt;T&gt;(ILdClient, string, T)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Client.ILdClientExtensions.html#LaunchDarkly_Sdk_Client_ILdClientExtensions_EnumVariation__1_LaunchDarkly_Sdk_Client_Interfaces_ILdClient_System_String___0_">ILdClientExtensions.EnumVariation&lt;T&gt;(ILdClient, string, T)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Client.ILdClientExtensions.html#LaunchDarkly_Sdk_Client_ILdClientExtensions_Identify_LaunchDarkly_Sdk_Client_Interfaces_ILdClient_LaunchDarkly_Sdk_User_System_TimeSpan_">ILdClientExtensions.Identify(ILdClient, User, TimeSpan)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Client.ILdClientExtensions.html#LaunchDarkly_Sdk_Client_ILdClientExtensions_IdentifyAsync_LaunchDarkly_Sdk_Client_Interfaces_ILdClient_LaunchDarkly_Sdk_User_">ILdClientExtensions.IdentifyAsync(ILdClient, User)</a>
+  </div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_LdClient.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.LdClient%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/LdClient.cs/#L42" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,531 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class Logs | LaunchDarkly Dotnet Client SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class Logs | LaunchDarkly Dotnet Client SDK ">
+    
+    <meta name="description" content="Factory methods for the basic logging implementations in this package.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly Dotnet Client SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Logging.Logs">
+
+
+
+  <h1 id="LaunchDarkly_Logging_Logs" data-uid="LaunchDarkly.Logging.Logs" class="text-break">Class Logs</h1>
+  <div class="markdown level0 summary"><p>Factory methods for the basic logging implementations in this package.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">Logs</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Logging.html">Logging</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.Logging.dll</h6>
+  <h5 id="LaunchDarkly_Logging_Logs_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class Logs</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Logging_Logs_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>See <a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a> for more about how <code>LaunchDarkly.Logging</code> works with
+different implementations of logging. The methods and properties in <code>Logs</code> provide
+easy access to basic behaviors like logging to the console or to a file, or capturing log
+output for testing; if you need to direct the log output to another logging framework that
+your application is using, you will use an <a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a> implementation
+specific to that framework instead.</p>
+</div>
+  <h3 id="properties">Properties
+</h3>
+
+
+  <a id="LaunchDarkly_Logging_Logs_Default_" data-uid="LaunchDarkly.Logging.Logs.Default*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_Default" data-uid="LaunchDarkly.Logging.Logs.Default">Default</h4>
+  <div class="markdown level1 summary"><p>A default implementation that writes to the standard error stream at <code>Info</code> level.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static ILogAdapter Default { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Logging_Logs_Default_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>This simply calls <code>ToConsole</code>, and then uses <a class="xref" href="LaunchDarkly.Logging.ILogAdapterExtensions.html#LaunchDarkly_Logging_ILogAdapterExtensions_Level_LaunchDarkly_Logging_ILogAdapter_LaunchDarkly_Logging_LogLevel_">Level(ILogAdapter, LogLevel)</a>
+to set the minimum level to <code>Info</code> (that is, it suppresses <code>Debug</code> logging).</p>
+</div>
+
+
+  <a id="LaunchDarkly_Logging_Logs_None_" data-uid="LaunchDarkly.Logging.Logs.None*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_None" data-uid="LaunchDarkly.Logging.Logs.None">None</h4>
+  <div class="markdown level1 summary"><p>A stub that generates no log output.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static ILogAdapter None { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <a id="LaunchDarkly_Logging_Logs_ToConsole_" data-uid="LaunchDarkly.Logging.Logs.ToConsole*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_ToConsole" data-uid="LaunchDarkly.Logging.Logs.ToConsole">ToConsole</h4>
+  <div class="markdown level1 summary"><p>A simple logging implementation that writes to the standard error stream.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static SimpleLogging ToConsole { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.SimpleLogging.html">SimpleLogging</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Logging_Logs_ToConsole_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+        This is equivalent to <code>Logs.ToWriter(Console.Error)</code>.
+        </p>
+<p>
+        By default, all logging is enabled including <code>Debug</code> level. To filter by level, use
+        <a class="xref" href="LaunchDarkly.Logging.ILogAdapterExtensions.html#LaunchDarkly_Logging_ILogAdapterExtensions_Level_LaunchDarkly_Logging_ILogAdapter_LaunchDarkly_Logging_LogLevel_">Level(ILogAdapter, LogLevel)</a>. You can also use
+        <a class="xref" href="LaunchDarkly.Logging.SimpleLogging.html">SimpleLogging</a> methods for additional configuration.
+        </p>
+</div>
+  <h3 id="methods">Methods
+</h3>
+
+
+  <a id="LaunchDarkly_Logging_Logs_Capture_" data-uid="LaunchDarkly.Logging.Logs.Capture*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_Capture" data-uid="LaunchDarkly.Logging.Logs.Capture">Capture()</h4>
+  <div class="markdown level1 summary"><p>A logging implementation that captures log messages in memory.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static LogCapture Capture()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.LogCapture.html">LogCapture</a></td>
+        <td><p>a <a class="xref" href="LaunchDarkly.Logging.LogCapture.html">LogCapture</a> instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <a id="LaunchDarkly_Logging_Logs_CoreLogging_" data-uid="LaunchDarkly.Logging.Logs.CoreLogging*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_CoreLogging_Microsoft_Extensions_Logging_ILoggerFactory_" data-uid="LaunchDarkly.Logging.Logs.CoreLogging(Microsoft.Extensions.Logging.ILoggerFactory)">CoreLogging(ILoggerFactory)</h4>
+  <div class="markdown level1 summary"><p>A logging implementation that delegates to the .NET Core logging framework.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static ILogAdapter CoreLogging(ILoggerFactory loggerFactory)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.iloggerfactory">ILoggerFactory</a></td>
+        <td><span class="parametername">loggerFactory</span></td>
+        <td><p>the factory object for .NET Core logging</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a></td>
+        <td><p>a logging adapter</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Logging_Logs_CoreLogging_Microsoft_Extensions_Logging_ILoggerFactory__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+        This method is only available when your target framework is .NET Core or .NET 6.0+. It causes
+        the <code>LaunchDarkly.Logging</code> APIs to delegate to the <code>Microsoft.Extensions.Logging</code>
+        framework. The <code>ILoggingFactory</code> is the main configuration object for
+        <code>Microsoft.Extensions.Logging</code>; application code can construct it programmatically,
+        or can obtain it by dependency injection. For more information, see
+        <a href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-3.1">Logging
+        in .NET Core and ASP.NET Core</a>.
+        </p>
+<p>
+        If you want to use <code>Microsoft.Extensions.Logging</code> on a different platform, such as
+        .NET Framework or a mobile OS, use the separate package
+        <a href="https://github.com/launchdarkly/dotnet-logging-adapter-ms">LaunchDarkly.Logging.Microsoft</a>.
+        The adapter is not built into <code>LaunchDarkly.Logging</code> on those platforms, to avoid
+        bringing in the <code>Microsoft.Extensions.Logging</code> package as a dependency that may not
+        be wanted.
+        </p>
+<p>
+        The .NET Core logging framework has its own mechanisms for filtering log output
+        by level or other criteria. If you add a level filter with
+        <a class="xref" href="LaunchDarkly.Logging.ILogAdapterExtensions.html#LaunchDarkly_Logging_ILogAdapterExtensions_Level_LaunchDarkly_Logging_ILogAdapter_LaunchDarkly_Logging_LogLevel_">Level(ILogAdapter, LogLevel)</a>, it will filter
+        out messages below that level before they reach the .NET Core logger.
+        </p>
+</div>
+
+
+  <a id="LaunchDarkly_Logging_Logs_ToMethod_" data-uid="LaunchDarkly.Logging.Logs.ToMethod*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_ToMethod_System_Action_System_String__" data-uid="LaunchDarkly.Logging.Logs.ToMethod(System.Action{System.String})">ToMethod(Action&lt;string&gt;)</h4>
+  <div class="markdown level1 summary"><p>A simple logging implementation that calls a method or lambda that you specify for
+each line of output.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static SimpleLogging ToMethod(Action&lt;string&gt; writeLineMethod)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td><span class="parametername">writeLineMethod</span></td>
+        <td><p>a method or lambda that takes a line of text as a
+parameter</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.SimpleLogging.html">SimpleLogging</a></td>
+        <td><p>a configurable logging adapter</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Logging_Logs_ToMethod_System_Action_System_String___remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+        Each line is preformatted to include the logger name, the log level, and a timestamp
+        (unless you disable timestamps with <a class="xref" href="LaunchDarkly.Logging.SimpleLogging.html#LaunchDarkly_Logging_SimpleLogging_DateFormat_System_String_">DateFormat(string)</a>),
+        in the same format used by <a class="xref" href="LaunchDarkly.Logging.Logs.html#LaunchDarkly_Logging_Logs_ToConsole">ToConsole</a>.
+        </p>
+<p>
+        By default, all logging is enabled including <code>Debug</code> level. To filter by level, use
+        <a class="xref" href="LaunchDarkly.Logging.ILogAdapterExtensions.html#LaunchDarkly_Logging_ILogAdapterExtensions_Level_LaunchDarkly_Logging_ILogAdapter_LaunchDarkly_Logging_LogLevel_">Level(ILogAdapter, LogLevel)</a>. You can also use
+        <a class="xref" href="LaunchDarkly.Logging.SimpleLogging.html">SimpleLogging</a> methods for additional configuration.
+        </p>
+</div>
+  <h5 id="LaunchDarkly_Logging_Logs_ToMethod_System_Action_System_String___examples">Examples</h5>
+  <p>// A silly example that just writes lines to the console, but with a &quot;HEY!&quot; prefix.
+var logAdapter = Logs.ToMethod(line =&gt;
+{
+Console.WriteLine(&quot;HEY! &quot; + line);
+});</p>
+
+
+
+  <a id="LaunchDarkly_Logging_Logs_ToMultiple_" data-uid="LaunchDarkly.Logging.Logs.ToMultiple*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_ToMultiple_LaunchDarkly_Logging_ILogAdapter___" data-uid="LaunchDarkly.Logging.Logs.ToMultiple(LaunchDarkly.Logging.ILogAdapter[])">ToMultiple(params ILogAdapter[])</h4>
+  <div class="markdown level1 summary"><p>A logging implementation that delegates to any number of destinations.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static ILogAdapter ToMultiple(params ILogAdapter[] logAdapters)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a>[]</td>
+        <td><span class="parametername">logAdapters</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a></td>
+        <td><p>an <a class="xref" href="LaunchDarkly.Logging.ILogAdapter.html">ILogAdapter</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Logging_Logs_ToMultiple_LaunchDarkly_Logging_ILogAdapter____examples">Examples</h5>
+  <p>// Send log output both to Console.Error and a file
+var fileWriter = new StreamWriter(&quot;output.log&quot;);
+var logAdapter = MultiLog.Adapter(
+SimpleLog.Adapter, // writes to Console.Error</p>
+
+
+
+  <a id="LaunchDarkly_Logging_Logs_ToWriter_" data-uid="LaunchDarkly.Logging.Logs.ToWriter*"></a>
+  <h4 id="LaunchDarkly_Logging_Logs_ToWriter_System_IO_TextWriter_" data-uid="LaunchDarkly.Logging.Logs.ToWriter(System.IO.TextWriter)">ToWriter(TextWriter)</h4>
+  <div class="markdown level1 summary"><p>A simple logging implementation that writes to any <code>TextWriter</code>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static SimpleLogging ToWriter(TextWriter stream)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.io.textwriter">TextWriter</a></td>
+        <td><span class="parametername">stream</span></td>
+        <td><p>the destination for output</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Logging.SimpleLogging.html">SimpleLogging</a></td>
+        <td><p>a configurable logging adapter</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Logging_Logs_ToWriter_System_IO_TextWriter__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+        This could be a built-in writer such as <code>Console.Out</code>, or a file.
+        </p>
+<p>
+        By default, all logging is enabled including <code>Debug</code> level. To filter by level, use
+        <a class="xref" href="LaunchDarkly.Logging.ILogAdapterExtensions.html#LaunchDarkly_Logging_ILogAdapterExtensions_Level_LaunchDarkly_Logging_ILogAdapter_LaunchDarkly_Logging_LogLevel_">Level(ILogAdapter, LogLevel)</a>. You can also use
+        <a class="xref" href="LaunchDarkly.Logging.SimpleLogging.html">SimpleLogging</a> methods for additional configuration.
+        </p>
+</div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

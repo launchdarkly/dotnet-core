@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Contributing to the LaunchDarkly Client-Side SDK for .NET | LaunchDarkly Dotnet Client SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Contributing to the LaunchDarkly Client-Side SDK for .NET | LaunchDarkly Dotnet Client SDK ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="LaunchDarkly Dotnet Client SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="contributing-to-the-launchdarkly-client-side-sdk-for-net">Contributing to the LaunchDarkly Client-Side SDK for .NET</h1>
+
+<p>LaunchDarkly has published an <a href="https://docs.launchdarkly.com/docs/sdk-contributors-guide">SDK contributor's guide</a> that provides a detailed explanation of how our SDKs work. See below for additional information on how to contribute to this SDK.</p>
+<h2 id="submitting-bug-reports-and-feature-requests">Submitting bug reports and feature requests</h2>
+<p>The LaunchDarkly SDK team monitors the <a href="https://github.com/launchdarkly/dotnet-core/issues">issue tracker</a> in the SDK repository. Bug reports and feature requests specific to this SDK should be filed in this issue tracker. The SDK team will respond to all newly filed issues within two business days.</p>
+<h2 id="submitting-pull-requests">Submitting pull requests</h2>
+<p>We encourage pull requests and other contributions from the community. Before submitting pull requests, ensure that all temporary or unintended code is removed. Don't worry about adding reviewers to the pull request; the LaunchDarkly SDK team will add themselves. The SDK team will acknowledge all pull requests within two business days.</p>
+<h2 id="build-instructions">Build instructions</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>The .NET Standard target requires only the .NET Core 2.1 SDK or higher. The iOS, Android, MacCatalys, and Windows targets require Net 7.0 or later.</p>
+<h3 id="building">Building</h3>
+<p>To build the SDK (for all target platforms) without running any tests:</p>
+<pre><code>dotnet workload restore src/LaunchDarkly.ClientSdk.csproj
+dotnet restore src/LaunchDarkly.ClientSdk.csproj
+dotnet build src/LaunchDarkly.ClientSdk.csproj
+</code></pre>
+<p>Currently this command can only be run on MacOS, because that is the only platform that allows building for all of the targets (.NET Standard, Android, and iOS).</p>
+<p>To build the SDK for only one of the supported platforms, add <code>/p:TargetFramework=X</code> where <code>X</code> is one of the items in the <code>&lt;TargetFrameworks&gt;</code> list of <code>LaunchDarkly.ClientSdk.csproj</code>: <code>netstandard2.0</code> for .NET Standard 2.0, <code>net7.0-android</code> for Android, etc.:</p>
+<pre><code>dotnet build /p:TargetFramework=net7.0-ios src/LaunchDarkly.ClientSdk.csproj
+</code></pre>
+<p>Note that the main project, <code>src/LaunchDarkly.ClientSdk</code>, contains source files that are built for all platforms (ending in just <code>.cs</code>, or <code>.shared.cs</code>), and also a smaller amount of code that is conditionally compiled for platform-specific functionality. The latter is all in the <code>PlatformSpecific</code> folder. We use <code>#ifdef</code> directives only for small sections that differ slightly between platform versions; otherwise the conditional compilation is done according to filename suffix (<code>.android.cs</code>, etc.) based on rules in the <code>.csproj</code> file.</p>
+<h3 id="testing">Testing</h3>
+<p>The .NET Standard unit tests cover all of the non-platform-specific functionality, as well as behavior specific to .NET Standard (e.g. caching flags in the filesystem). They can be run with only the basic Xamarin framework installed, via the <code>dotnet</code> tool:</p>
+<pre><code>dotnet build src/LaunchDarkly.ClientSdk.csproj
+dotnet test tests/LaunchDarkly.ClientSdk.Tests/LaunchDarkly.ClientSdk.Tests.csproj
+</code></pre>
+<p>To run the SDK contract test suite, in Linux or MacOS (see <a href="contract-tests/README.html"><code>contract-tests/README.md</code></a>):</p>
+<pre><code class="lang-bash">make contract-tests
+</code></pre>
+<p>The equivalent test suites for MAUI (Android or iOS) must be run in an Android or iOS emulator. The project <code>test/LaunchDarkly.ClientSdk.Device.Tests</code> consist of a test applications based on the <code>xunit.runner.devices</code> tool, which show the test results visually in the emulator and also write the results to the emulator's system log. The actual unit test code is just the same tests from the main <code>tests/LaunchDarkly.ClientSdk.Tests</code> project, but running them in this way exercises the mobile-specific behavior for those platforms (e.g. caching flags in user preferences).</p>
+<p>You can run the mobile test projects from Visual Studio (the iOS tests require MacOS).</p>
+<p>Note that the mobile unit tests currently do not cover background-mode behavior or connectivity detection.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/CONTRIBUTING.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

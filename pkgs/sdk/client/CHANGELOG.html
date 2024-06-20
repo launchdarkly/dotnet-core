@@ -1,0 +1,370 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Change log | LaunchDarkly Dotnet Client SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Change log | LaunchDarkly Dotnet Client SDK ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="LaunchDarkly Dotnet Client SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="change-log">Change log</h1>
+
+<p>All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
+This project adheres to <a href="http://semver.org">Semantic Versioning</a>.</p>
+<h2 id="521-2024-06-05"><a href="https://github.com/launchdarkly/dotnet-client-sdk/compare/5.2.0...5.2.1">5.2.1</a> (2024-06-05)</h2>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li>fixes issue where first flag listener callback was not triggered… (<a href="https://github.com/launchdarkly/dotnet-client-sdk/issues/97">#97</a>) (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/6bf8ec160ee29984928bb7320ddd1f6f8580d7a9">6bf8ec1</a>)</li>
+</ul>
+<h2 id="520-2024-05-08"><a href="https://github.com/launchdarkly/dotnet-client-sdk/compare/5.1.0...5.2.0">5.2.0</a> (2024-05-08)</h2>
+<h3 id="features">Features</h3>
+<ul>
+<li>adds init async with timeout and deprecated non-timeout init functions (<a href="https://github.com/launchdarkly/dotnet-client-sdk/issues/95">#95</a>) (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/41e70f2c49e864da13648bd85c2c427111e502cc">41e70f2</a>)</li>
+</ul>
+<h2 id="510-2024-03-14"><a href="https://github.com/launchdarkly/dotnet-client-sdk/compare/5.0.0...5.1.0">5.1.0</a> (2024-03-14)</h2>
+<h3 id="features-1">Features</h3>
+<ul>
+<li>Always inline contexts for feature events (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/c658beee27cd871c8ad91942ac5a04b29b8338bd">c658bee</a>)</li>
+<li>Redact anonymous attributes within feature events (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/c658beee27cd871c8ad91942ac5a04b29b8338bd">c658bee</a>)</li>
+</ul>
+<h3 id="bug-fixes-1">Bug Fixes</h3>
+<ul>
+<li>Bump LaunchDarkly.InternalSdk to 3.4.0 (<a href="https://github.com/launchdarkly/dotnet-client-sdk/issues/91">#91</a>) (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/c658beee27cd871c8ad91942ac5a04b29b8338bd">c658bee</a>)</li>
+</ul>
+<h2 id="500-2024-02-13"><a href="https://github.com/launchdarkly/dotnet-client-sdk/compare/4.0.0...5.0.0">5.0.0</a> (2024-02-13)</h2>
+<h3 id="features-2">Features</h3>
+<ul>
+<li>adds MAUI support (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/d01a865aa83c6cc699c3d2ff528ce256f169ecdc">d01a865</a>)</li>
+<li>adds MAUI support (<a href="https://github.com/launchdarkly/dotnet-client-sdk/issues/66">#66</a>) (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/112c2fb7d54c31d88c3a1ffdd9aec88911f149de">112c2fb</a>)</li>
+</ul>
+<h3 id="bug-fixes-2">Bug Fixes</h3>
+<ul>
+<li>updating deprecated AndroidClientHandler to AndroidMessageHandler (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/973b38ccd59a232bf47384b20d8d8bbda6017a6e">973b38c</a>)</li>
+<li>updating deprecated AndroidClientHandler to AndroidMessageHandler (<a href="https://github.com/launchdarkly/dotnet-client-sdk/issues/69">#69</a>) (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/3dc9dbaac918555691281322ea15ea94bbe29e5a">3dc9dba</a>)</li>
+</ul>
+<h3 id="miscellaneous-chores">Miscellaneous Chores</h3>
+<ul>
+<li>release 5.0.0 (<a href="https://github.com/launchdarkly/dotnet-client-sdk/issues/83">#83</a>) (<a href="https://github.com/launchdarkly/dotnet-client-sdk/commit/de859bc63555488a6361df3a3e28cdf253df3b45">de859bc</a>)</li>
+</ul>
+<h2 id="400---2023-10-18">[4.0.0] - 2023-10-18</h2>
+<h3 id="added">Added:</h3>
+<ul>
+<li>Added Automatic Mobile Environment Attributes functionality which makes it simpler to target your mobile customers based on application name or version, or on device characteristics including manufacturer, model, operating system, locale, and so on. To learn more, read <a href="https://docs.launchdarkly.com/sdk/features/environment-attributes">Automatic environment attributes</a>.</li>
+</ul>
+<h2 id="310---2023-10-11">[3.1.0] - 2023-10-11</h2>
+<h3 id="added-1">Added:</h3>
+<ul>
+<li><code>Configuration.Builder(&quot;myKey&quot;).ApplicationInfo()</code>, for configuration of application metadata that may be used in LaunchDarkly analytics or other product features.</li>
+</ul>
+<h2 id="302---2023-04-04">[3.0.2] - 2023-04-04</h2>
+<p>When using multi-contexts, then this update can change the <code>FullyQualifiedKey</code> for a given context. This can cause a cache miss in the local cache for a given context, requiring a connection to LaunchDarkly to populate that cache for the new <code>FullyQualifiedKey</code>.</p>
+<h3 id="fixed">Fixed:</h3>
+<ul>
+<li>Fixed an issue with generating the FullyQualifiedKey. The key generation was not sorted by the kind, so the key was not stable depending on the order of the context construction. This affects how flags are locally cached, as they are cached by the FullyQualifiedKey.</li>
+</ul>
+<h2 id="301---2023-03-08">[3.0.1] - 2023-03-08</h2>
+<h3 id="changed">Changed:</h3>
+<ul>
+<li>Update to <code>LaunchDarkly.InternalSdk</code> <code>3.1.1</code></li>
+</ul>
+<h3 id="fixed-1">Fixed:</h3>
+<ul>
+<li>(From LaunchDarkly.InternalSdk) Fixed an issue where calling FlushAndWait with TimeSpan.Zero would never complete if there were no events to flush.</li>
+</ul>
+<h2 id="300---2022-12-21">[3.0.0] - 2022-12-21</h2>
+<p>The latest version of this SDK supports LaunchDarkly's new custom contexts feature. Contexts are an evolution of a previously-existing concept, &quot;users.&quot; Contexts let you create targeting rules for feature flags based on a variety of different information, including attributes pertaining to users, organizations, devices, and more. You can even combine contexts to create &quot;multi-contexts.&quot;</p>
+<p>For detailed information about this version, please refer to the list below. For information on how to upgrade from the previous version, please read the <a href="https://docs.launchdarkly.com/sdk/client-side/dotnet/migration-2-to-3">migration guide</a>.</p>
+<h3 id="added-2">Added:</h3>
+<ul>
+<li>In <code>LaunchDarkly.Sdk</code>, the types <code>Context</code> and <code>ContextKind</code> define the new context model.</li>
+<li>For all SDK methods that took a <code>User</code> parameter, there is now a method that takes a <code>Context</code>. The corresponding <code>User</code> methods are defined as extension methods. The SDK still supports <code>User</code> for now, but <code>Context</code> is the preferred model and <code>User</code> may be removed in a future version.</li>
+<li><code>ConfigurationBuilder.GenerateAnonymousKeys</code> is the new way of enabling the &quot;generate a key for anonymous users&quot; behavior that was previously enabled by setting the user key to null. If you set <code>GenerateAnonymousKeys</code> to <code>true</code>, all anonymous contexts will have their keys replaced by generated keys; if you do not set it, anonymous contexts will keep whatever placeholder keys you gave them.</li>
+<li>The <code>TestData</code> flag builder methods have been extended to support now context-related options, such as matching a key for a specific context type other than &quot;user&quot;.</li>
+<li><code>LdClient.FlushAndWait()</code> and <code>FlushAndWaitAsync()</code> are equivalent to <code>Flush()</code> but will wait for the events to actually be delivered.</li>
+</ul>
+<h3 id="changed-breaking-changes-from-2x">Changed <em>(breaking changes from 2.x)</em>:</h3>
+<ul>
+<li>It was previously allowable to set a user key to an empty string. In the new context model, the key is not allowed to be empty. Trying to use an empty key will cause evaluations to fail and return the default value.</li>
+<li>There is no longer such a thing as a <code>Secondary</code> meta-attribute that affects percentage rollouts. If you set an attribute with that name in a <code>Context</code>, it will simply be a custom attribute like any other.</li>
+<li>The <code>Anonymous</code> attribute in <code>User</code> is now a simple boolean, with no distinction between a false state and a null state.</li>
+<li>Types such as <code>IPersistentDataStore</code>, which define the low-level interfaces of LaunchDarkly SDK components and allow implementation of custom components, have been moved out of the <code>Interfaces</code> namespace into a new <code>Subsystems</code> namespace. Application code normally does not refer to these types except possibly to hold a value for a configuration property such as <code>ConfigurationBuilder.DataStore</code>, so this change is likely to only affect configuration-related logic.</li>
+</ul>
+<h3 id="changed-behavioral-changes">Changed (behavioral changes):</h3>
+<ul>
+<li>Analytics event data now uses a new JSON schema due to differences between the context model and the old user model.</li>
+<li>The SDK no longer adds <code>device</code> and <code>os</code> values to the user attributes. Applications that wish to use device/OS information in feature flag rules must explicitly add such information.</li>
+</ul>
+<h3 id="changed-requirementsdependenciesbuild">Changed (requirements/dependencies/build):</h3>
+<ul>
+<li>There is no longer a dependency on <code>LaunchDarkly.JsonStream</code>. This package existed because some platforms did not support the <code>System.Text.Json</code> API, but that is no longer the case and the SDK now uses <code>System.Text.Json</code> directly for all of its JSON operations.</li>
+<li>If you are using the package <code>LaunchDarkly.CommonSdk.JsonNet</code> for interoperability with the Json.NET library, you must update this to the latest major version.</li>
+</ul>
+<h3 id="removed">Removed:</h3>
+<ul>
+<li>Removed all types, fields, and methods that were deprecated as of the most recent 2.x release.</li>
+<li>Removed the <code>Secondary</code> meta-attribute in <code>User</code> and <code>UserBuilder</code>.</li>
+<li>The <code>Alias</code> method no longer exists because alias events are not needed in the new context model.</li>
+<li>The <code>AutoAliasingOptOut</code> and <code>InlineUsersInEvents</code> options no longer exist because they are not relevant in the new context model.</li>
+<li><code>LaunchDarkly.Sdk.Json.JsonException</code>: this type is no longer necessary because the SDK now always uses <code>System.Text.Json</code>, so any error when deserializing an object from JSON will throw a <code>System.Text.Json.JsonException</code>.</li>
+</ul>
+<h2 id="202---2022-11-28">[2.0.2] - 2022-11-28</h2>
+<h3 id="fixed-2">Fixed:</h3>
+<ul>
+<li>One of the SDK's dependencies, <code>LaunchDarkly.Logging</code>, had an Authenticode signature without a timestamp. The dependency has been updated to a new version with a valid signature. There are no other changes.</li>
+</ul>
+<h2 id="201---2022-02-08">[2.0.1] - 2022-02-08</h2>
+<h3 id="fixed-3">Fixed:</h3>
+<ul>
+<li>Analytics events generated by <code>LdClient.Alias</code> did not have correct timestamps, although this was unlikely to affect how LaunchDarkly processed them.</li>
+<li>The type <code>LaunchDarkly.Sdk.UnixMillisecondTime</code> now serializes and deserializes correctly with <code>System.Text.Json</code>.</li>
+</ul>
+<h2 id="200---2022-01-07">[2.0.0] - 2022-01-07</h2>
+<p>This is a major rewrite that introduces a cleaner API design, adds new features, and makes the SDK code easier to maintain and extend. See the <a href="https://docs.launchdarkly.com/sdk/client-side/dotnet/migration-1-to-2">Xamarin 1.x to client-side .NET 2.0 migration guide</a> for an in-depth look at the changes in 2.0; the following is a summary.</p>
+<p>The LaunchDarkly client-side .NET SDK was formerly known as the LaunchDarkly Xamarin SDK. Xamarin for Android and iOS are <em>among</em> its supported platforms, but it can also be used on any platform that supports .NET Core 2+, .NET Standard 2, or .NET 5+. On those platforms, it does not use any Xamarin-specific runtime libraries. To learn more about the distinction between the client-side .NET SDK and the server-side .NET SDK, read: <a href="https://docs.launchdarkly.com/sdk/concepts/client-side-server-side">Client-side and server-side SDKs</a></p>
+<h3 id="added-3">Added:</h3>
+<ul>
+<li><code>LdClient.FlagTracker</code> provides the ability to get notifications when flag values have changed.</li>
+<li><code>LdClient.DataSourceStatusProvider</code> provides information on the status of the SDK's data source (which normally means the streaming connection to the LaunchDarkly service).</li>
+<li><code>LdClient.DoubleVariation</code> and <code>DoubleVariationDetail</code> return a numeric flag variation using double-precision floating-point.</li>
+<li><code>ConfigurationBuilder.ServiceEndpoints</code> allows you to override the regular service URIs— as you may want to do if you are using the LaunchDarkly Relay Proxy, for instance— in a single place. Previously, the URIs had to be specified individually for each service (<code>StreamingDataSource().BaseURI</code>, <code>SendEvents().BaseURI</code>, etc.).</li>
+<li><code>HttpConfigurationBuilder.UseReport</code> tells the SDK to make HTTP <code>REPORT</code> requests rather than <code>GET</code> requests to the LaunchDarkly service endpoints, which may be desirable in rare circumstances but is not available on all platforms.</li>
+<li><code>ConfigurationBuilder.Persistence</code> and <code>PersistenceConfigurationBuilder.MaxCachedUsers</code> allow setting a limit on how many users' flag data can be saved in persistent local storage, or turning off persistence.</li>
+<li>The <code>LaunchDarkly.Sdk.Json</code> namespace provides methods for converting types like <code>User</code> and <code>FeatureFlagsState</code> to and from JSON.</li>
+<li>The <code>LaunchDarkly.Sdk.UserAttribute</code> type provides a less error-prone way to refer to user attribute names in configuration, and can also be used to get an arbitrary attribute from a user.</li>
+<li>The <code>LaunchDarkly.Sdk.UnixMillisecondTime</code> type provides convenience methods for converting to and from the Unix epoch millisecond time format that LaunchDarkly uses for all timestamp values.</li>
+<li>The SDK now periodically sends diagnostic data to LaunchDarkly, describing the version and configuration of the SDK, the architecture and version of the runtime platform, and performance statistics. No credentials, hostnames, or other identifiable values are included. This behavior can be disabled with <code>ConfigurationBuilder.DiagnosticOptOut</code> or configured with <code>ConfigurationBuilder.DiagnosticRecordingInterval</code>.</li>
+</ul>
+<h3 id="changed-requirementsdependenciesbuild-1">Changed (requirements/dependencies/build):</h3>
+<ul>
+<li>.NET Standard 1.6 is no longer supported.</li>
+<li>The SDK no longer has a dependency on <code>Common.Logging</code>. Instead, it uses a similar but simpler logging facade, the <a href="https://github.com/launchdarkly/dotnet-logging"><code>LaunchDarkly.Logging</code></a> package, which has adapters for various logging destinations.</li>
+<li>The SDK no longer has a dependency on the Json.NET library (a.k.a. <code>Newtonsoft.Json</code>), but instead uses a lightweight custom JSON serializer and deserializer. This removes the potential for dependency version conflicts in applications that use Json.NET for their own purposes, and reduces the number of dependencies in applications that do not use Json.NET. If you do use Json.NET and you want to use it with SDK data types like <code>User</code> and <code>LdValue</code>, see <a href="https://github.com/launchdarkly/dotnet-sdk-common/tree/master/src/LaunchDarkly.CommonSdk.JsonNet"><code>LaunchDarkly.CommonSdk.JsonNet</code></a>. Those types also serialize/deserialize correctly with the <code>System.Text.Json</code> API on platforms where that API is available.</li>
+</ul>
+<h3 id="changed-api-changes">Changed (API changes):</h3>
+<ul>
+<li>The base namespace has changed: types that were previously in <code>LaunchDarkly.Client</code> are now in <code>LaunchDarkly.Sdk</code>, and types that were previously in <code>LaunchDarkly.Xamarin</code> are now in <code>LaunchDarkly.Sdk.Client</code>. The <code>LaunchDarkly.Sdk</code> namespace contains types that are not specific to the <em>client-side</em> .NET SDK (that is, they are also used by the server-side .NET SDK): <code>EvaluationDetail</code>, <code>LdValue</code>, <code>User</code>, and <code>UserBuilder</code>. Types that are specific to the client-side .NET SDK, such as <code>Configuration</code> and <code>LdClient</code>, are in <code>LaunchDarkly.Sdk.Client</code>.</li>
+<li><code>User</code> and <code>Configuration</code> objects are now immutable. To specify properties for these classes, you must now use <code>User.Builder</code> and <code>Configuration.Builder</code>.</li>
+<li><code>Configuration.Builder</code> now returns a concrete type rather than an interface.</li>
+<li><code>EvaluationDetail</code> is now a struct type rather than a class.</li>
+<li><code>EvaluationReason</code> is now a single struct type rather than a base class with subclasses.</li>
+<li><code>EvaluationReasonKind</code> and <code>EvaluationErrorKind</code> constants now use .Net-style naming (<code>RuleMatch</code>) rather than Java-style naming (<code>RULE_MATCH</code>). Their JSON representations are unchanged.</li>
+<li>The <code>ILdClient</code> interface is now in <code>LaunchDarkly.Sdk.Client.Interfaces</code> instead of the main namespace.</li>
+<li>The <code>ILdClientExtensions</code> methods <code>EnumVariation&lt;T&gt;</code> and <code>EnumVariationDetail&lt;T&gt;</code> now have type constraints to enforce that <code>T</code> really is an <code>enum</code> type.</li>
+</ul>
+<h3 id="changed-behavioral-changes-1">Changed (behavioral changes):</h3>
+<ul>
+<li>The default event flush interval is now 30 seconds on mobile platforms, instead of 5 seconds. This is consistent with the other mobile SDKs and is intended to reduce network traffic.</li>
+<li>Logging now uses a simpler, more stable set of logger names instead of using the names of specific implementation classes that are subject to change. General messages are logged under <code>LaunchDarkly.Sdk</code>, while messages about specific areas of functionality are logged under that name plus <code>.DataSource</code> (streaming, polling, file data, etc.), <code>.DataStore</code> (database integrations), <code>.Evaluation</code> (unexpected errors during flag evaluations), or <code>.Events</code> (analytics event processing).</li>
+</ul>
+<h3 id="removed-1">Removed:</h3>
+<ul>
+<li>All types and methods that were deprecated as of the last 1.x release have been removed.</li>
+</ul>
+<h2 id="200-rc1---2021-11-19">[2.0.0-rc.1] - 2021-11-19</h2>
+<p>This is the first release candidate version of the LaunchDarkly client-side .NET SDK 2.0-- a major rewrite that introduces a cleaner API design, adds new features, and makes the SDK code easier to maintain and extend. See the <a href="https://docs.launchdarkly.com/sdk/client-side/dotnet/migration-1-to-2">Xamarin 1.x to client-side .NET 2.0 migration guide</a> for an in-depth look at the changes in 2.0; the following is a summary.</p>
+<p>The LaunchDarkly client-side .NET SDK was formerly known as the LaunchDarkly Xamarin SDK. Xamarin for Android and iOS are <em>among</em> its supported platforms, but it can also be used on any platform that supports .NET Core 2+, .NET Standard 2, or .NET 5+. On those platforms, it does not use any Xamarin-specific runtime libraries. To learn more about the distinction between the client-side .NET SDK and the server-side .NET SDK, read: <a href="https://docs.launchdarkly.com/sdk/concepts/client-side-server-side">Client-side and server-side SDKs</a></p>
+<h3 id="added-4">Added:</h3>
+<ul>
+<li><code>LdClient.FlagTracker</code> provides the ability to get notifications when flag values have changed.</li>
+<li><code>LdClient.DataSourceStatusProvider</code> provides information on the status of the SDK's data source (which normally means the streaming connection to the LaunchDarkly service).</li>
+<li><code>LdClient.DoubleVariation</code> and <code>DoubleVariationDetail</code> return a numeric flag variation using double-precision floating-point.</li>
+<li><code>HttpConfigurationBuilder.UseReport</code> tells the SDK to make HTTP <code>REPORT</code> requests rather than <code>GET</code> requests to the LaunchDarkly service endpoints, which may be desirable in rare circumstances but is not available on all platforms.</li>
+<li><code>ConfigurationBuilder.Persistence</code> and <code>PersistenceConfigurationBuilder.MaxCachedUsers</code> allow setting a limit on how many users' flag data can be saved in persistent local storage, or turning off persistence.</li>
+<li>The <code>LaunchDarkly.Sdk.Json</code> namespace provides methods for converting types like <code>User</code> and <code>FeatureFlagsState</code> to and from JSON.</li>
+<li>The <code>LaunchDarkly.Sdk.UserAttribute</code> type provides a less error-prone way to refer to user attribute names in configuration, and can also be used to get an arbitrary attribute from a user.</li>
+<li>The <code>LaunchDarkly.Sdk.UnixMillisecondTime</code> type provides convenience methods for converting to and from the Unix epoch millisecond time format that LaunchDarkly uses for all timestamp values.</li>
+<li>The SDK now periodically sends diagnostic data to LaunchDarkly, describing the version and configuration of the SDK, the architecture and version of the runtime platform, and performance statistics. No credentials, hostnames, or other identifiable values are included. This behavior can be disabled with <code>ConfigurationBuilder.DiagnosticOptOut</code> or configured with <code>ConfigurationBuilder.DiagnosticRecordingInterval</code>.</li>
+</ul>
+<h3 id="changed-requirementsdependenciesbuild-2">Changed (requirements/dependencies/build):</h3>
+<ul>
+<li>.NET Standard 1.6 is no longer supported.</li>
+<li>The SDK no longer has a dependency on <code>Common.Logging</code>. Instead, it uses a similar but simpler logging facade, the <a href="https://github.com/launchdarkly/dotnet-logging"><code>LaunchDarkly.Logging</code></a> package, which has adapters for various logging destinations.</li>
+<li>The SDK no longer has a dependency on the Json.NET library (a.k.a. <code>Newtonsoft.Json</code>), but instead uses a lightweight custom JSON serializer and deserializer. This removes the potential for dependency version conflicts in applications that use Json.NET for their own purposes, and reduces the number of dependencies in applications that do not use Json.NET. If you do use Json.NET and you want to use it with SDK data types like <code>User</code> and <code>LdValue</code>, see <a href="https://github.com/launchdarkly/dotnet-sdk-common/tree/master/src/LaunchDarkly.CommonSdk.JsonNet"><code>LaunchDarkly.CommonSdk.JsonNet</code></a>. Those types also serialize/deserialize correctly with the <code>System.Text.Json</code> API on platforms where that API is available.</li>
+</ul>
+<h3 id="changed-api-changes-1">Changed (API changes):</h3>
+<ul>
+<li>The base namespace has changed: types that were previously in <code>LaunchDarkly.Client</code> are now in <code>LaunchDarkly.Sdk</code>, and types that were previously in <code>LaunchDarkly.Xamarin</code> are now in <code>LaunchDarkly.Sdk.Client</code>. The <code>LaunchDarkly.Sdk</code> namespace contains types that are not specific to the <em>client-side</em> .NET SDK (that is, they are also used by the server-side .NET SDK): <code>EvaluationDetail</code>, <code>LdValue</code>, <code>User</code>, and <code>UserBuilder</code>. Types that are specific to the client-side .NET SDK, such as <code>Configuration</code> and <code>LdClient</code>, are in <code>LaunchDarkly.Sdk.Client</code>.</li>
+<li><code>User</code> and <code>Configuration</code> objects are now immutable. To specify properties for these classes, you must now use <code>User.Builder</code> and <code>Configuration.Builder</code>.</li>
+<li><code>Configuration.Builder</code> now returns a concrete type rather than an interface.</li>
+<li><code>EvaluationDetail</code> is now a struct type rather than a class.</li>
+<li><code>EvaluationReason</code> is now a single struct type rather than a base class with subclasses.</li>
+<li><code>EvaluationReasonKind</code> and <code>EvaluationErrorKind</code> constants now use .Net-style naming (<code>RuleMatch</code>) rather than Java-style naming (<code>RULE_MATCH</code>). Their JSON representations are unchanged.</li>
+<li>The <code>ILdClient</code> interface is now in <code>LaunchDarkly.Sdk.Client.Interfaces</code> instead of the main namespace.</li>
+<li>The <code>ILdClientExtensions</code> methods <code>EnumVariation&lt;T&gt;</code> and <code>EnumVariationDetail&lt;T&gt;</code> now have type constraints to enforce that <code>T</code> really is an <code>enum</code> type.</li>
+</ul>
+<h3 id="changed-behavioral-changes-2">Changed (behavioral changes):</h3>
+<ul>
+<li>The default event flush interval is now 30 seconds on mobile platforms, instead of 5 seconds. This is consistent with the other mobile SDKs and is intended to reduce network traffic.</li>
+<li>Logging now uses a simpler, more stable set of logger names instead of using the names of specific implementation classes that are subject to change. General messages are logged under <code>LaunchDarkly.Sdk.Xamarin.LdClient</code>, while messages about specific areas of functionality are logged under that name plus <code>.DataSource</code> (streaming, polling, file data, etc.), <code>.DataStore</code> (database integrations), <code>.Evaluation</code> (unexpected errors during flag evaluations), or <code>.Events</code> (analytics event processing).</li>
+</ul>
+<h3 id="fixed-4">Fixed:</h3>
+<ul>
+<li>The SDK was deciding whether to send analytics events based on the <code>Offline</code> property of the <em>original</em> SDK configuration, rather than whether the SDK is <em>currently</em> in offline mode or not.</li>
+</ul>
+<h3 id="removed-2">Removed:</h3>
+<ul>
+<li>All types and methods that were shown as deprecated/<code>Obsolete</code> in the last 1.x release have been removed.</li>
+</ul>
+<h2 id="122---2021-04-06">[1.2.2] - 2021-04-06</h2>
+<h3 id="fixed-5">Fixed:</h3>
+<ul>
+<li>The SDK was failing to get flags in streaming mode when connecting to a LaunchDarkly Relay Proxy instance.</li>
+</ul>
+<h2 id="121---2021-03-30">[1.2.1] - 2021-03-30</h2>
+<h3 id="fixed-6">Fixed:</h3>
+<ul>
+<li>Removed unnecessary dependencies on <code>Xamarin.Android.Support.Core.Utils</code> and <code>Xamarin.Android.Support.CustomTabs</code>. (Thanks, <a href="https://github.com/launchdarkly/xamarin-client-sdk/pull/25">Vladimir-Mischenchuk</a>!)</li>
+<li>Setting custom base URIs now works correctly even if the base URI includes a path prefix (such as you might use with a reverse proxy that rewrites request URIs). (<a href="https://github.com/launchdarkly/xamarin-client-sdk/issues/26">#26</a>)</li>
+<li>Fixed the base64 encoding of user properties in request URIs to use the URL-safe variant of base64.</li>
+</ul>
+<h2 id="120---2020-01-15">[1.2.0] - 2020-01-15</h2>
+<h3 id="added-5">Added:</h3>
+<ul>
+<li>Added <code>ILdClient</code> extension methods <code>EnumVariation</code> and <code>EnumVariationDetail</code>, which convert strings to enums.</li>
+<li><code>User.Secondary</code>, <code>IUserBuilder.Secondary</code> (replaces <code>SecondaryKey</code>).</li>
+<li><code>EvaluationReason</code> static methods and properties for creating reason instances.</li>
+<li><code>LdValue</code> helpers for dealing with array/object values, without having to use an intermediate <code>List</code> or <code>Dictionary</code>: <code>BuildArray</code>, <code>BuildObject</code>, <code>Count</code>, <code>Get</code>.</li>
+<li><code>LdValue.Parse()</code>.</li>
+</ul>
+<h3 id="changed-1">Changed:</h3>
+<ul>
+<li><code>EvaluationReason</code> properties all exist on the base class now, so for instance you do not need to cast to <code>RuleMatch</code> to get the <code>RuleId</code> property. This is in preparation for a future API change in which <code>EvaluationReason</code> will become a struct instead of a base class.</li>
+</ul>
+<h3 id="fixed-7">Fixed:</h3>
+<ul>
+<li>Calling <code>Identify</code> or <code>IdentifyAsync</code> with a user that has a null key and <code>Anonymous(true)</code>-- which should generate a unique key for the anonymous user-- did not work. The symptom was that the client would fail to retrieve the flags, and the call would either never complete (for <code>IdentifyAsync</code>) or time out (for <code>Identify</code>). This has been fixed.</li>
+<li>Improved memory usage and performance when processing analytics events: the SDK now encodes event data to JSON directly, instead of creating intermediate objects and serializing them via reflection.</li>
+<li>When parsing arbitrary JSON values, the SDK now always stores them internally as <code>LdValue</code> rather than <code>JToken</code>. This means that no additional copying step is required when the application accesses that value, if it is of a complex type.</li>
+<li><code>LdValue.Equals()</code> incorrectly returned true for object (dictionary) values that were not equal.</li>
+<li>The SDK now specifies a uniquely identifiable request header when sending events to LaunchDarkly to ensure that events are only processed once, even if the SDK sends them two times due to a failed initial attempt.</li>
+</ul>
+<h3 id="deprecated">Deprecated:</h3>
+<ul>
+<li><code>IUserBuilder.SecondaryKey</code>, <code>User.SecondaryKey</code>.</li>
+<li><code>EvaluationReason</code> subclasses. Use only the base class properties and methods to ensure compatibility with future versions.</li>
+</ul>
+<h2 id="111---2019-10-23">[1.1.1] - 2019-10-23</h2>
+<h3 id="fixed-8">Fixed:</h3>
+<ul>
+<li>The JSON serialization of <code>User</code> was producing an extra <code>Anonymous</code> property in addition to <code>anonymous</code>. If Newtonsoft.Json was configured globally to force all properties to lowercase, this would cause an exception when serializing a user since the two properties would end up with the same name. (<a href="https://github.com/launchdarkly/xamarin-client-sdk/issues/22">#22</a>)</li>
+</ul>
+<h2 id="110---2019-10-17">[1.1.0] - 2019-10-17</h2>
+<h3 id="added-6">Added:</h3>
+<ul>
+<li>Added support for upcoming LaunchDarkly experimentation features. See <code>ILdClient.Track(string, LdValue, double)</code>.</li>
+<li><code>User.AnonymousOptional</code> and <code>IUserBuilder.AnonymousOptional</code> allow treating the <code>Anonymous</code> property as nullable (necessary for consistency with other SDKs). See note about this under Fixed.</li>
+<li>Added <code>LaunchDarkly.Logging.ConsoleAdapter</code> as a convenience for quickly enabling console logging; this is equivalent to <code>Common.Logging.Simple.ConsoleOutLoggerFactoryAdapter</code>, but the latter is not available on some platforms.</li>
+</ul>
+<h3 id="fixed-9">Fixed:</h3>
+<ul>
+<li><code>Configuration.Builder</code> was not setting a default value for the <code>BackgroundPollingInterval</code> property. As a result, if you did not set the property explicitly, the SDK would throw an error when the application went into the background on mobile platforms.</li>
+<li><code>IUserBuilder</code> was incorrectly setting the user's <code>Anonymous</code> property to <code>null</code> even if it had been explicitly set to <code>false</code>. Null and false behave the same in terms of LaunchDarkly's user indexing behavior, but currently it is possible to create a feature flag rule that treats them differently. So <code>IUserBuilder.Anonymous(false)</code> now correctly sets it to <code>false</code>, just as the deprecated method <code>UserExtensions.WithAnonymous(false)</code> would.</li>
+<li><code>LdValue.Convert.Long</code> was mistakenly converting to an <code>int</code> rather than a <code>long</code>. (CommonSdk <a href="https://github.com/launchdarkly/dotnet-sdk-common/issues/32">#32</a>)</li>
+</ul>
+<h2 id="100---2019-09-13">[1.0.0] - 2019-09-13</h2>
+<p>First GA release.</p>
+<p>For release notes on earlier beta versions, see the <a href="https://github.com/launchdarkly/xamarin-client-sdk/blob/1.0.0-beta24/CHANGELOG.md">beta changelog</a>.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/CHANGELOG.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,299 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class ContextMultiBuilder | LaunchDarkly Dotnet Client SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class ContextMultiBuilder | LaunchDarkly Dotnet Client SDK ">
+    
+    <meta name="description" content="A mutable object that uses the builder pattern to specify properties for a .">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly Dotnet Client SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_ContextMultiBuilder" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder" class="text-break">Class ContextMultiBuilder</h1>
+  <div class="markdown level0 summary"><p>A mutable object that uses the builder pattern to specify properties for a <a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a>.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">ContextMultiBuilder</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.CommonSdk.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_ContextMultiBuilder_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class ContextMultiBuilder</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_ContextMultiBuilder_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>
+        Use this type if you need to construct a Context that has multiple Kind values, each with its
+        own nested Context. To define a single-kind context, use <a class="xref" href="LaunchDarkly.Sdk.Context.html#LaunchDarkly_Sdk_Context_Builder_System_String_">Builder(string)</a>.
+        </p>
+<p>
+        Obtain an instance of ContextMultiBuilder by calling <a class="xref" href="LaunchDarkly.Sdk.Context.html#LaunchDarkly_Sdk_Context_MultiBuilder">MultiBuilder()</a>; then,
+        call <a class="xref" href="LaunchDarkly.Sdk.ContextMultiBuilder.html#LaunchDarkly_Sdk_ContextMultiBuilder_Add_LaunchDarkly_Sdk_Context_">Add(Context)</a> to specify the nested Context for each kind. Add returns a
+        reference to the same builder, so calls can be chained:
+        </p>
+<pre><code class="lang-csharp">var context = Context.MultiBuilder().
+    Add(Context.New("my-user-key")).
+    Add(Context.Builder("my-org-key").Kind("organization").Build()).
+    Build();</code></pre>
+<p>
+        A ContextMultiBuilder should not be accessed by multiple threads at once. Once you have called
+        <a class="xref" href="LaunchDarkly.Sdk.ContextMultiBuilder.html#LaunchDarkly_Sdk_ContextMultiBuilder_Build">Build()</a>, the resulting Context is immutable and is safe to use from multiple threads.
+        Instances created with <a class="xref" href="LaunchDarkly.Sdk.ContextMultiBuilder.html#LaunchDarkly_Sdk_ContextMultiBuilder_Build">Build()</a> are not affected by subsequent actions taken on the builder.
+        </p>
+</div>
+  <h3 id="constructors">Constructors
+</h3>
+
+
+  <a id="LaunchDarkly_Sdk_ContextMultiBuilder__ctor_" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder.#ctor*"></a>
+  <h4 id="LaunchDarkly_Sdk_ContextMultiBuilder__ctor" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder.#ctor">ContextMultiBuilder()</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ContextMultiBuilder()</code></pre>
+  </div>
+  <h3 id="methods">Methods
+</h3>
+
+
+  <a id="LaunchDarkly_Sdk_ContextMultiBuilder_Add_" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder.Add*"></a>
+  <h4 id="LaunchDarkly_Sdk_ContextMultiBuilder_Add_LaunchDarkly_Sdk_Context_" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder.Add(LaunchDarkly.Sdk.Context)">Add(Context)</h4>
+  <div class="markdown level1 summary"><p>Adds a nested Context for a specific kind to a MultiBuilder.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ContextMultiBuilder Add(Context context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>the context to add</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.ContextMultiBuilder.html">ContextMultiBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_ContextMultiBuilder_Add_LaunchDarkly_Sdk_Context__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+         It is invalid to add more than one Context with the same kind, or to add a Context that is itself
+         invalid. This error is detected when you call <a class="xref" href="LaunchDarkly.Sdk.ContextMultiBuilder.html#LaunchDarkly_Sdk_ContextMultiBuilder_Build">Build()</a>.
+         </p>
+<p>
+         If the nested context is multi-kind, this is exactly equivalent to adding each of the
+         individual kinds from it separately. For instance, in the following example, "multi1" and
+         "multi2" end up being exactly the same:
+         </p>
+<pre><code class="lang-csharp">var c1 = Context.New(ContextKind.Of("kind1"), "key1");
+var c2 = Context.New(ContextKind.Of("kind2"), "key2");
+var c3 = Context.New(ContextKind.Of("kind3"), "key3");
+<p>var multi1 = Context.MultiBuilder().Add(c1).Add(c2).Add(c3).Build();</p>
+<p>var c1plus2 = Context.MultiBuilder().Add(c1).Add(c2).Build();
+var multi2 = Context.MultiBuilder().Add(c1plus2).Add(c3).Build();</p></code></pre>
+</div>
+
+
+  <a id="LaunchDarkly_Sdk_ContextMultiBuilder_Build_" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder.Build*"></a>
+  <h4 id="LaunchDarkly_Sdk_ContextMultiBuilder_Build" data-uid="LaunchDarkly.Sdk.ContextMultiBuilder.Build">Build()</h4>
+  <div class="markdown level1 summary"><p>Creates a <a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a> from the current Builder properties.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Context Build()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></td>
+        <td><p>a new <a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_ContextMultiBuilder_Build_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+        The Context is immutable and will not be affected by any subsequent actions on the ContextBuilder.
+        </p>
+<p>
+        It is possible for a ContextMultiBuilder to represent an invalid state. Instead of throwing an
+        exception, the ContextMultiBuilder always returns a Context and you can check <a class="xref" href="LaunchDarkly.Sdk.Context.html#LaunchDarkly_Sdk_Context_Error">Error</a>
+        to see if it has an error. See <a class="xref" href="LaunchDarkly.Sdk.Context.html#LaunchDarkly_Sdk_Context_Error">Error</a> for more information about invalid Context
+        conditions. If you pass an invalid Context to an SDK method, the SDK will detect this and will generally
+        log a description of the error.
+        </p>
+<p>
+        If only one context kind was added to the builder, Build returns a single-kind Context rather
+        than a multi-kind Context.
+        </p>
+</div>
+  <h3 id="seealso">See Also</h3>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Context.html#LaunchDarkly_Sdk_Context_NewMulti_LaunchDarkly_Sdk_Context___">NewMulti</a>(params <a class="xref" href="LaunchDarkly.Sdk.Context.html">Context</a>[])</div>
+  </div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

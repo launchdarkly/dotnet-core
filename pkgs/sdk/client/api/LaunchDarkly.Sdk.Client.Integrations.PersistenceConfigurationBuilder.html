@@ -1,0 +1,369 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class PersistenceConfigurationBuilder | LaunchDarkly Dotnet Client SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class PersistenceConfigurationBuilder | LaunchDarkly Dotnet Client SDK ">
+    
+    <meta name="description" content="Contains methods for configuring the SDK&#39;s persistent storage behavior.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly Dotnet Client SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder" class="text-break">Class PersistenceConfigurationBuilder</h1>
+  <div class="markdown level0 summary"><p>Contains methods for configuring the SDK's persistent storage behavior.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">PersistenceConfigurationBuilder</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.html">Client</a>.<a class="xref" href="LaunchDarkly.Sdk.Client.Integrations.html">Integrations</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.ClientSdk.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class PersistenceConfigurationBuilder</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>
+The persistent storage mechanism allows the SDK to immediately access the last known flag data
+for the user, if any, if it was started offline or has not yet received data from LaunchDarkly.
+</p>
+<p>
+By default, the SDK uses a persistence mechanism that is specific to each platform, as
+described in <a class="xref" href="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.html#LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_Storage_LaunchDarkly_Sdk_Client_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Client_Subsystems_IPersistentDataStore__">Storage(IComponentConfigurer&lt;IPersistentDataStore&gt;)</a>. To use a custom persistence
+implementation, or to customize related properties defined in this class, create a builder with
+<a class="xref" href="LaunchDarkly.Sdk.Client.Components.html#LaunchDarkly_Sdk_Client_Components_Persistence">Persistence()</a>, change its properties with the methods of this class, and
+pass it to <a class="xref" href="LaunchDarkly.Sdk.Client.ConfigurationBuilder.html#LaunchDarkly_Sdk_Client_ConfigurationBuilder_Persistence_LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_">Persistence(PersistenceConfigurationBuilder)</a>.
+</p>
+</div>
+  <h5 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_examples"><strong>Examples</strong></h5>
+  <pre><code class="lang-csharp">var config = Configuration.Builder(sdkKey)
+    .Persistence(
+        Components.Persistence().MaxCachedUsers(5)
+    )
+    .Build();</code></pre>
+
+  <h3 id="fields">Fields
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_DefaultMaxCachedContexts.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.DefaultMaxCachedContexts%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Integrations/PersistenceConfigurationBuilder.cs/#L36">View Source</a>
+  </span>
+  <h4 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_DefaultMaxCachedContexts" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.DefaultMaxCachedContexts">DefaultMaxCachedContexts</h4>
+  <div class="markdown level1 summary"><p>Default value for <a class="xref" href="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.html#LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_MaxCachedContexts_System_Int32_">MaxCachedContexts(int)</a>: 5.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public const int DefaultMaxCachedContexts = 5</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_UnlimitedCachedContexts.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.UnlimitedCachedContexts%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Integrations/PersistenceConfigurationBuilder.cs/#L42">View Source</a>
+  </span>
+  <h4 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_UnlimitedCachedContexts" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.UnlimitedCachedContexts">UnlimitedCachedContexts</h4>
+  <div class="markdown level1 summary"><p>Passing this value (or any negative number) to <a class="xref" href="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.html#LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_MaxCachedContexts_System_Int32_">MaxCachedContexts(int)</a>
+means there is no limit on cached user data.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public const int UnlimitedCachedContexts = -1</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_MaxCachedContexts_System_Int32_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.MaxCachedContexts(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Integrations/PersistenceConfigurationBuilder.cs/#L88">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_MaxCachedContexts_" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.MaxCachedContexts*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_MaxCachedContexts_System_Int32_" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.MaxCachedContexts(System.Int32)">MaxCachedContexts(int)</h4>
+  <div class="markdown level1 summary"><p>Sets the maximum number of users to store flag data for.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public PersistenceConfigurationBuilder MaxCachedContexts(int maxCachedContexts)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">maxCachedContexts</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.html">PersistenceConfigurationBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_MaxCachedContexts_System_Int32__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+A value greater than zero means that the SDK will use persistent storage to remember the last
+known flag values for up to that number of unique user keys. If the limit is exceeded, the SDK
+discards the data for the least recently used user.
+</p>
+<p>
+A value of zero means that the SDK will not use persistent storage; it will only have whatever
+flag data it has received since the current <code>LdClient</code> instance was started.
+</p>
+<p>
+A value of <a class="xref" href="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.html#LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_UnlimitedCachedContexts">UnlimitedCachedContexts</a> or any other negative number means there is no
+limit. Use this mode with caution, as it could cause the size of mobile device preferences to
+grow indefinitely if your application uses many different user keys on the same device.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_Storage_LaunchDarkly_Sdk_Client_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Client_Subsystems_IPersistentDataStore__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.Storage(LaunchDarkly.Sdk.Client.Subsystems.IComponentConfigurer%7BLaunchDarkly.Sdk.Client.Subsystems.IPersistentDataStore%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Integrations/PersistenceConfigurationBuilder.cs/#L61">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_Storage_" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.Storage*"></a>
+  <h4 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_Storage_LaunchDarkly_Sdk_Client_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Client_Subsystems_IPersistentDataStore__" data-uid="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.Storage(LaunchDarkly.Sdk.Client.Subsystems.IComponentConfigurer{LaunchDarkly.Sdk.Client.Subsystems.IPersistentDataStore})">Storage(IComponentConfigurer&lt;IPersistentDataStore&gt;)</h4>
+  <div class="markdown level1 summary"><p>Sets the storage implementation.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public PersistenceConfigurationBuilder Storage(IComponentConfigurer&lt;IPersistentDataStore&gt; persistentDataStoreFactory)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.IComponentConfigurer-1.html">IComponentConfigurer</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Client.Subsystems.IPersistentDataStore.html">IPersistentDataStore</a>&gt;</td>
+        <td><span class="parametername">persistentDataStoreFactory</span></td>
+        <td><p>a factory for the custom storage implementation, or
+<a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null">null</a> to use the default implementation</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder.html">PersistenceConfigurationBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder_Storage_LaunchDarkly_Sdk_Client_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Client_Subsystems_IPersistentDataStore___remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>By default, the SDK uses a persistence mechanism that is specific to each platform: on Android and
+iOS it is the native preferences store, and in the .NET Standard implementation for desktop apps
+it is the <code>System.IO.IsolatedStorage</code> API. You may use this method to specify a custom
+implementation using a factory object.</p>
+</div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/new/ta/sc-244785/client-needs-snk-for-doc-signing/apiSpec/new?filename=LaunchDarkly_Sdk_Client_Integrations_PersistenceConfigurationBuilder.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Client.Integrations.PersistenceConfigurationBuilder%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/ta/sc-244785/client-needs-snk-for-doc-signing/pkgs/sdk/client/src/Integrations/PersistenceConfigurationBuilder.cs/#L31" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

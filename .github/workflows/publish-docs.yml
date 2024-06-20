@@ -15,7 +15,8 @@ jobs:
   build-publish:
     runs-on: macos-latest
     permissions:
-      contents: write # Needed in this case to write github pages.
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

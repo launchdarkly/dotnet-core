@@ -30,10 +30,7 @@ jobs:
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
-
-      - name: Download snk
-        shell: bash
-        run: aws s3 cp s3://launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk LaunchDarkly.ClientSdk.snk
+          s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.snk = LaunchDarkly.snk'
 
       - uses: ./.github/actions/ci
         with:

@@ -96,7 +96,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     return;
                 }
                 var errorsDesc = string.Join(", ", _errorCounts.Select(kv => DescribeErrorCount(kv.Key, kv.Value)));
-                _log.Error("LaunchDarkly data source outage - updates have been unavailable for at least {0} with the following errors: {1}",
+                _log.Error("A streaming connection to LaunchDarkly has not been established within {0} after the connection was interrupted. The following errors were encountered: {1}",
                     _loggingTimeout, errorsDesc);
             }
         }

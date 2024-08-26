@@ -1,5 +1,5 @@
 # This workflow exists because the client sdk build process requires macos.
-name: Manual Publish SDK Client Package
+name: Publish SDK Client Package
 on:
   workflow_dispatch:
     inputs:

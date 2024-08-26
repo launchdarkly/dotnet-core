@@ -1,4 +1,4 @@
-name: Manual Publish Package
+name: Publish Package
 on:
   workflow_dispatch:
     inputs:
@@ -15,7 +15,7 @@ on:
         type: boolean
         required: true
       generate_provenance:
-        description: 'Whether or not to generate provenance for this manual publish. Default behavior: generate only on main branch.'
+        description: 'Whether or not to generate provenance for this publish. Default behavior: generate only on main branch.'
         type: choice
         options:
           - Default

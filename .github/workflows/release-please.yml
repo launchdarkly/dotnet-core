@@ -7,7 +7,7 @@ on:
 
 jobs:
   release-please:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     outputs:
       package-sdk-server-released: ${{ steps.release.outputs['pkgs/sdk/server--release_created'] }}
@@ -26,7 +26,7 @@ jobs:
           target-branch: ${{ github.ref_name }}
 
   release-sdk-server:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     needs: release-please
     permissions:
       id-token: write
@@ -55,7 +55,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   release-telemetry:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     needs: release-please
     permissions:
       id-token: write
@@ -83,36 +83,14 @@ jobs:
           aws_role: ${{ vars.AWS_ROLE_ARN }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  # this job calls to the release-sdk-client workflow because the client SDK has to be built on macos
   release-sdk-client:
-    runs-on: macos-latest
     needs: release-please
-    permissions:
-      id-token: write
-      contents: write
-      pull-requests: write
     if: ${{ needs.release-please.outputs.package-sdk-client-released == 'true'}}
-    outputs:
-      hashes: ${{ steps.full-release.outputs.hashes }}
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Env from project's Env file
-        shell: bash
-        run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
+    uses: ./.github/workflows/release-sdk-client.yml
+    with:
+      dry_run: false
 
-      - uses: ./.github/actions/full-release
-        id: full-release
-        with:
-          workspace_path: ${{ env.WORKSPACE_PATH }}
-          project_file: ${{ env.PROJECT_FILE }}
-          build_output_path: ${{ env.BUILD_OUTPUT_PATH }}
-          test_project_file: ${{ env.TEST_PROJECT_FILE }}
-          dll_name: ${{ env.BUILD_OUTPUT_DLL_NAME }}
-          dry_run: false
-          aws_role: ${{ vars.AWS_ROLE_ARN }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-  # TODO: refactor provenance
   release-sdk-server-provenance:
     needs: ['release-please', 'release-sdk-server']
     permissions:
@@ -125,7 +103,6 @@ jobs:
       upload-assets: true
       upload-tag-name: ${{ needs.release-please.outputs.package-sdk-server-tag_name }}
       provenance-name: ${{ format('LaunchDarkly.ServerSdk-{0}_provenance.intoto.jsonl', needs.release-please.outputs.package-sdk-server-tag_name) }}
-
 
   release-telemetry-provenance:
     needs: ['release-please', 'release-telemetry']
@@ -140,4 +117,15 @@ jobs:
       upload-tag-name: ${{ needs.release-please.outputs.package-sdk-server-telemetry-tag_name }}
       provenance-name: ${{ format('LaunchDarkly.ServerSdk.Telemetry-{0}_provenance.intoto.jsonl', needs.release-please.outputs.package-sdk-server-telemetry-tag_name) }}
 
-  # TODO: add client provenance
+  release-sdk-client-provenance:
+    needs: ['release-please', 'release-sdk-client']
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.10.0
+    with:
+      base64-subjects: "${{ needs.release-sdk-client.outputs.hashes }}"
+      upload-assets: true
+      upload-tag-name: ${{ needs.release-please.outputs.package-sdk-client-tag_name }}
+      provenance-name: ${{ format('LaunchDarkly.ClientSdk-{0}_provenance.intoto.jsonl', needs.release-please.outputs.package-sdk-client-tag_name) }}

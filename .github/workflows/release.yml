@@ -7,7 +7,7 @@ on:
         required: true
         type: choice
         options:
-          - pkgs/sdk/client
+          # pkgs/sdk/client is omitted here since this workflow is for ubuntu and the client sdk build process requires macos.  Use release-sdk-client for client sdk.
           - pkgs/sdk/server
           - pkgs/telemetry
       dry_run:
@@ -24,7 +24,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: write

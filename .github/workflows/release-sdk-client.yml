@@ -1,0 +1,158 @@
+# This workflow exists because the client sdk build process requires macos.
+name: Publish SDK Client Package
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Is this a dry run. If so no package will be published.'
+        type: boolean
+        required: true
+  workflow_call:
+    inputs:
+      dry_run:
+        description: 'Is this a dry run. If so no package will be published.'
+        type: boolean
+        required: true
+    outputs:
+      hashes:
+        description: sha256sum hashes of built artifacts
+        value: ${{ jobs.publish.outputs.hashes }}
+
+jobs:
+# Building is done on mac runner due to xcode build dependencies
+  build:
+    runs-on: macos-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fetch all history, useful for docs
+
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
+
+      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+        name: Get secrets
+        with:
+          aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
+          s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.snk = LaunchDarkly.snk'
+
+      - name: CI check
+        uses: ./.github/actions/ci
+        with:
+          project_file: ${{ env.PROJECT_FILE }}
+          test_project_file: ${{ env.TEST_PROJECT_FILE }}
+
+      - name: Release build
+        uses: ./.github/actions/build-release
+        with:
+          project_file: ${{ env.PROJECT_FILE }}
+
+      - name: Build Documentation
+        uses: ./.github/actions/build-docs
+        with:
+          workspace_path: ${{ env.WORKSPACE_PATH }}
+
+      - name: Retain build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dir-bin-release
+          path: ${{ env.BUILD_OUTPUT_PATH }}
+          retention-days: 1
+
+      - name: Retain docs artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dir-docs
+          path: ${{ env.WORKSPACE_PATH }}/docs
+          retention-days: 1
+
+# Signing DLLs is done on Ubuntu due to Digicert tooling compatibility
+  sign-dlls:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
+
+      - name: Restore release artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dir-bin-release
+          path: ${{ env.BUILD_OUTPUT_PATH }}
+
+      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+        name: Get secrets
+        with:
+          aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
+          ssm_parameter_pairs: '/production/common/releasing/digicert/host = DIGICERT_HOST,/production/common/releasing/digicert/api_key = DIGICERT_API_KEY,/production/common/releasing/digicert/client_cert_file_b64 = DIGICERT_CLIENT_CERT_FILE_B64,/production/common/releasing/digicert/client_cert_password = DIGICERT_CLIENT_CERT_PASSWORD,/production/common/releasing/digicert/code_signing_cert_sha1_hash = DIGICERT_CODE_SIGNING_CERT_SHA1_HASH'
+
+      - name: Sign DLLs
+        uses: launchdarkly/gh-actions/actions/sign-dlls@sign-dlls-v1.0.0
+        with:
+          build_configuration_path: ${{ env.BUILD_OUTPUT_PATH }}
+          dll_name: ${{ env.BUILD_OUTPUT_DLL_NAME }}
+
+      - name: Retain signed artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dir-bin-release-signed
+          path: ${{ env.BUILD_OUTPUT_PATH }}
+          retention-days: 1
+
+# Packing is done on Mac due to ios workload requirements.
+  publish:
+    runs-on: macos-latest
+    needs: sign-dlls
+    permissions:
+      id-token: write
+      contents: write
+    outputs:
+      hashes: ${{ steps.publish.outputs.hashes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
+
+      - name: Restore release artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dir-bin-release-signed
+          path: ${{ env.BUILD_OUTPUT_PATH }}
+
+      - name: Restore docs artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dir-docs
+          path: ${{ env.WORKSPACE_PATH }}/docs
+
+      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+        name: Get secrets
+        with:
+          aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
+          ssm_parameter_pairs: '/production/common/releasing/nuget/api_key = NUGET_API_KEY'
+
+      - name: Publish Nupkg
+        id: publish
+        uses: ./.github/actions/publish-package
+        with:
+          project_file: ${{ env.PROJECT_FILE }}
+          dry_run: ${{ inputs.dry_run }}
+
+      - name: Publish Documentation
+        if: ${{ inputs.dry_run == 'false' }}
+        uses: ./.github/actions/publish-docs
+        with:
+          workspace_path: ${{ env.WORKSPACE_PATH }}
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.5.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.5.1...LaunchDarkly.ServerSdk-v8.5.2) (2024-08-27)
+
+
+### Bug Fixes
+
+* improved accuracy of stream interruption error message. ([#12](https://github.com/launchdarkly/dotnet-core/issues/12)) ([bd6b413](https://github.com/launchdarkly/dotnet-core/commit/bd6b413961238d87d71b4d7539abb2c2ed5bb863))
+
 ## [8.5.1](https://github.com/launchdarkly/dotnet-server-sdk/compare/8.5.0...8.5.1) (2024-06-03)
 
 

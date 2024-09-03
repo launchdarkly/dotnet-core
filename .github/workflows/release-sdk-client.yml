@@ -85,7 +85,7 @@ jobs:
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
       - name: Restore release artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: dir-bin-release
           path: ${{ env.BUILD_OUTPUT_PATH }}
@@ -126,13 +126,13 @@ jobs:
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
       - name: Restore release artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: dir-bin-release-signed
           path: ${{ env.BUILD_OUTPUT_PATH }}
 
       - name: Restore docs artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: dir-docs
           path: ${{ env.WORKSPACE_PATH }}/docs

@@ -27,8 +27,8 @@ The .NET build tools should automatically load the most appropriate build of the
 
 ## Known Issues
 
-Currently UWP has an issue with streaming network requests. For more information refer to this issue: https://github.com/dotnet/runtime/issues/108622
-This may be resolved by .Net 9.0 UWP support.
+Currently UWP has an issue with streaming network requests. For more information, refer to this issue: https://github.com/dotnet/runtime/issues/108622
+This may be resolved by .NET 9.0 UWP support.
 
 ## Getting started
 

@@ -25,6 +25,11 @@ The .Net Standard and .Net 7.0 targets have no OS-specific code. This allows the
 
 The .NET build tools should automatically load the most appropriate build of the SDK for whatever platform your application or library is targeted to.
 
+## Known Issues
+
+Currently UWP has an issue with streaming network requests. For more information, refer to this issue: https://github.com/dotnet/runtime/issues/108622
+This may be resolved by .NET 9.0 UWP support.
+
 ## Getting started
 
 Refer to the [SDK documentation](https://docs.launchdarkly.com/sdk/client-side/dotnet) for instructions on getting started with using the SDK.

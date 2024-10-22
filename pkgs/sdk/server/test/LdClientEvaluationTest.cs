@@ -389,6 +389,195 @@ namespace LaunchDarkly.Sdk.Server
             AssertLogMessageRegex(true, Logging.LogLevel.Error, Evaluator.ErrorMessageForTesting);
         }
 
+
+
+        [Fact]
+        public void AllFlagsStateCanExposePrerequisiteRelationshipsWhenPrereqIsNotVisibleToClients()
+        {
+            var prereq1 = new FeatureFlagBuilder("prereq1")
+                .OnWithValue(LdValue.Of(true)).ClientSide(false).Build();
+
+            var prereq2 = new FeatureFlagBuilder("prereq2")
+                .OnWithValue(LdValue.Of(true)).ClientSide(false).Build();
+
+            var toplevel = new FeatureFlagBuilder("toplevel")
+                .Prerequisites(new Prerequisite("prereq1", 0), new Prerequisite("prereq2", 0))
+                .Variations(LdValue.Of(false), LdValue.Of(true))
+                .On(true)
+                .ClientSide(true)
+                .OffVariation(0)
+                .FallthroughVariation(1)
+                .Build();
+
+            testData.UsePreconfiguredFlag(prereq1);
+            testData.UsePreconfiguredFlag(prereq2);
+            testData.UsePreconfiguredFlag(toplevel);
+
+            var state = client.AllFlagsState(context, FlagsStateOption.ClientSideOnly);
+            Assert.True(state.Valid);
+
+
+            var expectedString = @"{""toplevel"":true,
+                ""$flagsState"":{
+                 ""toplevel"":{
+                    ""variation"":1,""version"":1,""prerequisites"":[
+                        ""prereq1"",""prereq2""
+                    ]
+                  }
+                },
+                ""$valid"":true
+            }";
+
+            var actualString = LdJsonSerialization.SerializeObject(state);
+
+            JsonAssertions.AssertJsonEqual(expectedString, actualString);
+        }
+
+        [Fact]
+        public void AllFlagsStateCanExposePrerequisiteRelationshipsInEvaluationOrderShortCircuit()
+        {
+            var prereq1 = new FeatureFlagBuilder("prereq1")
+                .OffWithValue(LdValue.Of(false)).Build();
+
+            var prereq2 = new FeatureFlagBuilder("prereq2")
+                .OnWithValue(LdValue.Of(true)).Build();
+
+            var toplevel = new FeatureFlagBuilder("toplevel")
+                .Prerequisites(new Prerequisite("prereq1", 0), new Prerequisite("prereq2", 0))
+                .Variations(LdValue.Of(false), LdValue.Of(true))
+                .On(true)
+                .OffVariation(0)
+                .FallthroughVariation(1)
+                .Build();
+
+            testData.UsePreconfiguredFlag(prereq1);
+            testData.UsePreconfiguredFlag(prereq2);
+            testData.UsePreconfiguredFlag(toplevel);
+
+            var state = client.AllFlagsState(context);
+            Assert.True(state.Valid);
+
+
+            var expectedString = @"{""prereq1"":false,""prereq2"":true,""toplevel"":false,
+                ""$flagsState"":{
+                  ""prereq1"":{
+                    ""variation"":0,
+                    ""version"":1
+                  },""prereq2"":{
+                    ""variation"":0,
+                    ""version"":1
+                  },""toplevel"":{
+                    ""variation"":0,""version"":1,""prerequisites"":[
+                        ""prereq1""
+                    ]
+                  }
+                },
+                ""$valid"":true
+            }";
+
+            var actualString = LdJsonSerialization.SerializeObject(state);
+
+            JsonAssertions.AssertJsonEqual(expectedString, actualString);
+        }
+
+        [Fact]
+        public void AllFlagsStateCanExposePrerequisiteRelationshipsInEvaluationOrderBothOn()
+        {
+            var prereq1 = new FeatureFlagBuilder("prereq1")
+                .OnWithValue(LdValue.Of(true)).Build();
+
+            var prereq2 = new FeatureFlagBuilder("prereq2")
+                .OnWithValue(LdValue.Of(true)).Build();
+
+            var toplevel = new FeatureFlagBuilder("toplevel")
+                .Prerequisites(new Prerequisite("prereq1", 0), new Prerequisite("prereq2", 0))
+                .Variations(LdValue.Of(false), LdValue.Of(true))
+                .On(true)
+                .OffVariation(0)
+                .FallthroughVariation(1)
+                .Build();
+
+            testData.UsePreconfiguredFlag(prereq1);
+            testData.UsePreconfiguredFlag(prereq2);
+            testData.UsePreconfiguredFlag(toplevel);
+
+            var state = client.AllFlagsState(context);
+            Assert.True(state.Valid);
+
+
+            var expectedString = @"{""prereq1"":true,""prereq2"":true,""toplevel"":true,
+                ""$flagsState"":{
+                  ""prereq1"":{
+                    ""variation"":0,
+                    ""version"":1
+                  },""prereq2"":{
+                    ""variation"":0,
+                    ""version"":1
+                  },""toplevel"":{
+                    ""variation"":1,""version"":1,""prerequisites"":[
+                        ""prereq1"",""prereq2""
+                    ]
+                  }
+                },
+                ""$valid"":true
+            }";
+
+            var actualString = LdJsonSerialization.SerializeObject(state);
+
+            JsonAssertions.AssertJsonEqual(expectedString, actualString);
+        }
+
+
+        [Fact]
+        public void AllFlagsStateCanExposePrerequisiteRelationshipsInEvaluationOrderBothOnSwapped()
+        {
+            // Same as previous test, but the order of prerequisites in the toplevel flag is swapped. This is to
+            // ensure we're not sorting the prerequisite list.
+
+            var prereq1 = new FeatureFlagBuilder("prereq1")
+                .OnWithValue(LdValue.Of(true)).Build();
+
+            var prereq2 = new FeatureFlagBuilder("prereq2")
+                .OnWithValue(LdValue.Of(true)).Build();
+
+            var toplevel = new FeatureFlagBuilder("toplevel")
+                .Prerequisites(new Prerequisite("prereq2", 0), new Prerequisite("prereq1", 0)) // swapped
+                .Variations(LdValue.Of(false), LdValue.Of(true))
+                .On(true)
+                .OffVariation(0)
+                .FallthroughVariation(1)
+                .Build();
+
+            testData.UsePreconfiguredFlag(prereq1);
+            testData.UsePreconfiguredFlag(prereq2);
+            testData.UsePreconfiguredFlag(toplevel);
+
+            var state = client.AllFlagsState(context);
+            Assert.True(state.Valid);
+
+
+            var expectedString = @"{""prereq1"":true,""prereq2"":true,""toplevel"":true,
+                ""$flagsState"":{
+                  ""prereq1"":{
+                    ""variation"":0,
+                    ""version"":1
+                  },""prereq2"":{
+                    ""variation"":0,
+                    ""version"":1
+                  },""toplevel"":{
+                    ""variation"":1,""version"":1,""prerequisites"":[
+                        ""prereq2"",""prereq1""
+                    ]
+                  }
+                },
+                ""$valid"":true
+            }";
+
+            var actualString = LdJsonSerialization.SerializeObject(state);
+
+            JsonAssertions.AssertJsonEqual(expectedString, actualString);
+        }
+
         [Theory]
         [InlineData(MigrationStage.Off)]
         [InlineData(MigrationStage.DualWrite)]

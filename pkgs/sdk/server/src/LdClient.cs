@@ -399,7 +399,7 @@ namespace LaunchDarkly.Sdk.Server
                     bool inExperiment = EventFactory.IsExperiment(flag, result.Result.Reason);
 
                     var directPrerequisites = result.PrerequisiteEvals.Where(
-                        e => e.PrerequisiteOfFlagKey == flag.Key)
+                        e => e.FlagKey == flag.Key)
                         .Select(p => p.PrerequisiteFlag.Key).ToList();
 
                     builder.AddFlag(
@@ -482,7 +482,7 @@ namespace LaunchDarkly.Sdk.Server
                     foreach (var prereqEvent in evalResult.PrerequisiteEvals)
                     {
                         _eventProcessor.RecordEvaluationEvent(eventFactory.NewPrerequisiteEvaluationEvent(
-                            prereqEvent.PrerequisiteFlag, context, prereqEvent.Result, prereqEvent.PrerequisiteOfFlagKey));
+                            prereqEvent.PrerequisiteFlag, context, prereqEvent.Result, prereqEvent.FlagKey));
                     }
                 }
                 var evalDetail = evalResult.Result;

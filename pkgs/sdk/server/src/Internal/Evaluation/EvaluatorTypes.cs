@@ -21,6 +21,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
         internal struct PrerequisiteEvalRecord
         {
             internal readonly FeatureFlag PrerequisiteFlag;
+            // This is mis-named, this should be flagKey or parentOfPrerequisite
             internal readonly string PrerequisiteOfFlagKey;
             internal readonly EvaluationDetail<LdValue> Result;
 

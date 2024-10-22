@@ -71,9 +71,12 @@ namespace LaunchDarkly.Sdk.Server
         public void CanSerializeToJson()
         {
             var state = FeatureFlagsState.Builder(FlagsStateOption.WithReasons)
-                .AddFlag("key1", LdValue.Of("value1"), 0, EvaluationReason.OffReason, 100, false, false, null)
-                .AddFlag("key2", LdValue.Of("value2"), 1, EvaluationReason.FallthroughReason, 200, true, false, UnixMillisecondTime.OfMillis(1000))
-                .AddFlag("key3", LdValue.Null, null, EvaluationReason.ErrorReason(EvaluationErrorKind.MalformedFlag), 300, false, false, null)
+                .AddFlag("key1", LdValue.Of("value1"), 0, EvaluationReason.OffReason, 100, false, false, null, new List<string>())
+                .AddFlag("key2", LdValue.Of("value2"), 1, EvaluationReason.FallthroughReason, 200, true, false, UnixMillisecondTime.OfMillis(1000), new List<string>())
+                .AddFlag("key3", LdValue.Null, null, EvaluationReason.ErrorReason(EvaluationErrorKind.MalformedFlag), 300, false, false, null, new List<string>()
+                {
+                    "key1", "key2"
+                })
                 .Build();
 
             var expectedString = @"{""key1"":""value1"",""key2"":""value2"",""key3"":null,
@@ -83,7 +86,7 @@ namespace LaunchDarkly.Sdk.Server
                   },""key2"":{
                     ""variation"":1,""version"":200,""reason"":{""kind"":""FALLTHROUGH""},""trackEvents"":true,""debugEventsUntilDate"":1000
                   },""key3"":{
-                    ""version"":300,""reason"":{""kind"":""ERROR"",""errorKind"":""MALFORMED_FLAG""}
+                    ""version"":300,""reason"":{""kind"":""ERROR"",""errorKind"":""MALFORMED_FLAG""},""prerequisites"":[""key1"",""key2""]
                   }
                 },
                 ""$valid"":true
@@ -96,13 +99,19 @@ namespace LaunchDarkly.Sdk.Server
         public void CanDeserializeFromJson()
         {
             var state = FeatureFlagsState.Builder(FlagsStateOption.WithReasons)
-                .AddFlag("key1", LdValue.Of("value1"), 0, EvaluationReason.OffReason, 100, false, false, null)
-                .AddFlag("key2", LdValue.Of("value2"), 1, EvaluationReason.FallthroughReason, 200, true, false, UnixMillisecondTime.OfMillis(1000))
+                .AddFlag("key1", LdValue.Of("value1"), 0, EvaluationReason.OffReason, 100, false, false, null, new List<string>())
+                .AddFlag("key2", LdValue.Of("value2"), 1, EvaluationReason.FallthroughReason, 200, true, false, UnixMillisecondTime.OfMillis(1000), new List<string>{"key1"})
                 .Build();
 
             var jsonString = LdJsonSerialization.SerializeObject(state);
             var state1 = LdJsonSerialization.DeserializeObject<FeatureFlagsState>(jsonString);
 
+            var jsonString2 = LdJsonSerialization.SerializeObject(state1);
+
+            // Ensure a roundtrip state -> json -> json is equal.
+            Assert.Equal(jsonString, jsonString2);
+
+            // Ensure a roundtrip state -> json -> state is equal.
             Assert.Equal(state, state1);
         }
     }

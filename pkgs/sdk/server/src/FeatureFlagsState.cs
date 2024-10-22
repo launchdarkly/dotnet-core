@@ -156,6 +156,7 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         /// <param name="valid">true if valid, false if invalid (default is valid)</param>
         /// <returns>the same builder</returns>
+        [Obsolete("Unused, construct a FeatureFlagState with valid/invalid state directly")]
         public FeatureFlagsStateBuilder Valid(bool valid)
         {
             _valid = valid;
@@ -167,8 +168,9 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         /// <param name="flagKey">the flag key</param>
         /// <param name="result">the evaluation result</param>
+        /// <param name="prerequisites">the direct prerequisites evaluated for this flag</param>
         /// <returns></returns>
-        public FeatureFlagsStateBuilder AddFlag(string flagKey, EvaluationDetail<LdValue> result)
+        public FeatureFlagsStateBuilder AddFlag(string flagKey, EvaluationDetail<LdValue> result, List<string> prerequisites)
         {
             return AddFlag(flagKey,
                 result.Value,
@@ -177,13 +179,14 @@ namespace LaunchDarkly.Sdk.Server
                 0,
                 false,
                 false,
-                null);
+                null,
+                prerequisites);
         }
 
         // This method is defined with internal scope because metadata fields like trackEvents aren't
         // relevant to the main external use case for the builder (testing server-side code)
         internal FeatureFlagsStateBuilder AddFlag(string flagKey, LdValue value, int? variationIndex, EvaluationReason reason,
-            int flagVersion, bool flagTrackEvents, bool trackReason, UnixMillisecondTime? flagDebugEventsUntilDate)
+            int flagVersion, bool flagTrackEvents, bool trackReason, UnixMillisecondTime? flagDebugEventsUntilDate, List<string> prerequisites)
         {
             bool flagIsTracked = flagTrackEvents || flagDebugEventsUntilDate != null;
             var flag = new FlagState
@@ -194,7 +197,8 @@ namespace LaunchDarkly.Sdk.Server
                 Reason = trackReason || (_withReasons && (!_detailsOnlyIfTracked || flagIsTracked)) ? reason : (EvaluationReason?)null,
                 DebugEventsUntilDate = flagDebugEventsUntilDate,
                 TrackEvents = flagTrackEvents,
-                TrackReason = trackReason
+                TrackReason = trackReason,
+                Prerequisites = prerequisites
             };
             _flags[flagKey] = flag;
             return this;
@@ -211,24 +215,27 @@ namespace LaunchDarkly.Sdk.Server
         internal UnixMillisecondTime? DebugEventsUntilDate { get; set; }
         internal EvaluationReason? Reason { get; set; }
 
+        internal List<string> Prerequisites { get; set; }
+
         public override bool Equals(object other)
         {
             if (other is FlagState o)
             {
                 return Variation == o.Variation &&
-                    Version == o.Version &&
-                    TrackEvents == o.TrackEvents &&
-                    TrackReason == o.TrackReason &&
-                    DebugEventsUntilDate.Equals(o.DebugEventsUntilDate) &&
-                    Object.Equals(Reason, o.Reason);
+                       Version == o.Version &&
+                       TrackEvents == o.TrackEvents &&
+                       TrackReason == o.TrackReason &&
+                       DebugEventsUntilDate.Equals(o.DebugEventsUntilDate) &&
+                       Object.Equals(Reason, o.Reason) &&
+                       Prerequisites == o.Prerequisites;
             }
             return false;
         }
 
         public override int GetHashCode()
         {
-            return new HashCodeBuilder().With(Variation).With(Version).With(TrackEvents).With(TrackReason).
-                With(DebugEventsUntilDate).With(Reason).Value;
+            return new HashCodeBuilder().With(Variation).With(Version).With(TrackEvents).With(TrackReason)
+                .With(DebugEventsUntilDate).With(Reason).With(Prerequisites).Value;
         }
     }
 
@@ -270,6 +277,14 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     w.WritePropertyName("reason");
                     EvaluationReasonConverter.WriteJsonValue(meta.Reason.Value, w);
+                }
+                if (meta.Prerequisites.Count > 0) {
+                    w.WriteStartArray("prerequisites");
+                    foreach (var p in meta.Prerequisites)
+                    {
+                        w.WriteStringValue(p);
+                    }
+                    w.WriteEndArray();
                 }
                 w.WriteEndObject();
             }
@@ -317,6 +332,13 @@ namespace LaunchDarkly.Sdk.Server
                                     case "reason":
                                         flag.Reason = reader.TokenType == JsonTokenType.Null ? (EvaluationReason?)null :
                                                 EvaluationReasonConverter.ReadJsonValue(ref reader);
+                                        break;
+                                    case "prerequisites":
+                                        flag.Prerequisites = new List<string>();
+                                        for (var prereqs = RequireArray(ref reader); prereqs.Next(ref reader);)
+                                        {
+                                            flag.Prerequisites.Add(reader.GetString());
+                                        }
                                         break;
                                 }
                             }

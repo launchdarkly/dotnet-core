@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using LaunchDarkly.Logging;
@@ -371,8 +372,7 @@ namespace LaunchDarkly.Sdk.Server
 
             var builder = new FeatureFlagsStateBuilder(options);
             var clientSideOnly = FlagsStateOption.HasOption(options, FlagsStateOption.ClientSideOnly);
-            var withReasons = FlagsStateOption.HasOption(options, FlagsStateOption.WithReasons);
-            var detailsOnlyIfTracked = FlagsStateOption.HasOption(options, FlagsStateOption.DetailsOnlyForTrackedFlags);
+
             KeyedItems<ItemDescriptor> flags;
             try
             {
@@ -397,6 +397,11 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     EvaluatorTypes.EvalResult result = _evaluator.Evaluate(flag, context);
                     bool inExperiment = EventFactory.IsExperiment(flag, result.Result.Reason);
+
+                    var directPrerequisites = result.PrerequisiteEvals.Where(
+                        e => e.PrerequisiteOfFlagKey == flag.Key)
+                        .Select(p => p.PrerequisiteFlag.Key).ToList();
+
                     builder.AddFlag(
                         flag.Key,
                         result.Result.Value,
@@ -405,8 +410,8 @@ namespace LaunchDarkly.Sdk.Server
                         flag.Version,
                         flag.TrackEvents || inExperiment,
                         inExperiment,
-                        flag.DebugEventsUntilDate
-                        );
+                        flag.DebugEventsUntilDate,
+                        directPrerequisites);
                 }
                 catch (Exception e)
                 {
@@ -414,7 +419,7 @@ namespace LaunchDarkly.Sdk.Server
                         string.Format("Exception caught for feature flag \"{0}\" when evaluating all flags", flag.Key),
                         e);
                     EvaluationReason reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception);
-                    builder.AddFlag(flag.Key, new EvaluationDetail<LdValue>(LdValue.Null, null, reason));
+                    builder.AddFlag(flag.Key, new EvaluationDetail<LdValue>(LdValue.Null, null, reason), new List<string>());
                 }
             }
             return builder.Build();

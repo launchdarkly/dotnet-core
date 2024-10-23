@@ -168,7 +168,7 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         /// <param name="flagKey">the flag key</param>
         /// <param name="result">the evaluation result</param>
-        /// <returns></returns>
+        /// <returns>the same builder</returns>
         public FeatureFlagsStateBuilder AddFlag(string flagKey, EvaluationDetail<LdValue> result)
         {
             return AddFlag(flagKey, result, new List<string>());
@@ -181,7 +181,7 @@ namespace LaunchDarkly.Sdk.Server
         /// <param name="flagKey">the flag key</param>
         /// <param name="result">the evaluation result</param>
         /// <param name="prerequisites">the direct prerequisites evaluated for this flag</param>
-        /// <returns></returns>
+        /// <returns>the same builder</returns>
         public FeatureFlagsStateBuilder AddFlag(string flagKey, EvaluationDetail<LdValue> result, List<string> prerequisites)
         {
             return AddFlag(flagKey,
@@ -228,6 +228,7 @@ namespace LaunchDarkly.Sdk.Server
         internal EvaluationReason? Reason { get; set; }
 
         internal List<string> Prerequisites { get; set; }
+
 
         public bool Equals(FlagState o)
         {
@@ -319,6 +320,7 @@ namespace LaunchDarkly.Sdk.Server
         {
             var valid = true;
             var flags = new Dictionary<string, FlagState>();
+
             for (var topLevelObj = RequireObject(ref reader); topLevelObj.Next(ref reader);)
             {
                 var key = topLevelObj.Name;

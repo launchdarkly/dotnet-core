@@ -332,9 +332,14 @@ namespace LaunchDarkly.Sdk.Server
                         for (var flagsObj = RequireObject(ref reader); flagsObj.Next(ref reader);)
                         {
                             var subKey = flagsObj.Name;
+
                             var flag = flags.ContainsKey(subKey)
                                 ? flags[subKey]
-                                : new FlagState() { Prerequisites = new List<string>() };
+                                : new FlagState
+                                {
+                                    // Most flags have no prerequisites, don't allocate unless we need to.
+                                    Prerequisites = new List<string>(0)
+                                };
 
                             for (var metaObj = RequireObject(ref reader); metaObj.Next(ref reader);)
                             {
@@ -359,7 +364,6 @@ namespace LaunchDarkly.Sdk.Server
                                                 EvaluationReasonConverter.ReadJsonValue(ref reader);
                                         break;
                                     case "prerequisites":
-                                        flag.Prerequisites = new List<string>();
                                         for (var prereqs = RequireArray(ref reader); prereqs.Next(ref reader);)
                                         {
                                             flag.Prerequisites.Add(reader.GetString());
@@ -372,7 +376,11 @@ namespace LaunchDarkly.Sdk.Server
                         break;
 
                     default:
-                        var flagForValue = flags.ContainsKey(key) ? flags[key] : new FlagState(){Prerequisites = new List<string>()};
+                        var flagForValue = flags.ContainsKey(key) ? flags[key] : new FlagState
+                        {
+                            // Most flags have no prerequisites, don't allocate unless we need to.
+                            Prerequisites = new List<string>(0)
+                        };
                         flagForValue.Value = LdValueConverter.ReadJsonValue(ref reader);
                         flags[key] = flagForValue;
                         break;

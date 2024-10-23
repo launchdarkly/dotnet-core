@@ -202,6 +202,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             return On(false).OffVariation(0).Variations(value);
         }
 
+        internal FeatureFlagBuilder OnWithValue(LdValue value)
+        {
+            return On(true).OffVariation(0).FallthroughVariation(0).Variations(value);
+        }
+
         internal FeatureFlagBuilder BooleanWithClauses(params Clause[] clauses)
         {
             return On(true).OffVariation(0)

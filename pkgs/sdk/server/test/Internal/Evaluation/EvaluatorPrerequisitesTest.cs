@@ -64,7 +64,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                     Assert.Equal(f1.Key, e.PrerequisiteFlag.Key);
                     Assert.Equal(LdValue.Of("go"), e.Result.Value);
                     Assert.Equal(f1.Version, e.PrerequisiteFlag.Version);
-                    Assert.Equal(f0.Key, e.PrerequisiteOfFlagKey);
+                    Assert.Equal(f0.Key, e.FlagKey);
                 });
         }
 
@@ -99,7 +99,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                     Assert.Equal(f1.Key, e.PrerequisiteFlag.Key);
                     Assert.Equal(LdValue.Of("nogo"), e.Result.Value);
                     Assert.Equal(f1.Version, e.PrerequisiteFlag.Version);
-                    Assert.Equal(f0.Key, e.PrerequisiteOfFlagKey);
+                    Assert.Equal(f0.Key, e.FlagKey);
                 });
         }
 
@@ -133,7 +133,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                     Assert.Equal(f1.Key, e.PrerequisiteFlag.Key);
                     Assert.Equal(LdValue.Of("go"), e.Result.Value);
                     Assert.Equal(f1.Version, e.PrerequisiteFlag.Version);
-                    Assert.Equal(f0.Key, e.PrerequisiteOfFlagKey);
+                    Assert.Equal(f0.Key, e.FlagKey);
                 });
         }
 
@@ -176,14 +176,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                     Assert.Equal(f2.Key, e.PrerequisiteFlag.Key);
                     Assert.Equal(LdValue.Of("go"), e.Result.Value);
                     Assert.Equal(f2.Version, e.PrerequisiteFlag.Version);
-                    Assert.Equal(f1.Key, e.PrerequisiteOfFlagKey);
+                    Assert.Equal(f1.Key, e.FlagKey);
                 },
                 e =>
                 {
                     Assert.Equal(f1.Key, e.PrerequisiteFlag.Key);
                     Assert.Equal(LdValue.Of("go"), e.Result.Value);
                     Assert.Equal(f1.Version, e.PrerequisiteFlag.Version);
-                    Assert.Equal(f0.Key, e.PrerequisiteOfFlagKey);
+                    Assert.Equal(f0.Key, e.FlagKey);
                 });
         }
 

@@ -156,6 +156,7 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         /// <param name="valid">true if valid, false if invalid (default is valid)</param>
         /// <returns>the same builder</returns>
+        [Obsolete("Unused, construct a FeatureFlagState with valid/invalid state directly")]
         public FeatureFlagsStateBuilder Valid(bool valid)
         {
             _valid = valid;
@@ -167,8 +168,21 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         /// <param name="flagKey">the flag key</param>
         /// <param name="result">the evaluation result</param>
-        /// <returns></returns>
+        /// <returns>the same builder</returns>
         public FeatureFlagsStateBuilder AddFlag(string flagKey, EvaluationDetail<LdValue> result)
+        {
+            return AddFlag(flagKey, result, new List<string>());
+        }
+
+
+        /// <summary>
+        /// Adds the result of a flag evaluation, including direct prerequisites.
+        /// </summary>
+        /// <param name="flagKey">the flag key</param>
+        /// <param name="result">the evaluation result</param>
+        /// <param name="prerequisites">the direct prerequisites evaluated for this flag</param>
+        /// <returns>the same builder</returns>
+        public FeatureFlagsStateBuilder AddFlag(string flagKey, EvaluationDetail<LdValue> result, List<string> prerequisites)
         {
             return AddFlag(flagKey,
                 result.Value,
@@ -177,13 +191,14 @@ namespace LaunchDarkly.Sdk.Server
                 0,
                 false,
                 false,
-                null);
+                null,
+                prerequisites);
         }
 
         // This method is defined with internal scope because metadata fields like trackEvents aren't
         // relevant to the main external use case for the builder (testing server-side code)
         internal FeatureFlagsStateBuilder AddFlag(string flagKey, LdValue value, int? variationIndex, EvaluationReason reason,
-            int flagVersion, bool flagTrackEvents, bool trackReason, UnixMillisecondTime? flagDebugEventsUntilDate)
+            int flagVersion, bool flagTrackEvents, bool trackReason, UnixMillisecondTime? flagDebugEventsUntilDate, List<string> prerequisites)
         {
             bool flagIsTracked = flagTrackEvents || flagDebugEventsUntilDate != null;
             var flag = new FlagState
@@ -194,14 +209,15 @@ namespace LaunchDarkly.Sdk.Server
                 Reason = trackReason || (_withReasons && (!_detailsOnlyIfTracked || flagIsTracked)) ? reason : (EvaluationReason?)null,
                 DebugEventsUntilDate = flagDebugEventsUntilDate,
                 TrackEvents = flagTrackEvents,
-                TrackReason = trackReason
+                TrackReason = trackReason,
+                Prerequisites = prerequisites
             };
             _flags[flagKey] = flag;
             return this;
         }
     }
 
-    internal struct FlagState
+    internal struct FlagState : IEquatable<FlagState>
     {
         internal LdValue Value { get; set; }
         internal int? Variation { get; set; }
@@ -211,24 +227,38 @@ namespace LaunchDarkly.Sdk.Server
         internal UnixMillisecondTime? DebugEventsUntilDate { get; set; }
         internal EvaluationReason? Reason { get; set; }
 
-        public override bool Equals(object other)
+        internal IReadOnlyList<string> Prerequisites { get; set; }
+
+
+        public bool Equals(FlagState o)
         {
-            if (other is FlagState o)
-            {
-                return Variation == o.Variation &&
-                    Version == o.Version &&
-                    TrackEvents == o.TrackEvents &&
-                    TrackReason == o.TrackReason &&
-                    DebugEventsUntilDate.Equals(o.DebugEventsUntilDate) &&
-                    Object.Equals(Reason, o.Reason);
-            }
-            return false;
+            return Variation == o.Variation &&
+                   Version == o.Version &&
+                   TrackEvents == o.TrackEvents &&
+                   TrackReason == o.TrackReason &&
+                   DebugEventsUntilDate.Equals(o.DebugEventsUntilDate) &&
+                   Object.Equals(Reason, o.Reason) &&
+                   Prerequisites.SequenceEqual(o.Prerequisites);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is FlagState other && Equals(other);
+        }
+
+        public static bool operator ==(FlagState lhs, FlagState rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(FlagState lhs, FlagState rhs)
+        {
+            return !(lhs == rhs);
         }
 
         public override int GetHashCode()
         {
-            return new HashCodeBuilder().With(Variation).With(Version).With(TrackEvents).With(TrackReason).
-                With(DebugEventsUntilDate).With(Reason).Value;
+            return new HashCodeBuilder().With(Variation).With(Version).With(TrackEvents).With(TrackReason)
+                .With(DebugEventsUntilDate).With(Reason).With(Prerequisites).Value;
         }
     }
 
@@ -271,6 +301,14 @@ namespace LaunchDarkly.Sdk.Server
                     w.WritePropertyName("reason");
                     EvaluationReasonConverter.WriteJsonValue(meta.Reason.Value, w);
                 }
+                if (meta.Prerequisites.Count > 0) {
+                    w.WriteStartArray("prerequisites");
+                    foreach (var p in meta.Prerequisites)
+                    {
+                        w.WriteStringValue(p);
+                    }
+                    w.WriteEndArray();
+                }
                 w.WriteEndObject();
             }
             w.WriteEndObject();
@@ -282,6 +320,7 @@ namespace LaunchDarkly.Sdk.Server
         {
             var valid = true;
             var flags = new Dictionary<string, FlagState>();
+
             for (var topLevelObj = RequireObject(ref reader); topLevelObj.Next(ref reader);)
             {
                 var key = topLevelObj.Name;
@@ -295,7 +334,15 @@ namespace LaunchDarkly.Sdk.Server
                         for (var flagsObj = RequireObject(ref reader); flagsObj.Next(ref reader);)
                         {
                             var subKey = flagsObj.Name;
-                            var flag = flags.ContainsKey(subKey) ? flags[subKey] : new FlagState();
+
+                            var flag = flags.ContainsKey(subKey)
+                                ? flags[subKey]
+                                : new FlagState
+                                {
+                                    // Most flags have no prerequisites, don't allocate capacity unless we need to.
+                                    Prerequisites = new List<string>(0)
+                                };
+
                             for (var metaObj = RequireObject(ref reader); metaObj.Next(ref reader);)
                             {
                                 switch (metaObj.Name)
@@ -318,6 +365,27 @@ namespace LaunchDarkly.Sdk.Server
                                         flag.Reason = reader.TokenType == JsonTokenType.Null ? (EvaluationReason?)null :
                                                 EvaluationReasonConverter.ReadJsonValue(ref reader);
                                         break;
+                                    case "prerequisites":
+                                        // Note: there is an assumption in this code that a given flag key could already
+                                        // have been seen before: specifically in the "values" section of the data
+                                        // (where it's a simple map of flag key -> evaluated value), but *also* if we
+                                        // have duplicate flag keys under the $flagState key.
+                                        //
+                                        // The first case is expected, but the second is not. LaunchDarkly SaaS / SDKs
+                                        // should never generate JSON that has duplicate keys. If this did happen,
+                                        // we don't want to 'merge' prerequisites in an arbitrary order: it's important
+                                        // that they remain the order they were serialized originally.
+                                        //
+                                        // Therefore, the behavior here is that the last seen value for a key will 'win'
+                                        // and overwrite any previous value.
+                                        var prereqList = new List<string>();
+                                        for (var prereqs = RequireArray(ref reader); prereqs.Next(ref reader);)
+                                        {
+                                            prereqList.Add(reader.GetString());
+
+                                        }
+                                        flag.Prerequisites = prereqList;
+                                        break;
                                 }
                             }
                             flags[subKey] = flag;
@@ -325,7 +393,11 @@ namespace LaunchDarkly.Sdk.Server
                         break;
 
                     default:
-                        var flagForValue = flags.ContainsKey(key) ? flags[key] : new FlagState();
+                        var flagForValue = flags.ContainsKey(key) ? flags[key] : new FlagState
+                        {
+                            // Most flags have no prerequisites, don't allocate capacity unless we need to.
+                            Prerequisites = new List<string>(0)
+                        };
                         flagForValue.Value = LdValueConverter.ReadJsonValue(ref reader);
                         flags[key] = flagForValue;
                         break;

@@ -37,7 +37,8 @@ namespace TestService
             "tags",
             "inline-context",
             "anonymous-redaction",
-            "evaluation-hooks"
+            "evaluation-hooks",
+            "client-prereq-events"
         };
 
         public readonly Handler Handler;

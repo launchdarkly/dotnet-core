@@ -21,14 +21,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
         internal struct PrerequisiteEvalRecord
         {
             internal readonly FeatureFlag PrerequisiteFlag;
-            internal readonly string PrerequisiteOfFlagKey;
+            internal readonly string FlagKey;
             internal readonly EvaluationDetail<LdValue> Result;
 
-            internal PrerequisiteEvalRecord(FeatureFlag prerequisiteFlag, string prerequisiteOfFlagKey,
+            internal PrerequisiteEvalRecord(FeatureFlag prerequisiteFlag, string flagKey,
                 EvaluationDetail<LdValue> result)
             {
                 PrerequisiteFlag = prerequisiteFlag;
-                PrerequisiteOfFlagKey = prerequisiteOfFlagKey;
+                FlagKey = flagKey;
                 Result = result;
             }
         }

@@ -227,7 +227,7 @@ namespace LaunchDarkly.Sdk.Server
         internal UnixMillisecondTime? DebugEventsUntilDate { get; set; }
         internal EvaluationReason? Reason { get; set; }
 
-        internal List<string> Prerequisites { get; set; }
+        internal IReadOnlyList<string> Prerequisites { get; set; }
 
 
         public bool Equals(FlagState o)
@@ -339,7 +339,7 @@ namespace LaunchDarkly.Sdk.Server
                                 ? flags[subKey]
                                 : new FlagState
                                 {
-                                    // Most flags have no prerequisites, don't allocate unless we need to.
+                                    // Most flags have no prerequisites, don't allocate capacity unless we need to.
                                     Prerequisites = new List<string>(0)
                                 };
 
@@ -366,10 +366,25 @@ namespace LaunchDarkly.Sdk.Server
                                                 EvaluationReasonConverter.ReadJsonValue(ref reader);
                                         break;
                                     case "prerequisites":
+                                        // Note: there is an assumption in this code that a given flag key could already
+                                        // have been seen before: specifically in the "values" section of the data
+                                        // (where it's a simple map of flag key -> evaluated value), but *also* if we
+                                        // have duplicate flag keys under the $flagState key.
+                                        //
+                                        // The first case is expected, but the second is not. LaunchDarkly SaaS / SDKs
+                                        // should never generate JSON that has duplicate keys. If this did happen,
+                                        // we don't want to 'merge' prerequisites in an arbitrary order: it's important
+                                        // that they remain the order they were serialized originally.
+                                        //
+                                        // Therefore, the behavior here is that the last seen value for a key will 'win'
+                                        // and overwrite any previous value.
+                                        var prereqList = new List<string>();
                                         for (var prereqs = RequireArray(ref reader); prereqs.Next(ref reader);)
                                         {
-                                            flag.Prerequisites.Add(reader.GetString());
+                                            prereqList.Add(reader.GetString());
+
                                         }
+                                        flag.Prerequisites = prereqList;
                                         break;
                                 }
                             }
@@ -380,7 +395,7 @@ namespace LaunchDarkly.Sdk.Server
                     default:
                         var flagForValue = flags.ContainsKey(key) ? flags[key] : new FlagState
                         {
-                            // Most flags have no prerequisites, don't allocate unless we need to.
+                            // Most flags have no prerequisites, don't allocate capacity unless we need to.
                             Prerequisites = new List<string>(0)
                         };
                         flagForValue.Value = LdValueConverter.ReadJsonValue(ref reader);

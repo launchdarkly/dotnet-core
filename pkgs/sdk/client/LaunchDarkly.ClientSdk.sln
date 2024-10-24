@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.ClientSdk", "src\LaunchDarkly.ClientSdk\LaunchDarkly.ClientSdk.csproj", "{7717A2B2-9905-40A7-989F-790139D69543}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.ClientSdk", "src\LaunchDarkly.ClientSdk.csproj", "{7717A2B2-9905-40A7-989F-790139D69543}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.ClientSdk.Device.Tests", "tests\LaunchDarkly.ClientSdk.Device.Tests\LaunchDarkly.ClientSdk.Device.Tests.csproj", "{0D88C80E-8CD8-4064-AE99-9849C7CD6E35}"
 EndProject

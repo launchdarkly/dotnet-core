@@ -8,6 +8,7 @@
     <TargetFrameworks>$(TESTFRAMEWORK)</TargetFrameworks>
     <AssemblyName>LaunchDarkly.ClientSdk.Tests</AssemblyName>
     <RootNamespace>LaunchDarkly.Sdk.Client</RootNamespace>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LaunchDarkly.TestHelpers" Version="2.0.0" />

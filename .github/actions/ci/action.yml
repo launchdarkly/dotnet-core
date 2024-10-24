@@ -39,4 +39,4 @@ runs:
       shell: bash
       run: |
         dotnet restore ${{ inputs.test_project_file }}
-        dotnet test --framework=${{ inputs.target_test_framework }} ${{ inputs.test_project_file }}
+        dotnet test --logger:"junit" --framework=${{ inputs.target_test_framework }} ${{ inputs.test_project_file }}

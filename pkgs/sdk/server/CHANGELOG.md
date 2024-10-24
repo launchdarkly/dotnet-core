@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.6.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.5.2...LaunchDarkly.ServerSdk-v8.6.0) (2024-10-24)
+
+
+### Features
+
+* report prerequisite relations in AllFlagState ([#19](https://github.com/launchdarkly/dotnet-core/issues/19)) ([43da95c](https://github.com/launchdarkly/dotnet-core/commit/43da95c85eb0766794c5f0dfb52d1d836b6deb17))
+
 ## [8.5.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.5.1...LaunchDarkly.ServerSdk-v8.5.2) (2024-08-27)
 
 

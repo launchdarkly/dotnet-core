@@ -49,7 +49,7 @@ namespace LaunchDarkly.Sdk.Client
                 bool trackEvents,
                 bool trackReason,
                 UnixMillisecondTime? debugEventsUntilDate,
-                IReadOnlyList<string> prerequisites)
+                IReadOnlyList<string> prerequisites = null)
             {
                 Value = value;
                 Variation = variation;

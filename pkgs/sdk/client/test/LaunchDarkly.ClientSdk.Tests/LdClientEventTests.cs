@@ -14,10 +14,12 @@ namespace LaunchDarkly.Sdk.Client
         private readonly TestData _testData = TestData.DataSource();
         private MockEventProcessor eventProcessor = new MockEventProcessor();
         private IComponentConfigurer<IEventProcessor> _factory;
+        private ITestOutputHelper _testOutput;
 
         public LdClientEventTests(ITestOutputHelper testOutput) : base(testOutput)
         {
             _factory = eventProcessor.AsSingletonFactory<IEventProcessor>();
+            _testOutput = testOutput;
         }
 
         private LdClient MakeClient(Context c) =>
@@ -356,6 +358,12 @@ namespace LaunchDarkly.Sdk.Client
                 client.BoolVariation("flagAB");
                 client.BoolVariation("flagAC");
                 client.BoolVariation("flagABD");
+
+                _testOutput.WriteLine("Events:");
+                foreach (var e in eventProcessor.Events)
+                {
+                    _testOutput.WriteLine(e.ToString());
+                }
 
                 Assert.Collection(eventProcessor.Events,
                 e => CheckIdentifyEvent(e, user),

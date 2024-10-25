@@ -59,7 +59,7 @@ namespace LaunchDarkly.Sdk.Client
                 TrackEvents = trackEvents;
                 TrackReason = trackReason;
                 DebugEventsUntilDate = debugEventsUntilDate;
-                Prerequisites = prerequisites;
+                Prerequisites = prerequisites != null ? new List<string>(prerequisites) : null;
             }
 
             /// <inheritdoc/>

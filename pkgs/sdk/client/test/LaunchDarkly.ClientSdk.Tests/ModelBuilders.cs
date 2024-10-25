@@ -16,6 +16,7 @@ namespace LaunchDarkly.Sdk.Client
         private bool _trackReason;
         private UnixMillisecondTime? _debugEventsUntilDate;
         private EvaluationReason? _reason;
+        private List<string> _prerequisites;
 
         public FeatureFlagBuilder()
         {
@@ -30,11 +31,12 @@ namespace LaunchDarkly.Sdk.Client
             _trackReason = from.TrackReason;
             _debugEventsUntilDate = from.DebugEventsUntilDate;
             _reason = from.Reason;
+            _prerequisites = from.Prerequisites != null ? new List<string>(from.Prerequisites) : null;
         }
 
         public FeatureFlag Build()
         {
-            return new FeatureFlag(_value, _variation, _reason, _version, _flagVersion, _trackEvents, _trackReason, _debugEventsUntilDate);
+            return new FeatureFlag(_value, _variation, _reason, _version, _flagVersion, _trackEvents, _trackReason, _debugEventsUntilDate, _prerequisites);
         }
 
         public FeatureFlagBuilder Value(LdValue value)
@@ -86,6 +88,18 @@ namespace LaunchDarkly.Sdk.Client
         public FeatureFlagBuilder DebugEventsUntilDate(UnixMillisecondTime? debugEventsUntilDate)
         {
             _debugEventsUntilDate = debugEventsUntilDate;
+            return this;
+        }
+
+        public FeatureFlagBuilder Prerequisites(params string[] prerequisites)
+        {
+            if (prerequisites == null || prerequisites.Length == 0)
+            {
+                _prerequisites = null;
+                return this;
+            }
+
+            _prerequisites = new List<string>(prerequisites);
             return this;
         }
     }

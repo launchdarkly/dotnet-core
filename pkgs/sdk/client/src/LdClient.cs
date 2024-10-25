@@ -761,6 +761,22 @@ namespace LaunchDarkly.Sdk.Client
                 }
             }
 
+            // The flag.Prerequisites array represents the evaluated prerequisites of this flag. We need to generate
+            // events for both this flag and its prerequisites (recursively), which is necessary to ensure LaunchDarkly
+            // analytics functions properly.
+            //
+            // We're using JsonVariationDetail because the type of the prerequisite is both unknown and irrelevant
+            // to emitting the events.
+            //
+            // We're passing LdValue.Null to match a server-side SDK's behavior when evaluating prerequisites.
+            if (flag.Prerequisites != null)
+            {
+                foreach (var prerequisiteKey in flag.Prerequisites)
+                {
+                    JsonVariationDetail(prerequisiteKey, LdValue.Null);
+                }
+            }
+
             EvaluationDetail<T> result;
             LdValue valueJson;
             if (flag.Value.IsNull)

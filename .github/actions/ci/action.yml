@@ -7,6 +7,14 @@ inputs:
   test_project_file:
     description: 'Path to the test project file.  If provided, run unit tests, otherwise skip them.'
     required: false
+  target_test_framework:
+    description: 'The target test framework to use.'
+    required: false
+    default: 'net6.0'
+  test_verbosity:
+    description: 'The verbosity level of the test output.'
+    required: false
+    default: 'normal'
 
 runs:
   using: composite
@@ -35,4 +43,4 @@ runs:
       shell: bash
       run: |
         dotnet restore ${{ inputs.test_project_file }}
-        dotnet test --framework=net6.0 ${{ inputs.test_project_file }}
+        dotnet test -v=${{ inputs.test_verbosity }} --framework=${{ inputs.target_test_framework }} ${{ inputs.test_project_file }}

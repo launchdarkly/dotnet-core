@@ -359,12 +359,6 @@ namespace LaunchDarkly.Sdk.Client
                 client.BoolVariation("flagAC");
                 client.BoolVariation("flagABD");
 
-                _testOutput.WriteLine("Events:");
-                foreach (var e in eventProcessor.Events)
-                {
-                    _testOutput.WriteLine(e.ToString());
-                }
-
                 Assert.Collection(eventProcessor.Events,
                 e => CheckIdentifyEvent(e, user),
                     e => CheckEvaluationEvent(e, "flagA"),

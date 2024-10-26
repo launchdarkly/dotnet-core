@@ -592,7 +592,8 @@ namespace LaunchDarkly.Sdk.Client.Integrations
                         _preconfiguredFlag.FlagVersion,
                         _preconfiguredFlag.TrackEvents,
                         _preconfiguredFlag.TrackReason,
-                        _preconfiguredFlag.DebugEventsUntilDate));
+                        _preconfiguredFlag.DebugEventsUntilDate,
+                        _preconfiguredFlag.Prerequisites));
                 }
                 int variation;
                 if (!_variationByContextKey.TryGetValue(context.Kind, out var keys) ||

@@ -155,9 +155,9 @@ namespace LaunchDarkly.Sdk.Client
                             debugEventsUntilDate = JsonSerializer.Deserialize<UnixMillisecondTime?>(ref reader);
                             break;
                         case "prerequisites":
-                            prerequisites = new List<string>();
-                            for (var array = RequireArray(ref reader); array.Next(ref reader);)
+                            for (var array = RequireArrayOrNull(ref reader); array.Next(ref reader);)
                             {
+                                prerequisites ??= new List<string>();
                                 prerequisites.Add(reader.GetString());
                             }
                             break;
@@ -199,6 +199,16 @@ namespace LaunchDarkly.Sdk.Client
                 if (value.DebugEventsUntilDate.HasValue)
                 {
                     writer.WriteNumber("debugEventsUntilDate", value.DebugEventsUntilDate.Value.Value);
+                }
+
+                if (value.Prerequisites != null && value.Prerequisites.Count > 0)
+                {
+                    writer.WriteStartArray("prerequisites");
+                    foreach (var p in value.Prerequisites)
+                    {
+                        writer.WriteStringValue(p);
+                    }
+                    writer.WriteEndArray();
                 }
 
                 writer.WriteEndObject();

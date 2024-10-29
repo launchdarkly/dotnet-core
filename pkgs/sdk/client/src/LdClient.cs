@@ -769,6 +769,9 @@ namespace LaunchDarkly.Sdk.Client
             // to emitting the events.
             //
             // We're passing LdValue.Null to match a server-side SDK's behavior when evaluating prerequisites.
+            //
+            // NOTE: if "hooks" functionality is implemented into this SDK, take care that evaluating prerequisites
+            // does not trigger hooks. This may require refactoring the code below to not use JsonVariationDetail.
             if (flag.Prerequisites != null)
             {
                 foreach (var prerequisiteKey in flag.Prerequisites)

@@ -14,10 +14,12 @@ namespace LaunchDarkly.Sdk.Client
         private readonly TestData _testData = TestData.DataSource();
         private MockEventProcessor eventProcessor = new MockEventProcessor();
         private IComponentConfigurer<IEventProcessor> _factory;
+        private ITestOutputHelper _testOutput;
 
         public LdClientEventTests(ITestOutputHelper testOutput) : base(testOutput)
         {
             _factory = eventProcessor.AsSingletonFactory<IEventProcessor>();
+            _testOutput = testOutput;
         }
 
         private LdClient MakeClient(Context c) =>
@@ -333,11 +335,55 @@ namespace LaunchDarkly.Sdk.Client
             }
         }
 
+        [Fact]
+        public void VariationSendsFeatureEventForPrerequisites()
+        {
+            var flagA = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1000)
+                .TrackEvents(false).TrackReason(false).Build();
+            var flagAB = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1000)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagA").Build();
+            var flagAC = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1000)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagA").Build();
+            var flagABD = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1000)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagAB").Build();
+
+            _testData.Update(_testData.Flag("flagA").PreconfiguredFlag(flagA));
+            _testData.Update(_testData.Flag("flagAB").PreconfiguredFlag(flagAB));
+            _testData.Update(_testData.Flag("flagAC").PreconfiguredFlag(flagAC));
+            _testData.Update(_testData.Flag("flagABD").PreconfiguredFlag(flagABD));
+
+            using (LdClient client = MakeClient(user))
+            {
+                client.BoolVariation("flagA");
+                client.BoolVariation("flagAB");
+                client.BoolVariation("flagAC");
+                client.BoolVariation("flagABD");
+
+                Assert.Collection(eventProcessor.Events,
+                e => CheckIdentifyEvent(e, user),
+                    e => CheckEvaluationEvent(e, "flagA"),
+                    e => CheckEvaluationEvent(e, "flagA"),
+                    e => CheckEvaluationEvent(e, "flagAB"),
+                    e => CheckEvaluationEvent(e, "flagA"),
+                    e => CheckEvaluationEvent(e, "flagAC"),
+                    e => CheckEvaluationEvent(e, "flagA"),
+                    e => CheckEvaluationEvent(e, "flagAB"),
+                    e => CheckEvaluationEvent(e, "flagABD")
+                );
+            }
+        }
+
         private void CheckIdentifyEvent(object e, Context c)
         {
             IdentifyEvent ie = Assert.IsType<IdentifyEvent>(e);
             Assert.Equal(c.FullyQualifiedKey, ie.Context.FullyQualifiedKey);
             Assert.NotEqual(0, ie.Timestamp.Value);
+        }
+
+        private void CheckEvaluationEvent(object e, string flagKey)
+        {
+            EvaluationEvent fe = Assert.IsType<EvaluationEvent>(e);
+            Assert.Equal(flagKey, fe.FlagKey);
         }
     }
 }

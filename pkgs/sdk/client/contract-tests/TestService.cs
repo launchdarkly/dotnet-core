@@ -40,7 +40,8 @@ namespace TestService
             "tags",
             "auto-env-attributes",
             "inline-context",
-            "anonymous-redaction"
+            "anonymous-redaction",
+            "client-prereq-events"
         };
 
         public readonly Handler Handler;

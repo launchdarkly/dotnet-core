@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk.Internal;
@@ -36,6 +38,8 @@ namespace LaunchDarkly.Sdk.Client
             internal bool TrackReason { get; }
             internal UnixMillisecondTime? DebugEventsUntilDate { get; }
 
+            internal IReadOnlyList<string> Prerequisites { get; }
+
             internal FeatureFlag(
                 LdValue value,
                 int? variation,
@@ -44,8 +48,8 @@ namespace LaunchDarkly.Sdk.Client
                 int? flagVersion,
                 bool trackEvents,
                 bool trackReason,
-                UnixMillisecondTime? debugEventsUntilDate
-                )
+                UnixMillisecondTime? debugEventsUntilDate,
+                IReadOnlyList<string> prerequisites = null)
             {
                 Value = value;
                 Variation = variation;
@@ -55,21 +59,42 @@ namespace LaunchDarkly.Sdk.Client
                 TrackEvents = trackEvents;
                 TrackReason = trackReason;
                 DebugEventsUntilDate = debugEventsUntilDate;
+                Prerequisites = prerequisites != null ? new List<string>(prerequisites) : null;
             }
 
             /// <inheritdoc/>
             public override bool Equals(object obj) =>
-                Equals(obj as FeatureFlag);
+                obj is FeatureFlag other && Equals(other);
 
             /// <inheritdoc/>
-            public bool Equals(FeatureFlag otherFlag) =>
-                Value.Equals(otherFlag.Value)
-                && Variation == otherFlag.Variation
-                && Reason.Equals(otherFlag.Reason)
-                && Version == otherFlag.Version
-                && FlagVersion == otherFlag.FlagVersion
-                && TrackEvents == otherFlag.TrackEvents
-                && DebugEventsUntilDate == otherFlag.DebugEventsUntilDate;
+            public bool Equals(FeatureFlag otherFlag)
+            {
+
+                if (otherFlag is null)
+                {
+                    return false;
+                }
+
+                if (ReferenceEquals(this, otherFlag))
+                {
+                    return true;
+                }
+
+                if (GetType() != otherFlag.GetType())
+                {
+                    return false;
+                }
+
+                return Variation == otherFlag.Variation
+                       && Reason.Equals(otherFlag.Reason)
+                       && Version == otherFlag.Version
+                       && FlagVersion == otherFlag.FlagVersion
+                       && TrackEvents == otherFlag.TrackEvents
+                       && DebugEventsUntilDate == otherFlag.DebugEventsUntilDate
+                       && (Prerequisites == null && otherFlag.Prerequisites == null ||
+                           Prerequisites != null && otherFlag.Prerequisites != null &&
+                           Prerequisites.SequenceEqual(otherFlag.Prerequisites));
+            }
 
             /// <inheritdoc/>
             public override int GetHashCode() =>
@@ -77,8 +102,8 @@ namespace LaunchDarkly.Sdk.Client
 
             /// <inheritdoc/>
             public override string ToString() =>
-                string.Format("({0},{1},{2},{3},{4},{5},{6},{7})",
-                    Value, Variation, Reason, Version, FlagVersion, TrackEvents, TrackReason, DebugEventsUntilDate);
+                string.Format("({0},{1},{2},{3},{4},{5},{6},{7},{8})",
+                    Value, Variation, Reason, Version, FlagVersion, TrackEvents, TrackReason, DebugEventsUntilDate, Prerequisites);
 
             internal ItemDescriptor ToItemDescriptor() =>
                 new ItemDescriptor(Version, this);
@@ -99,6 +124,7 @@ namespace LaunchDarkly.Sdk.Client
                 bool trackEvents = false;
                 bool trackReason = false;
                 UnixMillisecondTime? debugEventsUntilDate = null;
+                List<string> prerequisites = null;
 
                 for (var obj = RequireObject(ref reader); obj.Next(ref reader);)
                 {
@@ -128,6 +154,14 @@ namespace LaunchDarkly.Sdk.Client
                         case "debugEventsUntilDate":
                             debugEventsUntilDate = JsonSerializer.Deserialize<UnixMillisecondTime?>(ref reader);
                             break;
+                        case "prerequisites":
+                            for (var array = RequireArrayOrNull(ref reader); array.Next(ref reader);)
+                            {
+                                prerequisites ??= new List<string>();
+                                prerequisites.Add(reader.GetString());
+                            }
+                            break;
+
                     }
                 }
 
@@ -139,8 +173,9 @@ namespace LaunchDarkly.Sdk.Client
                     flagVersion,
                     trackEvents,
                     trackReason,
-                    debugEventsUntilDate
-                    );
+                    debugEventsUntilDate,
+                    prerequisites
+                );
             }
 
             public override void Write(Utf8JsonWriter writer, FeatureFlag value, JsonSerializerOptions options) =>
@@ -164,6 +199,16 @@ namespace LaunchDarkly.Sdk.Client
                 if (value.DebugEventsUntilDate.HasValue)
                 {
                     writer.WriteNumber("debugEventsUntilDate", value.DebugEventsUntilDate.Value.Value);
+                }
+
+                if (value.Prerequisites != null && value.Prerequisites.Count > 0)
+                {
+                    writer.WriteStartArray("prerequisites");
+                    foreach (var p in value.Prerequisites)
+                    {
+                        writer.WriteStringValue(p);
+                    }
+                    writer.WriteEndArray();
                 }
 
                 writer.WriteEndObject();

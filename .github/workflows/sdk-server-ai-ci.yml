@@ -34,6 +34,7 @@ jobs:
       - uses: ./.github/actions/ci
         with:
           project_file: ${{ env.PROJECT_FILE}}
+          test_project_file: ${{ env.TEST_PROJECT_FILE}}
 
       - uses: ./.github/actions/build-docs
         with:

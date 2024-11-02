@@ -25,6 +25,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "server-ai", "server-ai", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.ServerSdk.Ai", "pkgs\sdk\server-ai\src\LaunchDarkly.ServerSdk.Ai.csproj", "{89B5D359-6BC8-4CD0-B17D-D68A435ABBB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.ServerSdk.Ai.Tests", "pkgs\sdk\server-ai\test\LaunchDarkly.ServerSdk.Ai.Tests.csproj", "{ECA96F40-101E-494B-971F-B1F6E0B9F78D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,10 @@ Global
 		{89B5D359-6BC8-4CD0-B17D-D68A435ABBB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{89B5D359-6BC8-4CD0-B17D-D68A435ABBB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89B5D359-6BC8-4CD0-B17D-D68A435ABBB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECA96F40-101E-494B-971F-B1F6E0B9F78D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECA96F40-101E-494B-971F-B1F6E0B9F78D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECA96F40-101E-494B-971F-B1F6E0B9F78D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECA96F40-101E-494B-971F-B1F6E0B9F78D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -73,5 +79,6 @@ Global
 		{72D0898F-4CD9-42B7-B3B4-5CFD23796C47} = {FDA973CE-26F2-4745-AF19-0873F170C4CF}
 		{A52FE37A-BCDD-4FC0-A8BA-7576721EA217} = {0A3F3CFA-1CBB-49BD-BCD3-4A53E3D08665}
 		{89B5D359-6BC8-4CD0-B17D-D68A435ABBB2} = {A52FE37A-BCDD-4FC0-A8BA-7576721EA217}
+		{ECA96F40-101E-494B-971F-B1F6E0B9F78D} = {A52FE37A-BCDD-4FC0-A8BA-7576721EA217}
 	EndGlobalSection
 EndGlobal

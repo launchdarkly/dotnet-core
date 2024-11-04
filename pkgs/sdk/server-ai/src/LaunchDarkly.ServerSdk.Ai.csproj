@@ -39,6 +39,7 @@
 
   <ItemGroup>
     <PackageReference Include="LaunchDarkly.ServerSdk" Version="8.*" />
+    <PackageReference Include="Mustache.NETStandard" Version="1.1.0" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

@@ -10,8 +10,15 @@ namespace LaunchDarkly.Sdk.Server.Ai
         [Fact]
         public void CanCallDispose()
         {
-            var tracker = new LdAiClient(null);
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var tracker = new LdAiClient(mockClient.Object);
             tracker.Dispose();
+        }
+
+        [Fact]
+        public void ThrowsIfClientIsNull()
+        {
+            Assert.Throws<System.ArgumentNullException>(() => new LdAiClient(null));
         }
 
         [Fact]
@@ -66,8 +73,6 @@ namespace LaunchDarkly.Sdk.Server.Ai
         [InlineData(MetaDisabledImplicitly)]
         [InlineData(MissingMeta)]
         [InlineData(EmptyObject)]
-        // Each of these JSON strings represents a possible configuration that should result in
-        // an AiConfig.Disabled instance.
         public void ConfigNotEnabledReturnsDisabledInstance(string json)
         {
             var mockClient = new Mock<ILaunchDarklyClient>();

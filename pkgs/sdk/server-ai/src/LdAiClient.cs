@@ -71,7 +71,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
         /// <param name="client">an ILaunchDarklyClient</param>
         public LdAiClient(ILaunchDarklyClient client)
         {
-            _client = client;
+            _client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
         private static string InterpolateTemplate(string template, IReadOnlyDictionary<string, object> variables)

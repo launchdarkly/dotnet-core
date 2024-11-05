@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
-using LaunchDarkly.Sdk.Serve.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using Mustache;
 using Message = LaunchDarkly.Sdk.Server.Ai.Config.Message;
 
@@ -65,6 +65,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
     {
         private readonly ILaunchDarklyClient _client;
 
+        // TODO: can this be named LdAiClient or something?
         /// <summary>
         /// TBD
         /// </summary>
@@ -94,6 +95,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             return attributes;
         }
 
+
+
+
         private const string LdContextVariable = "ldctx";
 
         /// <summary>
@@ -112,6 +116,25 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var detail = _client.JsonVariationDetail(key, context, LdValue.Null);
 
+
+            if (detail.IsDefaultValue)
+            {
+                _client.GetLogger().Warn("No model config available for key {0}", key);
+                return defaultValue;
+            }
+
+
+            var parsed = ParseConfig(detail.Value, key);
+            if (parsed == null)
+            {
+                return defaultValue;
+            }
+
+            if (parsed.LdMeta is not { Enabled: true })
+            {
+                return LdAiConfig.Disabled;
+            }
+
             var mergedVariables = new Dictionary<string, object> { { LdContextVariable, GetAllAttributes(context) } };
             if (variables != null)
             {
@@ -126,28 +149,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 }
             }
 
-            if (detail.IsDefaultValue)
-            {
-                _client.GetLogger().Warn("No model config available for key {0}", key);
-                return defaultValue;
-            }
-
-            // This assumes LD sends an empty object for an unconfigured model config flag. Unclear if
-            // we actually need to differentiate between these cases from a user perspective.
-            if (detail.Value.Dictionary.IsEmpty)
-            {
-                _client.GetLogger().Warn("Model config for key {0} hasn't been setup yet", key);
-                return defaultValue;
-            }
-
-            var parsed = ParseConfig(detail.Value, key);
-            if (parsed == null)
-            {
-                return defaultValue;
-            }
 
             var prompt =
-                parsed.Prompt.Select(m => new Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
+                parsed.Prompt?.Select(m => new Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
 
             return new LdAiConfig(this, prompt, parsed.LdMeta, parsed.Model);
         }

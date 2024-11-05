@@ -10,6 +10,7 @@
     <PackageId>LaunchDarkly.ServerSdk.Ai.Tests</PackageId>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <LangVersion>11</LangVersion>
     <RootNamespace>LaunchDarkly.Sdk.Server.Ai</RootNamespace>
   </PropertyGroup>
 

@@ -61,16 +61,15 @@ namespace LaunchDarkly.Sdk.Server.Ai
     /// <summary>
     /// TBD
     /// </summary>
-    public sealed class LdAiConfigTracker : IDisposable
+    public sealed class LdAiClient : IDisposable
     {
         private readonly ILaunchDarklyClient _client;
 
-        // TODO: can this be named LdAiClient or something?
         /// <summary>
         /// TBD
         /// </summary>
         /// <param name="client">an ILaunchDarklyClient</param>
-        public LdAiConfigTracker(ILaunchDarklyClient client)
+        public LdAiClient(ILaunchDarklyClient client)
         {
             _client = client;
         }

@@ -46,12 +46,12 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         /// <summary>
         /// TBD
         /// </summary>
-        public  readonly LdAiConfigTracker Tracker;
+        public  readonly LdAiClient Tracker;
         private readonly Meta _meta;
         private readonly IReadOnlyDictionary<string, object> _model;
         private readonly bool _enabled;
 
-        private LdAiConfig(bool enabled, LdAiConfigTracker tracker,  IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
+        private LdAiConfig(bool enabled, LdAiClient tracker,  IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
         {
             Tracker = tracker;
             Prompt = prompt?.ToList();
@@ -60,7 +60,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             _enabled = enabled;
         }
 
-        internal LdAiConfig(LdAiConfigTracker tracker, IEnumerable<Message> prompt, Meta meta,
+        internal LdAiConfig(LdAiClient tracker, IEnumerable<Message> prompt, Meta meta,
             IReadOnlyDictionary<string, object> model) : this(true, tracker, prompt, meta, model) {}
 
 

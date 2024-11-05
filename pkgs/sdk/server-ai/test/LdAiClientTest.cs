@@ -10,7 +10,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
         [Fact]
         public void CanCallDispose()
         {
-            var tracker = new LdAiConfigTracker(null);
+            var tracker = new LdAiClient(null);
             tracker.Dispose();
         }
 
@@ -29,7 +29,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
 
-            var tracker = new LdAiConfigTracker(mockClient.Object);
+            var tracker = new LdAiClient(mockClient.Object);
 
             var config = tracker.GetModelConfig("foo", Context.New(ContextKind.Default, "key"), LdAiConfig.Default);
 
@@ -80,7 +80,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
-            var tracker = new LdAiConfigTracker(mockClient.Object);
+            var tracker = new LdAiClient(mockClient.Object);
             var config = tracker.GetModelConfig("foo", Context.New(ContextKind.Default, "key"), null);
 
             Assert.Equal(config, LdAiConfig.Disabled);

@@ -126,7 +126,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var tracker = client.GetModelConfig("foo", context,
                 LdAiConfig.New().AddPromptMessage("bar").Build());
 
-        Assert.Equal(new[] { new LdAiConfig.Message("Hello world", Role.System) }, tracker.Config.Prompt);
+            Assert.Equal(new List<LdAiConfig.Message>{ new("Hello world", Role.System) }, tracker.Config.Prompt);
         }
     }
 }

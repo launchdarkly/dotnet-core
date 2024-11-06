@@ -107,4 +107,38 @@ public class InterpolationTests
         Assert.Equal("I am an () LLM", result);
     }
 
+    [Fact]
+    public void TestInterpolationWithArraySectionWorks()
+    {
+        var context = Context.New("user-key");
+        var variables = new Dictionary<string, object>
+        {
+            { "adjectives", new List<string> { "hello", "world", "!" } }
+        };
+
+        var result = Eval("{{#adjectives}}{{.}} {{/adjectives}}", context, variables);
+        Assert.Equal("hello world ! ", result);
+    }
+
+
+    [Fact]
+    public void TestInterpolationWithBasicContext()
+    {
+        var context = Context.Builder(ContextKind.Default, "123")
+            .Set("name", "Sandy").Build();
+        var result1 = Eval("I'm a {{ ldctx.kind}} with key {{ ldctx.key }}, named {{ ldctx.name }}", context, null);
+        Assert.Equal("I'm a user with key 123, named Sandy", result1);
+    }
+
+    [Fact]
+    public void TestInterpolationWithNestedContextAttributes()
+    {
+        var context = Context.Builder(ContextKind.Default, "123")
+            .Set("stats", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "power", LdValue.Of(9000) }
+            })).Build();
+        var result = Eval("I can ingest over {{ ldctx.stats.power }} tokens per second!", context, null);
+        Assert.Equal("I can ingest over 9000 tokens per second!", result);
+    }
 }

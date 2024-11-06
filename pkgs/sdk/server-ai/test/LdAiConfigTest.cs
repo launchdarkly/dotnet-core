@@ -9,17 +9,23 @@ public class LdAiConfigTest
     [Fact]
     public void CanDisableAndEnableConfig()
     {
-        var config1 = LdAiConfig.New().Disable().Build();
-        Assert.False(config1.IsEnabled());
+        var config1 = LdAiConfig.New().Enable().Disable().Build();
+        Assert.False(config1.Enabled);
 
-        var config2 = LdAiConfig.New().SetEnabled(false).Build();
-        Assert.False(config2.IsEnabled());
+        var config2 = LdAiConfig.New().Disable().Enable().Build();
+        Assert.True(config2.Enabled);
 
-        var config3 = LdAiConfig.New().Disable().SetEnabled(true).Build();
-        Assert.True(config3.IsEnabled());
+        var config3 = LdAiConfig.New().SetEnabled(true).SetEnabled(false).Build();
+        Assert.False(config3.Enabled);
 
-        var config4 = LdAiConfig.New().SetEnabled(true).Disable().Build();
-        Assert.False(config4.IsEnabled());
+        var config4 = LdAiConfig.New().SetEnabled(false).SetEnabled(true).Build();
+        Assert.True(config4.Enabled);
+
+        var config5 = LdAiConfig.New().SetEnabled(true).Disable().Build();
+        Assert.False(config5.Enabled);
+
+        var config6 = LdAiConfig.New().SetEnabled(false).Enable().Build();
+        Assert.True(config6.Enabled);
     }
 
     [Fact]

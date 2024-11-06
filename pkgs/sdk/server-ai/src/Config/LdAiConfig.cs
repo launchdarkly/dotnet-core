@@ -8,34 +8,28 @@ using LaunchDarkly.Sdk.Server.Ai.DataModel;
 namespace LaunchDarkly.Sdk.Server.Ai.Config
 {
 
-
     /// <summary>
-    /// TBD
+    /// Represents an AI configuration, which contains model parameters and prompt messages.
     /// </summary>
     public record LdAiConfig
     {
 
         /// <summary>
-        /// TBD
+        /// Represents a single message, which is part of a prompt.
         /// </summary>
         public record Message
         {
             /// <summary>
-            /// TBD
+            /// The content of the message, which may contain Mustache templates.
             /// </summary>
             public readonly string Content;
 
             /// <summary>
-            /// TBD
+            /// The role of the message.
             /// </summary>
             public readonly Role Role;
 
-            /// <summary>
-            /// TBD
-            /// </summary>
-            /// <param name="content">TBD</param>
-            /// <param name="role">TBD</param>
-            public Message(string content, Role role)
+            internal Message(string content, Role role)
             {
                 Content = content;
                 Role = role;
@@ -43,31 +37,33 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         }
 
         /// <summary>
-        /// TBD
+        /// Builder for constructing an LdAiConfig instance, which can be passed as the default
+        /// value to the AI Client's <see cref="LdAiClient.ModelConfig"/> method.
         /// </summary>
         public class Builder
         {
             private readonly List<Message> _prompt;
             private bool _enabled;
-            private Dictionary<string, object> _modelParams;
+            private readonly Dictionary<string, object> _modelParams;
 
 
             /// <summary>
-            /// TBD
+            /// Constructs a new builder. By default, the config will be disabled, with no prompt
+            /// messages or model parameters.
             /// </summary>
             public Builder()
             {
-                _enabled = true;
+                _enabled = false;
                 _prompt = new List<Message>();
                 _modelParams = new Dictionary<string, object>();
             }
 
             /// <summary>
-            /// TBD
+            /// Adds a prompt message with the given content and role. The default role is <see cref="Role.User"/>.
             /// </summary>
-            /// <param name="content"></param>
-            /// <param name="role"></param>
-            /// <returns></returns>
+            /// <param name="content">the content, which may contain Mustache templates</param>
+            /// <param name="role">the role</param>
+            /// <returns>a new builder</returns>
             public Builder AddPromptMessage(string content, Role role = Role.User)
             {
                _prompt.Add(new Message(content, role));
@@ -75,19 +71,22 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             }
 
             /// <summary>
-            ///
+            /// Disables the config.
             /// </summary>
-            /// <returns></returns>
-            public Builder Disable()
-            {
-                return SetEnabled(false);
-            }
+            /// <returns>the builder</returns>
+            public Builder Disable() => SetEnabled(false);
 
             /// <summary>
-            ///
+            /// Enables the config.
             /// </summary>
-            /// <param name="enabled"></param>
-            /// <returns></returns>
+            /// <returns>the builder</returns>
+            public Builder Enable() => SetEnabled(true);
+
+            /// <summary>
+            /// Sets the enabled state of the config based on a boolean.
+            /// </summary>
+            /// <param name="enabled">whether the config is enabled</param>
+            /// <returns>the builder</returns>
             public Builder SetEnabled(bool enabled)
             {
                 _enabled = enabled;
@@ -95,21 +94,21 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             }
 
             /// <summary>
-            ///
+            /// Sets a parameter for the model. The value may be any object.
             /// </summary>
-            /// <param name="key"></param>
-            /// <param name="value"></param>
-            /// <returns></returns>
-            public Builder SetModelParam(string key, object value)
+            /// <param name="name">the parameter name</param>
+            /// <param name="value">the parameter value</param>
+            /// <returns>the builder</returns>
+            public Builder SetModelParam(string name, object value)
             {
-                _modelParams[key] = value;
+                _modelParams[name] = value;
                 return this;
             }
 
             /// <summary>
-            /// TBD
+            /// Builds the LdAiConfig instance.
             /// </summary>
-            /// <returns></returns>
+            /// <returns>a new LdAiConfig</returns>
             public LdAiConfig Build()
             {
                 return new LdAiConfig(_enabled, _prompt, new Meta(), _modelParams);
@@ -117,51 +116,46 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         }
 
         /// <summary>
-        /// TBD
+        /// The prompts associated with the config.
         /// </summary>
         public readonly IReadOnlyList<Message> Prompt;
 
         /// <summary>
-        /// TBD
+        /// The model parameters associated with the config.
         /// </summary>
         public readonly IReadOnlyDictionary<string, object> Model;
 
-        private readonly string _versionKey;
-
-
-        private readonly bool _enabled;
-
         internal LdAiConfig(bool enabled, IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
         {
-            Model = model;
-            Prompt = prompt?.ToList();
-            _versionKey = meta?.VersionKey ?? "";
-            _enabled = enabled;
+            Model = model ?? new Dictionary<string, object>();
+            Prompt = prompt?.ToList() ?? new List<Message>();
+            VersionKey = meta?.VersionKey ?? "";
+            Enabled = enabled;
         }
 
 
         /// <summary>
-        /// TBD
+        /// Creates a new LdAiConfig builder.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>the builder</returns>
         public static Builder New() => new();
 
         /// <summary>
-        /// TBD
+        /// Returns true if the config is enabled.
         /// </summary>
-        /// <returns></returns>
-        public bool IsEnabled() => _enabled;
+        /// <returns>true if enabled</returns>
+        public bool Enabled { get; }
 
 
         /// <summary>
-        ///
+        /// This field meant for internal LaunchDarkly usage.
         /// </summary>
-        public string VersionKey => _versionKey;
+        public string VersionKey { get; }
 
         /// <summary>
-        /// TBD
+        /// Convenient helper that returns a disabled LdAiConfig.
         /// </summary>
-        public static LdAiConfig Disabled = new LdAiConfig(false, null, null, null);
+        public static LdAiConfig Disabled = New().Disable().Build();
 
     }
 }

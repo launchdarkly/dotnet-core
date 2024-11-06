@@ -131,7 +131,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
         /// <param name="defaultValue">the default config, if unable to retrieve</param>
         /// <param name="variables">the list of variables used when interpolating the prompt</param>
         /// <returns>an AI config</returns>
-        public LdAiConfigTracker GetModelConfig(string key, Context context, LdAiConfig defaultValue,
+        public LdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
             IReadOnlyDictionary<string, object> variables = null)
         {
 

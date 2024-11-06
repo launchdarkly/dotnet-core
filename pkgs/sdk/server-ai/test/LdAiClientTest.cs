@@ -42,7 +42,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var defaultConfig = LdAiConfig.New().AddPromptMessage("Hello").Build();
 
-            var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+            var tracker = client.ModelConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
 
             Assert.Equal(defaultConfig, tracker.Config);
         }
@@ -94,10 +94,10 @@ namespace LaunchDarkly.Sdk.Server.Ai
             // All the JSON inputs here are considered disabled, either due to lack of the 'enabled' property,
             // or if present, it is set to false. Therefore if the default was returned, we'd see the assertion fail
             // (since calling LdAiConfig.New() constructs an enabled config by default.)
-            var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"),
+            var tracker = client.ModelConfig("foo", Context.New(ContextKind.Default, "key"),
                 LdAiConfig.New().AddPromptMessage("foo").Build());
 
-            Assert.False(tracker.Config.IsEnabled());
+            Assert.False(tracker.Config.Enabled);
         }
 
         [Fact]
@@ -125,10 +125,15 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var client = new LdAiClient(mockClient.Object);
 
             // We shouldn't get this default.
-            var tracker = client.GetModelConfig("foo", context,
+            var tracker = client.ModelConfig("foo", context,
                 LdAiConfig.New().AddPromptMessage("Goodbye!").Build());
 
-            Assert.Equal(new List<LdAiConfig.Message>{ new("Hello!", Role.System) }, tracker.Config.Prompt);
+            Assert.Collection(tracker.Config.Prompt,
+                message =>
+                {
+                    Assert.Equal("Hello!", message.Content);
+                    Assert.Equal(Role.System, message.Role);
+                });
         }
     }
 }

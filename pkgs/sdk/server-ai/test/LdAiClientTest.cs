@@ -97,6 +97,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"),
                 LdAiConfig.New().AddPromptMessage("foo").Build());
 
+
+
             Assert.False(tracker.Config.IsEnabled());
         }
 

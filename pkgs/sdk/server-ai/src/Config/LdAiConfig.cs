@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config
@@ -65,7 +66,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             /// <param name="content"></param>
             /// <param name="role"></param>
             /// <returns></returns>
-            public Builder AddPromptMessage(string content, Role role = Role.System)
+            public Builder AddPromptMessage(string content, Role role = Role.User)
             {
                _prompt.Add(new Message(content, role));
                 return this;
@@ -112,6 +113,8 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         public readonly IReadOnlyDictionary<string, object> Model;
 
         private readonly string _versionKey;
+
+
         private readonly bool _enabled;
 
         internal LdAiConfig(bool enabled, IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
@@ -134,6 +137,12 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         /// </summary>
         /// <returns></returns>
         public bool IsEnabled() => _enabled;
+
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string VersionKey => _versionKey;
 
         /// <summary>
         /// TBD

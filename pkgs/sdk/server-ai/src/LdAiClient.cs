@@ -44,6 +44,16 @@ namespace LaunchDarkly.Sdk.Server.Ai
         /// <returns></returns>
         EvaluationDetail<LdValue> JsonVariationDetail(string key, Context context, LdValue defaultValue);
 
+
+        /// <summary>
+        /// TBD
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="context"></param>
+        /// <param name="data"></param>
+        /// <param name="metricValue"></param>
+        void Track(string name, Context context, LdValue data, double metricValue);
+
         /// <summary>
         /// TBD
         /// </summary>
@@ -127,10 +137,12 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var detail = _client.JsonVariationDetail(key, context, LdValue.Null);
 
+            var defaultTracker = new LdAiConfigTracker(_client, defaultValue, context, key);
+
             if (detail.IsDefaultValue)
             {
                 _client.GetLogger().Warn("No model config available for key {0}", key);
-                return new LdAiConfigTracker(_client, defaultValue);
+                return defaultTracker;
             }
 
 
@@ -138,7 +150,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             if (parsed == null)
             {
                 // ParseConfig already does logging.
-                return new LdAiConfigTracker(_client, defaultValue);
+                return defaultTracker;
             }
 
 
@@ -160,7 +172,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var prompt =
                 parsed.Prompt?.Select(m => new LdAiConfig.Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
 
-            return new LdAiConfigTracker(_client, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model));
+            return new LdAiConfigTracker(_client, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model), context, key);
         }
 
 

@@ -1,3 +1,5 @@
+using LaunchDarkly.Sdk.Server.Ai.Config;
+using Moq;
 using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Ai
@@ -5,10 +7,16 @@ namespace LaunchDarkly.Sdk.Server.Ai
     public class LdAiTrackerTest
     {
         [Fact]
-        public void CanCallDispose()
+        public void ThrowsIfClientIsNull()
         {
-            var tracker = new LdAiConfigTracker(null);
-            tracker.Dispose();
+            Assert.Throws<System.ArgumentNullException>(() => new LdAiConfigTracker(null, LdAiConfig.Disabled));
+        }
+
+        [Fact]
+        public void ThrowsIfConfigIsNull()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            Assert.Throws<System.ArgumentNullException>(() => new LdAiConfigTracker(mockClient.Object, null));
         }
     }
 }

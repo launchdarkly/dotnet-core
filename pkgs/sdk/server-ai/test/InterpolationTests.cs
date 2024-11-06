@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using Moq;
@@ -32,7 +33,16 @@ public class InterpolationTests
             }
         };
 
-        var json = JsonSerializer.Serialize(config);
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters =
+            {
+                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+            }
+        };
+
+        var json = JsonSerializer.Serialize(config, options);
 
         mockClient.Setup(x =>
             x.JsonVariationDetail("foo", It.IsAny<Context>(), LdValue.Null)).Returns(

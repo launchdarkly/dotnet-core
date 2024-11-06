@@ -7,7 +7,7 @@ using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Ai
 {
-    public class LdAiTrackerTest
+    public class LdAiClientTest
     {
         [Fact]
         public void CanCallDispose()
@@ -49,7 +49,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
         private const string MetaDisabledExplicitly = """
                                             {
-                                              "_ldMeta": {"versionKey": 1, "enabled": false},
+                                              "_ldMeta": {"versionKey": "1", "enabled": false},
                                               "model": {},
                                               "prompt": []
                                             }
@@ -57,7 +57,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
         private const string MetaDisabledImplicitly = """
                                                       {
-                                                        "_ldMeta": {"versionKey": 1},
+                                                        "_ldMeta": {"versionKey": "1"},
                                                         "model": {},
                                                         "prompt": []
                                                       }
@@ -91,11 +91,13 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var client = new LdAiClient(mockClient.Object);
 
-            // The default should *not* be returned, since we did receive a config, it's just disabled.
+            // All the JSON inputs here are considered disabled, either due to lack of the 'enabled' property,
+            // or if present, it is set to false. Therefore if the default was returned, we'd see the assertion fail
+            // (since calling LdAiConfig.New() constructs an enabled config by default.)
             var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"),
                 LdAiConfig.New().AddPromptMessage("foo").Build());
 
-            Assert.Equal( LdAiConfig.Disabled, tracker.Config);
+            Assert.False(tracker.Config.IsEnabled());
         }
 
         [Fact]
@@ -107,9 +109,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             const string json = """
                                 {
-                                  "_ldMeta": {"versionKey": 1, "enabled": true},
+                                  "_ldMeta": {"versionKey": "1", "enabled": true},
                                   "model": {},
-                                  "prompt": [{"content": "Hello", "role": "system"}]
+                                  "prompt": [{"content": "Hello!", "role": "system"}]
                                 }
                                 """;
 
@@ -124,9 +126,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             // We shouldn't get this default.
             var tracker = client.GetModelConfig("foo", context,
-                LdAiConfig.New().AddPromptMessage("bar").Build());
+                LdAiConfig.New().AddPromptMessage("Goodbye!").Build());
 
-            Assert.Equal(new List<LdAiConfig.Message>{ new("Hello world", Role.System) }, tracker.Config.Prompt);
+            Assert.Equal(new List<LdAiConfig.Message>{ new("Hello!", Role.System) }, tracker.Config.Prompt);
         }
     }
 }

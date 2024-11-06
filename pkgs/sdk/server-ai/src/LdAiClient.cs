@@ -160,7 +160,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var prompt =
                 parsed.Prompt?.Select(m => new LdAiConfig.Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
 
-            return new LdAiConfigTracker(_client, new LdAiConfig(prompt, parsed.Meta, parsed.Model));
+            return new LdAiConfigTracker(_client, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model));
         }
 
 

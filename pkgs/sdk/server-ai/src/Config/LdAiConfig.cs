@@ -11,13 +11,13 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
     /// <summary>
     /// TBD
     /// </summary>
-    public class LdAiConfig
+    public record LdAiConfig
     {
 
         /// <summary>
         /// TBD
         /// </summary>
-        public struct Message
+        public record Message
         {
             /// <summary>
             /// TBD
@@ -46,7 +46,8 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         /// </summary>
         public class Builder
         {
-            private List<Message> _prompt;
+            private  List<Message> _prompt;
+            private bool _enabled;
 
 
             /// <summary>
@@ -55,6 +56,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             public Builder()
             {
                 _prompt = new List<Message>();
+                _enabled = true;
             }
 
             /// <summary>
@@ -70,12 +72,32 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             }
 
             /// <summary>
+            ///
+            /// </summary>
+            /// <returns></returns>
+            public Builder Disable()
+            {
+                return SetEnabled(false);
+            }
+
+            /// <summary>
+            ///
+            /// </summary>
+            /// <param name="enabled"></param>
+            /// <returns></returns>
+            public Builder SetEnabled(bool enabled)
+            {
+                _enabled = enabled;
+                return this;
+            }
+
+            /// <summary>
             /// TBD
             /// </summary>
             /// <returns></returns>
             public LdAiConfig Build()
             {
-                return new LdAiConfig(_prompt, new Meta(), new Dictionary<string, object>());
+                return new LdAiConfig(_enabled, _prompt, new Meta(), new Dictionary<string, object>());
             }
         }
 
@@ -89,19 +111,16 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         /// </summary>
         public readonly IReadOnlyDictionary<string, object> Model;
 
-        private readonly Meta _meta;
+        private readonly string _versionKey;
         private readonly bool _enabled;
 
-        private LdAiConfig(bool enabled, IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
+        internal LdAiConfig(bool enabled, IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
         {
             Model = model;
             Prompt = prompt?.ToList();
-            _meta = meta;
+            _versionKey = meta?.VersionKey ?? "";
             _enabled = enabled;
         }
-
-        internal LdAiConfig(IEnumerable<Message> prompt, Meta meta,
-            IReadOnlyDictionary<string, object> model) : this(true, prompt, meta, model) {}
 
 
         /// <summary>

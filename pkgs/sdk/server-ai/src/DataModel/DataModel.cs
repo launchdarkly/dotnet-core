@@ -40,8 +40,8 @@ namespace  LaunchDarkly.Sdk.Server.Ai.DataModel
         [JsonPropertyName("content")]
         public string Content { get; set; }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
         [JsonPropertyName("role")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public Role Role { get; set; }
     }
 

@@ -44,7 +44,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
 
-            Assert.Equal( defaultConfig, tracker.Config);
+            Assert.Equal(defaultConfig, tracker.Config);
         }
 
         private const string MetaDisabledExplicitly = """
@@ -96,8 +96,6 @@ namespace LaunchDarkly.Sdk.Server.Ai
             // (since calling LdAiConfig.New() constructs an enabled config by default.)
             var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"),
                 LdAiConfig.New().AddPromptMessage("foo").Build());
-
-
 
             Assert.False(tracker.Config.IsEnabled());
         }

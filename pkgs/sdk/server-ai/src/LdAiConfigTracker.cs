@@ -26,10 +26,15 @@ public class LdAiConfigTracker : IDisposable
 
     private readonly string _key;
 
+    private readonly LdValue _trackData;
+
     private const string Duration = "$ld:ai:duration:total";
     private const string FeedbackPositive = "$ld:ai:feedback:user:positive";
     private const string FeedbackNegative = "$ld:ai:feedback:user:negative";
     private const string Generation = "$ld:ai:generation";
+    private const string TokenTotal = "$ld:ai:tokens:total";
+    private const string TokenInput = "$ld:ai:tokens:input";
+    private const string TokenOutput = "$ld:ai:tokens:output";
 
     /// <summary>
     ///
@@ -45,11 +50,7 @@ public class LdAiConfigTracker : IDisposable
         _key = key ?? throw new ArgumentNullException(nameof(key));
         _context = context;
         Config = config ?? throw new ArgumentNullException(nameof(config));
-    }
-
-    private LdValue GetTrackData()
-    {
-        return LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
             { "versionKey", LdValue.Of(Config.VersionKey)},
             { "configKey" , LdValue.Of(_key) }
@@ -61,7 +62,7 @@ public class LdAiConfigTracker : IDisposable
     /// </summary>
     /// <param name="duration"></param>
     public void TrackDuration(float duration) =>
-        _client.Track(Duration, _context, GetTrackData(), duration);
+        _client.Track(Duration, _context, _trackData, duration);
 
 
     /// <summary>
@@ -72,11 +73,17 @@ public class LdAiConfigTracker : IDisposable
     /// <returns></returns>
     public async Task<T> TrackDurationOfTask<T>(Task<T> task)
     {
+        var result = await MeasureDurationOfTaskMs(task);
+        TrackDuration(result.Item2);
+        return result.Item1;
+    }
+
+    private static async Task<Tuple<T, long>> MeasureDurationOfTaskMs<T>(Task<T> task)
+    {
         var sw = Stopwatch.StartNew();
         var result = await task;
         sw.Stop();
-        TrackDuration(sw.ElapsedMilliseconds);
-        return result;
+        return Tuple.Create(result, sw.ElapsedMilliseconds);
     }
 
     /// <summary>
@@ -89,10 +96,10 @@ public class LdAiConfigTracker : IDisposable
         switch (feedback)
         {
             case Feedback.Positive:
-                _client.Track(FeedbackPositive, _context, GetTrackData(), 1);
+                _client.Track(FeedbackPositive, _context, _trackData, 1);
                 break;
             case Feedback.Negative:
-                _client.Track(FeedbackNegative, _context, GetTrackData(), 1);
+                _client.Track(FeedbackNegative, _context, _trackData, 1);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(feedback), feedback, null);
@@ -104,7 +111,48 @@ public class LdAiConfigTracker : IDisposable
     /// </summary>
     public void TrackSuccess()
     {
-        _client.Track(Generation, _context, GetTrackData(), 1);
+        _client.Track(Generation, _context, _trackData, 1);
+    }
+
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<ProviderResponse> TrackRequest(Task<ProviderResponse> request)
+    {
+        var (result, durationMs) = await MeasureDurationOfTaskMs(request);
+        TrackSuccess();
+
+        TrackDuration(result.Statistics?.LatencyMs ?? durationMs);
+
+        if (result.Usage != null)
+        {
+            TrackTokens(result.Usage.Value);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="usage"></param>
+    public void TrackTokens(Usage usage)
+    {
+        if (usage.Total is > 0)
+        {
+            _client.Track(TokenTotal, _context, _trackData, usage.Total.Value);
+        }
+        if (usage.Input is > 0)
+        {
+            _client.Track(TokenInput, _context, _trackData, usage.Input.Value);
+        }
+        if (usage.Output is > 0)
+        {
+            _client.Track(TokenOutput, _context, _trackData, usage.Output.Value);
+        }
     }
 
 

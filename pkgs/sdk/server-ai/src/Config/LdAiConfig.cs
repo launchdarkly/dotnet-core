@@ -47,8 +47,9 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         /// </summary>
         public class Builder
         {
-            private  List<Message> _prompt;
+            private readonly List<Message> _prompt;
             private bool _enabled;
+            private Dictionary<string, object> _modelParams;
 
 
             /// <summary>
@@ -56,8 +57,9 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             /// </summary>
             public Builder()
             {
-                _prompt = new List<Message>();
                 _enabled = true;
+                _prompt = new List<Message>();
+                _modelParams = new Dictionary<string, object>();
             }
 
             /// <summary>
@@ -93,12 +95,24 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             }
 
             /// <summary>
+            ///
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            public Builder SetModelParam(string key, object value)
+            {
+                _modelParams[key] = value;
+                return this;
+            }
+
+            /// <summary>
             /// TBD
             /// </summary>
             /// <returns></returns>
             public LdAiConfig Build()
             {
-                return new LdAiConfig(_enabled, _prompt, new Meta(), new Dictionary<string, object>());
+                return new LdAiConfig(_enabled, _prompt, new Meta(), _modelParams);
             }
         }
 

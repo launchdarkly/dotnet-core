@@ -6,7 +6,6 @@ using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using Mustache;
-using Message = LaunchDarkly.Sdk.Server.Ai.Config.Message;
 
 namespace LaunchDarkly.Sdk.Server.Ai
 {
@@ -84,7 +83,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var attributes = new Dictionary<string, object>();
             foreach (var key in context.OptionalAttributeNames)
             {
-                attributes[key] = context.GetValue(AttributeRef.FromLiteral(key));
+                attributes[key] = ValueToObject(context.GetValue(AttributeRef.FromLiteral(key)));
             }
 
             attributes["kind"] = context.Kind.ToString();
@@ -94,6 +93,21 @@ namespace LaunchDarkly.Sdk.Server.Ai
             return attributes;
         }
 
+        private static object ValueToObject(LdValue value)
+        {
+            return value.Type switch
+            {
+                LdValueType.Null => null,
+                LdValueType.Bool => value.AsBool,
+                LdValueType.Number => value.AsDouble,
+                LdValueType.String => value.AsString,
+                LdValueType.Array => value.List.Select(ValueToObject).ToList(),
+                LdValueType.Object => value.Dictionary
+                    .Select(kv => new KeyValuePair<string, object>(kv.Key, ValueToObject(kv.Value)))
+                    .ToImmutableDictionary(),
+                _ => null
+            };
+        }
 
 
 
@@ -107,32 +121,26 @@ namespace LaunchDarkly.Sdk.Server.Ai
         /// <param name="defaultValue">the default config, if unable to retrieve</param>
         /// <param name="variables">the list of variables used when interpolating the prompt</param>
         /// <returns>an AI config</returns>
-        public LdAiConfig GetModelConfig(string key, Context context, LdAiConfig defaultValue,
+        public LdAiConfigTracker GetModelConfig(string key, Context context, LdAiConfig defaultValue,
             IReadOnlyDictionary<string, object> variables = null)
         {
 
-            // TODO: validate that client is not null?
-
             var detail = _client.JsonVariationDetail(key, context, LdValue.Null);
-
 
             if (detail.IsDefaultValue)
             {
                 _client.GetLogger().Warn("No model config available for key {0}", key);
-                return defaultValue;
+                return new LdAiConfigTracker(_client, defaultValue);
             }
 
 
             var parsed = ParseConfig(detail.Value, key);
             if (parsed == null)
             {
-                return defaultValue;
+                // ParseConfig already does logging.
+                return new LdAiConfigTracker(_client, defaultValue);
             }
 
-            if (parsed.LdMeta is not { Enabled: true })
-            {
-                return LdAiConfig.Disabled;
-            }
 
             var mergedVariables = new Dictionary<string, object> { { LdContextVariable, GetAllAttributes(context) } };
             if (variables != null)
@@ -150,9 +158,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
 
             var prompt =
-                parsed.Prompt?.Select(m => new Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
+                parsed.Prompt?.Select(m => new LdAiConfig.Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
 
-            return new LdAiConfig(this, prompt, parsed.LdMeta, parsed.Model);
+            return new LdAiConfigTracker(_client, new LdAiConfig(prompt, parsed.Meta, parsed.Model));
         }
 
 

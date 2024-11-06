@@ -1,4 +1,3 @@
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -6,6 +5,7 @@ using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk.Server.Ai;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 
+#pragma warning disable CS1591
 namespace  LaunchDarkly.Sdk.Server.Ai.DataModel
 {
     /// <summary>
@@ -27,32 +27,35 @@ namespace  LaunchDarkly.Sdk.Server.Ai.DataModel
         Assistant
     }
 
-    internal class Meta
+    public class Meta
     {
         [JsonPropertyName("versionKey")]
-        internal int VersionKey { get; set; }
+        public string VersionKey { get; set; }
 
         [JsonPropertyName("enabled")]
-        internal bool Enabled { get; set; }
+        public bool Enabled { get; set; }
     }
-    internal class Message
+    public class Message
     {
         [JsonPropertyName("content")]
-        internal string Content { get; set; }
+        public string Content { get; set; }
 
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        internal Role Role { get; set; }
+        [JsonPropertyName("role")]
+        public Role Role { get; set; }
     }
 
-    internal class AiConfig
+    public class AiConfig
     {
         [JsonPropertyName("prompt")]
-        internal List<Message>? Prompt { get; set; }
+        public List<Message> Prompt { get; set; }
 
         [JsonPropertyName("_ldMeta")]
-        internal Meta? LdMeta { get; set; }
+        public Meta Meta { get; set; }
 
         [JsonPropertyName("model")]
-        internal Dictionary<string, object>? Model { get; set; }
+        public Dictionary<string, object> Model { get; set; }
     }
 }
+
+#pragma warning restore CS1591

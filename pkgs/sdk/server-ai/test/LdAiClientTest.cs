@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using Moq;
 using Xunit;
 
@@ -36,11 +38,13 @@ namespace LaunchDarkly.Sdk.Server.Ai
             mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
 
-            var tracker = new LdAiClient(mockClient.Object);
+            var client = new LdAiClient(mockClient.Object);
 
-            var config = tracker.GetModelConfig("foo", Context.New(ContextKind.Default, "key"), LdAiConfig.Default);
+            var defaultConfig = LdAiConfig.New().AddPromptMessage("Hello").Build();
 
-            Assert.Equal(config, LdAiConfig.Default);
+            var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+
+            Assert.Equal( defaultConfig, tracker.Config);
         }
 
         private const string MetaDisabledExplicitly = """
@@ -85,10 +89,44 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
-            var tracker = new LdAiClient(mockClient.Object);
-            var config = tracker.GetModelConfig("foo", Context.New(ContextKind.Default, "key"), null);
+            var client = new LdAiClient(mockClient.Object);
 
-            Assert.Equal(config, LdAiConfig.Disabled);
+            // The default should *not* be returned, since we did receive a config, it's just disabled.
+            var tracker = client.GetModelConfig("foo", Context.New(ContextKind.Default, "key"),
+                LdAiConfig.New().AddPromptMessage("foo").Build());
+
+            Assert.Equal( LdAiConfig.Disabled, tracker.Config);
+        }
+
+        [Fact]
+        public void ConfigEnabledReturnsInstance()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+
+            var mockLogger = new Mock<ILogger>();
+
+            const string json = """
+                                {
+                                  "_ldMeta": {"versionKey": 1, "enabled": true},
+                                  "model": {},
+                                  "prompt": [{"content": "Hello", "role": "system"}]
+                                }
+                                """;
+
+            mockClient.Setup(x =>
+                x.JsonVariationDetail("foo", It.IsAny<Context>(), LdValue.Null)).Returns(
+                new EvaluationDetail<LdValue>(LdValue.Parse(json), 0, EvaluationReason.FallthroughReason));
+
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+            var context = Context.New(ContextKind.Default, "key");
+            var client = new LdAiClient(mockClient.Object);
+
+            // We shouldn't get this default.
+            var tracker = client.GetModelConfig("foo", context,
+                LdAiConfig.New().AddPromptMessage("bar").Build());
+
+        Assert.Equal(new[] { new LdAiConfig.Message("Hello world", Role.System) }, tracker.Config.Prompt);
         }
     }
 }

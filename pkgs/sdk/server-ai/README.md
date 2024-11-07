@@ -22,7 +22,7 @@ The .NET build tools should automatically load the most appropriate build of the
 
 ## Getting started
 
-Refer to the [SDK documentation](https://docs.launchdarkly.com/sdk/server-side/dotnet#getting-started) for instructions on getting started with using the SDK.
+Refer to the [SDK documentation](TODO) for instructions on getting started with using the SDK.
 
 ## Signing
 

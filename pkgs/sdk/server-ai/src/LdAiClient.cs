@@ -60,7 +60,7 @@ public sealed class LdAiClient : IDisposable
 
         var detail = _client.JsonVariationDetail(key, context, LdValue.Null);
 
-        var defaultTracker = new LdAiConfigTracker(_client, defaultValue, context, key);
+        var defaultTracker = new LdAiConfigTracker(_client, key, defaultValue, context);
 
         if (detail.IsDefaultValue)
         {
@@ -95,7 +95,7 @@ public sealed class LdAiClient : IDisposable
         var prompt =
             parsed.Prompt?.Select(m => new LdAiConfig.Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
 
-        return new LdAiConfigTracker(_client, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model), context, key);
+        return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model), context);
     }
 
     /// <summary>

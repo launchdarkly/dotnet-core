@@ -36,10 +36,11 @@ public class LdAiConfigTracker : IDisposable
     /// a context, and a key which identifies the configuration.
     /// </summary>
     /// <param name="client">the LaunchDarkly client</param>
+    /// <param name="configKey">key of the AI config</param>
     /// <param name="config">the AI config</param>
     /// <param name="context">the context</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public LdAiConfigTracker(ILaunchDarklyClient client, LdAiConfig config, Context context)
+    public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context)
     {
         Config = config ?? throw new ArgumentNullException(nameof(config));
         _client = client ?? throw new ArgumentNullException(nameof(client));
@@ -47,7 +48,7 @@ public class LdAiConfigTracker : IDisposable
         _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
             { "versionKey", LdValue.Of(Config.VersionKey)},
-            { "configKey" , LdValue.Of(Config.Key) }
+            { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) }
         });
     }
 

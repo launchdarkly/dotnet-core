@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
+using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Moq;
 using Xunit;
 

@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
+using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Moq;
 using Xunit;
 

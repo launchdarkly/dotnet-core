@@ -45,19 +45,17 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             private readonly List<Message> _prompt;
             private bool _enabled;
             private readonly Dictionary<string, object> _modelParams;
-            private readonly string _key;
 
 
             /// <summary>
             /// Constructs a new builder. By default, the config will be disabled, with no prompt
             /// messages or model parameters.
             /// </summary>
-            public Builder(string key)
+            public Builder()
             {
                 _enabled = false;
                 _prompt = new List<Message>();
                 _modelParams = new Dictionary<string, object>();
-                _key = key;
             }
 
             /// <summary>
@@ -113,7 +111,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
             /// <returns>a new LdAiConfig</returns>
             public LdAiConfig Build()
             {
-                return new LdAiConfig(_enabled, _key, _prompt, new Meta(), _modelParams);
+                return new LdAiConfig(_enabled, _prompt, new Meta(), _modelParams);
             }
         }
 
@@ -129,20 +127,19 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
 
 
 
-        internal LdAiConfig(bool enabled, string key, IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
+        internal LdAiConfig(bool enabled, IEnumerable<Message> prompt, Meta meta, IReadOnlyDictionary<string, object> model)
         {
             Model = model ?? new Dictionary<string, object>();
             Prompt = prompt?.ToList() ?? new List<Message>();
             VersionKey = meta?.VersionKey ?? "";
             Enabled = enabled;
-            Key = key;
         }
 
 
         /// <summary>
         /// Creates a new LdAiConfig builder.
         /// </summary>
-        /// <returns>the builder</returns>
+        /// <returns>a new builder</returns>
         public static Builder New() => new();
 
         /// <summary>
@@ -156,12 +153,6 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config
         /// This field meant for internal LaunchDarkly usage.
         /// </summary>
         public string VersionKey { get; }
-
-        /// <summary>
-        /// The key of this config.
-        /// </summary>
-        public string Key { get; }
-
 
         /// <summary>
         /// Convenient helper that returns a disabled LdAiConfig.

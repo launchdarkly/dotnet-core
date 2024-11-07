@@ -1,38 +1,39 @@
 namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 /// <summary>
-/// TBD
+/// Interface representing capabilities needed by the AI Client. These are usually provided
+/// by the LaunchDarkly Server SDK.
 /// </summary>
 public interface ILaunchDarklyClient
 {
     /// <summary>
-    /// TBD
+    /// Returns a JSON variation, with detail.
     /// </summary>
-    /// <param name="key"></param>
-    /// <param name="context"></param>
-    /// <param name="defaultValue"></param>
-    /// <returns></returns>
+    /// <param name="key">the flag key</param>
+    /// <param name="context">the context</param>
+    /// <param name="defaultValue">the default value</param>
+    /// <returns>a detailed evaluation</returns>
     EvaluationDetail<LdValue> JsonVariationDetail(string key, Context context, LdValue defaultValue);
 
 
     /// <summary>
-    /// TBD
+    /// Tracks a metric.
     /// </summary>
-    /// <param name="name"></param>
-    /// <param name="context"></param>
-    /// <param name="data"></param>
-    /// <param name="metricValue"></param>
+    /// <param name="name">metric name</param>
+    /// <param name="context">context</param>
+    /// <param name="data">associated data</param>
+    /// <param name="metricValue">metric value</param>
     void Track(string name, Context context, LdValue data, double metricValue);
 
     /// <summary>
-    /// TBD
+    /// Disposes the client.
     /// </summary>
     void Dispose();
 
     /// <summary>
-    /// TBD
+    /// Returns a logger.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>a logger</returns>
     ILogger GetLogger();
 
 }

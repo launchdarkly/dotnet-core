@@ -9,7 +9,7 @@ using LaunchDarkly.Sdk.Server.Ai.Metrics;
 namespace LaunchDarkly.Sdk.Server.Ai;
 
 /// <summary>
-/// TBD
+/// A tracker capable of reporting events related to a particular AI configuration.
 /// </summary>
 public class LdAiConfigTracker : IDisposable
 {

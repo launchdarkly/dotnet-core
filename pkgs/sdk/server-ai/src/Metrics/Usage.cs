@@ -1,10 +1,10 @@
 namespace LaunchDarkly.Sdk.Server.Ai.Metrics;
 
 /// <summary>
-/// Represents statistics returned by a model provider.
+/// Represents metrics returned by a model provider.
 /// </summary>
-/// <param name="LatencyMs">the duration of the request</param>
-public record struct Statistics(int? LatencyMs);
+/// <param name="LatencyMs">the duration of the request in milliseconds</param>
+public record struct Metrics(long? LatencyMs);
 
 
 /// <summary>
@@ -20,5 +20,5 @@ public record struct Usage(int? Total, int? Input, int? Output);
 /// Represents information returned by a model provider.
 /// </summary>
 /// <param name="Usage">the token usage</param>
-/// <param name="Statistics">the statistics relevant to the request</param>
-public record struct ProviderResponse(Usage? Usage, Statistics? Statistics);
+/// <param name="Metrics">the metrics relevant to the request</param>
+public record struct ProviderResponse(Usage? Usage, Metrics? Metrics);

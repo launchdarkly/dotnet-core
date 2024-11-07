@@ -184,7 +184,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 Output = 3
             };
 
-            var givenStatistics = new Statistics
+            var givenStatistics = new Metrics.Metrics
             {
                 LatencyMs = 500
             };
@@ -192,7 +192,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var givenResponse = new ProviderResponse
             {
                 Usage = givenUsage,
-                Statistics = givenStatistics
+                Metrics = givenStatistics
             };
 
             var result = tracker.TrackRequest(Task.Run(() => givenResponse));
@@ -226,7 +226,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var givenResponse = new ProviderResponse
             {
                 Usage = givenUsage,
-                Statistics = null
+                Metrics = null
             };
 
             var result = tracker.TrackRequest(Task.Run(() => givenResponse));

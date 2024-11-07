@@ -112,7 +112,7 @@ public class LdAiConfigTracker : IDisposable
 
     /// <summary>
     /// Tracks a request to a provider. The request is a task that returns a <see cref="ProviderResponse"/>, which
-    /// contains information about the request such as token usage and statistics.
+    /// contains information about the request such as token usage and metrics.
     /// </summary>
     /// <param name="request">a task representing the request</param>
     /// <returns>the task</returns>
@@ -121,7 +121,7 @@ public class LdAiConfigTracker : IDisposable
         var (result, durationMs) = await MeasureDurationOfTaskMs(request);
         TrackSuccess();
 
-        TrackDuration(result.Statistics?.LatencyMs ?? durationMs);
+        TrackDuration(result.Metrics?.LatencyMs ?? durationMs);
 
         if (result.Usage != null)
         {

@@ -109,7 +109,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             // between 0 and some large number.
             mockClient.Verify(
                 x => x.Track("$ld:ai:duration:total", context, data,
-                    It.IsInRange<double>(0, waitMs * 3, Range.Inclusive)), Times.Once);
+                    It.IsInRange<double>(0, 500, Range.Inclusive)), Times.Once);
         }
 
 

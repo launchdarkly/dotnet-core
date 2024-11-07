@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using LaunchDarkly.Sdk.Server.Ai.Metrics;
 
 namespace LaunchDarkly.Sdk.Server.Ai;
@@ -13,19 +14,13 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 public class LdAiConfigTracker : IDisposable
 {
     /// <summary>
-    /// TBD
+    /// The retrieved AI model configuration.
     /// </summary>
     public readonly LdAiConfig Config;
 
-    /// <summary>
-    /// TBD
-    /// </summary>
+
     private readonly ILaunchDarklyClient _client;
-
     private readonly Context _context;
-
-    private readonly string _key;
-
     private readonly LdValue _trackData;
 
     private const string Duration = "$ld:ai:duration:total";
@@ -37,40 +32,39 @@ public class LdAiConfigTracker : IDisposable
     private const string TokenOutput = "$ld:ai:tokens:output";
 
     /// <summary>
-    ///
+    /// Constructs a new AI configuration tracker. The tracker is associated with a configuration,
+    /// a context, and a key which identifies the configuration.
     /// </summary>
-    /// <param name="client"></param>
-    /// <param name="config"></param>
-    /// <param name="context"></param>
-    /// <param name="key"></param>
+    /// <param name="client">the LaunchDarkly client</param>
+    /// <param name="config">the AI config</param>
+    /// <param name="context">the context</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public LdAiConfigTracker(ILaunchDarklyClient client, LdAiConfig config, Context context, string key)
+    public LdAiConfigTracker(ILaunchDarklyClient client, LdAiConfig config, Context context)
     {
-        _client = client ?? throw new ArgumentNullException(nameof(client));
-        _key = key ?? throw new ArgumentNullException(nameof(key));
-        _context = context;
         Config = config ?? throw new ArgumentNullException(nameof(config));
+        _client = client ?? throw new ArgumentNullException(nameof(client));
+        _context = context;
         _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
             { "versionKey", LdValue.Of(Config.VersionKey)},
-            { "configKey" , LdValue.Of(_key) }
+            { "configKey" , LdValue.Of(Config.Key) }
         });
     }
 
     /// <summary>
-    ///
+    /// Tracks a duration metric related to this config.
     /// </summary>
-    /// <param name="duration"></param>
-    public void TrackDuration(float duration) =>
-        _client.Track(Duration, _context, _trackData, duration);
+    /// <param name="durationMs">the duration in milliseconds</param>
+    public void TrackDuration(float durationMs) =>
+        _client.Track(Duration, _context, _trackData, durationMs);
 
 
     /// <summary>
-    ///
+    /// Tracks the duration of a task, and returns the result of the task.
     /// </summary>
-    /// <param name="task"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
+    /// <param name="task">the task</param>
+    /// <typeparam name="T">type of the task's result</typeparam>
+    /// <returns>the task</returns>
     public async Task<T> TrackDurationOfTask<T>(Task<T> task)
     {
         var result = await MeasureDurationOfTaskMs(task);
@@ -87,10 +81,10 @@ public class LdAiConfigTracker : IDisposable
     }
 
     /// <summary>
-    ///
+    /// Tracks feedback (positive or negative) related to the output of the model.
     /// </summary>
-    /// <param name="feedback"></param>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <param name="feedback">the feedback</param>
+    /// <exception cref="ArgumentOutOfRangeException">thrown if the feedback value is not <see cref="Feedback.Positive"/> or <see cref="Feedback.Negative"/></exception>
     public void TrackFeedback(Feedback feedback)
     {
         switch (feedback)
@@ -107,7 +101,7 @@ public class LdAiConfigTracker : IDisposable
     }
 
     /// <summary>
-    ///
+    /// Tracks a generation event related to this config.
     /// </summary>
     public void TrackSuccess()
     {
@@ -116,10 +110,11 @@ public class LdAiConfigTracker : IDisposable
 
 
     /// <summary>
-    ///
+    /// Tracks a request to a provider. The request is a task that returns a <see cref="ProviderResponse"/>, which
+    /// contains information about the request such as token usage and statistics.
     /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <param name="request">a task representing the request</param>
+    /// <returns>the task</returns>
     public async Task<ProviderResponse> TrackRequest(Task<ProviderResponse> request)
     {
         var (result, durationMs) = await MeasureDurationOfTaskMs(request);
@@ -136,9 +131,9 @@ public class LdAiConfigTracker : IDisposable
     }
 
     /// <summary>
-    ///
+    /// Tracks token usage related to this config.
     /// </summary>
-    /// <param name="usage"></param>
+    /// <param name="usage">the usage</param>
     public void TrackTokens(Usage usage)
     {
         if (usage.Total is > 0)
@@ -156,8 +151,9 @@ public class LdAiConfigTracker : IDisposable
     }
 
 
+    // TODO: Is LdAiClient owning or not?
     /// <summary>
-    /// TBD
+    /// Disposes the client.
     /// </summary>
     public void Dispose() => _client.Dispose();
 }

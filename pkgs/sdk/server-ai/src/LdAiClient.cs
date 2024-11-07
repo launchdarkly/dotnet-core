@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
+using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
+using LaunchDarkly.Sdk.Server.Interfaces;
 using Mustache;
 
 namespace LaunchDarkly.Sdk.Server.Ai;
@@ -14,9 +16,10 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 /// The LaunchDarkly AI client. The client is capable of retrieving AI configurations from LaunchDarkly,
 /// and generating events specific to usage of the AI configuration when interacting with model providers.
 /// </summary>
-public sealed class LdAiClient : IDisposable
+public sealed class LdAiClient
 {
     private readonly ILaunchDarklyClient _client;
+    private readonly ILogger _logger;
 
     /// <summary>
     /// Constructs a new LaunchDarkly AI client.
@@ -33,7 +36,9 @@ public sealed class LdAiClient : IDisposable
     public LdAiClient(ILaunchDarklyClient client)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
+        _logger = _client.GetLogger();
     }
+
 
     // This is the special Mustache variable that can be used in prompts to access the current
     // LaunchDarkly context. For example, {{ ldctx.key }} will return the context key.
@@ -58,18 +63,18 @@ public sealed class LdAiClient : IDisposable
         IReadOnlyDictionary<string, object> variables = null)
     {
 
-        var detail = _client.JsonVariationDetail(key, context, LdValue.Null);
+        var result = _client.JsonVariation(key, context, LdValue.Null);
 
         var defaultTracker = new LdAiConfigTracker(_client, key, defaultValue, context);
 
-        if (detail.IsDefaultValue)
+        if (result.IsNull)
         {
-            _client.GetLogger().Warn("Unable to retrieve AI model config for {0}, returning default config", key);
+            _logger.Warn("Unable to retrieve AI model config for {0}, returning default config", key);
             return defaultTracker;
         }
 
 
-        var parsed = ParseConfig(detail.Value, key);
+        var parsed = ParseConfig(result, key);
         if (parsed == null)
         {
             // ParseConfig already does logging.
@@ -84,7 +89,7 @@ public sealed class LdAiClient : IDisposable
             {
                 if (kvp.Key == LdContextVariable)
                 {
-                    _client.GetLogger().Warn("AI model config variables contains 'ldctx' key, which is reserved; this key will be the value of the LaunchDarkly context");
+                    _logger.Warn("AI model config variables contains 'ldctx' key, which is reserved; this key will be the value of the LaunchDarkly context");
                     continue;
                 }
                 mergedVariables[kvp.Key] = kvp.Value;
@@ -157,16 +162,8 @@ public sealed class LdAiClient : IDisposable
         }
         catch (JsonException e)
         {
-            _client.GetLogger().Error("Unable to parse AI model config for key {0}: {1}", key, e.Message);
+            _logger.Error("Unable to parse AI model config for key {0}: {1}", key, e.Message);
             return null;
         }
-    }
-
-    /// <summary>
-    /// THD
-    /// </summary>
-    public void Dispose()
-    {
-        _client?.Dispose();
     }
 }

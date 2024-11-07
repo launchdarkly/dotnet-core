@@ -46,8 +46,7 @@ public class InterpolationTests
         var json = JsonSerializer.Serialize(config, options);
 
         mockClient.Setup(x =>
-            x.JsonVariationDetail("foo", It.IsAny<Context>(), LdValue.Null)).Returns(
-            new EvaluationDetail<LdValue>(LdValue.Parse(json), 0, EvaluationReason.FallthroughReason));
+            x.JsonVariation("foo", It.IsAny<Context>(), LdValue.Null)).Returns(LdValue.Parse(json));
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 

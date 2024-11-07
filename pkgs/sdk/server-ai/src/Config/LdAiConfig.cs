@@ -38,8 +38,8 @@ public record LdAiConfig
     /// </summary>
     public class Builder
     {
-        private readonly List<Message> _prompt;
         private bool _enabled;
+        private readonly List<Message> _prompt;
         private readonly Dictionary<string, object> _modelParams;
 
 

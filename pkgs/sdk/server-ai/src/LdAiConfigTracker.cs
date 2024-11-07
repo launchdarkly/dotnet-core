@@ -11,7 +11,7 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 /// <summary>
 /// A tracker capable of reporting events related to a particular AI configuration.
 /// </summary>
-public class LdAiConfigTracker : IDisposable
+public class LdAiConfigTracker
 {
     /// <summary>
     /// The retrieved AI model configuration.
@@ -150,11 +150,4 @@ public class LdAiConfigTracker : IDisposable
             _client.Track(TokenOutput, _context, _trackData, usage.Output.Value);
         }
     }
-
-
-    // TODO: Is LdAiClient owning or not?
-    /// <summary>
-    /// Disposes the client.
-    /// </summary>
-    public void Dispose() => _client.Dispose();
 }

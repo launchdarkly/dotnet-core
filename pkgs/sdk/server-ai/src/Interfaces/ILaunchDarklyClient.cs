@@ -7,14 +7,13 @@ namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 public interface ILaunchDarklyClient
 {
     /// <summary>
-    /// Returns a JSON variation, with detail.
+    /// Returns a JSON variation.
     /// </summary>
     /// <param name="key">the flag key</param>
     /// <param name="context">the context</param>
     /// <param name="defaultValue">the default value</param>
-    /// <returns>a detailed evaluation</returns>
-    EvaluationDetail<LdValue> JsonVariationDetail(string key, Context context, LdValue defaultValue);
-
+    /// <returns>the evaluation result</returns>
+    LdValue JsonVariation(string key, Context context, LdValue defaultValue);
 
     /// <summary>
     /// Tracks a metric.
@@ -24,11 +23,6 @@ public interface ILaunchDarklyClient
     /// <param name="data">associated data</param>
     /// <param name="metricValue">metric value</param>
     void Track(string name, Context context, LdValue data, double metricValue);
-
-    /// <summary>
-    /// Disposes the client.
-    /// </summary>
-    void Dispose();
 
     /// <summary>
     /// Returns a logger.

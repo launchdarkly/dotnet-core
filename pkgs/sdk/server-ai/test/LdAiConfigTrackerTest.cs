@@ -34,14 +34,6 @@ namespace LaunchDarkly.Sdk.Server.Ai
         }
 
         [Fact]
-        public void CanDispose()
-        {
-            var mockClient = new Mock<ILaunchDarklyClient>();
-            var tracker = new LdAiConfigTracker(mockClient.Object, "key", LdAiConfig.Disabled, Context.New("key"));
-            tracker.Dispose();
-        }
-
-        [Fact]
         public void CanTrackDuration()
         {
             var mockClient = new Mock<ILaunchDarklyClient>();

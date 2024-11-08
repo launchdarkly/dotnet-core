@@ -1,4 +1,4 @@
-namespace LaunchDarkly.Sdk.Server.Ai.Metrics;
+namespace LaunchDarkly.Sdk.Server.Ai.Provider;
 
 /// <summary>
 /// Feedback about the generated content.

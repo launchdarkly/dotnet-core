@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
-using LaunchDarkly.Sdk.Server.Ai.Metrics;
+using LaunchDarkly.Sdk.Server.Ai.Provider;
 using Moq;
 using Xunit;
 
@@ -176,12 +176,12 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 Output = 3
             };
 
-            var givenStatistics = new Metrics.Metrics
+            var givenStatistics = new Metrics
             {
                 LatencyMs = 500
             };
 
-            var givenResponse = new ProviderResponse
+            var givenResponse = new Response
             {
                 Usage = givenUsage,
                 Metrics = givenStatistics
@@ -215,7 +215,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 Total = 1
             };
 
-            var givenResponse = new ProviderResponse
+            var givenResponse = new Response
             {
                 Usage = givenUsage,
                 Metrics = null

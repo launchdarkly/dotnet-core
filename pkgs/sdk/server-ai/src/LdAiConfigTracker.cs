@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
-using LaunchDarkly.Sdk.Server.Ai.Metrics;
+using LaunchDarkly.Sdk.Server.Ai.Provider;
 
 namespace LaunchDarkly.Sdk.Server.Ai;
 
@@ -94,7 +94,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     }
 
     /// <inheritdoc/>
-    public async Task<ProviderResponse> TrackRequest(Task<ProviderResponse> request)
+    public async Task<Response> TrackRequest(Task<Response> request)
     {
         var (result, durationMs) = await MeasureDurationOfTaskMs(request);
         TrackSuccess();

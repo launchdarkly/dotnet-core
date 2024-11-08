@@ -1,4 +1,4 @@
-namespace LaunchDarkly.Sdk.Server.Ai.Metrics;
+namespace LaunchDarkly.Sdk.Server.Ai.Provider;
 
 /// <summary>
 /// Represents metrics returned by a model provider.
@@ -21,4 +21,4 @@ public record struct Usage(int? Total, int? Input, int? Output);
 /// </summary>
 /// <param name="Usage">the token usage</param>
 /// <param name="Metrics">the metrics relevant to the request</param>
-public record struct ProviderResponse(Usage? Usage, Metrics? Metrics);
+public record struct Response(Usage? Usage, Metrics? Metrics);

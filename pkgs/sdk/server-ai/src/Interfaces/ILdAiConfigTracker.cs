@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
-using LaunchDarkly.Sdk.Server.Ai.Metrics;
+using LaunchDarkly.Sdk.Server.Ai.Provider;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
@@ -42,12 +42,12 @@ public interface ILdAiConfigTracker
     public void TrackSuccess();
 
     /// <summary>
-    /// Tracks a request to a provider. The request is a task that returns a <see cref="ProviderResponse"/>, which
+    /// Tracks a request to a provider. The request is a task that returns a <see cref="Response"/>, which
     /// contains information about the request such as token usage and metrics.
     /// </summary>
     /// <param name="request">a task representing the request</param>
     /// <returns>the task</returns>
-    public Task<ProviderResponse> TrackRequest(Task<ProviderResponse> request);
+    public Task<Response> TrackRequest(Task<Response> request);
 
     /// <summary>
     /// Tracks token usage related to this config.

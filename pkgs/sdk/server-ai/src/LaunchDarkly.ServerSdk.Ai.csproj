@@ -15,7 +15,7 @@
     <OutputType>Library</OutputType>
     <PackageId>LaunchDarkly.ServerSdk.Ai</PackageId>
     <RootNamespace>LaunchDarkly.Sdk.Server.Ai</RootNamespace>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>11</LangVersion>
     <Description>LaunchDarkly Server-Side .NET AI SDK</Description>
     <Authors>LaunchDarkly</Authors>
     <Owners>LaunchDarkly</Owners>
@@ -39,6 +39,7 @@
 
   <ItemGroup>
     <PackageReference Include="LaunchDarkly.ServerSdk" Version="8.*" />
+    <PackageReference Include="Mustache.NETStandard" Version="1.1.0" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

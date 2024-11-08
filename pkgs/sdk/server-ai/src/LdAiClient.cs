@@ -43,7 +43,7 @@ public sealed class LdAiClient : ILdAiClient
     private const string LdContextVariable = "ldctx";
 
     /// <inheritdoc/>
-    public LdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null)
     {
 

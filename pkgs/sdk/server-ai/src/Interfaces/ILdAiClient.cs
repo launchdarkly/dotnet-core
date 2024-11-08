@@ -11,7 +11,7 @@ public interface ILdAiClient
 
     /// <summary>
     /// Retrieves a LaunchDarkly AI config identified by the given key. The return value
-    /// is an <see cref="LdAiConfigTracker"/>, which makes the configuration available and
+    /// is an <see cref="ILdAiConfigTracker"/>, which makes the configuration available and
     /// provides convenience methods for generating events related to model usage.
     ///
     /// Any variables provided will be interpolated into the prompt's messages.
@@ -24,6 +24,6 @@ public interface ILdAiClient
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
     /// <returns>an AI config tracker</returns>
-    public LdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null);
 }

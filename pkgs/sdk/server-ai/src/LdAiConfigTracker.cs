@@ -11,14 +11,8 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 /// <summary>
 /// A tracker capable of reporting events related to a particular AI configuration.
 /// </summary>
-public class LdAiConfigTracker
+public class LdAiConfigTracker : ILdAiConfigTracker
 {
-    /// <summary>
-    /// The retrieved AI model configuration.
-    /// </summary>
-    public readonly LdAiConfig Config;
-
-
     private readonly ILaunchDarklyClient _client;
     private readonly Context _context;
     private readonly LdValue _trackData;
@@ -52,20 +46,16 @@ public class LdAiConfigTracker
         });
     }
 
-    /// <summary>
-    /// Tracks a duration metric related to this config.
-    /// </summary>
-    /// <param name="durationMs">the duration in milliseconds</param>
+
+    /// <inheritdoc/>
+    public LdAiConfig Config { get; }
+
+    /// <inheritdoc/>
     public void TrackDuration(float durationMs) =>
         _client.Track(Duration, _context, _trackData, durationMs);
 
 
-    /// <summary>
-    /// Tracks the duration of a task, and returns the result of the task.
-    /// </summary>
-    /// <param name="task">the task</param>
-    /// <typeparam name="T">type of the task's result</typeparam>
-    /// <returns>the task</returns>
+    /// <inheritdoc/>
     public async Task<T> TrackDurationOfTask<T>(Task<T> task)
     {
         var result = await MeasureDurationOfTaskMs(task);
@@ -81,11 +71,7 @@ public class LdAiConfigTracker
         return Tuple.Create(result, sw.ElapsedMilliseconds);
     }
 
-    /// <summary>
-    /// Tracks feedback (positive or negative) related to the output of the model.
-    /// </summary>
-    /// <param name="feedback">the feedback</param>
-    /// <exception cref="ArgumentOutOfRangeException">thrown if the feedback value is not <see cref="Feedback.Positive"/> or <see cref="Feedback.Negative"/></exception>
+    /// <inheritdoc/>
     public void TrackFeedback(Feedback feedback)
     {
         switch (feedback)
@@ -101,21 +87,13 @@ public class LdAiConfigTracker
         }
     }
 
-    /// <summary>
-    /// Tracks a generation event related to this config.
-    /// </summary>
+    /// <inheritdoc/>
     public void TrackSuccess()
     {
         _client.Track(Generation, _context, _trackData, 1);
     }
 
-
-    /// <summary>
-    /// Tracks a request to a provider. The request is a task that returns a <see cref="ProviderResponse"/>, which
-    /// contains information about the request such as token usage and metrics.
-    /// </summary>
-    /// <param name="request">a task representing the request</param>
-    /// <returns>the task</returns>
+    /// <inheritdoc/>
     public async Task<ProviderResponse> TrackRequest(Task<ProviderResponse> request)
     {
         var (result, durationMs) = await MeasureDurationOfTaskMs(request);
@@ -131,10 +109,7 @@ public class LdAiConfigTracker
         return result;
     }
 
-    /// <summary>
-    /// Tracks token usage related to this config.
-    /// </summary>
-    /// <param name="usage">the usage</param>
+    /// <inheritdoc/>
     public void TrackTokens(Usage usage)
     {
         if (usage.Total is > 0)

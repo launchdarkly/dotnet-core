@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
-using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
-using LaunchDarkly.Sdk.Server.Interfaces;
 using Mustache;
 
 namespace LaunchDarkly.Sdk.Server.Ai;
@@ -16,7 +14,7 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 /// The LaunchDarkly AI client. The client is capable of retrieving AI configurations from LaunchDarkly,
 /// and generating events specific to usage of the AI configuration when interacting with model providers.
 /// </summary>
-public sealed class LdAiClient
+public sealed class LdAiClient : ILdAiClient
 {
     private readonly ILaunchDarklyClient _client;
     private readonly ILogger _logger;
@@ -44,21 +42,7 @@ public sealed class LdAiClient
     // LaunchDarkly context. For example, {{ ldctx.key }} will return the context key.
     private const string LdContextVariable = "ldctx";
 
-    /// <summary>
-    /// Retrieves a LaunchDarkly AI config identified by the given key. The return value
-    /// is an <see cref="LdAiConfigTracker"/>, which makes the configuration available and
-    /// provides convenience methods for generating events related to model usage.
-    ///
-    /// Any variables provided will be interpolated into the prompt's messages.
-    /// Additionally, the current LaunchDarkly context will be available as 'ldctx' within
-    /// a prompt message.
-    ///
-    /// </summary>
-    /// <param name="key">the flag key</param>
-    /// <param name="context">the context</param>
-    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
-    /// <param name="variables">the list of variables used when interpolating the prompt</param>
-    /// <returns>an AI config tracker</returns>
+    /// <inheritdoc/>
     public LdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null)
     {

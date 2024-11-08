@@ -17,7 +17,7 @@ public class LdAiClientTest
         var client = new LdClientAdapter(new LdClient(Configuration.Builder("key").Offline(true).Build()));
         var aiClient = new LdAiClient(client);
         var result= aiClient.ModelConfig("foo", Context.New("key"), LdAiConfig.Disabled);
-        Assert.Equal(LdAiConfig.Disabled, result.Config);
+        Assert.False(result.Config.Enabled);
     }
 
     [Fact]
@@ -27,14 +27,14 @@ public class LdAiClientTest
     }
 
     [Fact]
-    public void ReturnsDefaultConfigWhenFlagNotFound()
+    public void ReturnsDefaultConfigWhenGivenInvalidVariation()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
 
         var mockLogger = new Mock<ILogger>();
 
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), LdValue.Null)).Returns(LdValue.Null);
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
 
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
@@ -86,14 +86,14 @@ public class LdAiClientTest
         var mockLogger = new Mock<ILogger>();
 
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), LdValue.Null)).Returns(LdValue.Parse(json));
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
         var client = new LdAiClient(mockClient.Object);
 
         // All the JSON inputs here are considered disabled, either due to lack of the 'enabled' property,
-        // or if present, it is set to false. Therefore if the default was returned, we'd see the assertion fail
+        // or if present, it is set to false. Therefore, if the default was returned, we'd see the assertion fail
         // (since calling LdAiConfig.New() constructs an enabled config by default.)
         var tracker = client.ModelConfig("foo", Context.New(ContextKind.Default, "key"),
             LdAiConfig.New().AddPromptMessage("foo").Build());
@@ -117,7 +117,7 @@ public class LdAiClientTest
                             """;
 
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), LdValue.Null)).Returns(LdValue.Parse(json));
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 

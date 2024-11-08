@@ -47,22 +47,13 @@ public sealed class LdAiClient : ILdAiClient
         IReadOnlyDictionary<string, object> variables = null)
     {
 
-        var result = _client.JsonVariation(key, context, LdValue.Null);
-
-        var defaultTracker = new LdAiConfigTracker(_client, key, defaultValue, context);
-
-        if (result.IsNull)
-        {
-            _logger.Warn("Unable to retrieve AI model config for {0}, returning default config", key);
-            return defaultTracker;
-        }
-
+        var result = _client.JsonVariation(key, context, defaultValue.ToLdValue());
 
         var parsed = ParseConfig(result, key);
         if (parsed == null)
         {
             // ParseConfig already does logging.
-            return defaultTracker;
+            return new LdAiConfigTracker(_client, key, defaultValue, context);
         }
 
 
@@ -128,7 +119,6 @@ public sealed class LdAiClient : ILdAiClient
             _ => null
         };
     }
-
 
     private static string InterpolateTemplate(string template, IReadOnlyDictionary<string, object> variables)
     {

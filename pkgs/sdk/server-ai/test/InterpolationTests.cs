@@ -16,37 +16,24 @@ public class InterpolationTests
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
 
-        var config = new AiConfig
-        {
-            Meta = new Meta
-            {
-                Enabled = true,
-                VersionKey = "1"
-            },
-            Model = null,
-            Prompt = new List<Message>
-            {
-                new()
-                {
-                    Content = prompt,
-                    Role = Role.System
-                }
-            }
-        };
 
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            Converters =
-            {
-                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
-            }
-        };
+        // The replacement is done this way because to use string.Format, we'd need to escape the curly braces.
+        var configJson = """
+                        {
+                            "_ldMeta": {"versionKey": "1", "enabled": true},
+                            "model": {},
+                            "prompt": [
+                                {
+                                    "content": "<do-not-use-in-any-tests-prompt-placeholder>",
+                                    "role": "System"
+                                }
+                            ]
+                        }
+                        """.Replace("<do-not-use-in-any-tests-prompt-placeholder>", prompt);
 
-        var json = JsonSerializer.Serialize(config, options);
 
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), LdValue.Null)).Returns(LdValue.Parse(json));
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(configJson));
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 

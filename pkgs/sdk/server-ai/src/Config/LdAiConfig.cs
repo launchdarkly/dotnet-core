@@ -126,6 +126,43 @@ public record LdAiConfig
         Enabled = enabled;
     }
 
+    private static LdValue ObjectToValue(object obj)
+    {
+        if (obj == null)
+        {
+            return LdValue.Null;
+        }
+
+        return obj switch
+        {
+            bool b => LdValue.Of(b),
+            double d => LdValue.Of(d),
+            string s => LdValue.Of(s),
+            IEnumerable<object> list => LdValue.ArrayFrom(list.Select(ObjectToValue)),
+            IDictionary<string, object> dict => LdValue.ObjectFrom(dict.ToDictionary(kv => kv.Key,
+                kv => ObjectToValue(kv.Value))),
+            _ => LdValue.Null
+        };
+    }
+
+    internal LdValue ToLdValue()
+    {
+        return LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        {
+            { "_ldMeta", LdValue.ObjectFrom(
+                new Dictionary<string, LdValue>
+                {
+                    { "versionKey", LdValue.Of(VersionKey) },
+                    { "enabled", LdValue.Of(Enabled) }
+                }) },
+            { "prompt", LdValue.ArrayFrom(Prompt.Select(m => LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "content", LdValue.Of(m.Content) },
+                { "role", LdValue.Of(m.Role.ToString()) }
+            }))) },
+            { "model", ObjectToValue(Model) }
+        });
+    }
 
     /// <summary>
     /// Creates a new LdAiConfig builder.

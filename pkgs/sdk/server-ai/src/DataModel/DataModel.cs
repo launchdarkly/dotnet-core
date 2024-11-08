@@ -36,7 +36,6 @@ public class Meta
     /// <summary>
     /// If the config is enabled.
     /// </summary>
-
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; }
 }
@@ -76,14 +75,12 @@ public class AiConfig
     /// <summary>
     /// LaunchDarkly metadata.
     /// </summary>
-
     [JsonPropertyName("_ldMeta")]
     public Meta Meta { get; set; }
 
     /// <summary>
     /// The model params;
     /// </summary>
-
     [JsonPropertyName("model")]
     public Dictionary<string, object> Model { get; set; }
 }

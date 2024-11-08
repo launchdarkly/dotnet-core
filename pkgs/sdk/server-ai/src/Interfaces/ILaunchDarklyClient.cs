@@ -29,5 +29,4 @@ public interface ILaunchDarklyClient
     /// </summary>
     /// <returns>a logger</returns>
     ILogger GetLogger();
-
 }

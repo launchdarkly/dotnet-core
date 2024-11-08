@@ -5,7 +5,6 @@ namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 /// </summary>
 public interface ILogger
 {
-
     /// <summary>
     /// Log an error.
     /// </summary>

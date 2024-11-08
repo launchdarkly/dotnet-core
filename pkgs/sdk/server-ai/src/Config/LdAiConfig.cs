@@ -42,12 +42,7 @@ public record LdAiConfig
         private readonly List<Message> _prompt;
         private readonly Dictionary<string, object> _modelParams;
 
-
-        /// <summary>
-        /// Constructs a new builder. By default, the config will be disabled, with no prompt
-        /// messages or model parameters.
-        /// </summary>
-        public Builder()
+        internal Builder()
         {
             _enabled = false;
             _prompt = new List<Message>();

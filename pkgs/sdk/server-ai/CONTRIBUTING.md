@@ -16,7 +16,7 @@ We encourage pull requests and other contributions from the community. Before su
 
 To set up your SDK build time environment, you must [download .NET development tools and follow the instructions](https://dotnet.microsoft.com/download). 
 
-The AI SDK wraps the [Server-Side](../server) SDK.
+The AI SDK wraps the [Server-Side](../server/index.md) SDK.
 
 ### Building
 

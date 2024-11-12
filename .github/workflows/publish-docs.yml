@@ -8,6 +8,7 @@ on:
         options:
           - pkgs/sdk/client
           - pkgs/sdk/server
+          - pkgs/sdk/server-ai
           - pkgs/telemetry
 
 name: Publish Docs

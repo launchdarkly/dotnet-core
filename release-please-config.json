@@ -9,6 +9,12 @@
         "src/LaunchDarkly.ServerSdk.csproj"
       ]
     },
+    "pkgs/sdk/server-ai": {
+      "package-name": "LaunchDarkly.ServerSdk.Ai",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.Ai.csproj"
+      ]
+    },
     "pkgs/sdk/client": {
       "package-name": "LaunchDarkly.ClientSdk",
       "extra-files": [

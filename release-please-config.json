@@ -11,6 +11,8 @@
     },
     "pkgs/sdk/server-ai": {
       "package-name": "LaunchDarkly.ServerSdk.Ai",
+      "release-as": "0.1.0",
+      "bump-minor-pre-major": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Ai.csproj"
       ]

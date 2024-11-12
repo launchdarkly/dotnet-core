@@ -5,10 +5,11 @@ This includes the SDKs, shared libraries, and other tools.
 
 ## Packages
 
-| SDK Packages                              | NuGet                                                   | API Docs                                                    | Issues                        | Tests                                                      |
-|-------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|-------------------------------|------------------------------------------------------------|
-| [LaunchDarkly.ServerSdk](pkgs/sdk/server) | [![NuGet][server-nuget-badge]][server-nuget-link]       | [![Documentation][api-docs-badge]][server-api-docs-link]    | [Server SDK][server-issues]   | [![Actions Status][server-ci-badge]][server-ci-link]       |
-| [LaunchDarkly.ClientSdk](pkgs/sdk/client) | [![NuGet][client-nuget-badge]][client-nuget-link]       | [![Documentation][api-docs-badge]][client-api-docs-link]    | [Client SDK][client-issues]   | [![Actions Status][client-ci-badge]][client-ci-link]       |
+| SDK Packages                                    | NuGet                                                   | API Docs                                                    | Issues                         | Tests                                                      |
+|-------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|--------------------------------|------------------------------------------------------------|
+| [LaunchDarkly.ServerSdk](pkgs/sdk/server)       | [![NuGet][server-nuget-badge]][server-nuget-link]       | [![Documentation][api-docs-badge]][server-api-docs-link]    | [Server SDK][server-issues]    | [![Actions Status][server-ci-badge]][server-ci-link]       |
+| [LaunchDarkly.ServerSdk.Ai](pkgs/sdk/server-ai) | [![NuGet][server-ai-nuget-badge]][server-ai-nuget-link] | [![Documentation][api-docs-badge]][server-ai-api-docs-link] | [Server SDK][server-ai-issues] | [![Actions Status][server-ai-ci-badge]][server-ai-ci-link] |
+| [LaunchDarkly.ClientSdk](pkgs/sdk/client)       | [![NuGet][client-nuget-badge]][client-nuget-link]       | [![Documentation][api-docs-badge]][client-api-docs-link]    | [Client SDK][client-issues]    | [![Actions Status][client-ci-badge]][client-ci-link]       |
 
 | Telemetry Packages                                 | NuGet                                                   | API Docs                                                    | Issues                        | Tests                                                      |
 |----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|-------------------------------|------------------------------------------------------------|
@@ -61,6 +62,13 @@ We encourage pull requests and other contributions from the community. Check out
 [server-ci-link]: https://github.com/launchdarkly/dotnet-core/actions/workflows/sdk-server-ci.yml
 [server-issues]: https://github.com/launchdarkly/dotnet-core/issues?q=is%3Aissue+is%3Aopen+label%3A%22package%3A+sdk%2Fserver%22+
 [server-api-docs-link]: https://launchdarkly.github.io/dotnet-core/pkgs/sdk/server/
+
+[server-ai-nuget-badge]: https://img.shields.io/nuget/v/LaunchDarkly.ServerSdk.Ai.svg?style=flat-square
+[server-ai-nuget-link]: https://www.nuget.org/packages/LaunchDarkly.ServerSdk.Ai/
+[server-ai-ci-badge]: https://github.com/launchdarkly/dotnet-core/actions/workflows/sdk-server-ai-ci.yml/badge.svg
+[server-ai-ci-link]: https://github.com/launchdarkly/dotnet-core/actions/workflows/sdk-server-ai-ci.yml
+[server-ai-issues]: https://github.com/launchdarkly/dotnet-core/issues?q=is%3Aopen+is%3Aissue+label%3A%22package%3A+sdk%2Fserver-ai%22
+[server-ai-api-docs-link]: https://launchdarkly.github.io/dotnet-core/pkgs/sdk/server-ai/
 
 [client-nuget-badge]: https://img.shields.io/nuget/v/LaunchDarkly.ClientSdk.svg?style=flat-square
 [client-nuget-link]: https://www.nuget.org/packages/LaunchDarkly.ClientSdk/

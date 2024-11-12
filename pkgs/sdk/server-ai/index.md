@@ -16,4 +16,4 @@ to other repositories used in the SDK.
 
 ## Namespaces
 
-**[LaunchDarkly.Sdk.Ai](docs-src/namespaces/LaunchDarkly.Sdk.Ai.md):** The base namespace for all LaunchDarkly .NET-based SDKs, containing common types.
+**[LaunchDarkly.Server.Sdk.Ai](docs-src/namespaces/LaunchDarkly.Sdk.Server.Ai.md):** The base namespace for all LaunchDarkly .NET-based SDKs, containing common types.

@@ -5,11 +5,11 @@ This includes the SDKs, shared libraries, and other tools.
 
 ## Packages
 
-| SDK Packages                                    | NuGet                                                   | API Docs                                                    | Issues                         | Tests                                                      |
-|-------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|--------------------------------|------------------------------------------------------------|
-| [LaunchDarkly.ServerSdk](pkgs/sdk/server)       | [![NuGet][server-nuget-badge]][server-nuget-link]       | [![Documentation][api-docs-badge]][server-api-docs-link]    | [Server SDK][server-issues]    | [![Actions Status][server-ci-badge]][server-ci-link]       |
-| [LaunchDarkly.ServerSdk.Ai](pkgs/sdk/server-ai) | [![NuGet][server-ai-nuget-badge]][server-ai-nuget-link] | [![Documentation][api-docs-badge]][server-ai-api-docs-link] | [Server SDK][server-ai-issues] | [![Actions Status][server-ai-ci-badge]][server-ai-ci-link] |
-| [LaunchDarkly.ClientSdk](pkgs/sdk/client)       | [![NuGet][client-nuget-badge]][client-nuget-link]       | [![Documentation][api-docs-badge]][client-api-docs-link]    | [Client SDK][client-issues]    | [![Actions Status][client-ci-badge]][client-ci-link]       |
+| SDK Packages                                    | NuGet                                                   | API Docs                                                    | Issues                            | Tests                                                      |
+|-------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|-----------------------------------|------------------------------------------------------------|
+| [LaunchDarkly.ServerSdk](pkgs/sdk/server)       | [![NuGet][server-nuget-badge]][server-nuget-link]       | [![Documentation][api-docs-badge]][server-api-docs-link]    | [Server SDK][server-issues]       | [![Actions Status][server-ci-badge]][server-ci-link]       |
+| [LaunchDarkly.ServerSdk.Ai](pkgs/sdk/server-ai) | [![NuGet][server-ai-nuget-badge]][server-ai-nuget-link] | [![Documentation][api-docs-badge]][server-ai-api-docs-link] | [AI Server SDK][server-ai-issues] | [![Actions Status][server-ai-ci-badge]][server-ai-ci-link] |
+| [LaunchDarkly.ClientSdk](pkgs/sdk/client)       | [![NuGet][client-nuget-badge]][client-nuget-link]       | [![Documentation][api-docs-badge]][client-api-docs-link]    | [Client SDK][client-issues]       | [![Actions Status][client-ci-badge]][client-ci-link]       |
 
 | Telemetry Packages                                 | NuGet                                                   | API Docs                                                    | Issues                        | Tests                                                      |
 |----------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------|-------------------------------|------------------------------------------------------------|

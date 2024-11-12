@@ -1,5 +1,13 @@
 # LaunchDarkly AI SDK (server-side) for .NET
 
+# ⛔️⛔️⛔️⛔️
+
+> [!CAUTION]
+> This library is a alpha version and should not be considered ready for production use while this message is visible.
+
+# ☝️☝️☝️☝️☝️☝️
+
+
 The LaunchDarkly AI SDK (server-side) for .NET is designed primarily for use in multi-user systems such as web servers and applications. It follows the server-side LaunchDarkly model for multi-user contexts. It is not intended for use in desktop and embedded systems applications.
 
 Currently there is no client-side AI SDK for .NET. If you're interested, please let us know by filing an issue!

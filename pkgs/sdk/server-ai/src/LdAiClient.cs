@@ -20,7 +20,8 @@ public sealed class LdAiClient : ILdAiClient
     private readonly ILogger _logger;
 
     /// <summary>
-    /// Constructs a new LaunchDarkly AI client.
+    /// Constructs a new LaunchDarkly AI client. Please note, the client library is an alpha release and is
+    /// not considered ready for production use.
     ///
     /// Example:
     /// <code>

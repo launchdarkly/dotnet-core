@@ -19,7 +19,7 @@ public interface ILdAiClient
     /// a prompt message.
     ///
     /// </summary>
-    /// <param name="key">the flag key</param>
+    /// <param name="key">the AI config key</param>
     /// <param name="context">the context</param>
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>

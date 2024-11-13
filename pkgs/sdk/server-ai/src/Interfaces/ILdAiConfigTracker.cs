@@ -6,23 +6,27 @@ using LaunchDarkly.Sdk.Server.Ai.Provider;
 namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 /// <summary>
-/// Represents the interface of the AI Config Tracker, useful for mocking.
+/// A utility capable of generating events related to a specific AI model
+/// configuration.
 /// </summary>
 public interface ILdAiConfigTracker
 {
     /// <summary>
-    /// The retrieved AI model configuration.
+    /// The AI model configuration retrieved from LaunchDarkly, or a default value if unable to retrieve.
     /// </summary>
     public LdAiConfig Config { get; }
 
     /// <summary>
-    /// Tracks a duration metric related to this config.
+    /// Tracks a duration metric related to this config. For example, if a particular operation
+    /// related to usage of the AI model takes 100ms, this can be tracked and made available in
+    /// LaunchDarkly.
     /// </summary>
     /// <param name="durationMs">the duration in milliseconds</param>
     public void TrackDuration(float durationMs);
 
     /// <summary>
     /// Tracks the duration of a task, and returns the result of the task.
+    ///
     /// </summary>
     /// <param name="task">the task</param>
     /// <typeparam name="T">type of the task's result</typeparam>
@@ -44,6 +48,24 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// Tracks a request to a provider. The request is a task that returns a <see cref="Response"/>, which
     /// contains information about the request such as token usage and metrics.
+    ///
+    /// It is the responsibility of the caller to fill in the <see cref="Response"/> object with any details
+    /// that should be tracked.
+    ///
+    /// Example:
+    /// <code>
+    /// var response = tracker.TrackRequest(Task.Run(() => new Response {
+    ///     // 1. Make a request to the AI provider
+    ///     // 2. Identify relevant statistics returned in the response
+    ///     // 3. Return a Response object containing the relevant statistics
+    ///     Usage = new Usage { Total = 1, Input = 1, Output = 1 },
+    ///     Metrics = new Metrics { LatencyMs = 100 }
+    /// }));
+    /// </code>
+    ///
+    /// If no latency statistic is explicitly returned in the <see cref="Response"/>, then the duration of the
+    /// Task is automatically measured and recorded as the latency metric associated with this request.
+    ///
     /// </summary>
     /// <param name="request">a task representing the request</param>
     /// <returns>the task</returns>
@@ -52,6 +74,6 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// Tracks token usage related to this config.
     /// </summary>
-    /// <param name="usage">the usage</param>
+    /// <param name="usage">the token usage</param>
     public void TrackTokens(Usage usage);
 }

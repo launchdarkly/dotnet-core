@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
+using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
@@ -25,13 +26,12 @@ public sealed class LdAiClient : ILdAiClient
     ///
     /// Example:
     /// <code>
-    /// var config = Configuration.Builder("my-sdk-key").Build();
-    /// var client = new LdClient(config);
-    /// var aiClient = new LdAiClient(client);
+    /// var baseClient = new LdClient(Configuration.Builder("my-sdk-key").Build());
+    /// var aiClient = new LdAiClient(new LdClientAdapter(baseClient));
     /// </code>
     ///
     /// </summary>
-    /// <param name="client">a LaunchDarkly Server-side SDK client instance</param>
+    /// <param name="client">an object satisfying <see cref="ILaunchDarklyClient"/>, such as an <see cref="LdClientAdapter"/></param>
     public LdAiClient(ILaunchDarklyClient client)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));

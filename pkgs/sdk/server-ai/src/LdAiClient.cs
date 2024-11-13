@@ -73,10 +73,27 @@ public sealed class LdAiClient : ILdAiClient
         }
 
 
-        var prompt =
-            parsed.Prompt?.Select(m => new LdAiConfig.Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
+        var prompt = new List<LdAiConfig.Message>();
+
+        if (parsed.Prompt != null)
+        {
+            for (var i = 0; i < parsed.Prompt.Count; i++)
+            {
+                try
+                {
+                    var content = InterpolateTemplate(parsed.Prompt[i].Content, mergedVariables);
+                    prompt.Add(new LdAiConfig.Message(content, parsed.Prompt[i].Role));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"AI model config prompt has malformed message at index {i}: {ex.Message} (returning default config)");
+                    return new LdAiConfigTracker(_client, key, defaultValue, context);
+                }
+            }
+        }
 
         return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model), context);
+
     }
 
     /// <summary>

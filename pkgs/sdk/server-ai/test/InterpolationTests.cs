@@ -143,6 +143,8 @@ public class InterpolationTests
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
+        mockLogger.Setup(x => x.Error(It.IsAny<string>()));
+
         var client = new LdAiClient(mockClient.Object);
         var tracker = client.ModelConfig("foo", Context.New("key"), LdAiConfig.Disabled);
         Assert.False(tracker.Config.Enabled);

@@ -86,7 +86,8 @@ public sealed class LdAiClient : ILdAiClient
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"AI model config prompt has malformed message at index {i}: {ex.Message} (returning default config)");
+                    _logger.Error(
+                        $"AI model config prompt has malformed message at index {i}: {ex.Message} (returning default config, which will not contain interpolated prompt messages)");
                     return new LdAiConfigTracker(_client, key, defaultValue, context);
                 }
             }
@@ -154,7 +155,8 @@ public sealed class LdAiClient : ILdAiClient
         }
         catch (JsonException e)
         {
-            _logger.Error("Unable to parse AI model config for key {0}: {1}", key, e.Message);
+            _logger.Error(
+                $"Unable to parse AI model config for key {key}: {e.Message} (returning default config, which will not contain interpolated prompt messages)");
             return null;
         }
     }

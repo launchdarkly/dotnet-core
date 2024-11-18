@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -117,6 +118,37 @@ public class InterpolationTests
         Assert.Equal("hello world ! ", result);
     }
 
+    [Fact]
+    public void TestInterpolationMalformed()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string configJson = """
+                                  {
+                                      "_ldMeta": {"versionKey": "1", "enabled": true},
+                                      "model": {},
+                                      "prompt": [
+                                          {
+                                              "content": "This is a {{ malformed }]} prompt",
+                                              "role": "System"
+                                          }
+                                      ]
+                                  }
+                                  """;
+
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(configJson));
+
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        mockLogger.Setup(x => x.Error(It.IsAny<string>()));
+
+        var client = new LdAiClient(mockClient.Object);
+        var tracker = client.ModelConfig("foo", Context.New("key"), LdAiConfig.Disabled);
+        Assert.False(tracker.Config.Enabled);
+    }
 
     [Fact]
     public void TestInterpolationWithBasicContext()

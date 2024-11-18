@@ -97,6 +97,25 @@ public sealed class LdAiClient : ILdAiClient
 
     }
 
+
+    private static IDictionary<string, object> AddSingleKindContextAttributes(Context context)
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            ["kind"] = context.Kind.ToString(),
+            ["key"] = context.Key,
+            ["anonymous"] = context.Anonymous
+        };
+
+        foreach (var key in context.OptionalAttributeNames)
+        {
+            attributes[key] = ValueToObject(context.GetValue(AttributeRef.FromLiteral(key)));
+        }
+
+        return attributes;
+    }
+
+
     /// <summary>
     /// Retrieves all attributes from the given context, including private attributes. The attributes
     /// are converted into C# primitives recursively.
@@ -105,17 +124,23 @@ public sealed class LdAiClient : ILdAiClient
     /// <returns>the attributes</returns>
     private static IDictionary<string, object> GetAllAttributes(Context context)
     {
-        var attributes = new Dictionary<string, object>();
-        foreach (var key in context.OptionalAttributeNames)
+        if (!context.Multiple)
         {
-            attributes[key] = ValueToObject(context.GetValue(AttributeRef.FromLiteral(key)));
+            return AddSingleKindContextAttributes(context);
         }
 
-        attributes["kind"] = context.Kind.ToString();
-        attributes["key"] = context.Key;
-        attributes["anonymous"] = context.Anonymous;
+        var attrs = new Dictionary<string, object>
+        {
+            ["kind"] = context.Kind,
+            ["key"] = context.FullyQualifiedKey
+        };
 
-        return attributes;
+        foreach (var kind in context.MultiKindContexts)
+        {
+            attrs[kind.Kind.ToString()] = AddSingleKindContextAttributes(kind);
+        }
+
+        return attrs;
     }
 
     /// <summary>

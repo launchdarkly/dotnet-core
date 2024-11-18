@@ -2,5 +2,5 @@
   "pkgs/sdk/server": "8.6.0",
   "pkgs/sdk/client": "5.3.0",
   "pkgs/telemetry": "1.0.0",
-  "pkgs/sdk/server-ai": "0.1.0"
+  "pkgs/sdk/server-ai": "0.1.1"
 }

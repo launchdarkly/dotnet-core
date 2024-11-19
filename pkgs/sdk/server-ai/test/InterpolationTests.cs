@@ -193,6 +193,47 @@ public class InterpolationTests
 
         var canonicalKeys = Eval("multi={{ ldctx.key }} user={{ ldctx.user.key }} cat={{ ldctx.cat.key }}", context, null);
         Assert.Equal("multi=cat:456:user:123 user=123 cat=456", canonicalKeys);
+    }
 
+    [Fact]
+    public void TestInterpolationMultiKindDoesNotHaveAnonymousAttribute()
+    {
+        var user = Context.Builder(ContextKind.Default, "123")
+            .Set("cat_ownership", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "count", LdValue.Of(12) }
+            })).Build();
+
+        var cat= Context.Builder(ContextKind.Of("cat"), "456")
+            .Set("health", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "hunger", LdValue.Of("off the charts") }
+            })).Build();
+
+        var context = Context.MultiBuilder().Add(user).Add(cat).Build();
+
+        var result = Eval("anonymous=<{{ ldctx.anonymous }}>", context, null);
+        Assert.Equal("anonymous=<>", result);
+    }
+
+    [Fact]
+    public void TestInterpolationMultiKindContextHasKindMulti()
+    {
+        var user = Context.Builder(ContextKind.Default, "123")
+            .Set("cat_ownership", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "count", LdValue.Of(12) }
+            })).Build();
+
+        var cat= Context.Builder(ContextKind.Of("cat"), "456")
+            .Set("health", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "hunger", LdValue.Of("off the charts") }
+            })).Build();
+
+        var context = Context.MultiBuilder().Add(user).Add(cat).Build();
+
+        var result = Eval("kind={{ ldctx.kind }}", context, null);
+        Assert.Equal("kind=multi", result);
     }
 }

@@ -170,4 +170,70 @@ public class InterpolationTests
         var result = Eval("I can ingest over {{ ldctx.stats.power }} tokens per second!", context, null);
         Assert.Equal("I can ingest over 9000 tokens per second!", result);
     }
+
+    [Fact]
+    public void TestInterpolationWithMultiKindContext()
+    {
+        var user = Context.Builder(ContextKind.Default, "123")
+            .Set("cat_ownership", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "count", LdValue.Of(12) }
+            })).Build();
+
+        var cat = Context.Builder(ContextKind.Of("cat"), "456")
+            .Set("health", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "hunger", LdValue.Of("off the charts") }
+            })).Build();
+
+        var context = Context.MultiBuilder().Add(user).Add(cat).Build();
+
+        var nestedVars = Eval("As an owner of {{ ldctx.user.cat_ownership.count }} cats, I must report that my cat's hunger level is {{ ldctx.cat.health.hunger }}!", context, null);
+        Assert.Equal("As an owner of 12 cats, I must report that my cat's hunger level is off the charts!", nestedVars);
+
+        var canonicalKeys = Eval("multi={{ ldctx.key }} user={{ ldctx.user.key }} cat={{ ldctx.cat.key }}", context, null);
+        Assert.Equal("multi=cat:456:user:123 user=123 cat=456", canonicalKeys);
+    }
+
+    [Fact]
+    public void TestInterpolationMultiKindDoesNotHaveAnonymousAttribute()
+    {
+        var user = Context.Builder(ContextKind.Default, "123")
+            .Set("cat_ownership", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "count", LdValue.Of(12) }
+            })).Build();
+
+        var cat = Context.Builder(ContextKind.Of("cat"), "456")
+            .Set("health", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "hunger", LdValue.Of("off the charts") }
+            })).Build();
+
+        var context = Context.MultiBuilder().Add(user).Add(cat).Build();
+
+        var result = Eval("anonymous=<{{ ldctx.anonymous }}>", context, null);
+        Assert.Equal("anonymous=<>", result);
+    }
+
+    [Fact]
+    public void TestInterpolationMultiKindContextHasKindMulti()
+    {
+        var user = Context.Builder(ContextKind.Default, "123")
+            .Set("cat_ownership", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "count", LdValue.Of(12) }
+            })).Build();
+
+        var cat = Context.Builder(ContextKind.Of("cat"), "456")
+            .Set("health", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "hunger", LdValue.Of("off the charts") }
+            })).Build();
+
+        var context = Context.MultiBuilder().Add(user).Add(cat).Build();
+
+        var result = Eval("kind={{ ldctx.kind }}", context, null);
+        Assert.Equal("kind=multi", result);
+    }
 }

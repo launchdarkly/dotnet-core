@@ -204,7 +204,7 @@ public class InterpolationTests
                 { "count", LdValue.Of(12) }
             })).Build();
 
-        var cat= Context.Builder(ContextKind.Of("cat"), "456")
+        var cat = Context.Builder(ContextKind.Of("cat"), "456")
             .Set("health", LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "hunger", LdValue.Of("off the charts") }

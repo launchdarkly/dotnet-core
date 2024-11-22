@@ -79,7 +79,7 @@ public record LdAiConfig
 
     /// <summary>
     /// Builder for constructing an LdAiConfig instance, which can be passed as the default
-    /// value to the AI Client's <see cref="LdAiClient.ModelConfig"/> method.
+    /// value to the AI Client's <see cref="LdAiClient.Config"/> method.
     /// </summary>
     public class Builder
     {

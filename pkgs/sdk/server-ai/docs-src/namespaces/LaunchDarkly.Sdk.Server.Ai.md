@@ -17,5 +17,5 @@ var aiClient = new LdAiClient(new LdClientAdapter(baseClient));
 
 // Pass in the key of the AI config, a context, and a default value in case the config can't be
 // retrieved from LaunchDarkly.
-var myModelConfig = aiClient.ModelConfig("my-model-config", Context.New("user-key"), LdAiConfig.Disabled);
+var myModelConfig = aiClient.Config("my-model-config", Context.New("user-key"), LdAiConfig.Disabled);
 ```

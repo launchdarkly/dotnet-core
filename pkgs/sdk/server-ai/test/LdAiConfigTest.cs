@@ -55,17 +55,21 @@ public class LdAiConfigTest
             });
     }
 
-
     [Fact]
     public void CanSetModelParams()
     {
         var config = LdAiConfig.New()
-            .SetModelParam("foo", "bar")
-            .SetModelParam("baz", 42)
+            .SetModelParam("foo", LdValue.Of("bar"))
+            .SetModelParam("baz", LdValue.Of(42))
+            .SetCustomModelParam("foo", LdValue.Of("baz"))
+            .SetCustomModelParam("baz", LdValue.Of(43))
             .Build();
 
-        Assert.Equal("bar", config.Model["foo"]);
-        Assert.Equal(42, config.Model["baz"]);
+        Assert.Equal(LdValue.Of("bar"), config.Model.Parameters["foo"]);
+        Assert.Equal(LdValue.Of(42), config.Model.Parameters["baz"]);
+
+        Assert.Equal(LdValue.Of("baz"), config.Model.Custom["foo"]);
+        Assert.Equal(LdValue.Of(43), config.Model.Custom["baz"]);
     }
 
     [Fact]

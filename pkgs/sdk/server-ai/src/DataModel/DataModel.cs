@@ -79,10 +79,10 @@ public class AiConfig
     public Meta Meta { get; set; }
 
     /// <summary>
-    /// The model params.
+    /// The model configuration.
     /// </summary>
     [JsonPropertyName("model")]
-    public Dictionary<string, object> Model { get; set; }
+    public Model Model { get; set; }
 
     /// <summary>
     /// The model provider.
@@ -91,6 +91,29 @@ public class AiConfig
     public Provider Provider { get; set; }
 }
 
+/// <summary>
+/// Represents the JSON serialization of a model.
+/// </summary>
+public class Model
+{
+    /// <summary>
+    /// The model's ID.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+
+    /// <summary>
+    /// The model's parameters. These are provided by LaunchDarkly.
+    /// </summary>
+    [JsonPropertyName("parameters")]
+    public Dictionary<string, LdValue> Parameters { get; set; }
+
+    /// <summary>
+    /// The model's custom parameters. These are arbitrary and provided by the user.
+    /// </summary>
+    [JsonPropertyName("custom")]
+    public Dictionary<string, LdValue> Custom { get; set; }
+}
 
 /// <summary>
 /// Represents the JSON serialization of a model provider.

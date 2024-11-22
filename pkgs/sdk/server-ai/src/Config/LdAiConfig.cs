@@ -50,6 +50,34 @@ public record LdAiConfig
     }
 
     /// <summary>
+    /// Information about the model.
+    /// </summary>
+    public record ModelConfiguration
+    {
+        /// <summary>
+        /// The ID of the model.
+        /// </summary>
+        public readonly string Id;
+
+        /// <summary>
+        /// The model's built-in parameters provided by LaunchDarkly.
+        /// </summary>
+        public readonly IReadOnlyDictionary<string, LdValue> Parameters;
+
+        /// <summary>
+        /// The model's custom parameters provided by the user.
+        /// </summary>
+        public readonly IReadOnlyDictionary<string, LdValue> Custom;
+
+        internal ModelConfiguration(string id, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
+        {
+            Id = id;
+            Parameters = parameters;
+            Custom = custom;
+        }
+    }
+
+    /// <summary>
     /// Builder for constructing an LdAiConfig instance, which can be passed as the default
     /// value to the AI Client's <see cref="LdAiClient.ModelConfig"/> method.
     /// </summary>
@@ -57,14 +85,16 @@ public record LdAiConfig
     {
         private bool _enabled;
         private readonly List<Message> _messages;
-        private readonly Dictionary<string, object> _modelParams;
+        private readonly Dictionary<string, LdValue> _modelParams;
+        private readonly Dictionary<string, LdValue> _customModelParams;
         private string _providerId;
 
         internal Builder()
         {
             _enabled = false;
             _messages = new List<Message>();
-            _modelParams = new Dictionary<string, object>();
+            _modelParams = new Dictionary<string, LdValue>();
+            _customModelParams = new Dictionary<string, LdValue>();
             _providerId = "";
         }
 
@@ -104,14 +134,26 @@ public record LdAiConfig
         }
 
         /// <summary>
-        /// Sets a parameter for the model. The value may be any object.
+        /// Sets a parameter for the model.
         /// </summary>
         /// <param name="name">the parameter name</param>
         /// <param name="value">the parameter value</param>
         /// <returns>the builder</returns>
-        public Builder SetModelParam(string name, object value)
+        public Builder SetModelParam(string name, LdValue value)
         {
             _modelParams[name] = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets a custom parameter for the model.
+        /// </summary>
+        /// <param name="name">the custom parameter name</param>
+        /// <param name="value">the custom parameter value</param>
+        /// <returns>the builder</returns>
+        public Builder SetCustomModelParam(string name, LdValue value)
+        {
+            _customModelParams[name] = value;
             return this;
         }
 
@@ -132,7 +174,7 @@ public record LdAiConfig
         /// <returns>a new LdAiConfig</returns>
         public LdAiConfig Build()
         {
-            return new LdAiConfig(_enabled, _messages, new Meta(), _modelParams, new Provider{ Id = _providerId });
+            return new LdAiConfig(_enabled, _messages, new Meta(), new Model {Parameters = _modelParams, Custom = _customModelParams}, new Provider{ Id = _providerId });
         }
     }
 
@@ -144,41 +186,22 @@ public record LdAiConfig
     /// <summary>
     /// The model parameters associated with the config.
     /// </summary>
-    public readonly IReadOnlyDictionary<string, object> Model;
+    public readonly ModelConfiguration Model;
 
     /// <summary>
     /// Information about the model provider.
     /// </summary>
     public readonly ModelProvider Provider;
 
-    internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, IReadOnlyDictionary<string, object> model, Provider provider)
+    internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider)
     {
-        Model = model ?? new Dictionary<string, object>();
+        Model = new ModelConfiguration(model?.Id ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
+            model?.Custom ?? new Dictionary<string, LdValue>());
         Messages = messages?.ToList() ?? new List<Message>();
         VersionKey = meta?.VersionKey ?? "";
         Enabled = enabled;
         Provider = new ModelProvider(provider?.Id ?? "");
     }
-
-    private static LdValue ObjectToValue(object obj)
-    {
-        if (obj == null)
-        {
-            return LdValue.Null;
-        }
-
-        return obj switch
-        {
-            bool b => LdValue.Of(b),
-            double d => LdValue.Of(d),
-            string s => LdValue.Of(s),
-            IEnumerable<object> list => LdValue.ArrayFrom(list.Select(ObjectToValue)),
-            IDictionary<string, object> dict => LdValue.ObjectFrom(dict.ToDictionary(kv => kv.Key,
-                kv => ObjectToValue(kv.Value))),
-            _ => LdValue.Null
-        };
-    }
-
     internal LdValue ToLdValue()
     {
         return LdValue.ObjectFrom(new Dictionary<string, LdValue>
@@ -194,7 +217,11 @@ public record LdAiConfig
                 { "content", LdValue.Of(m.Content) },
                 { "role", LdValue.Of(m.Role.ToString()) }
             }))) },
-            { "model", ObjectToValue(Model) },
+            { "model", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "parameters", LdValue.ObjectFrom(Model.Parameters) },
+                { "custom", LdValue.ObjectFrom(Model.Custom) }
+            }) },
             {"provider", LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 {"id", LdValue.Of(Provider.Id)}

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.2.0...LaunchDarkly.ServerSdk.Ai-v0.3.0) (2024-11-22)
+
+
+### Features
+
+* update AI SDK with latest spec changes ([#50](https://github.com/launchdarkly/dotnet-core/issues/50)) ([b1a3a8c](https://github.com/launchdarkly/dotnet-core/commit/b1a3a8c8e8be0c0cc092ad5329b33a07019e8119))
+
 ## [0.2.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.1.1...LaunchDarkly.ServerSdk.Ai-v0.2.0) (2024-11-19)
 
 

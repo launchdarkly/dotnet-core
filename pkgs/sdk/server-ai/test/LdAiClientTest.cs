@@ -102,6 +102,40 @@ public class LdAiClientTest
     }
 
     [Fact]
+    public void CanSetAllDefaultValueFields()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
+
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+
+        var tracker = client.ModelConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiConfig.New().
+                AddMessage("foo").
+                SetModelParam("foo", LdValue.Of("bar")).
+                SetCustomModelParam("foo", LdValue.Of("baz")).
+                SetModelProviderId("amazing-provider").
+                SetEnabled(true).Build());
+
+        Assert.True(tracker.Config.Enabled);
+        Assert.Collection(tracker.Config.Messages,
+            message =>
+            {
+                Assert.Equal("foo", message.Content);
+                Assert.Equal(Role.User, message.Role);
+            });
+        Assert.Equal("amazing-provider", tracker.Config.Provider.Id);
+        Assert.Equal("bar", tracker.Config.Model.Parameters["foo"].AsString);
+        Assert.Equal("baz", tracker.Config.Model.Custom["foo"].AsString);
+    }
+
+    [Fact]
     public void ConfigEnabledReturnsInstance()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
@@ -180,10 +214,10 @@ public class LdAiClientTest
             LdAiConfig.New().AddMessage("Goodbye!").Build());
 
         Assert.Equal("model-foo", tracker.Config.Model.Id);
-        Assert.Equal(LdValue.Of("bar"), tracker.Config.Model.Parameters["foo"]);
-        Assert.Equal(LdValue.Of(42), tracker.Config.Model.Parameters["baz"]);
-        Assert.Equal(LdValue.Of("baz"), tracker.Config.Model.Custom["foo"]);
-        Assert.Equal(LdValue.Of(43), tracker.Config.Model.Custom["baz"]);
+        Assert.Equal("bar", tracker.Config.Model.Parameters["foo"].AsString);
+        Assert.Equal(42, tracker.Config.Model.Parameters["baz"].AsInt);
+        Assert.Equal("baz", tracker.Config.Model.Custom["foo"].AsString);
+        Assert.Equal(43, tracker.Config.Model.Custom["baz"].AsInt);
     }
 
     [Fact]

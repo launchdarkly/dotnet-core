@@ -26,7 +26,7 @@ public class InterpolationTests
                             "messages": [
                                 {
                                     "content": "<do-not-use-in-any-tests-prompt-placeholder>",
-                                    "role": "System"
+                                    "role": "system"
                                 }
                             ]
                         }

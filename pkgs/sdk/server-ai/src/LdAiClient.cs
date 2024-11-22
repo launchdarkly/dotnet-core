@@ -57,7 +57,6 @@ public sealed class LdAiClient : ILdAiClient
             return new LdAiConfigTracker(_client, key, defaultValue, context);
         }
 
-
         var mergedVariables = new Dictionary<string, object> { { LdContextVariable, GetAllAttributes(context) } };
         if (variables != null)
         {

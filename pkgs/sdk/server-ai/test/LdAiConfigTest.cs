@@ -32,12 +32,12 @@ public class LdAiConfigTest
     public void CanAddPromptMessages()
     {
         var config = LdAiConfig.New()
-            .AddPromptMessage("Hello")
-            .AddPromptMessage("World", Role.System)
-            .AddPromptMessage("!", Role.Assistant)
+            .AddMessage("Hello")
+            .AddMessage("World", Role.System)
+            .AddMessage("!", Role.Assistant)
             .Build();
 
-        Assert.Collection(config.Prompt,
+        Assert.Collection(config.Messages,
             message =>
             {
                 Assert.Equal("Hello", message.Content);
@@ -66,5 +66,15 @@ public class LdAiConfigTest
 
         Assert.Equal("bar", config.Model["foo"]);
         Assert.Equal(42, config.Model["baz"]);
+    }
+
+    [Fact]
+    public void CanSetModelProviderId()
+    {
+        var config = LdAiConfig.New()
+            .SetModelProviderId("amazing-provider")
+            .Build();
+
+        Assert.Equal("amazing-provider", config.Provider.Id);
     }
 }

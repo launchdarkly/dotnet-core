@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
-using LaunchDarkly.Sdk.Server.Ai.Provider;
+using LaunchDarkly.Sdk.Server.Ai.Tracking;
 using Moq;
 using Xunit;
 

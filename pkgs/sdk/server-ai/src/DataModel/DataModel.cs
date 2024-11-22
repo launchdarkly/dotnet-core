@@ -69,8 +69,8 @@ public class AiConfig
     /// <summary>
     /// The prompt.
     /// </summary>
-    [JsonPropertyName("prompt")]
-    public List<Message> Prompt { get; set; }
+    [JsonPropertyName("messages")]
+    public List<Message> Messages { get; set; }
 
     /// <summary>
     /// LaunchDarkly metadata.
@@ -79,8 +79,27 @@ public class AiConfig
     public Meta Meta { get; set; }
 
     /// <summary>
-    /// The model params;
+    /// The model params.
     /// </summary>
     [JsonPropertyName("model")]
     public Dictionary<string, object> Model { get; set; }
+
+    /// <summary>
+    /// The model provider.
+    /// </summary>
+    [JsonPropertyName("provider")]
+    public Provider Provider { get; set; }
+}
+
+
+/// <summary>
+/// Represents the JSON serialization of a model provider.
+/// </summary>
+public class Provider
+{
+    /// <summary>
+    ///  The provider's ID.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
 }

@@ -1,4 +1,4 @@
-namespace LaunchDarkly.Sdk.Server.Ai.Provider;
+namespace LaunchDarkly.Sdk.Server.Ai.Tracking;
 
 /// <summary>
 /// Represents metrics returned by a model provider.

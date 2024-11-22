@@ -42,7 +42,7 @@ public class LdAiClientTest
 
         var client = new LdAiClient(mockClient.Object);
 
-        var defaultConfig = LdAiConfig.New().AddPromptMessage("Hello").Build();
+        var defaultConfig = LdAiConfig.New().AddMessage("Hello").Build();
 
         var tracker = client.ModelConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
 
@@ -53,7 +53,7 @@ public class LdAiClientTest
                                                   {
                                                     "_ldMeta": {"versionKey": "1", "enabled": false},
                                                     "model": {},
-                                                    "prompt": []
+                                                    "messages": []
                                                   }
                                                   """;
 
@@ -61,14 +61,14 @@ public class LdAiClientTest
                                                   {
                                                     "_ldMeta": {"versionKey": "1"},
                                                     "model": {},
-                                                    "prompt": []
+                                                    "messages": []
                                                   }
                                                   """;
 
     private const string MissingMeta = """
                                        {
                                          "model": {},
-                                         "prompt": []
+                                         "messages": []
                                        }
                                        """;
 
@@ -96,7 +96,7 @@ public class LdAiClientTest
         // or if present, it is set to false. Therefore, if the default was returned, we'd see the assertion fail
         // (since calling LdAiConfig.New() constructs an enabled config by default.)
         var tracker = client.ModelConfig("foo", Context.New(ContextKind.Default, "key"),
-            LdAiConfig.New().AddPromptMessage("foo").Build());
+            LdAiConfig.New().AddMessage("foo").Build());
 
         Assert.False(tracker.Config.Enabled);
     }
@@ -112,7 +112,7 @@ public class LdAiClientTest
                             {
                               "_ldMeta": {"versionKey": "1", "enabled": true},
                               "model": {},
-                              "prompt": [{"content": "Hello!", "role": "system"}]
+                              "messages": [{"content": "Hello!", "role": "system"}]
                             }
                             """;
 
@@ -126,9 +126,9 @@ public class LdAiClientTest
 
         // We shouldn't get this default.
         var tracker = client.ModelConfig("foo", context,
-            LdAiConfig.New().AddPromptMessage("Goodbye!").Build());
+            LdAiConfig.New().AddMessage("Goodbye!").Build());
 
-        Assert.Collection(tracker.Config.Prompt,
+        Assert.Collection(tracker.Config.Messages,
             message =>
             {
                 Assert.Equal("Hello!", message.Content);

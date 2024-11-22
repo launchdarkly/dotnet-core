@@ -111,8 +111,9 @@ public class LdAiClientTest
         const string json = """
                             {
                               "_ldMeta": {"versionKey": "1", "enabled": true},
-                              "model": {},
-                              "messages": [{"content": "Hello!", "role": "system"}]
+                              "model": { "id": "model-foo", "should-be-ignored" : "bar"},
+                              "messages": [{"content": "Hello!", "role": "system"}],
+                              "provider": {"id": "provider-foo", "should-be-ignored": "bar"}
                             }
                             """;
 
@@ -134,5 +135,7 @@ public class LdAiClientTest
                 Assert.Equal("Hello!", message.Content);
                 Assert.Equal(Role.System, message.Role);
             });
+
+        Assert.Equal("provider-foo", tracker.Config.Provider.Id);
     }
 }

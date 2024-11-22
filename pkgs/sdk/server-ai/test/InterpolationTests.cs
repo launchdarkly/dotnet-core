@@ -23,10 +23,10 @@ public class InterpolationTests
                         {
                             "_ldMeta": {"versionKey": "1", "enabled": true},
                             "model": {},
-                            "prompt": [
+                            "messages": [
                                 {
                                     "content": "<do-not-use-in-any-tests-prompt-placeholder>",
-                                    "role": "System"
+                                    "role": "system"
                                 }
                             ]
                         }
@@ -41,7 +41,7 @@ public class InterpolationTests
         var client = new LdAiClient(mockClient.Object);
         var tracker = client.ModelConfig("foo", context, LdAiConfig.Disabled, variables);
 
-        return tracker.Config.Prompt[0].Content;
+        return tracker.Config.Messages[0].Content;
     }
 
     [Theory]
@@ -128,7 +128,7 @@ public class InterpolationTests
                                   {
                                       "_ldMeta": {"versionKey": "1", "enabled": true},
                                       "model": {},
-                                      "prompt": [
+                                      "messages": [
                                           {
                                               "content": "This is a {{ malformed }]} prompt",
                                               "role": "System"

@@ -57,7 +57,6 @@ public sealed class LdAiClient : ILdAiClient
             return new LdAiConfigTracker(_client, key, defaultValue, context);
         }
 
-
         var mergedVariables = new Dictionary<string, object> { { LdContextVariable, GetAllAttributes(context) } };
         if (variables != null)
         {
@@ -75,14 +74,14 @@ public sealed class LdAiClient : ILdAiClient
 
         var prompt = new List<LdAiConfig.Message>();
 
-        if (parsed.Prompt != null)
+        if (parsed.Messages != null)
         {
-            for (var i = 0; i < parsed.Prompt.Count; i++)
+            for (var i = 0; i < parsed.Messages.Count; i++)
             {
                 try
                 {
-                    var content = InterpolateTemplate(parsed.Prompt[i].Content, mergedVariables);
-                    prompt.Add(new LdAiConfig.Message(content, parsed.Prompt[i].Role));
+                    var content = InterpolateTemplate(parsed.Messages[i].Content, mergedVariables);
+                    prompt.Add(new LdAiConfig.Message(content, parsed.Messages[i].Role));
                 }
                 catch (Exception ex)
                 {
@@ -93,7 +92,7 @@ public sealed class LdAiClient : ILdAiClient
             }
         }
 
-        return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model), context);
+        return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider), context);
 
     }
 

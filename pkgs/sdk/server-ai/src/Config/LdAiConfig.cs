@@ -88,6 +88,7 @@ public record LdAiConfig
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
         private string _providerId;
+        private string _modelId;
 
         internal Builder()
         {
@@ -96,6 +97,7 @@ public record LdAiConfig
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
             _providerId = "";
+            _modelId = "";
         }
 
         /// <summary>
@@ -158,10 +160,21 @@ public record LdAiConfig
         }
 
         /// <summary>
+        /// Sets the model's ID. By default, this will be the empty string.
+        /// </summary>
+        /// <param name="id">the model ID</param>
+        /// <returns>the builder</returns>
+        public Builder SetModelId(string id)
+        {
+            _modelId = id;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the model provider's ID. By default, this will be the empty string.
         /// </summary>
         /// <param name="id">the ID</param>
-        /// <returns></returns>
+        /// <returns>the builder</returns>
         public Builder SetModelProviderId(string id)
         {
             _providerId = id;
@@ -174,7 +187,18 @@ public record LdAiConfig
         /// <returns>a new LdAiConfig</returns>
         public LdAiConfig Build()
         {
-            return new LdAiConfig(_enabled, _messages, new Meta(), new Model {Parameters = _modelParams, Custom = _customModelParams}, new Provider{ Id = _providerId });
+            return new LdAiConfig(
+                _enabled,
+                _messages,
+                new Meta(),
+                new Model
+                {
+                    Id = _modelId,
+                    Parameters = _modelParams,
+                    Custom = _customModelParams
+                },
+                new Provider{ Id = _providerId }
+            );
         }
     }
 
@@ -219,6 +243,7 @@ public record LdAiConfig
             }))) },
             { "model", LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
+                { "id", LdValue.Of(Model.Id) },
                 { "parameters", LdValue.ObjectFrom(Model.Parameters) },
                 { "custom", LdValue.ObjectFrom(Model.Custom) }
             }) },

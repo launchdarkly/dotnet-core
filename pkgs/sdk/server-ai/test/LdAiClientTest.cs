@@ -119,6 +119,7 @@ public class LdAiClientTest
             LdAiConfig.New().
                 AddMessage("foo").
                 SetModelParam("foo", LdValue.Of("bar")).
+                SetModelId("awesome-model").
                 SetCustomModelParam("foo", LdValue.Of("baz")).
                 SetModelProviderId("amazing-provider").
                 SetEnabled(true).Build());
@@ -133,6 +134,7 @@ public class LdAiClientTest
         Assert.Equal("amazing-provider", tracker.Config.Provider.Id);
         Assert.Equal("bar", tracker.Config.Model.Parameters["foo"].AsString);
         Assert.Equal("baz", tracker.Config.Model.Custom["foo"].AsString);
+        Assert.Equal("awesome-model", tracker.Config.Model.Id);
     }
 
     [Fact]

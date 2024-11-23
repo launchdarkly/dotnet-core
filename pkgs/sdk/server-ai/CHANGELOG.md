@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.3.0...LaunchDarkly.ServerSdk.Ai-v0.3.1) (2024-11-22)
+
+
+### Bug Fixes
+
+* rename ModelConfig method to Config ([#52](https://github.com/launchdarkly/dotnet-core/issues/52)) ([a98db42](https://github.com/launchdarkly/dotnet-core/commit/a98db42d57bac140f323b7ce13b385e74cee2bd7))
+
 ## [0.3.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.2.0...LaunchDarkly.ServerSdk.Ai-v0.3.0) (2024-11-22)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.3.1...LaunchDarkly.ServerSdk.Ai-v0.3.2) (2024-11-25)
+
+
+### Bug Fixes
+
+* add setter for ModelId ([#54](https://github.com/launchdarkly/dotnet-core/issues/54)) ([bb6a1e9](https://github.com/launchdarkly/dotnet-core/commit/bb6a1e9a5bebc70ea4b78d8853fe66f6d8738c1c))
+
 ## [0.3.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.3.0...LaunchDarkly.ServerSdk.Ai-v0.3.1) (2024-11-22)
 
 

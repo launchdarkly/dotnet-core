@@ -131,10 +131,10 @@ public class LdAiClientTest
                 Assert.Equal("foo", message.Content);
                 Assert.Equal(Role.User, message.Role);
             });
-        Assert.Equal("amazing-provider", tracker.Config.Provider.Id);
+        Assert.Equal("amazing-provider", tracker.Config.Provider.Name);
         Assert.Equal("bar", tracker.Config.Model.Parameters["foo"].AsString);
         Assert.Equal("baz", tracker.Config.Model.Custom["foo"].AsString);
-        Assert.Equal("awesome-model", tracker.Config.Model.Id);
+        Assert.Equal("awesome-model", tracker.Config.Model.Name);
     }
 
     [Fact]
@@ -170,8 +170,8 @@ public class LdAiClientTest
                 Assert.Equal(Role.System, message.Role);
             });
 
-        Assert.Equal("", tracker.Config.Provider.Id);
-        Assert.Equal("", tracker.Config.Model.Id);
+        Assert.Equal("", tracker.Config.Provider.Name);
+        Assert.Equal("", tracker.Config.Model.Name);
         Assert.Empty(tracker.Config.Model.Custom);
         Assert.Empty(tracker.Config.Model.Parameters);
     }
@@ -189,7 +189,7 @@ public class LdAiClientTest
                             {
                               "_ldMeta": {"versionKey": "1", "enabled": true},
                               "model" : {
-                                "id": "model-foo",
+                                "name": "model-foo",
                                 "parameters": {
                                   "foo": "bar",
                                   "baz": 42
@@ -215,7 +215,7 @@ public class LdAiClientTest
         var tracker = client.Config("foo", context,
             LdAiConfig.New().AddMessage("Goodbye!").Build());
 
-        Assert.Equal("model-foo", tracker.Config.Model.Id);
+        Assert.Equal("model-foo", tracker.Config.Model.Name);
         Assert.Equal("bar", tracker.Config.Model.Parameters["foo"].AsString);
         Assert.Equal(42, tracker.Config.Model.Parameters["baz"].AsInt);
         Assert.Equal("baz", tracker.Config.Model.Custom["foo"].AsString);
@@ -234,7 +234,7 @@ public class LdAiClientTest
                             {
                               "_ldMeta": {"versionKey": "1", "enabled": true},
                               "provider": {
-                                "id": "amazing-provider"
+                                "name": "amazing-provider"
                               }
                             }
                             """;
@@ -252,6 +252,6 @@ public class LdAiClientTest
         var tracker = client.Config("foo", context,
             LdAiConfig.New().AddMessage("Goodbye!").Build());
 
-        Assert.Equal("amazing-provider", tracker.Config.Provider.Id);
+        Assert.Equal("amazing-provider", tracker.Config.Provider.Name);
     }
 }

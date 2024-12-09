@@ -76,7 +76,7 @@ public class LdAiConfigTest
     public void CanSetModelId()
     {
         var config = LdAiConfig.New().SetModelId("awesome-model").Build();
-        Assert.Equal("awesome-model", config.Model.Id);
+        Assert.Equal("awesome-model", config.Model.Name);
     }
 
     [Fact]
@@ -86,6 +86,6 @@ public class LdAiConfigTest
             .SetModelProviderId("amazing-provider")
             .Build();
 
-        Assert.Equal("amazing-provider", config.Provider.Id);
+        Assert.Equal("amazing-provider", config.Provider.Name);
     }
 }

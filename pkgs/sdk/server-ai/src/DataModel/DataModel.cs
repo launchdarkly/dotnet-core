@@ -97,10 +97,10 @@ public class AiConfig
 public class Model
 {
     /// <summary>
-    /// The model's ID.
+    /// The model's name.
     /// </summary>
-    [JsonPropertyName("id")]
-    public string Id { get; set; }
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
 
     /// <summary>
     /// The model's parameters. These are provided by LaunchDarkly.
@@ -121,8 +121,8 @@ public class Model
 public class Provider
 {
     /// <summary>
-    ///  The provider's ID.
+    ///  The provider's name.
     /// </summary>
-    [JsonPropertyName("id")]
-    public string Id { get; set; }
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
 }

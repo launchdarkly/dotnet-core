@@ -39,13 +39,13 @@ public record LdAiConfig
     public record ModelProvider
     {
         /// <summary>
-        /// The ID of the model provider.
+        /// The name of the model provider.
         /// </summary>
-        public readonly string Id;
+        public readonly string Name;
 
-        internal ModelProvider(string id)
+        internal ModelProvider(string name)
         {
-            Id = id;
+            Name = name;
         }
     }
 
@@ -55,9 +55,9 @@ public record LdAiConfig
     public record ModelConfiguration
     {
         /// <summary>
-        /// The ID of the model.
+        /// The name of the model.
         /// </summary>
-        public readonly string Id;
+        public readonly string Name;
 
         /// <summary>
         /// The model's built-in parameters provided by LaunchDarkly.
@@ -69,9 +69,9 @@ public record LdAiConfig
         /// </summary>
         public readonly IReadOnlyDictionary<string, LdValue> Custom;
 
-        internal ModelConfiguration(string id, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
+        internal ModelConfiguration(string name, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
         {
-            Id = id;
+            Name = name;
             Parameters = parameters;
             Custom = custom;
         }
@@ -87,8 +87,8 @@ public record LdAiConfig
         private readonly List<Message> _messages;
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
-        private string _providerId;
-        private string _modelId;
+        private string _providerName;
+        private string _modelName;
 
         internal Builder()
         {
@@ -96,8 +96,8 @@ public record LdAiConfig
             _messages = new List<Message>();
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
-            _providerId = "";
-            _modelId = "";
+            _providerName = "";
+            _modelName = "";
         }
 
         /// <summary>
@@ -160,24 +160,24 @@ public record LdAiConfig
         }
 
         /// <summary>
-        /// Sets the model's ID. By default, this will be the empty string.
+        /// Sets the model's name. By default, this will be the empty string.
         /// </summary>
-        /// <param name="id">the model ID</param>
+        /// <param name="name">the model name</param>
         /// <returns>the builder</returns>
-        public Builder SetModelId(string id)
+        public Builder SetModelName(string name)
         {
-            _modelId = id;
+            _modelName = name;
             return this;
         }
 
         /// <summary>
-        /// Sets the model provider's ID. By default, this will be the empty string.
+        /// Sets the model provider's name. By default, this will be the empty string.
         /// </summary>
-        /// <param name="id">the ID</param>
+        /// <param name="name">the name</param>
         /// <returns>the builder</returns>
-        public Builder SetModelProviderId(string id)
+        public Builder SetModelProviderName(string name)
         {
-            _providerId = id;
+            _providerName = name;
             return this;
         }
 
@@ -193,11 +193,11 @@ public record LdAiConfig
                 new Meta(),
                 new Model
                 {
-                    Id = _modelId,
+                    Name = _modelName,
                     Parameters = _modelParams,
                     Custom = _customModelParams
                 },
-                new Provider{ Id = _providerId }
+                new Provider{ Name = _providerName }
             );
         }
     }
@@ -219,12 +219,12 @@ public record LdAiConfig
 
     internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider)
     {
-        Model = new ModelConfiguration(model?.Id ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
+        Model = new ModelConfiguration(model?.Name ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
             model?.Custom ?? new Dictionary<string, LdValue>());
         Messages = messages?.ToList() ?? new List<Message>();
         VariationKey = meta?.VariationKey ?? "";
         Enabled = enabled;
-        Provider = new ModelProvider(provider?.Id ?? "");
+        Provider = new ModelProvider(provider?.Name ?? "");
     }
     internal LdValue ToLdValue()
     {
@@ -243,13 +243,13 @@ public record LdAiConfig
             }))) },
             { "model", LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
-                { "id", LdValue.Of(Model.Id) },
+                { "name", LdValue.Of(Model.Name) },
                 { "parameters", LdValue.ObjectFrom(Model.Parameters) },
                 { "custom", LdValue.ObjectFrom(Model.Custom) }
             }) },
             {"provider", LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
-                {"id", LdValue.Of(Provider.Id)}
+                {"name", LdValue.Of(Provider.Name)}
             })}
         });
     }

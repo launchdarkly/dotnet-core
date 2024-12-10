@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.3.2...LaunchDarkly.ServerSdk.Ai-v0.4.0) (2024-12-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename model.id and provider.id to name ([#61](https://github.com/launchdarkly/dotnet-core/issues/61))
+* rename _ldMeta.versionKey to variationKey ([#62](https://github.com/launchdarkly/dotnet-core/issues/62))
+
+### Code Refactoring
+
+* rename _ldMeta.versionKey to variationKey ([#62](https://github.com/launchdarkly/dotnet-core/issues/62)) ([3f7089d](https://github.com/launchdarkly/dotnet-core/commit/3f7089d6541c976d03e1040940a1350f5bd0d63c))
+* rename model.id and provider.id to name ([#61](https://github.com/launchdarkly/dotnet-core/issues/61)) ([a0d0705](https://github.com/launchdarkly/dotnet-core/commit/a0d07058eb0b8afff2b46dba385e73cac23b6bcd))
+
 ## [0.3.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.3.1...LaunchDarkly.ServerSdk.Ai-v0.3.2) (2024-11-25)
 
 

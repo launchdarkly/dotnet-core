@@ -87,8 +87,8 @@ public record LdAiConfig
         private readonly List<Message> _messages;
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
-        private string _providerId;
-        private string _modelId;
+        private string _providerName;
+        private string _modelName;
 
         internal Builder()
         {
@@ -96,8 +96,8 @@ public record LdAiConfig
             _messages = new List<Message>();
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
-            _providerId = "";
-            _modelId = "";
+            _providerName = "";
+            _modelName = "";
         }
 
         /// <summary>
@@ -160,24 +160,24 @@ public record LdAiConfig
         }
 
         /// <summary>
-        /// Sets the model's ID. By default, this will be the empty string.
+        /// Sets the model's name. By default, this will be the empty string.
         /// </summary>
-        /// <param name="id">the model ID</param>
+        /// <param name="name">the model name</param>
         /// <returns>the builder</returns>
-        public Builder SetModelId(string id)
+        public Builder SetModelName(string name)
         {
-            _modelId = id;
+            _modelName = name;
             return this;
         }
 
         /// <summary>
-        /// Sets the model provider's ID. By default, this will be the empty string.
+        /// Sets the model provider's name. By default, this will be the empty string.
         /// </summary>
-        /// <param name="id">the ID</param>
+        /// <param name="name">the name</param>
         /// <returns>the builder</returns>
-        public Builder SetModelProviderId(string id)
+        public Builder SetModelProviderName(string name)
         {
-            _providerId = id;
+            _providerName = name;
             return this;
         }
 
@@ -193,11 +193,11 @@ public record LdAiConfig
                 new Meta(),
                 new Model
                 {
-                    Name = _modelId,
+                    Name = _modelName,
                     Parameters = _modelParams,
                     Custom = _customModelParams
                 },
-                new Provider{ Name = _providerId }
+                new Provider{ Name = _providerName }
             );
         }
     }

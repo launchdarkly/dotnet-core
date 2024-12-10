@@ -28,7 +28,7 @@ public enum Role
 public class Meta
 {
     /// <summary>
-    /// The version key.
+    /// The variation key.
     /// </summary>
     [JsonPropertyName("variationKey")]
     public string VariationKey { get; set; }

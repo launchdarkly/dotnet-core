@@ -28,10 +28,10 @@ public enum Role
 public class Meta
 {
     /// <summary>
-    /// The version key.
+    /// The variation key.
     /// </summary>
-    [JsonPropertyName("versionKey")]
-    public string VersionKey { get; set; }
+    [JsonPropertyName("variationKey")]
+    public string VariationKey { get; set; }
 
     /// <summary>
     /// If the config is enabled.

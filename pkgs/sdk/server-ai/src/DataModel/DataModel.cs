@@ -30,8 +30,8 @@ public class Meta
     /// <summary>
     /// The version key.
     /// </summary>
-    [JsonPropertyName("versionKey")]
-    public string VersionKey { get; set; }
+    [JsonPropertyName("variationKey")]
+    public string VariationKey { get; set; }
 
     /// <summary>
     /// If the config is enabled.

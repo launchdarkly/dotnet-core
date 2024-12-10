@@ -21,7 +21,7 @@ public class InterpolationTests
         // The replacement is done this way because to use string.Format, we'd need to escape the curly braces.
         var configJson = """
                         {
-                            "_ldMeta": {"versionKey": "1", "enabled": true},
+                            "_ldMeta": {"variationKey": "1", "enabled": true},
                             "model": {},
                             "messages": [
                                 {
@@ -126,7 +126,7 @@ public class InterpolationTests
 
         const string configJson = """
                                   {
-                                      "_ldMeta": {"versionKey": "1", "enabled": true},
+                                      "_ldMeta": {"variationKey": "1", "enabled": true},
                                       "model": {},
                                       "messages": [
                                           {

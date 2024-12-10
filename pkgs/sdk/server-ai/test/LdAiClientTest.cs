@@ -51,7 +51,7 @@ public class LdAiClientTest
 
     private const string MetaDisabledExplicitly = """
                                                   {
-                                                    "_ldMeta": {"versionKey": "1", "enabled": false},
+                                                    "_ldMeta": {"variationKey": "1", "enabled": false},
                                                     "model": {},
                                                     "messages": []
                                                   }
@@ -59,7 +59,7 @@ public class LdAiClientTest
 
     private const string MetaDisabledImplicitly = """
                                                   {
-                                                    "_ldMeta": {"versionKey": "1"},
+                                                    "_ldMeta": {"variationKey": "1"},
                                                     "model": {},
                                                     "messages": []
                                                   }
@@ -146,7 +146,7 @@ public class LdAiClientTest
 
         const string json = """
                             {
-                              "_ldMeta": {"versionKey": "1", "enabled": true},
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
                               "messages": [{"content": "Hello!", "role": "system"}]
                             }
                             """;
@@ -187,7 +187,7 @@ public class LdAiClientTest
 
         const string json = """
                             {
-                              "_ldMeta": {"versionKey": "1", "enabled": true},
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
                               "model" : {
                                 "id": "model-foo",
                                 "parameters": {
@@ -232,7 +232,7 @@ public class LdAiClientTest
 
         const string json = """
                             {
-                              "_ldMeta": {"versionKey": "1", "enabled": true},
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
                               "provider": {
                                 "id": "amazing-provider"
                               }

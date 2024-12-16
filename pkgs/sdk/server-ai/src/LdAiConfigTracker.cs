@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
@@ -21,6 +22,8 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private const string FeedbackPositive = "$ld:ai:feedback:user:positive";
     private const string FeedbackNegative = "$ld:ai:feedback:user:negative";
     private const string Generation = "$ld:ai:generation";
+    private const string GenerationSuccess = "$ld:ai:generation:success";
+    private const string GenerationError = "$ld:ai:generation:error";
     private const string TokenTotal = "$ld:ai:tokens:total";
     private const string TokenInput = "$ld:ai:tokens:input";
     private const string TokenOutput = "$ld:ai:tokens:output";
@@ -58,17 +61,13 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public async Task<T> TrackDurationOfTask<T>(Task<T> task)
     {
-        var result = await MeasureDurationOfTaskMs(task);
-        TrackDuration(result.Item2);
-        return result.Item1;
-    }
-
-    private static async Task<Tuple<T, long>> MeasureDurationOfTaskMs<T>(Task<T> task)
-    {
         var sw = Stopwatch.StartNew();
-        var result = await task;
-        sw.Stop();
-        return Tuple.Create(result, sw.ElapsedMilliseconds);
+        try {
+            return await task;
+        } finally {
+            sw.Stop();
+            TrackDuration(sw.ElapsedMilliseconds);
+        }
     }
 
     /// <inheritdoc/>
@@ -90,23 +89,44 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public void TrackSuccess()
     {
+        _client.Track(GenerationSuccess, _context, _trackData, 1);
+        _client.Track(Generation, _context, _trackData, 1);
+    }
+
+    /// <inheritdoc/>
+    public void TrackError()
+    {
+        _client.Track(GenerationError, _context, _trackData, 1);
         _client.Track(Generation, _context, _trackData, 1);
     }
 
     /// <inheritdoc/>
     public async Task<Response> TrackRequest(Task<Response> request)
     {
-        var (result, durationMs) = await MeasureDurationOfTaskMs(request);
-        TrackSuccess();
-
-        TrackDuration(result.Metrics?.LatencyMs ?? durationMs);
-
-        if (result.Usage != null)
+        var sw = Stopwatch.StartNew();
+        try
         {
-            TrackTokens(result.Usage.Value);
+            var result = await request;
+            TrackSuccess();
+
+            sw.Stop();
+            TrackDuration(result.Metrics?.LatencyMs ?? sw.ElapsedMilliseconds);
+
+            if (result.Usage != null)
+            {
+                TrackTokens(result.Usage.Value);
+            }
+
+            return result;
+        }
+        catch (Exception)
+        {
+            sw.Stop();
+            TrackDuration(sw.ElapsedMilliseconds);
+            TrackError();
+            throw;
         }
 
-        return result;
     }
 
     /// <inheritdoc/>

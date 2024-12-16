@@ -68,6 +68,27 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
             tracker.TrackSuccess();
             mockClient.Verify(x => x.Track("$ld:ai:generation", context, data, 1.0f), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:generation:success", context, data, 1.0f), Times.Once);
+        }
+
+
+        [Fact]
+        public void CanTrackError()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+            const string flagKey = "key";
+            var config = LdAiConfig.Disabled;
+            var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "variationKey", LdValue.Of(config.VariationKey) },
+                { "configKey", LdValue.Of(flagKey) }
+            });
+
+            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            tracker.TrackError();
+            mockClient.Verify(x => x.Track("$ld:ai:generation", context, data, 1.0f), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:generation:error", context, data, 1.0f), Times.Once);
         }
 
 
@@ -189,6 +210,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var result = tracker.TrackRequest(Task.Run(() => givenResponse));
             Assert.Equal(givenResponse, result.Result);
+            mockClient.Verify(x => x.Track("$ld:ai:generation:success", context, data, 1.0f), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:generation", context, data, 1.0f), Times.Once);
             mockClient.Verify(x => x.Track("$ld:ai:tokens:total", context, data, 1.0f), Times.Once);
             mockClient.Verify(x => x.Track("$ld:ai:tokens:input", context, data, 2.0f), Times.Once);
             mockClient.Verify(x => x.Track("$ld:ai:tokens:output", context, data, 3.0f), Times.Once);
@@ -224,6 +247,30 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var result = tracker.TrackRequest(Task.Run(() => givenResponse));
             Assert.Equal(givenResponse, result.Result);
             mockClient.Verify(x => x.Track("$ld:ai:tokens:total", context, data, 1.0f), Times.Once);
+
+            // if latency isn't provided via Statistics, then it is automatically measured.
+            mockClient.Verify(x => x.Track("$ld:ai:duration:total", context, data, It.IsAny<double>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CanTrackExceptionFromResponse()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+            const string flagKey = "key";
+            var config = LdAiConfig.Disabled;
+            var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "variationKey", LdValue.Of(config.VariationKey) },
+                { "configKey", LdValue.Of(flagKey) }
+            });
+
+            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+
+            await Assert.ThrowsAsync<System.Exception>(() => tracker.TrackRequest(Task.FromException<Response>(new System.Exception("I am an exception"))));
+
+            mockClient.Verify(x => x.Track("$ld:ai:generation", context, data, 1.0f), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:generation:error", context, data, 1.0f), Times.Once);
 
             // if latency isn't provided via Statistics, then it is automatically measured.
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context, data, It.IsAny<double>()), Times.Once);

@@ -46,6 +46,11 @@ public interface ILdAiConfigTracker
     public void TrackSuccess();
 
     /// <summary>
+    /// Tracks an unsuccessful generation event related to this config.
+    /// </summary>
+    public void TrackError();
+
+    /// <summary>
     /// Tracks a request to a provider. The request is a task that returns a <see cref="Response"/>, which
     /// contains information about the request such as token usage and metrics.
     ///

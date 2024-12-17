@@ -51,8 +51,6 @@ public interface ILdAiConfigTracker
 
     /// <summary>
     /// Tracks an unsuccessful generation event related to this config.
-    ///
-    ///
     /// </summary>
     public void TrackError();
 

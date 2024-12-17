@@ -27,6 +27,10 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// Tracks the duration of a task, and returns the result of the task.
     ///
+    /// If the provided task throws, then this method will also throw.
+    ///
+    /// In the case the provided function throws, this function will still
+    /// record the duration.
     /// </summary>
     /// <param name="task">the task</param>
     /// <typeparam name="T">type of the task's result</typeparam>
@@ -47,12 +51,24 @@ public interface ILdAiConfigTracker
 
     /// <summary>
     /// Tracks an unsuccessful generation event related to this config.
+    ///
+    ///
     /// </summary>
     public void TrackError();
 
     /// <summary>
     /// Tracks a request to a provider. The request is a task that returns a <see cref="Response"/>, which
     /// contains information about the request such as token usage and metrics.
+    ///
+    /// This function will track the duration of the operation, the token
+    /// usage, and the success or error status.
+    ///
+    /// If the provided function throws, then this method will also throw.
+    ///
+    /// In the case the provided function throws, this function will record the
+    /// duration and an error.
+    ///
+    /// A failed operation will not have any token usage data.
     ///
     /// It is the responsibility of the caller to fill in the <see cref="Response"/> object with any details
     /// that should be tracked.

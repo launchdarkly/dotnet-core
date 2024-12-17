@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.4.0...LaunchDarkly.ServerSdk.Ai-v0.5.0) (2024-12-17)
+
+
+### Features
+
+* Add `TrackError` to mirror `TrackSuccess` ([#64](https://github.com/launchdarkly/dotnet-core/issues/64)) ([7acc574](https://github.com/launchdarkly/dotnet-core/commit/7acc574a56299a2058c1a357d54d3df5091a8f02))
+
 ## [0.4.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.3.2...LaunchDarkly.ServerSdk.Ai-v0.4.0) (2024-12-10)
 
 

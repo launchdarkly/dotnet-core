@@ -40,6 +40,7 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// Tracks the time it takes for the first token to be generated.
     /// </summary>
+    /// <param name="timeToFirstTokenMs">the duration in milliseconds</param>
     public void TrackTimeToFirstToken(float timeToFirstTokenMs);
 
     /// <summary>

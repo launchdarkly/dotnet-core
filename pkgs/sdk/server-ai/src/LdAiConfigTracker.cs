@@ -27,6 +27,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private const string TokenTotal = "$ld:ai:tokens:total";
     private const string TokenInput = "$ld:ai:tokens:input";
     private const string TokenOutput = "$ld:ai:tokens:output";
+    private const string TimeToFirstToken = "$ld:ai:tokens:ttf";
 
     /// <summary>
     /// Constructs a new AI configuration tracker. The tracker is associated with a configuration,
@@ -69,6 +70,10 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             TrackDuration(sw.ElapsedMilliseconds);
         }
     }
+    
+    /// <inheritdoc/>
+    public void TrackTimeToFirstToken(float timeToFirstTokenMs) =>
+        _client.Track(TimeToFirstToken, _context, _trackData, timeToFirstTokenMs);
 
     /// <inheritdoc/>
     public void TrackFeedback(Feedback feedback)

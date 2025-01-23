@@ -36,6 +36,11 @@ public interface ILdAiConfigTracker
     /// <typeparam name="T">type of the task's result</typeparam>
     /// <returns>the task</returns>
     public Task<T> TrackDurationOfTask<T>(Task<T> task);
+    
+    /// <summary>
+    /// Tracks the time it takes for the first token to be generated.
+    /// </summary>
+    public void TrackTimeToFirstToken(float timeToFirstTokenMs);
 
     /// <summary>
     /// Tracks feedback (positive or negative) related to the output of the model.

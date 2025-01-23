@@ -51,6 +51,23 @@ namespace LaunchDarkly.Sdk.Server.Ai
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context, data, 1.0f), Times.Once);
         }
 
+        [Fact]
+        public void CanTrackTimeToFirstToken()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+            const string flagKey = "key";
+            var config = LdAiConfig.Disabled;
+            var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "variationKey", LdValue.Of(config.VariationKey) },
+                { "configKey", LdValue.Of(flagKey) }
+            });
+            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+
+            tracker.TrackTimeToFirstToken(1.0f);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:ttf", context, data, 1.0f), Times.Once);
+        }
 
         [Fact]
         public void CanTrackSuccess()

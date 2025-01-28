@@ -73,7 +73,7 @@ jobs:
 
 # Signing DLLs is done on Ubuntu due to Digicert tooling compatibility
   sign-dlls:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: build
     permissions:
       id-token: write

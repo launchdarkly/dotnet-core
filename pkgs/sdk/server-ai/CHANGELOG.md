@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.5.0...LaunchDarkly.ServerSdk.Ai-v0.6.0) (2025-01-28)
+
+
+### Features
+
+* track TimeToFirstToken in LdAiConfigTracker ([#67](https://github.com/launchdarkly/dotnet-core/issues/67)) ([875dba5](https://github.com/launchdarkly/dotnet-core/commit/875dba5bc398085d3569a1f78f0039c81916217b))
+
 ## [0.5.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.4.0...LaunchDarkly.ServerSdk.Ai-v0.5.0) (2024-12-17)
 
 

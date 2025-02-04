@@ -225,6 +225,7 @@ public record LdAiConfig
         VariationKey = meta?.VariationKey ?? "";
         Enabled = enabled;
         Provider = new ModelProvider(provider?.Name ?? "");
+        Version = meta?.Version ?? 1;
     }
     internal LdValue ToLdValue()
     {
@@ -234,7 +235,8 @@ public record LdAiConfig
                 new Dictionary<string, LdValue>
                 {
                     { "variationKey", LdValue.Of(VariationKey) },
-                    { "enabled", LdValue.Of(Enabled) }
+                    { "enabled", LdValue.Of(Enabled) },
+                    { "version", LdValue.Of(Version) }
                 }) },
             { "messages", LdValue.ArrayFrom(Messages.Select(m => LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {

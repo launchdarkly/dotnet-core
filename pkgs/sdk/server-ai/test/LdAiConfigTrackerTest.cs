@@ -43,7 +43,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
 
@@ -61,7 +62,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
 
@@ -79,7 +81,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -99,7 +102,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -119,7 +123,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -153,7 +158,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -174,7 +180,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -202,7 +209,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object,  flagKey, config, context);
@@ -245,7 +253,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -279,7 +288,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "version", LdValue.Of(config.Version) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);

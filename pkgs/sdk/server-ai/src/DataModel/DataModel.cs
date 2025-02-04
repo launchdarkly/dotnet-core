@@ -38,6 +38,12 @@ public class Meta
     /// </summary>
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; }
+
+    /// <summary>
+    /// The version of the variation being served.
+    /// </summary>
+    [JsonPropertyName("version")]
+    public int Version { get; set; }
 }
 
 /// <summary>

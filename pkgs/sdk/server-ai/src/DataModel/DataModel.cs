@@ -34,6 +34,12 @@ public class Meta
     public string VariationKey { get; set; }
 
     /// <summary>
+    /// The variation version.
+    /// </summary>
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    /// <summary>
     /// If the config is enabled.
     /// </summary>
     [JsonPropertyName("enabled")]

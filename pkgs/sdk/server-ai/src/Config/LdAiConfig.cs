@@ -223,6 +223,7 @@ public record LdAiConfig
             model?.Custom ?? new Dictionary<string, LdValue>());
         Messages = messages?.ToList() ?? new List<Message>();
         VariationKey = meta?.VariationKey ?? "";
+        Version = meta?.Version ?? 1;
         Enabled = enabled;
         Provider = new ModelProvider(provider?.Name ?? "");
     }
@@ -234,6 +235,7 @@ public record LdAiConfig
                 new Dictionary<string, LdValue>
                 {
                     { "variationKey", LdValue.Of(VariationKey) },
+                    { "version", LdValue.Of(Version) },
                     { "enabled", LdValue.Of(Enabled) }
                 }) },
             { "messages", LdValue.ArrayFrom(Messages.Select(m => LdValue.ObjectFrom(new Dictionary<string, LdValue>
@@ -270,6 +272,11 @@ public record LdAiConfig
     /// This field meant for internal LaunchDarkly usage.
     /// </summary>
     public string VariationKey { get; }
+
+    /// <summary>
+    /// This field meant for internal LaunchDarkly usage.
+    /// </summary>
+    public int Version { get; }
 
     /// <summary>
     /// Convenient helper that returns a disabled LdAiConfig.

@@ -6,3 +6,5 @@ test:
 
 clean:
 	dotnet clean
+
+.PHONY: build test clean

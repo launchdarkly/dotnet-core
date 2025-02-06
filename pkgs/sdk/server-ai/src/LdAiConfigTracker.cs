@@ -46,6 +46,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
             { "variationKey", LdValue.Of(config.VariationKey)},
+            { "version", LdValue.Of(config.Version)},
             { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) }
         });
     }

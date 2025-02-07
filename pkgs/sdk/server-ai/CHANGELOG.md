@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.6.0...LaunchDarkly.ServerSdk.Ai-v0.7.0) (2025-02-06)
+
+
+### Features
+
+* Add variation version to AI metric data ([#71](https://github.com/launchdarkly/dotnet-core/issues/71)) ([ac3e927](https://github.com/launchdarkly/dotnet-core/commit/ac3e927ae36546cf0b849abd60f2c21bb5864daa))
+
 ## [0.6.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.5.0...LaunchDarkly.ServerSdk.Ai-v0.6.0) (2025-01-28)
 
 

@@ -24,6 +24,6 @@ public interface ILdAiClient
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
     /// <returns>an AI config tracker</returns>
-    public ILdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null);
 }

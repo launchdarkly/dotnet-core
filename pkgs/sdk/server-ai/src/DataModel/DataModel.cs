@@ -28,10 +28,16 @@ public enum Role
 public class Meta
 {
     /// <summary>
-    /// The version key.
+    /// The variation key.
     /// </summary>
-    [JsonPropertyName("versionKey")]
-    public string VersionKey { get; set; }
+    [JsonPropertyName("variationKey")]
+    public string VariationKey { get; set; }
+
+    /// <summary>
+    /// The variation version.
+    /// </summary>
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
 
     /// <summary>
     /// If the config is enabled.
@@ -69,8 +75,8 @@ public class AiConfig
     /// <summary>
     /// The prompt.
     /// </summary>
-    [JsonPropertyName("prompt")]
-    public List<Message> Prompt { get; set; }
+    [JsonPropertyName("messages")]
+    public List<Message> Messages { get; set; }
 
     /// <summary>
     /// LaunchDarkly metadata.
@@ -79,8 +85,50 @@ public class AiConfig
     public Meta Meta { get; set; }
 
     /// <summary>
-    /// The model params;
+    /// The model configuration.
     /// </summary>
     [JsonPropertyName("model")]
-    public Dictionary<string, object> Model { get; set; }
+    public Model Model { get; set; }
+
+    /// <summary>
+    /// The model provider.
+    /// </summary>
+    [JsonPropertyName("provider")]
+    public Provider Provider { get; set; }
+}
+
+/// <summary>
+/// Represents the JSON serialization of a model.
+/// </summary>
+public class Model
+{
+    /// <summary>
+    /// The model's name.
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
+
+    /// <summary>
+    /// The model's parameters. These are provided by LaunchDarkly.
+    /// </summary>
+    [JsonPropertyName("parameters")]
+    public Dictionary<string, LdValue> Parameters { get; set; }
+
+    /// <summary>
+    /// The model's custom parameters. These are arbitrary and provided by the user.
+    /// </summary>
+    [JsonPropertyName("custom")]
+    public Dictionary<string, LdValue> Custom { get; set; }
+}
+
+/// <summary>
+/// Represents the JSON serialization of a model provider.
+/// </summary>
+public class Provider
+{
+    /// <summary>
+    ///  The provider's name.
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
 }

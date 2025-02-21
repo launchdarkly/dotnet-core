@@ -44,7 +44,7 @@ public sealed class LdAiClient : ILdAiClient
     private const string LdContextVariable = "ldctx";
 
     /// <inheritdoc/>
-    public ILdAiConfigTracker ModelConfig(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null)
     {
 
@@ -56,7 +56,6 @@ public sealed class LdAiClient : ILdAiClient
             // ParseConfig already does logging.
             return new LdAiConfigTracker(_client, key, defaultValue, context);
         }
-
 
         var mergedVariables = new Dictionary<string, object> { { LdContextVariable, GetAllAttributes(context) } };
         if (variables != null)
@@ -73,11 +72,48 @@ public sealed class LdAiClient : ILdAiClient
         }
 
 
-        var prompt =
-            parsed.Prompt?.Select(m => new LdAiConfig.Message(InterpolateTemplate(m.Content, mergedVariables), m.Role));
+        var prompt = new List<LdAiConfig.Message>();
 
-        return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model), context);
+        if (parsed.Messages != null)
+        {
+            for (var i = 0; i < parsed.Messages.Count; i++)
+            {
+                try
+                {
+                    var content = InterpolateTemplate(parsed.Messages[i].Content, mergedVariables);
+                    prompt.Add(new LdAiConfig.Message(content, parsed.Messages[i].Role));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(
+                        $"AI model config prompt has malformed message at index {i}: {ex.Message} (returning default config, which will not contain interpolated prompt messages)");
+                    return new LdAiConfigTracker(_client, key, defaultValue, context);
+                }
+            }
+        }
+
+        return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider), context);
+
     }
+
+
+    private static IDictionary<string, object> AddSingleKindContextAttributes(Context context)
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            ["kind"] = context.Kind.ToString(),
+            ["key"] = context.Key,
+            ["anonymous"] = context.Anonymous
+        };
+
+        foreach (var key in context.OptionalAttributeNames)
+        {
+            attributes[key] = ValueToObject(context.GetValue(AttributeRef.FromLiteral(key)));
+        }
+
+        return attributes;
+    }
+
 
     /// <summary>
     /// Retrieves all attributes from the given context, including private attributes. The attributes
@@ -87,17 +123,23 @@ public sealed class LdAiClient : ILdAiClient
     /// <returns>the attributes</returns>
     private static IDictionary<string, object> GetAllAttributes(Context context)
     {
-        var attributes = new Dictionary<string, object>();
-        foreach (var key in context.OptionalAttributeNames)
+        if (!context.Multiple)
         {
-            attributes[key] = ValueToObject(context.GetValue(AttributeRef.FromLiteral(key)));
+            return AddSingleKindContextAttributes(context);
         }
 
-        attributes["kind"] = context.Kind.ToString();
-        attributes["key"] = context.Key;
-        attributes["anonymous"] = context.Anonymous;
+        var attrs = new Dictionary<string, object>
+        {
+            ["kind"] = context.Kind,
+            ["key"] = context.FullyQualifiedKey
+        };
 
-        return attributes;
+        foreach (var kind in context.MultiKindContexts)
+        {
+            attrs[kind.Kind.ToString()] = AddSingleKindContextAttributes(kind);
+        }
+
+        return attrs;
     }
 
     /// <summary>
@@ -137,7 +179,8 @@ public sealed class LdAiClient : ILdAiClient
         }
         catch (JsonException e)
         {
-            _logger.Error("Unable to parse AI model config for key {0}: {1}", key, e.Message);
+            _logger.Error(
+                $"Unable to parse AI model config for key {key}: {e.Message} (returning default config, which will not contain interpolated prompt messages)");
             return null;
         }
     }

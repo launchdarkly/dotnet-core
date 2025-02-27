@@ -300,7 +300,7 @@ namespace LaunchDarkly.Sdk.Server
 
         /// <inheritdoc/>
         public Task<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancellationToken = default) =>
-            EvaluateAsync(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons);
+            EvaluateAsync(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons, cancellationToken);
 
         /// <inheritdoc/>
         public EvaluationDetail<int> IntVariationDetail(string key, Context context, int defaultValue) =>
@@ -448,7 +448,7 @@ namespace LaunchDarkly.Sdk.Server
             return await _hookExecutor.EvaluationSeriesAsync(
                 evalSeriesContext,
                 converter,
-                () => EvaluationAndFlagAsync(key, context, defaultValue, converter, checkType, eventFactory,cancellationToken));
+                () => EvaluationAndFlagAsync(key, context, defaultValue, converter, checkType, eventFactory,cancellationToken),cancellationToken);
         }
 
         private (EvaluationDetail<T>, FeatureFlag) EvaluationAndFlag<T>(string featureKey, Context context,

@@ -691,8 +691,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             return null;
         }
 
-        public Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default)
-        {
+        public ValueTask<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default)
+        {           
             MaybeThrowError();
             if (Data.TryGetValue(kind, out var items))
             {
@@ -701,12 +701,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                     if (PersistOnlyAsString)
                     {
                         // This simulates the kind of store implementation that can't track metadata separately
-                        return Task.FromResult<SerializedItemDescriptor?>(new SerializedItemDescriptor(0, false, item.SerializedItem));
+                        return new ValueTask<SerializedItemDescriptor?>(Task.FromResult<SerializedItemDescriptor?>(new SerializedItemDescriptor(0, false, item.SerializedItem)));
                     }
-                    return Task.FromResult<SerializedItemDescriptor?>(item);
+                    return new ValueTask<SerializedItemDescriptor?>(Task.FromResult<SerializedItemDescriptor?>(item));
                 }
             }
-            return null;
+            return new ValueTask<SerializedItemDescriptor?>();
         }
 
         public KeyedItems<SerializedItemDescriptor> GetAll(DataKind kind)

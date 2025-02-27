@@ -113,7 +113,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// <summary>
         /// Retrieves an item from the specified collection, if available.
         /// </summary>
-        Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key, CancellationToken cancellationToken = default);
+        ValueTask<SerializedItemDescriptor?> GetAsync(DataKind kind, string key, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves all items from the specified collection.

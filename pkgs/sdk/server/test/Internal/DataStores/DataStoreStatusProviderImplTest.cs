@@ -74,7 +74,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         public DataStoreTypes.ItemDescriptor? Get(DataStoreTypes.DataKind kind, string key) =>
             throw new NotImplementedException();
 
-        public Task<DataStoreTypes.ItemDescriptor?> GetAsync(DataStoreTypes.DataKind kind, string key,CancellationToken cancellationToken = default) =>
+        public ValueTask<DataStoreTypes.ItemDescriptor?> GetAsync(DataStoreTypes.DataKind kind, string key,CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
         public DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor> GetAll(DataStoreTypes.DataKind kind) =>

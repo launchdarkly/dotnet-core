@@ -31,7 +31,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// <param name="cancellationToken">optional cancellation token </param>
         /// <returns>a versioned item that contains the stored data (or placeholder for
         /// deleted data); null if the key is unknown</returns>
-        Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default);
+        ValueTask<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Equivalent to <see cref="IPersistentDataStore.GetAll(DataKind)"/>.

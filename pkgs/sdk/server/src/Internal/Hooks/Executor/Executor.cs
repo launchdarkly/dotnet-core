@@ -38,7 +38,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Hooks.Executor
             return (detail, flag);
         }
 
-        public async ValueTask<(EvaluationDetail<T>, FeatureFlag)> EvaluationSeriesAsync<T>(EvaluationSeriesContext context, LdValue.Converter<T> converter, Func<ValueTask<(EvaluationDetail<T>, FeatureFlag)>> evaluateAsync,CancellationToken cancellationToken = default)
+        public async Task<(EvaluationDetail<T>, FeatureFlag)> EvaluationSeriesAsync<T>(EvaluationSeriesContext context, LdValue.Converter<T> converter, Func<Task<(EvaluationDetail<T>, FeatureFlag)>> evaluateAsync,CancellationToken cancellationToken = default)
         {
             var seriesData = _beforeEvaluation.Execute(context, default);
 

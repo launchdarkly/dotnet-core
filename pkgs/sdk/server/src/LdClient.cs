@@ -299,8 +299,8 @@ namespace LaunchDarkly.Sdk.Server
             Evaluate(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
-        public ValueTask<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancellationToken = default) =>
-            EvaluateAsync(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons, cancellationToken);
+        public Task<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancellationToken = default) =>
+            EvaluateAsync(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
         public EvaluationDetail<int> IntVariationDetail(string key, Context context, int defaultValue) =>
@@ -441,7 +441,7 @@ namespace LaunchDarkly.Sdk.Server
                 () => EvaluationAndFlag(key, context, defaultValue, converter, checkType, eventFactory));
         }
 
-        private async ValueTask<(EvaluationDetail<T>, FeatureFlag)> EvaluateWithHooksAsync<T>(string method, string key, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
+        private async Task<(EvaluationDetail<T>, FeatureFlag)> EvaluateWithHooksAsync<T>(string method, string key, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
           bool checkType, EventFactory eventFactory,CancellationToken cancellationToken = default)
         {
             var evalSeriesContext = new EvaluationSeriesContext(key, context, defaultValue, method);
@@ -549,7 +549,7 @@ namespace LaunchDarkly.Sdk.Server
             }
         }
 
-        private async ValueTask<(EvaluationDetail<T>, FeatureFlag)> EvaluationAndFlagAsync<T>(string featureKey, Context context,
+        private async Task<(EvaluationDetail<T>, FeatureFlag)> EvaluationAndFlagAsync<T>(string featureKey, Context context,
            LdValue defaultValue, LdValue.Converter<T> converter,
            bool checkType, EventFactory eventFactory,CancellationToken cancellationToken = default)
         {
@@ -654,7 +654,7 @@ namespace LaunchDarkly.Sdk.Server
             return EvaluateWithHooks(method, featureKey, context, defaultValue, converter, checkType, eventFactory).Item1;
         }
 
-        private async ValueTask<EvaluationDetail<T>> EvaluateAsync<T>(string method, string featureKey, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
+        private async Task<EvaluationDetail<T>> EvaluateAsync<T>(string method, string featureKey, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
            bool checkType, EventFactory eventFactory,CancellationToken cancellationToken = default)
         {
             return (await EvaluateWithHooksAsync(method, featureKey, context, defaultValue, converter, checkType, eventFactory,cancellationToken)).Item1;
@@ -779,7 +779,7 @@ namespace LaunchDarkly.Sdk.Server
             return null;
         }
 
-        private async ValueTask<FeatureFlag> GetFlagAsync(string key, CancellationToken cancellationToken = default)
+        private async Task<FeatureFlag> GetFlagAsync(string key, CancellationToken cancellationToken = default)
         {
             var maybeItem = await _dataStore.GetAsync(DataModel.Features, key,cancellationToken);
             if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)

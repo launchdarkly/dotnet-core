@@ -28,7 +28,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Hooks.Interfaces
         (EvaluationDetail<T>, FeatureFlag) EvaluationSeries<T>(EvaluationSeriesContext context, LdValue.Converter<T> converter,
             Func<(EvaluationDetail<T>, FeatureFlag)> evaluate);
 
-        ValueTask<(EvaluationDetail<T>, FeatureFlag)> EvaluationSeriesAsync<T>(EvaluationSeriesContext context, LdValue.Converter<T> converter,
-            Func<ValueTask<(EvaluationDetail<T>, FeatureFlag)>> evaluateAsync,CancellationToken cancellationToken = default);
+        Task<(EvaluationDetail<T>, FeatureFlag)> EvaluationSeriesAsync<T>(EvaluationSeriesContext context, LdValue.Converter<T> converter,
+            Func<Task<(EvaluationDetail<T>, FeatureFlag)>> evaluateAsync,CancellationToken cancellationToken = default);
     }
 }

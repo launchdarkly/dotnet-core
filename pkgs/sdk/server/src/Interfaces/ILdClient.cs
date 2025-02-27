@@ -117,7 +117,7 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
         /// <param name="cancelationToken"> optional cancelation token</param>
         /// <returns>an <see cref="EvaluationDetail{T}"/> object</returns>
         /// <seealso cref="BoolVariation(string, Context, bool)"/>
-        ValueTask<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancelationToken = default);
+        Task<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancelationToken = default);
 
         /// <summary>
         /// Calculates the integer value of a feature flag for a given context.

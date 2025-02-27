@@ -1,4 +1,6 @@
 ﻿using System.Collections.Immutable;
+using System.Threading;
+using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
@@ -58,6 +60,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 return null;
             }
             return item;
+        }
+
+        public Task<ItemDescriptor?> GetAsync(DataKind kind, string key, CancellationToken cancelationToken = default)
+        {
+            if (!Items.TryGetValue(kind, out var itemsOfKind))
+            {
+                return null;
+            }
+            if (!itemsOfKind.TryGetValue(key, out var item))
+            {
+                return null;
+            }
+            return Task.FromResult<ItemDescriptor?>(item);
         }
 
         public KeyedItems<ItemDescriptor> GetAll(DataKind kind)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit.Abstractions;
@@ -30,7 +31,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             await Task.Delay(TimeSpan.FromTicks(1));
         }
 
-        public async Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key)
+        public async Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default)
         {
             await ArbitraryTask();
             return Get(kind, key);

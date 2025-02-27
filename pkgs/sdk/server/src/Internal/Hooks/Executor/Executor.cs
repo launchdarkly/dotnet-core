@@ -8,6 +8,8 @@ using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Internal.Hooks.Series;
 using LaunchDarkly.Sdk.Server.Internal.Hooks.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.Model;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace LaunchDarkly.Sdk.Server.Internal.Hooks.Executor
 {
@@ -31,6 +33,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.Hooks.Executor
             var seriesData = _beforeEvaluation.Execute(context, default);
 
             var (detail, flag) = evaluate();
+
+            _afterEvaluation.Execute(context, new EvaluationDetail<LdValue>(converter.FromType(detail.Value), detail.VariationIndex, detail.Reason), seriesData);
+            return (detail, flag);
+        }
+
+        public async Task<(EvaluationDetail<T>, FeatureFlag)> EvaluationSeriesAsync<T>(EvaluationSeriesContext context, LdValue.Converter<T> converter, Func<Task<(EvaluationDetail<T>, FeatureFlag)>> evaluateAsync,CancellationToken cancellationToken = default)
+        {
+            var seriesData = _beforeEvaluation.Execute(context, default);
+
+            var (detail, flag) = await evaluateAsync();
 
             _afterEvaluation.Execute(context, new EvaluationDetail<LdValue>(converter.FromType(detail.Value), detail.VariationIndex, detail.Reason), seriesData);
             return (detail, flag);

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers;
@@ -70,6 +72,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         public void Dispose() { }
 
         public DataStoreTypes.ItemDescriptor? Get(DataStoreTypes.DataKind kind, string key) =>
+            throw new NotImplementedException();
+
+        public Task<DataStoreTypes.ItemDescriptor?> GetAsync(DataStoreTypes.DataKind kind, string key,CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
         public DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor> GetAll(DataStoreTypes.DataKind kind) =>

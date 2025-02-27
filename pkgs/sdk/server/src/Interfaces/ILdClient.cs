@@ -1,6 +1,8 @@
 ﻿using System;
 using LaunchDarkly.Sdk.Server.Migrations;
 using LaunchDarkly.Logging;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace LaunchDarkly.Sdk.Server.Interfaces
 {
@@ -95,6 +97,27 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
         /// <returns>an <see cref="EvaluationDetail{T}"/> object</returns>
         /// <seealso cref="BoolVariation(string, Context, bool)"/>
         EvaluationDetail<bool> BoolVariationDetail(string key, Context context, bool defaultValue);
+
+        /// <summary>
+        /// Calculates the boolean value of a feature flag for a given context, and returns an object that
+        /// describes the way the value was determined. Async
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="EvaluationDetail{T}.Reason"/> property in the result will also be included
+        /// in analytics events, if you are capturing detailed event data for this flag.
+        /// </para>
+        /// <para>
+        /// The behavior is otherwise identical to <see cref="BoolVariation(string, Context, bool)"/>.
+        /// </para>
+        /// </remarks>
+        /// <param name="key">the unique feature key for the feature flag</param>
+        /// <param name="context">the evaluation context</param>
+        /// <param name="defaultValue">the default value of the flag</param>
+        /// <param name="cancelationToken"> optional cancelation token</param>
+        /// <returns>an <see cref="EvaluationDetail{T}"/> object</returns>
+        /// <seealso cref="BoolVariation(string, Context, bool)"/>
+        Task<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancelationToken = default);
 
         /// <summary>
         /// Calculates the integer value of a feature flag for a given context.

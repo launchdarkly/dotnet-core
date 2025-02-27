@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 using static LaunchDarkly.Sdk.Server.Internal.DataStores.DataStoreTestTypes;
+using System.Threading.Tasks;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 {
@@ -685,6 +686,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                         return new SerializedItemDescriptor(0, false, item.SerializedItem);
                     }
                     return item;
+                }
+            }
+            return null;
+        }
+
+        public Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default)
+        {
+            MaybeThrowError();
+            if (Data.TryGetValue(kind, out var items))
+            {
+                if (items.TryGetValue(key, out var item))
+                {
+                    if (PersistOnlyAsString)
+                    {
+                        // This simulates the kind of store implementation that can't track metadata separately
+                        return Task.FromResult<SerializedItemDescriptor?>(new SerializedItemDescriptor(0, false, item.SerializedItem));
+                    }
+                    return Task.FromResult<SerializedItemDescriptor?>(item);
                 }
             }
             return null;

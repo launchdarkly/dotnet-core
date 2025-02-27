@@ -33,7 +33,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         {
             return WaitSafely(() => _coreAsync.GetAsync(kind, key));
         }
-        
+
+        public Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default)
+        {
+            return _coreAsync.GetAsync(kind, key,cancellationToken);
+        }
+
         public KeyedItems<SerializedItemDescriptor> GetAll(DataKind kind)
         {
             return WaitSafely(() => _coreAsync.GetAllAsync(kind));

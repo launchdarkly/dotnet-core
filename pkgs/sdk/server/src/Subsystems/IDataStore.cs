@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Subsystems
@@ -71,6 +73,11 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// <returns>a versioned item that contains the stored data (or placeholder for
         /// deleted data); null if the key is unknown</returns>
         ItemDescriptor? Get(DataKind kind, string key);
+
+        /// <summary>
+        /// Retrieves an item from the specified collection, if available.
+        /// </summary>
+        Task<ItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellation=default);
 
         /// <summary>
         /// Retrieves all items from the specified collection.

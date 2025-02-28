@@ -42,7 +42,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Hooks.Executor
         {
             var seriesData = _beforeEvaluation.Execute(context, default);
 
-            var (detail, flag) = await evaluateAsync();
+            var (detail, flag) = await evaluateAsync().ConfigureAwait(false);
 
             _afterEvaluation.Execute(context, new EvaluationDetail<LdValue>(converter.FromType(detail.Value), detail.VariationIndex, detail.Reason), seriesData);
             return (detail, flag);

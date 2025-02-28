@@ -299,11 +299,7 @@ namespace LaunchDarkly.Sdk.Server
             Evaluate(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
-<<<<<<< HEAD
-        public Task<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancellationToken = default) =>
-=======
         public ValueTask<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancellationToken = default) =>
->>>>>>> parent of 749ced8 (Revert "use ValueTask")
             EvaluateAsync(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons, cancellationToken);
 
         /// <inheritdoc/>
@@ -452,7 +448,7 @@ namespace LaunchDarkly.Sdk.Server
             return await _hookExecutor.EvaluationSeriesAsync(
                 evalSeriesContext,
                 converter,
-                () => EvaluationAndFlagAsync(key, context, defaultValue, converter, checkType, eventFactory,cancellationToken),cancellationToken);
+                () => EvaluationAndFlagAsync(key, context, defaultValue, converter, checkType, eventFactory,cancellationToken),cancellationToken).ConfigureAwait(false);
         }
 
         private (EvaluationDetail<T>, FeatureFlag) EvaluationAndFlag<T>(string featureKey, Context context,
@@ -584,7 +580,7 @@ namespace LaunchDarkly.Sdk.Server
             FeatureFlag featureFlag = null;
             try
             {
-                featureFlag = await GetFlagAsync(featureKey,cancellationToken);
+                featureFlag = await GetFlagAsync(featureKey, cancellationToken).ConfigureAwait(false);
                 if (featureFlag == null)
                 {
                     _evalLog.Info("Unknown feature flag \"{0}\"; returning default value",
@@ -661,7 +657,7 @@ namespace LaunchDarkly.Sdk.Server
         private async ValueTask<EvaluationDetail<T>> EvaluateAsync<T>(string method, string featureKey, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
            bool checkType, EventFactory eventFactory,CancellationToken cancellationToken = default)
         {
-            return (await EvaluateWithHooksAsync(method, featureKey, context, defaultValue, converter, checkType, eventFactory,cancellationToken)).Item1;
+            return (await EvaluateWithHooksAsync(method, featureKey, context, defaultValue, converter, checkType, eventFactory,cancellationToken).ConfigureAwait(false)).Item1;
         }
 
         /// <inheritdoc/>
@@ -785,7 +781,7 @@ namespace LaunchDarkly.Sdk.Server
 
         private async ValueTask<FeatureFlag> GetFlagAsync(string key, CancellationToken cancellationToken = default)
         {
-            var maybeItem = await _dataStore.GetAsync(DataModel.Features, key,cancellationToken);
+            var maybeItem = await _dataStore.GetAsync(DataModel.Features, key,cancellationToken).ConfigureAwait(false);
             if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
             {
                 return f;

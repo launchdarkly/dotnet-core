@@ -191,7 +191,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         {
             try
             {
-                var ret = _itemCache is null ? await GetAndDeserializeItemAsync(kind, key, cancellationToken) :
+                var ret = _itemCache is null ? await GetAndDeserializeItemAsync(kind, key, cancellationToken).ConfigureAwait(false) :
                     _itemCache.Get(new CacheKey(kind, key));
                 ProcessError(null);
                 return ret;
@@ -338,13 +338,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             return Deserialize(kind, maybeSerializedItem.Value);
         }
 
-<<<<<<< HEAD
-        private async Task<ItemDescriptor?> GetAndDeserializeItemAsync(DataKind kind, string key, CancellationToken cancellationToken = default)
-=======
-        private async ValueTask<ItemDescriptor?> GetAndDeserializeItemAsync(DataKind kind, string key)
->>>>>>> parent of 749ced8 (Revert "use ValueTask")
+        private async ValueTask<ItemDescriptor?> GetAndDeserializeItemAsync(DataKind kind, string key, CancellationToken cancellationToken = default)
         {
-            var maybeSerializedItem = await _core.GetAsync(kind, key, cancellationToken);
+            var maybeSerializedItem = await _core.GetAsync(kind, key, cancellationToken).ConfigureAwait(false);
             if (!maybeSerializedItem.HasValue)
             {
                 return null;

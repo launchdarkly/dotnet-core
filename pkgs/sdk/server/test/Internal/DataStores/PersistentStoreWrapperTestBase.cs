@@ -692,7 +692,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         }
 
         public ValueTask<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default)
-        {           
+        {
             MaybeThrowError();
             if (Data.TryGetValue(kind, out var items))
             {

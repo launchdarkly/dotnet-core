@@ -77,7 +77,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// <summary>
         /// Retrieves an item from the specified collection, if available.
         /// </summary>
-        Task<ItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellation=default);
+        ValueTask<ItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellation=default);
 
         /// <summary>
         /// Retrieves all items from the specified collection.

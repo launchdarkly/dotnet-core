@@ -187,7 +187,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
         }
 
-        public async Task<ItemDescriptor?> GetAsync(DataKind kind, string key, CancellationToken cancellationToken = default)
+        public async ValueTask<ItemDescriptor?> GetAsync(DataKind kind, string key, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -338,7 +338,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             return Deserialize(kind, maybeSerializedItem.Value);
         }
 
+<<<<<<< HEAD
         private async Task<ItemDescriptor?> GetAndDeserializeItemAsync(DataKind kind, string key, CancellationToken cancellationToken = default)
+=======
+        private async ValueTask<ItemDescriptor?> GetAndDeserializeItemAsync(DataKind kind, string key)
+>>>>>>> parent of 749ced8 (Revert "use ValueTask")
         {
             var maybeSerializedItem = await _core.GetAsync(kind, key, cancellationToken);
             if (!maybeSerializedItem.HasValue)

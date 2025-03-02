@@ -72,7 +72,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             {
                 return new ValueTask<ItemDescriptor?>();
             }
+#if NET31_OR_GREATER
+            return ValueTask.FromResult<ItemDescriptor?>(item);
+#else
             return new ValueTask<ItemDescriptor?>(Task.FromResult<ItemDescriptor?>(item));
+#endif
         }
 
         public KeyedItems<ItemDescriptor> GetAll(DataKind kind)

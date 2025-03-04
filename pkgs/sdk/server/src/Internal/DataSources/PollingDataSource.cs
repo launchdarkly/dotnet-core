@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,15 +61,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             _log.Info("Polling LaunchDarkly for feature flag updates");
             try
             {
-                var allData = await _featureRequestor.GetAllDataAsync();
-                if (allData is null)
+                var dataAndHeaders = await _featureRequestor.GetAllDataAsync();
+                if (dataAndHeaders.DataSet is null)
                 {
                     // This means it was cached, and alreadyInited was true
                     _dataSourceUpdates.UpdateStatus(DataSourceState.Valid, null);
                 }
                 else
                 {
-                    if (_dataSourceUpdates.Init(allData.Value)) // this also automatically sets the state to Valid
+                    if (InitWithHeaders(dataAndHeaders.DataSet.Value, dataAndHeaders.Headers)) // this also automatically sets the state to Valid
                     {
                         if (!_initialized.GetAndSet(true))
                         {
@@ -136,6 +137,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _canceller?.Cancel();
                 _featureRequestor.Dispose();
             }
+        }
+
+        private bool InitWithHeaders(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData,
+            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            if (_dataSourceUpdates is IDataSourceUpdatesHeaders dataSourceUpdatesHeaders)
+            {
+                return dataSourceUpdatesHeaders.InitWithHeaders(allData, headers);
+            }
+
+            return _dataSourceUpdates.Init(allData);
         }
     }
 }

@@ -428,7 +428,7 @@ namespace LaunchDarkly.Sdk.Server
         private (EvaluationDetail<T>, FeatureFlag) EvaluateWithHooks<T>(string method, string key, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
         {
-            var evalSeriesContext = new EvaluationSeriesContext(key, context, defaultValue, method);
+            var evalSeriesContext = new EvaluationSeriesContext(key, context, defaultValue, method, GetEnvironmentId());
             return _hookExecutor.EvaluationSeries(
                 evalSeriesContext,
                 converter,
@@ -679,6 +679,19 @@ namespace LaunchDarkly.Sdk.Server
                 _dataSource.Dispose();
                 _bigSegmentStoreWrapper?.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Get the environment ID.
+        /// </summary>
+        /// <returns>The environment ID, or null if one is not available</returns>
+        private string GetEnvironmentId()
+        {
+            if (_dataStore is IDataStoreMetadata dataStoreMetadata)
+            {
+                return dataStoreMetadata.GetMetadata()?.EnvironmentId;
+            }
+            return null;
         }
 
         #endregion

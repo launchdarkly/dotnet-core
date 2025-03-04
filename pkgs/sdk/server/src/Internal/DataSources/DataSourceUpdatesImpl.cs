@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// This component is also responsible for receiving updates to the data source status, broadcasting
     /// them to any status listeners, and tracking the length of any period of sustained failure.
     /// </remarks>
-    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdates
+    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdates, IDataSourceUpdatesHeaders
     {
         #region Private fields
 
@@ -84,7 +85,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 StateSince = DateTime.Now,
                 LastError = null
             };
-            _status = new StateMonitor<DataSourceStatus, StateAndError>(initialStatus, MaybeUpdateStatus, _log);            
+            _status = new StateMonitor<DataSourceStatus, StateAndError>(initialStatus, MaybeUpdateStatus, _log);
         }
 
         #endregion
@@ -93,47 +94,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public bool Init(FullDataSet<ItemDescriptor> allData)
         {
-            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData = null;
-
-            try
-            {
-                if (HasFlagChangeListeners())
-                {
-                    // Query the existing data if any, so that after the update we can send events for
-                    // whatever was changed
-                    var oldDataBuilder = ImmutableDictionary.CreateBuilder<DataKind,
-                        ImmutableDictionary<string, ItemDescriptor>>();
-                    foreach (var kind in DataModel.AllDataKinds)
-                    {
-                        var items = _store.GetAll(kind);
-                        oldDataBuilder.Add(kind, items.Items.ToImmutableDictionary());
-                    }
-                    oldData = oldDataBuilder.ToImmutable();
-                }
-                _store.Init(DataStoreSorter.SortAllCollections(allData));
-                _lastStoreUpdateFailed = false;
-            }
-            catch (Exception e)
-            {
-                ReportStoreFailure(e);
-                return false;
-            }
-
-            // Calling Init implies that the data source is now in a valid state.
-            UpdateStatus(DataSourceState.Valid, null);
-
-            // We must always update the dependency graph even if we don't currently have any event listeners, because if
-            // listeners are added later, we don't want to have to reread the whole data store to compute the graph
-            UpdateDependencyTrackerFromFullDataSet(allData);
-
-            // Now, if we previously queried the old data because someone is listening for flag change events, compare
-            // the versions of all items and generate events for those (and any other items that depend on them)
-            if (oldData != null)
-            {
-                SendChangeEvents(ComputeChangedItemsForFullDataSet(oldData, FullDataSetToMap(allData)));
-            }
-
-            return true;
+            return InitWithHeaders(allData, null);
         }
 
         public bool Upsert(DataKind kind, string key, ItemDescriptor item)
@@ -326,5 +287,67 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         #endregion
+
+       #region IDataSourceUpdatesHeaders methods
+        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData = null;
+
+            try
+            {
+                if (HasFlagChangeListeners())
+                {
+                    // Query the existing data if any, so that after the update we can send events for
+                    // whatever was changed
+                    var oldDataBuilder = ImmutableDictionary.CreateBuilder<DataKind,
+                        ImmutableDictionary<string, ItemDescriptor>>();
+                    foreach (var kind in DataModel.AllDataKinds)
+                    {
+                        var items = _store.GetAll(kind);
+                        oldDataBuilder.Add(kind, items.Items.ToImmutableDictionary());
+                    }
+                    oldData = oldDataBuilder.ToImmutable();
+                }
+
+                var sortedCollections = DataStoreSorter.SortAllCollections(allData);
+
+                if (_store is IDataStoreMetadata storeMetadata)
+                {
+                    var environmentId = headers?.FirstOrDefault((item) =>
+                            item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
+                        ?.FirstOrDefault();
+                    storeMetadata.InitWithMetadata(sortedCollections, new InitMetadata(environmentId));
+                }
+                else
+                {
+                    _store.Init(sortedCollections);
+                }
+
+                _lastStoreUpdateFailed = false;
+            }
+            catch (Exception e)
+            {
+                ReportStoreFailure(e);
+                return false;
+            }
+
+            // Calling Init implies that the data source is now in a valid state.
+            UpdateStatus(DataSourceState.Valid, null);
+
+            // We must always update the dependency graph even if we don't currently have any event listeners, because if
+            // listeners are added later, we don't want to have to reread the whole data store to compute the graph
+            UpdateDependencyTrackerFromFullDataSet(allData);
+
+            // Now, if we previously queried the old data because someone is listening for flag change events, compare
+            // the versions of all items and generate events for those (and any other items that depend on them)
+            if (oldData != null)
+            {
+                SendChangeEvents(ComputeChangedItemsForFullDataSet(oldData, FullDataSetToMap(allData)));
+            }
+
+            return true;
+        }
+        #endregion
+
     }
 }

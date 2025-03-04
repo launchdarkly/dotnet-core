@@ -17,6 +17,8 @@ using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
+    using BytesWithHeaders = Tuple<byte[], IEnumerable<KeyValuePair<string, IEnumerable<string>>>>;
+
     internal class FeatureRequestor : IFeatureRequestor
     {
         private readonly Uri _allUri;
@@ -51,19 +53,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         // Returns a data set of the latest flags and segments, or null if they have not been modified. Throws an
         // exception if there was a problem getting data.
-        public async Task<FullDataSet<ItemDescriptor>?> GetAllDataAsync()
+        public async Task<DataSetWithHeaders> GetAllDataAsync()
         {
-            var json = await GetAsync(_allUri);
-            if (json is null)
+            var res = await GetAsync(_allUri);
+            if (res is null)
             {
                 return null;
             }
-            var data = ParseAllData(json);
+            var data = ParseAllData(res.Item1);
             Func<DataKind, int> countItems = kind =>
                 data.Data.FirstOrDefault(kv => kv.Key == kind).Value.Items?.Count() ?? 0;
             _log.Debug("Get all returned {0} feature flags and {1} segments",
                 countItems(DataModel.Features), countItems(DataModel.Segments));
-            return data;
+            return new DataSetWithHeaders(data, res.Item2);
         }
 
         private FullDataSet<ItemDescriptor> ParseAllData(byte[] json)
@@ -72,7 +74,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             return StreamProcessorEvents.ParseFullDataset(ref r);
         }
 
-        private async Task<byte[]> GetAsync(Uri path)
+        private async Task<BytesWithHeaders> GetAsync(Uri path)
         {
             _log.Debug("Getting flags with uri: {0}", path.AbsoluteUri);
             var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -113,7 +115,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                             }
                         }
                         var content = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                        return content.Length == 0 ? null : content;
+                        return new BytesWithHeaders(content.Length == 0 ? null : content, response.Headers);
                     }
                 }
                 catch (TaskCanceledException tce)

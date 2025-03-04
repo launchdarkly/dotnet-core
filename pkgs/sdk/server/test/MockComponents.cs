@@ -81,6 +81,56 @@ namespace LaunchDarkly.Sdk.Server
         }
     }
 
+    public class CapturingDataSourceUpdatesWithHeaders : IDataSourceUpdates, IDataSourceUpdatesHeaders
+    {
+        internal readonly
+            EventSink<Tuple<FullDataSet<ItemDescriptor>, IEnumerable<KeyValuePair<string, IEnumerable<string>>>>>
+            Inits =
+                new EventSink<Tuple<FullDataSet<ItemDescriptor>,
+                    IEnumerable<KeyValuePair<string, IEnumerable<string>>>>>();
+
+        internal readonly EventSink<UpsertParams> Upserts = new EventSink<UpsertParams>();
+        internal readonly EventSink<DataSourceStatus> StatusUpdates = new EventSink<DataSourceStatus>();
+
+        public struct UpsertParams
+        {
+            public DataKind Kind;
+            public string Key;
+            public ItemDescriptor Item;
+        }
+
+        internal MockDataStoreStatusProvider MockDataStoreStatusProvider = new MockDataStoreStatusProvider();
+
+        internal int InitsShouldFail = 0;
+
+        internal int UpsertsShouldFail = 0;
+
+        public IDataStoreStatusProvider DataStoreStatusProvider => MockDataStoreStatusProvider;
+
+        public bool Init(FullDataSet<ItemDescriptor> allData)
+        {
+            return InitWithHeaders(allData, null);
+        }
+
+        public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError) =>
+            StatusUpdates.Enqueue(new DataSourceStatus() { State = newState, LastError = newError });
+
+        public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+        {
+            Upserts.Enqueue(new UpsertParams { Kind = kind, Key = key, Item = item });
+            return UpsertsShouldFail <= 0 || (--UpsertsShouldFail < 0);
+        }
+
+        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData,
+            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            Inits.Enqueue(
+                new Tuple<FullDataSet<ItemDescriptor>, IEnumerable<KeyValuePair<string, IEnumerable<string>>>>(allData,
+                    headers));
+            return InitsShouldFail <= 0 || (--InitsShouldFail < 0);
+        }
+    }
+
     public class CapturingDataStoreFactory : IComponentConfigurer<IDataStore>
     {
         private readonly IComponentConfigurer<IDataStore> _factory;

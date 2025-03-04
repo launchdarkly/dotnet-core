@@ -7,7 +7,7 @@ on:
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     outputs:
       package-sdk-server-released: ${{ steps.release.outputs['pkgs/sdk/server--release_created'] }}
@@ -28,7 +28,7 @@ jobs:
           target-branch: ${{ github.ref_name }}
 
   release-sdk-server:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: release-please
     permissions:
       id-token: write
@@ -57,7 +57,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   release-sdk-server-ai:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: release-please
     permissions:
       id-token: write
@@ -86,7 +86,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   release-telemetry:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: release-please
     permissions:
       id-token: write

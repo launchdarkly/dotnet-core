@@ -20,6 +20,14 @@ runs:
       with:
         dotnet-version: 6.0
 
+    - name: Restore Workloads
+      shell: bash
+      run: dotnet workload restore ${{ inputs.service_project_file }}
+
+    - name: Restore Dependencies
+      shell: bash
+      run: dotnet restore ${{ inputs.service_project_file }}
+
     - name: Build Contract Tests
       shell: bash
       run: dotnet build -p:Configuration=debug ${{ inputs.service_project_file }}

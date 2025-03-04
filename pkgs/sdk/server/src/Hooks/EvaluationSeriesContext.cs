@@ -26,17 +26,25 @@ namespace LaunchDarkly.Sdk.Server.Hooks
         public string Method { get;  }
 
         /// <summary>
+        /// The environment ID for the evaluation, or null if not available.
+        /// </summary>
+        public string EnvironmentId { get; }
+
+        /// <summary>
         /// Constructs a new EvaluationSeriesContext.
         /// </summary>
         /// <param name="flagKey">the flag key</param>
         /// <param name="context">the context</param>
         /// <param name="defaultValue">the default value</param>
         /// <param name="method">the variation method</param>
-        public EvaluationSeriesContext(string flagKey, Context context, LdValue defaultValue, string method) {
+        /// <param name="environmentId">the environment ID</param>
+        public EvaluationSeriesContext(string flagKey, Context context, LdValue defaultValue, string method,
+            string environmentId = null) {
             FlagKey = flagKey;
             Context = context;
             DefaultValue = defaultValue;
             Method = method;
+            EnvironmentId = environmentId;
         }
     }
 }

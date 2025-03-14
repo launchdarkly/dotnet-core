@@ -5,7 +5,7 @@ using LaunchDarkly.Sdk.Server.Ai.DataModel;
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
 /// <summary>
-/// Represents an AI configuration, which contains model parameters and prompt messages.
+/// Represents an AI Config, which contains model parameters and prompt messages.
 /// </summary>
 public record LdAiConfig
 {

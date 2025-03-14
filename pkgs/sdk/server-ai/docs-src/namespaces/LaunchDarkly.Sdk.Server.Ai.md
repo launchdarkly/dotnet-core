@@ -15,7 +15,7 @@ var baseClient = new LdClient(Configuration.Builder("sdk-key").Build());
 // The AI client wraps the base client, providing additional AI-related functionality.
 var aiClient = new LdAiClient(new LdClientAdapter(baseClient));
 
-// Pass in the key of the AI config, a context, and a default value in case the config can't be
+// Pass in the key of the AI Config, a context, and a default value in case the config can't be
 // retrieved from LaunchDarkly.
 var myModelConfig = aiClient.Config("my-model-config", Context.New("user-key"), LdAiConfig.Disabled);
 ```

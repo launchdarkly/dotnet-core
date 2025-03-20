@@ -12,8 +12,8 @@ using Mustache;
 namespace LaunchDarkly.Sdk.Server.Ai;
 
 /// <summary>
-/// The LaunchDarkly AI client. The client is capable of retrieving AI configurations from LaunchDarkly,
-/// and generating events specific to usage of the AI configuration when interacting with model providers.
+/// The LaunchDarkly AI client. The client is capable of retrieving AI Configs from LaunchDarkly,
+/// and generating events specific to usage of the AI Config when interacting with model providers.
 /// </summary>
 public sealed class LdAiClient : ILdAiClient
 {

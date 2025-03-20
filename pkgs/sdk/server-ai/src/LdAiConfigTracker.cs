@@ -10,7 +10,7 @@ using LaunchDarkly.Sdk.Server.Ai.Tracking;
 namespace LaunchDarkly.Sdk.Server.Ai;
 
 /// <summary>
-/// A tracker capable of reporting events related to a particular AI configuration.
+/// A tracker capable of reporting events related to a particular AI Config.
 /// </summary>
 public class LdAiConfigTracker : ILdAiConfigTracker
 {
@@ -30,12 +30,12 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private const string TimeToFirstToken = "$ld:ai:tokens:ttf";
 
     /// <summary>
-    /// Constructs a new AI configuration tracker. The tracker is associated with a configuration,
+    /// Constructs a new AI Config tracker. The tracker is associated with a configuration,
     /// a context, and a key which identifies the configuration.
     /// </summary>
     /// <param name="client">the LaunchDarkly client</param>
-    /// <param name="configKey">key of the AI config</param>
-    /// <param name="config">the AI config</param>
+    /// <param name="configKey">key of the AI Config</param>
+    /// <param name="config">the AI Config</param>
     /// <param name="context">the context</param>
     /// <exception cref="ArgumentNullException"></exception>
     public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context)
@@ -71,7 +71,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             TrackDuration(sw.ElapsedMilliseconds);
         }
     }
-    
+
     /// <inheritdoc/>
     public void TrackTimeToFirstToken(float timeToFirstTokenMs) =>
         _client.Track(TimeToFirstToken, _context, _trackData, timeToFirstTokenMs);

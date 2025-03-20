@@ -155,7 +155,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 return "DataKind(" + _name + ")";
             }
         }
-        
+
         /// <summary>
         /// A versioned item (or placeholder) storeable in an <see cref="IDataStore"/>.
         /// </summary>
@@ -303,7 +303,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// Shortcut for constructing an empty data set.
             /// </summary>
             /// <returns>an instance containing no data</returns>
-            public static FullDataSet<TDescriptor> Empty() => new FullDataSet<TDescriptor>(null);                
+            public static FullDataSet<TDescriptor> Empty() => new FullDataSet<TDescriptor>(null);
         }
 
         /// <summary>
@@ -340,6 +340,23 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// </summary>
             /// <returns>an instance containing no data</returns>
             public static KeyedItems<TDescriptor> Empty() => new KeyedItems<TDescriptor>(null);
+        }
+
+        /// <summary>
+        /// Meta-data associated with feature store initialization.
+        /// </summary>
+        public sealed class InitMetadata
+        {
+            internal InitMetadata() {}
+            internal InitMetadata(string environmentId)
+            {
+                EnvironmentId = environmentId;
+            }
+
+            /// <summary>
+            /// The environment ID for the associated payload or null if the environment ID is not available.
+            /// </summary>
+            public string EnvironmentId { get; }
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Hooks;
+using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -14,8 +15,6 @@ namespace LaunchDarkly.Sdk.Server
 
     public class LdClientHooksTest : BaseTest
     {
-
-
         private class TestHook : Hook
         {
             private readonly Callbacks _befores;
@@ -62,10 +61,7 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     Method.BoolVariation, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.BoolVariation(flagKey, context, value.AsBool);
-                        },
+                        Variation = (client, value) => { client.BoolVariation(flagKey, context, value.AsBool); },
                         Value = LdValue.Of(true)
                     }
                 },
@@ -73,20 +69,14 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     Method.BoolVariationDetail, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.BoolVariationDetail(flagKey, context, value.AsBool);
-                        },
+                        Variation = (client, value) => { client.BoolVariationDetail(flagKey, context, value.AsBool); },
                         Value = LdValue.Of(true)
                     }
                 },
                 {
                     Method.StringVariation, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.StringVariation(flagKey, context, value.AsString);
-                        },
+                        Variation = (client, value) => { client.StringVariation(flagKey, context, value.AsString); },
                         Value = LdValue.Of("default")
                     }
                 },
@@ -103,30 +93,21 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     Method.IntVariation, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.IntVariation(flagKey, context, value.AsInt);
-                        },
+                        Variation = (client, value) => { client.IntVariation(flagKey, context, value.AsInt); },
                         Value = LdValue.Of(3)
                     }
                 },
                 {
                     Method.IntVariationDetail, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.IntVariationDetail(flagKey, context, value.AsInt);
-                        },
+                        Variation = (client, value) => { client.IntVariationDetail(flagKey, context, value.AsInt); },
                         Value = LdValue.Of(3)
                     }
                 },
                 {
                     Method.DoubleVariation, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.DoubleVariation(flagKey, context, value.AsDouble);
-                        },
+                        Variation = (client, value) => { client.DoubleVariation(flagKey, context, value.AsDouble); },
                         Value = LdValue.Of(3.14)
                     }
                 },
@@ -143,10 +124,7 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     Method.FloatVariation, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.FloatVariation(flagKey, context, value.AsFloat);
-                        },
+                        Variation = (client, value) => { client.FloatVariation(flagKey, context, value.AsFloat); },
                         Value = LdValue.Of(3.14f)
                     }
                 },
@@ -163,20 +141,14 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     Method.JsonVariation, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.JsonVariation(flagKey, context, value);
-                        },
+                        Variation = (client, value) => { client.JsonVariation(flagKey, context, value); },
                         Value = LdValue.ArrayFrom(new List<LdValue>() { LdValue.Of("foo"), LdValue.Of("bar") })
                     }
                 },
                 {
                     Method.JsonVariationDetail, new Call()
                     {
-                        Variation = (client, value) =>
-                        {
-                            client.JsonVariationDetail(flagKey, context, value);
-                        },
+                        Variation = (client, value) => { client.JsonVariationDetail(flagKey, context, value); },
                         Value = LdValue.ArrayFrom(new List<LdValue>() { LdValue.Of("foo"), LdValue.Of("bar") })
                     }
                 }
@@ -228,7 +200,8 @@ namespace LaunchDarkly.Sdk.Server
                 }
             }
 
-            foreach (var series in new Dictionary<string, Callbacks>{{"beforeEvaluation", befores}, {"afterEvaluation", afters}})
+            foreach (var series in new Dictionary<string, Callbacks>
+                         { { "beforeEvaluation", befores }, { "afterEvaluation", afters } })
             {
                 foreach (var kvp in series.Value)
                 {
@@ -251,6 +224,7 @@ namespace LaunchDarkly.Sdk.Server
                         // The hook framework passes empty SeriesData into the beforeEvaluation stage.
                         Assert.True(seriesData.All(s => s.Equals(SeriesData.Empty)));
                     }
+
                     if (series.Key == "afterEvaluation")
                     {
                         // The test hook's beforeEvaluation stage returns a new SeriesData, check that it is correct.
@@ -258,6 +232,96 @@ namespace LaunchDarkly.Sdk.Server
                     }
                 }
             }
+        }
+
+
+        private class TestHookWithEnvironmentId : Hook
+        {
+            public string BeforeEnvironmentId { get; set; }
+            public string AfterEnvironmentId { get; set; }
+
+            public TestHookWithEnvironmentId(string name) : base(name)
+            {
+            }
+
+            public override SeriesData BeforeEvaluation(EvaluationSeriesContext context, SeriesData data)
+            {
+                BeforeEnvironmentId = context.EnvironmentId;
+                return data;
+            }
+
+            public override SeriesData AfterEvaluation(EvaluationSeriesContext context, SeriesData data,
+                EvaluationDetail<LdValue> detail)
+            {
+                AfterEnvironmentId = context.EnvironmentId;
+                return data;
+            }
+        }
+
+        private class MetadataDataStore : IDataStore, IDataStoreMetadata
+        {
+            public void Dispose()
+            {
+            }
+
+            public bool StatusMonitoringEnabled { get; }
+
+            public void Init(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData)
+            {
+            }
+
+            public DataStoreTypes.ItemDescriptor? Get(DataStoreTypes.DataKind kind, string key)
+            {
+                return null;
+            }
+
+            public DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor> GetAll(DataStoreTypes.DataKind kind)
+            {
+                return DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor>.Empty();
+            }
+
+            public bool Upsert(DataStoreTypes.DataKind kind, string key, DataStoreTypes.ItemDescriptor item)
+            {
+                return true;
+            }
+
+            public bool Initialized()
+            {
+                return true;
+            }
+
+            public void InitWithMetadata(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData,
+                DataStoreTypes.InitMetadata metadata)
+            {
+            }
+
+            public DataStoreTypes.InitMetadata GetMetadata()
+            {
+                return new DataStoreTypes.InitMetadata("environment-id");
+            }
+        }
+
+        private class MetadataDataStoreConfigurer : IComponentConfigurer<IDataStore>
+        {
+            public IDataStore Build(LdClientContext context)
+            {
+                return new MetadataDataStore();
+            }
+        }
+
+        [Fact]
+        public void EvaluationContextIncludesEnvironmentIdWhenAvailable()
+        {
+            var testHook = new TestHookWithEnvironmentId("test");
+            var config = BasicConfig().DataStore(new MetadataDataStoreConfigurer())
+                .Hooks(Components.Hooks().Add(testHook)).Build();
+            using (var client = new LdClient(config))
+            {
+                client.BoolVariation("toaster", Context.New("user-key"));
+            }
+
+            Assert.Equal("environment-id", testHook.BeforeEnvironmentId);
+            Assert.Equal("environment-id", testHook.AfterEnvironmentId);
         }
     }
 }

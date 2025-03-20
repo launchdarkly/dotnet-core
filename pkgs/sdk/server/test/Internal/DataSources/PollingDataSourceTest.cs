@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers.HttpTest;
@@ -65,6 +66,35 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     var receivedData = _updateSink.Inits.ExpectValue();
                     AssertHelpers.DataSetsEqual(AllData, receivedData);
+
+                    Assert.True(dataSource.Initialized);
+
+                    Assert.True(initTask.IsCompleted);
+                    Assert.False(initTask.IsFaulted);
+                }
+            }
+        }
+
+        [Fact]
+        public void SuccessfulRequestCausesDataToBeStoredAndDataSourceInitializedMetadata()
+        {
+            CapturingDataSourceUpdatesWithHeaders updateSink = new CapturingDataSourceUpdatesWithHeaders();
+            using (var server = HttpServer.Start(PollingResponse(AllData)))
+            {
+                var builder = BasicConfig()
+                    .DataSource(Components.PollingDataSource())
+                    .ServiceEndpoints(Components.ServiceEndpoints().Polling(server.Uri));
+                var config = builder.Build();
+
+                using (var dataSource = config.DataSource.Build(ContextFrom(config).WithDataSourceUpdates(updateSink)))
+                {
+                    var initTask = dataSource.Start();
+
+                    var receivedData = updateSink.Inits.ExpectValue();
+                    AssertHelpers.DataSetsEqual(AllData, receivedData.Item1);
+                    // There should be some headers from polling, but we don't want to depend on exact values from
+                    // the http server as it isn't implemented in this package.
+                    Assert.NotEmpty(receivedData.Item2);
 
                     Assert.True(dataSource.Initialized);
 

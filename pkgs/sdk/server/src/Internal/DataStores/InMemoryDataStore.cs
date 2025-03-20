@@ -12,12 +12,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
     /// Application code cannot see this implementation class and uses
     /// <see cref="Components.InMemoryDataStore"/> instead.
     /// </remarks>
-    internal class InMemoryDataStore : IDataStore
+    internal class InMemoryDataStore : IDataStore, IDataStoreMetadata
     {
         private readonly object WriterLock = new object();
         private volatile ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> Items =
             ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>>.Empty;
         private volatile bool _initialized = false;
+
+        private volatile InitMetadata _metadata;
 
         internal InMemoryDataStore() { }
 
@@ -25,26 +27,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
         public void Init(FullDataSet<ItemDescriptor> data)
         {
-            var itemsBuilder = ImmutableDictionary.CreateBuilder<DataKind, ImmutableDictionary<string, ItemDescriptor>>();
-
-            foreach (var kindEntry in data.Data)
-            {
-                var kindItemsBuilder = ImmutableDictionary.CreateBuilder<string, ItemDescriptor>();
-                foreach (var e1 in kindEntry.Value.Items)
-                {
-                    kindItemsBuilder.Add(e1.Key, e1.Value);
-                }
-
-                itemsBuilder.Add(kindEntry.Key, kindItemsBuilder.ToImmutable());
-            }
-
-            var newItems = itemsBuilder.ToImmutable();
-
-            lock (WriterLock)
-            {
-                Items = newItems;
-                _initialized = true;
-            }
+            InitWithMetadata(data, new InitMetadata());
         }
 
         public ItemDescriptor? Get(DataKind kind, string key)
@@ -68,7 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
             return KeyedItems<ItemDescriptor>.Empty();
         }
-        
+
         public bool Upsert(DataKind kind, string key, ItemDescriptor item)
         {
             lock (WriterLock)
@@ -93,5 +76,35 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         }
 
         public void Dispose() { }
+
+        public void InitWithMetadata(FullDataSet<ItemDescriptor> data, InitMetadata metadata)
+        {
+            var itemsBuilder = ImmutableDictionary.CreateBuilder<DataKind, ImmutableDictionary<string, ItemDescriptor>>();
+
+            foreach (var kindEntry in data.Data)
+            {
+                var kindItemsBuilder = ImmutableDictionary.CreateBuilder<string, ItemDescriptor>();
+                foreach (var e1 in kindEntry.Value.Items)
+                {
+                    kindItemsBuilder.Add(e1.Key, e1.Value);
+                }
+
+                itemsBuilder.Add(kindEntry.Key, kindItemsBuilder.ToImmutable());
+            }
+
+            var newItems = itemsBuilder.ToImmutable();
+
+            lock (WriterLock)
+            {
+                Items = newItems;
+                _metadata = metadata;
+                _initialized = true;
+            }
+        }
+
+        public InitMetadata GetMetadata()
+        {
+            return _metadata;
+        }
     }
 }

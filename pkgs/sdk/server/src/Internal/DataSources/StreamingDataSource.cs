@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -42,6 +43,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly IEventSource _es;
         private volatile bool _lastStoreUpdateFailed = false;
         internal DateTime _esStarted; // exposed for testing
+
+        private IEnumerable<KeyValuePair<string, IEnumerable<string>>> _headers;
 
         internal delegate IEventSource EventSourceCreator(Uri streamUri,
             HttpConfiguration httpConfig);
@@ -139,6 +142,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private void OnOpen(object sender, EventSource.StateChangedEventArgs e)
         {
+            _headers = e.Headers;
             _log.Debug("EventSource Opened");
             RecordStreamInit(false);
         }
@@ -238,13 +242,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        private bool InitWithHeaders(FullDataSet<ItemDescriptor> allData,
+            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            if (_dataSourceUpdates is IDataSourceUpdatesHeaders dataSourceUpdatesHeaders)
+            {
+                return dataSourceUpdatesHeaders.InitWithHeaders(allData, headers);
+            }
+
+            return _dataSourceUpdates.Init(allData);
+        }
+
         private void HandleMessage(string messageType, byte[] messageData)
         {
             switch (messageType)
             {
                 case PUT:
                     var putData = ParsePutData(messageData);
-                    if (!_dataSourceUpdates.Init(putData.Data)) // this also automatically sets the state to Valid
+                    if (!InitWithHeaders(putData.Data, _headers)) // this also automatically sets the state to Valid
                     {
                         throw new StreamStoreException("failed to write full data set to data store");
                     }

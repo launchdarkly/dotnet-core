@@ -39,7 +39,7 @@ runs:
 
     - name: Suppression Path
       shell: bash
-      run: echo "SUPPRESSION_FILE=$(dirname ./${{ inputs.service_project_file }}))/test-supressions.txt" >> $GITHUB_ENV
+      run: echo "SUPPRESSION_FILE=$(dirname ./${{ inputs.service_project_file }})/test-supressions.txt" >> $GITHUB_ENV
 
     - name: Run Contract Tests
       uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1.0.2

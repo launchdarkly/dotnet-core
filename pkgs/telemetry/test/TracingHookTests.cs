@@ -20,6 +20,13 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         }
 
         [Fact]
+        public void CanConstructTracingHookWithEnvironmentId()
+        {
+            var hook = TracingHook.Builder().EnvironmentId("env-123").Build();
+            Assert.NotNull(hook);
+        }
+
+        [Fact]
         public void CanRetrieveActivitySourceName()
         {
             Assert.NotEmpty(TracingHook.ActivitySourceName);
@@ -64,12 +71,14 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
             var featureKey = "feature-key";
             var context = Context.New("foo");
 
-            var evalContext1 = new EvaluationSeriesContext(featureKey, context, LdValue.Of(true), "LdClient.BoolVariation");
+            var evalContext1 =
+                new EvaluationSeriesContext(featureKey, context, LdValue.Of(true), "LdClient.BoolVariation");
             var data1 = hookUnderTest.BeforeEvaluation(evalContext1, new SeriesDataBuilder().Build());
             hookUnderTest.AfterEvaluation(evalContext1, data1,
                 new EvaluationDetail<LdValue>(LdValue.Of(true), 0, EvaluationReason.FallthroughReason));
 
-            var evalContext2 = new EvaluationSeriesContext(featureKey, context, LdValue.Of("default"), "LdClient.StringVariation");
+            var evalContext2 =
+                new EvaluationSeriesContext(featureKey, context, LdValue.Of("default"), "LdClient.StringVariation");
             var data2 = hookUnderTest.BeforeEvaluation(evalContext2, new SeriesDataBuilder().Build());
             hookUnderTest.AfterEvaluation(evalContext2, data2,
                 new EvaluationDetail<LdValue>(LdValue.Of("default"), 0, EvaluationReason.FallthroughReason));
@@ -117,12 +126,14 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
 
             var rootActivity = testSource.StartActivity("root-activity");
 
-            var evalContext1 = new EvaluationSeriesContext(featureKey, context, LdValue.Of(true), "LdClient.BoolVariation");
+            var evalContext1 =
+                new EvaluationSeriesContext(featureKey, context, LdValue.Of(true), "LdClient.BoolVariation");
             var data1 = hookUnderTest.BeforeEvaluation(evalContext1, new SeriesDataBuilder().Build());
             hookUnderTest.AfterEvaluation(evalContext1, data1,
                 new EvaluationDetail<LdValue>(LdValue.Of(true), 0, EvaluationReason.FallthroughReason));
 
-            var evalContext2 = new EvaluationSeriesContext(featureKey, context, LdValue.Of("default"), "LdClient.StringVariation");
+            var evalContext2 =
+                new EvaluationSeriesContext(featureKey, context, LdValue.Of("default"), "LdClient.StringVariation");
             var data2 = hookUnderTest.BeforeEvaluation(evalContext2, new SeriesDataBuilder().Build());
             hookUnderTest.AfterEvaluation(evalContext2, data2,
                 new EvaluationDetail<LdValue>(LdValue.Of("default"), 0, EvaluationReason.FallthroughReason));
@@ -173,12 +184,14 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
 
             var rootActivity = testSource.StartActivity("root-activity");
 
-            var evalContext1 = new EvaluationSeriesContext(featureKey, context, LdValue.Of(true), "LdClient.BoolVariation");
+            var evalContext1 =
+                new EvaluationSeriesContext(featureKey, context, LdValue.Of(true), "LdClient.BoolVariation");
             var data1 = hookUnderTest.BeforeEvaluation(evalContext1, new SeriesDataBuilder().Build());
             hookUnderTest.AfterEvaluation(evalContext1, data1,
                 new EvaluationDetail<LdValue>(LdValue.Of(true), 0, EvaluationReason.FallthroughReason));
 
-            var evalContext2 = new EvaluationSeriesContext(featureKey, context, LdValue.Of("default"), "LdClient.StringVariation");
+            var evalContext2 =
+                new EvaluationSeriesContext(featureKey, context, LdValue.Of("default"), "LdClient.StringVariation");
             var data2 = hookUnderTest.BeforeEvaluation(evalContext2, new SeriesDataBuilder().Build());
             hookUnderTest.AfterEvaluation(evalContext2, data2,
                 new EvaluationDetail<LdValue>(LdValue.Of("default"), 0, EvaluationReason.FallthroughReason));
@@ -206,6 +219,124 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 // If not including the variant, then we shouldn't see any variant tag on any events.
                 Assert.All(items, i => i.Events.All(e => e.Tags.All(kvp => kvp.Key != "feature_flag.variant")));
             }
+        }
+
+
+        [Fact]
+        public void TracingHookIncludesEnvironmentIdWhenSpecified()
+        {
+            ICollection<Activity> exportedItems = new Collection<Activity>();
+
+            _ = OpenTelemetry.Sdk.CreateTracerProviderBuilder()
+                .AddSource("test-source")
+                .SetResourceBuilder(
+                    ResourceBuilder.CreateDefault()
+                        .AddService(serviceName: "test-source", serviceVersion: "1.0.0"))
+                .AddInMemoryExporter(exportedItems)
+                .Build();
+
+            var testSource = new ActivitySource("test-source", "1.0.0");
+
+            var hookUnderTest = TracingHook.Builder().EnvironmentId("env-123").Build();
+            var featureKey = "feature-key";
+            var context = Context.New("foo");
+
+            var rootActivity = testSource.StartActivity("root-activity");
+
+            var evalContext1 =
+                new EvaluationSeriesContext(featureKey, context, LdValue.Of(true), "LdClient.BoolVariation");
+            var data1 = hookUnderTest.BeforeEvaluation(evalContext1, new SeriesDataBuilder().Build());
+            hookUnderTest.AfterEvaluation(evalContext1, data1,
+                new EvaluationDetail<LdValue>(LdValue.Of(true), 0, EvaluationReason.FallthroughReason));
+
+            rootActivity.Stop();
+
+            var items = exportedItems.ToList();
+
+            Assert.Single(items);
+            Assert.Equal("root-activity", items[0].OperationName);
+
+            var events = items[0].Events;
+            Assert.Single(events.Where(e =>
+                e.Tags.Contains(new KeyValuePair<string, object>("feature_flag.set.id", "env-123"))));
+        }
+
+        [Fact]
+        public void TracingHookUsesEnvironmentIdFromContext()
+        {
+            ICollection<Activity> exportedItems = new Collection<Activity>();
+
+            _ = OpenTelemetry.Sdk.CreateTracerProviderBuilder()
+                .AddSource("test-source")
+                .SetResourceBuilder(
+                    ResourceBuilder.CreateDefault()
+                        .AddService(serviceName: "test-source", serviceVersion: "1.0.0"))
+                .AddInMemoryExporter(exportedItems)
+                .Build();
+
+            var testSource = new ActivitySource("test-source", "1.0.0");
+
+            var hookUnderTest = TracingHook.Builder().Build();
+            var featureKey = "feature-key";
+            var context = Context.New("foo");
+
+            var rootActivity = testSource.StartActivity("root-activity");
+
+            var evalContext1 = new EvaluationSeriesContext(featureKey, context, LdValue.Of(true),
+                "LdClient.BoolVariation", "env-456");
+            var data1 = hookUnderTest.BeforeEvaluation(evalContext1, new SeriesDataBuilder().Build());
+            hookUnderTest.AfterEvaluation(evalContext1, data1,
+                new EvaluationDetail<LdValue>(LdValue.Of(true), 0, EvaluationReason.FallthroughReason));
+
+            rootActivity.Stop();
+
+            var items = exportedItems.ToList();
+
+            Assert.Single(items);
+            Assert.Equal("root-activity", items[0].OperationName);
+
+            var events = items[0].Events;
+            Assert.Single(events.Where(e =>
+                e.Tags.Contains(new KeyValuePair<string, object>("feature_flag.set.id", "env-456"))));
+        }
+
+        [Fact]
+        public void TracingHookPrioritizesEnvironmentIdFromOptions()
+        {
+            ICollection<Activity> exportedItems = new Collection<Activity>();
+
+            _ = OpenTelemetry.Sdk.CreateTracerProviderBuilder()
+                .AddSource("test-source")
+                .SetResourceBuilder(
+                    ResourceBuilder.CreateDefault()
+                        .AddService(serviceName: "test-source", serviceVersion: "1.0.0"))
+                .AddInMemoryExporter(exportedItems)
+                .Build();
+
+            var testSource = new ActivitySource("test-source", "1.0.0");
+
+            var hookUnderTest = TracingHook.Builder().EnvironmentId("env-123").Build();
+            var featureKey = "feature-key";
+            var context = Context.New("foo");
+
+            var rootActivity = testSource.StartActivity("root-activity");
+
+            var evalContext1 = new EvaluationSeriesContext(featureKey, context, LdValue.Of(true),
+                "LdClient.BoolVariation", "env-456");
+            var data1 = hookUnderTest.BeforeEvaluation(evalContext1, new SeriesDataBuilder().Build());
+            hookUnderTest.AfterEvaluation(evalContext1, data1,
+                new EvaluationDetail<LdValue>(LdValue.Of(true), 0, EvaluationReason.FallthroughReason));
+
+            rootActivity.Stop();
+
+            var items = exportedItems.ToList();
+
+            Assert.Single(items);
+            Assert.Equal("root-activity", items[0].OperationName);
+
+            var events = items[0].Events;
+            Assert.Single(events.Where(e =>
+                e.Tags.Contains(new KeyValuePair<string, object>("feature_flag.set.id", "env-123"))));
         }
     }
 }

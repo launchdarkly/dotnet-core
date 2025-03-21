@@ -110,7 +110,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
             public const string FeatureFlagProviderName = "feature_flag.provider_name";
             public const string FeatureFlagVariant = "feature_flag.variant";
             public const string FeatureFlagContextKeyAttributeName = "feature_flag.context.key";
-            public const string FeatureFlagSetId = "feature_flag.set_id";
+            public const string FeatureFlagSetId = "feature_flag.set.id";
         }
 
         internal struct Options

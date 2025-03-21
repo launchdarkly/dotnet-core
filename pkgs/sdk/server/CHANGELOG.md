@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.7.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.6.0...LaunchDarkly.ServerSdk-v8.7.0) (2025-03-20)
+
+
+### Features
+
+* Add environment ID support for hooks. ([#81](https://github.com/launchdarkly/dotnet-core/issues/81)) ([49149f2](https://github.com/launchdarkly/dotnet-core/commit/49149f2509a4a94e77f36414708d73e368b0acc5))
+
 ## [8.6.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.5.2...LaunchDarkly.ServerSdk-v8.6.0) (2024-10-24)
 
 

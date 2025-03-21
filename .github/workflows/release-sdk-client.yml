@@ -58,14 +58,14 @@ jobs:
           workspace_path: ${{ env.WORKSPACE_PATH }}
 
       - name: Retain build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dir-bin-release
           path: ${{ env.BUILD_OUTPUT_PATH }}
           retention-days: 1
 
       - name: Retain docs artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dir-docs
           path: ${{ env.WORKSPACE_PATH }}/docs
@@ -104,7 +104,7 @@ jobs:
           dll_name: ${{ env.BUILD_OUTPUT_DLL_NAME }}
 
       - name: Retain signed artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dir-bin-release-signed
           path: ${{ env.BUILD_OUTPUT_PATH }}

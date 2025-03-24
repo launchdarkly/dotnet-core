@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.0.0...LaunchDarkly.ServerSdk.Telemetry-v1.1.0) (2025-03-24)
+
+
+### Features
+
+* Add environment id support for the OTEL hook. ([#82](https://github.com/launchdarkly/dotnet-core/issues/82)) ([c2ed519](https://github.com/launchdarkly/dotnet-core/commit/c2ed519e64dacccad3e74445e4f3b132dd3f4edb))
+
 ## [1.0.0](https://github.com/launchdarkly/dotnet-server-sdk/compare/telemetry-0.2.1...telemetry-1.0.0) (2024-04-24)
 
 

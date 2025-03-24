@@ -16,11 +16,13 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
     {
         private bool _createActivities;
         private bool _includeVariant;
+        private string _environmentId;
 
         internal TracingHookBuilder()
         {
             _createActivities = false;
             _includeVariant = false;
+            _environmentId = null;
         }
 
         /// <summary>
@@ -52,6 +54,22 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         }
 
         /// <summary>
+        /// The environment ID associated with the SDK configuration. In typical usage the environment ID should not be
+        /// specified. The environment ID only needs to be manually specified if it cannot be retrieved from the SDK.
+        /// <para>
+        /// This is not the same as the SDK key. The environment ID is equivalent to the client-side ID in the
+        /// LaunchDarkly UI and documentation.
+        /// </para>
+        /// </summary>
+        /// <param name="environmentId">The environment the SDK is configured to connect to.</param>
+        /// <returns>this builder</returns>
+        public TracingHookBuilder EnvironmentId(string environmentId)
+        {
+            _environmentId = environmentId;
+            return this;
+        }
+
+        /// <summary>
         /// Builds the <see cref="TracingHook"/> with the configured options.
         ///
         /// The hook may be passed into <see cref="ConfigurationBuilder.Hooks"/>.
@@ -59,7 +77,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         /// <returns>the new hook</returns>
         public TracingHook Build()
         {
-            return new TracingHook(new TracingHook.Options(_createActivities, _includeVariant));
+            return new TracingHook(new TracingHook.Options(_createActivities, _includeVariant, _environmentId));
         }
     }
 
@@ -92,6 +110,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
             public const string FeatureFlagProviderName = "feature_flag.provider_name";
             public const string FeatureFlagVariant = "feature_flag.variant";
             public const string FeatureFlagContextKeyAttributeName = "feature_flag.context.key";
+            public const string FeatureFlagSetId = "feature_flag.set.id";
         }
 
         internal struct Options
@@ -99,10 +118,13 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
             public bool CreateActivities { get; }
             public bool IncludeVariant { get; }
 
-            public Options(bool createActivities, bool includeVariant)
+            public string EnvironmentId { get; }
+
+            public Options(bool createActivities, bool includeVariant, string environmentId = null)
             {
                 CreateActivities = createActivities;
                 IncludeVariant = includeVariant;
+                EnvironmentId = environmentId;
             }
         }
 
@@ -184,6 +206,15 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 {SemanticAttributes.FeatureFlagProviderName, "LaunchDarkly"},
                 {SemanticAttributes.FeatureFlagContextKeyAttributeName, context.Context.FullyQualifiedKey},
             };
+
+            if (_options.EnvironmentId != null)
+            {
+                attributes[SemanticAttributes.FeatureFlagSetId] = _options.EnvironmentId;
+            }
+            else if (context.EnvironmentId != null)
+            {
+                attributes[SemanticAttributes.FeatureFlagSetId] = context.EnvironmentId;
+            }
 
             if (_options.IncludeVariant)
             {

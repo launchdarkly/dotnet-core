@@ -1,1 +1,13 @@
 tags/disallowed characters
+tags/stream requests/{"applicationId":null,"applicationVersion":"._-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"}
+tags/stream requests/{"applicationId":null,"applicationVersion":"________________________________________________________________"}
+tags/stream requests/{"applicationId":"","applicationVersion":"._-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"}
+tags/stream requests/{"applicationId":"","applicationVersion":"________________________________________________________________"}
+tags/poll requests/{"applicationId":null,"applicationVersion":"._-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"}
+tags/poll requests/{"applicationId":null,"applicationVersion":"________________________________________________________________"}
+tags/poll requests/{"applicationId":"","applicationVersion":"._-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"}
+tags/poll requests/{"applicationId":"","applicationVersion":"________________________________________________________________"}
+tags/event posts/{"applicationId":null,"applicationVersion":"._-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"}
+tags/event posts/{"applicationId":null,"applicationVersion":"________________________________________________________________"}
+tags/event posts/{"applicationId":"","applicationVersion":"._-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"}
+tags/event posts/{"applicationId":"","applicationVersion":"________________________________________________________________"}

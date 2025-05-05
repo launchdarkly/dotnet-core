@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.8.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.7.0...LaunchDarkly.ServerSdk-v8.8.0) (2025-05-05)
+
+
+### Features
+
+* Inline context for custom and migrations op events ([#94](https://github.com/launchdarkly/dotnet-core/issues/94)) ([6e4fcc7](https://github.com/launchdarkly/dotnet-core/commit/6e4fcc7cde62c30130da65c34e144dcc925a5e8e))
+
 ## [8.7.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.6.0...LaunchDarkly.ServerSdk-v8.7.0) (2025-03-20)
 
 

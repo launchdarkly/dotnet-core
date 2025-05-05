@@ -35,7 +35,7 @@ namespace TestService
             "migrations",
             "event-sampling",
             "tags",
-            "inline-context",
+            "inline-context-all",
             "anonymous-redaction",
             "evaluation-hooks",
             "client-prereq-events"

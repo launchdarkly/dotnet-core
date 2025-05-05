@@ -13,7 +13,7 @@
       "dest": "./api",
       "properties" : {
         "Configuration": "Debug"
-      },
+      }
     }
   ],
   "build": {

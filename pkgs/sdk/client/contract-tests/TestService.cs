@@ -39,7 +39,7 @@ namespace TestService
             "user-type",
             "tags",
             "auto-env-attributes",
-            "inline-context",
+            "inline-context-all",
             "anonymous-redaction",
             "client-prereq-events"
         };

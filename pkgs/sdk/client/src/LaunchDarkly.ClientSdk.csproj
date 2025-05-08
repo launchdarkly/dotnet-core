@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <!--x-release-please-start-version-->
-        <Version>5.3.0</Version>
+        <Version>5.4.0</Version>
         <!--x-release-please-end-->
         <!-- The BUILDFRAMEWORKS variable allows us to override the target frameworks in
              a situation where we need to build only the .NET Standard target and do not

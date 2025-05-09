@@ -14,7 +14,7 @@ runs:
         dotnet-version: 6.0
     - name: Install docfx
       shell: bash
-      run:  dotnet tool update -g docfx
+      run:  dotnet tool update -g docfx --version 2.77
 
     # Note: in the docfx.json file, the 'Configuration' property is set to Debug so that we don't require
     # signing to happen just to build docs.

@@ -26,6 +26,10 @@ runs:
               6.0
               7.0
 
+    - name: Copy global.json in place
+      shell: bash
+      run: cp global.example.json global.json
+
     - name: Restore Workloads
       shell: bash
       run: dotnet workload restore ${{ inputs.project_file }}
@@ -44,3 +48,7 @@ runs:
       run: |
         dotnet restore ${{ inputs.test_project_file }}
         dotnet test -v=${{ inputs.test_verbosity }} --framework=${{ inputs.target_test_framework }} ${{ inputs.test_project_file }}
+
+    - name: Remove global.json
+      shell: bash
+      run: rm global.json

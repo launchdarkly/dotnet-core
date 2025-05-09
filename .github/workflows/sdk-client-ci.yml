@@ -32,10 +32,6 @@ jobs:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
           s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk = LaunchDarkly.ClientSdk.snk'
 
-      - name: Copy global.json in place
-        shell: bash
-        run: cp global.example.json global.json
-
       - uses: ./.github/actions/ci
         with:
           project_file: ${{ env.PROJECT_FILE}}

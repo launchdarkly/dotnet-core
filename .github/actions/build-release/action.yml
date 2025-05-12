@@ -15,6 +15,10 @@ runs:
           6.0
           7.0
 
+    - name: Copy global.json in place
+      shell: bash
+      run: cp global.example.json global.json
+
     - name: Display dotnet version
       shell: bash
       run: dotnet --version
@@ -22,3 +26,7 @@ runs:
     - name: Build
       shell: bash
       run: dotnet build -p:Configuration=Release ${{ inputs.project_file }}
+
+    - name: Remove global.json
+      shell: bash
+      run: rm global.json

@@ -86,7 +86,7 @@ jobs:
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
       - name: Restore release artifacts
-        uses: actions/download-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dir-bin-release
           path: ${{ env.BUILD_OUTPUT_PATH }}
@@ -127,13 +127,13 @@ jobs:
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
       - name: Restore release artifacts
-        uses: actions/download-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dir-bin-release-signed
           path: ${{ env.BUILD_OUTPUT_PATH }}
 
       - name: Restore docs artifacts
-        uses: actions/download-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dir-docs
           path: ${{ env.WORKSPACE_PATH }}/docs

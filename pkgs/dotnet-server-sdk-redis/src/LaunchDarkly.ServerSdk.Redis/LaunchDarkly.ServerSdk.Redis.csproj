@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>5.0.0</Version>
+    <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+    <AssemblyName>LaunchDarkly.ServerSdk.Redis</AssemblyName>
+    <OutputType>Library</OutputType>
+    <PackageId>LaunchDarkly.ServerSdk.Redis</PackageId>
+    <LangVersion>7.3</LangVersion>
+    <Company>LaunchDarkly</Company>
+    <Authors>LaunchDarkly</Authors>
+    <Owners>LaunchDarkly</Owners>
+    <Description>LaunchDarkly Server-Side .NET SDK Redis Integration</Description>
+    <Copyright>Copyright 2018 LaunchDarkly</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/launchdarkly/dotnet-server-sdk-redis</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/launchdarkly/dotnet-server-sdk-redis</RepositoryUrl>
+    <RepositoryBranch>main</RepositoryBranch>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <RootNamespace>LaunchDarkly.Sdk.Server.Integrations</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LaunchDarkly.ServerSdk" Version="[8.0.0, 9.0.0)" />
+    <PackageReference Include="StackExchange.Redis" Version="[2.0.513,]" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\LaunchDarkly.ServerSdk.Redis.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>../../LaunchDarkly.Redis.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

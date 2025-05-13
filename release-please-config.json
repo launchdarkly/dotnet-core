@@ -17,6 +17,13 @@
         "src/LaunchDarkly.ServerSdk.DynamoDb.csproj"
       ]
     },
+    "pkgs/dotnet-server-sdk-redis": {
+      "release-type": "simple",
+      "package-name": "LaunchDarkly.ServerSdk.Redis",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.Redis.csproj"
+      ]
+    },
     "pkgs/sdk/server": {
       "package-name": "LaunchDarkly.ServerSdk",
       "extra-files": [

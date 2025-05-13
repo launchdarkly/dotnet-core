@@ -3,6 +3,13 @@
   "separate-pull-requests": true,
   "include-component-in-tag": true,
   "packages": {
+    "pkgs/dotnet-server-sdk-consul": {
+      "release-type": "simple",
+      "package-name": "LaunchDarkly.ServerSdk.Consul",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.Consul.csproj"
+      ]
+    },
     "pkgs/sdk/server": {
       "package-name": "LaunchDarkly.ServerSdk",
       "extra-files": [

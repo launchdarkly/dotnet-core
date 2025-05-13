@@ -1,4 +1,5 @@
 {
+  "pkgs/dotnet-server-sdk-consul": "5.0.0",
   "pkgs/sdk/server": "8.8.0",
   "pkgs/sdk/client": "5.4.0",
   "pkgs/telemetry": "1.1.0",

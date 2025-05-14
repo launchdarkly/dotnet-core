@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\shared\dotnet-server-sdk-shared-tests\src\LaunchDarkly.ServerSdk.SharedTests.csproj" />
-    <ProjectReference Include="..\..\src\LaunchDarkly.ServerSdk.Redis\LaunchDarkly.ServerSdk.Redis.csproj" />
+    <ProjectReference Include="..\..\shared\dotnet-server-sdk-shared-tests\src\LaunchDarkly.ServerSdk.SharedTests.csproj" />
+    <ProjectReference Include="..\src\LaunchDarkly.ServerSdk.Redis.csproj" />
   </ItemGroup>
 </Project>

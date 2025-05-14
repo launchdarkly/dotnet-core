@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LaunchDarkly.ServerSdk.DynamoDB", "src\LaunchDarkly.ServerSdk.DynamoDB\LaunchDarkly.ServerSdk.DynamoDB.csproj", "{C497533B-8F43-4E5A-A6F4-F50880AA549C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LaunchDarkly.ServerSdk.DynamoDB", "src\LaunchDarkly.ServerSdk.DynamoDB.csproj", "{C497533B-8F43-4E5A-A6F4-F50880AA549C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LaunchDarkly.ServerSdk.DynamoDB.Tests", "test\LaunchDarkly.ServerSdk.DynamoDB.Tests\LaunchDarkly.ServerSdk.DynamoDB.Tests.csproj", "{2F11CC6A-3427-423E-AF63-E3600FE63627}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LaunchDarkly.ServerSdk.DynamoDB.Tests", "test\LaunchDarkly.ServerSdk.DynamoDB.Tests.csproj", "{2F11CC6A-3427-423E-AF63-E3600FE63627}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LaunchDarkly.ServerSdk.SharedTests", "dotnet-server-sdk-shared-tests\LaunchDarkly.ServerSdk.SharedTests\LaunchDarkly.ServerSdk.SharedTests.csproj", "{60651D1E-E7F9-49E2-9B12-C409A7F3B9FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LaunchDarkly.ServerSdk.SharedTests", "..\shared\dotnet-server-sdk-shared-tests\src\LaunchDarkly.ServerSdk.SharedTests.csproj", "{60651D1E-E7F9-49E2-9B12-C409A7F3B9FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

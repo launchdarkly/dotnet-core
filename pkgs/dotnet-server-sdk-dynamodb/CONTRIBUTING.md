@@ -18,7 +18,7 @@ To set up your SDK build time environment, you must [download .NET development t
 
 The project has a package dependency on `AWSSDK.DynamoDBv2`. The dependency version is intended to be the _minimum_ compatible version; applications are expected to override this with their own dependency on some higher version.
 
-The unit test project uses code from the `dotnet-server-sdk-shared-tests` repository which is imported as a subtree. See the `README.md` file in that directory for more information.
+The unit test project uses code from the `dotnet-server-sdk-shared-tests` project. See the [README.md](../shared/dotnet-server-sdk-shared-tests/README.md) file in that directory for more information.
 
 ### Building
  

@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net462'">
-    <!-- Use any 5.x to 8.x.  It's a built-in package in net6.0, hence conditional for targets -->
+    <!-- Use any 5.x to 8.x.  It's a built-in package in net8.0, hence conditional for targets -->
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[5,9)" />
   </ItemGroup>
 

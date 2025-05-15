@@ -48,7 +48,7 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net462'">
     <PackageReference Include="System.Text.Json" Version="6.0.10" />
-    <!-- it's a built-in package in net6.0 -->
+    <!-- it's a built-in package in net8.0 -->
   </ItemGroup>
 
 

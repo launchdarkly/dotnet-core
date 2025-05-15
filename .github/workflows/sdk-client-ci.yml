@@ -36,7 +36,7 @@ jobs:
         with:
           project_file: ${{ env.PROJECT_FILE}}
           test_project_file: ${{ env.TEST_PROJECT_FILE}}
-          target_test_framework: "net7.0"
+          target_test_framework: "net8.0"
 
       - uses: ./.github/actions/contract-tests
         with:

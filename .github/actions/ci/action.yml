@@ -23,8 +23,25 @@ runs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-              6.0
-              7.0
+              8.0
+
+    - name: Setup Consul if needed
+      uses: ./.github/actions/persistent-stores
+      if: contains(inputs.project_file, 'ServerSdk.Consul')
+      with:
+        consul: true
+
+    - name: Setup DynamoDB if needed
+      uses: ./.github/actions/persistent-stores
+      if: contains(inputs.project_file, 'ServerSdk.DynamoDB')
+      with:
+        dynamodb: true
+
+    - name: Setup Redis if needed
+      uses: ./.github/actions/persistent-stores
+      if: contains(inputs.project_file, 'ServerSdk.Redis')
+      with:
+        redis: true
 
     - name: Copy global.json in place
       shell: bash

@@ -1,0 +1,97 @@
+name: "Start persistent stores"
+description: 'Runs contract tests against an SDK component.'
+inputs:
+  consul:
+    required: false
+    description: "Whether or not a consul instance should be started."
+    default: false
+  dynamodb:
+    required: false
+    description: "Whether or not a dynamodb instance should be started."
+    default: false
+  redis:
+    required: false
+    description: "Whether or not a redis instance should be started."
+    default: false
+
+runs:
+  using: composite
+  steps:
+    #
+    # Linux services (using Docker)
+    #
+    
+    - name: "Consul for Linux"
+      shell: bash
+      if: ${{ inputs.consul == 'true' && runner.os == 'Linux' }}
+      run: |
+        docker run -d --name consul -p 8500:8500 hashicorp/consul
+
+    - name: "DynamoDB for Linux"
+      shell: bash
+      if: ${{ inputs.dynamodb == 'true' && runner.os == 'Linux' }}
+      run: |
+        docker run -d --name dynamodb -p 8000:8000 amazon/dynamodb-local
+
+    - name: "Redis for Linux"
+      shell: bash
+      if: ${{ inputs.redis == 'true' && runner.os == 'Linux' }}
+      run: |
+        docker run -d --name redis -p 6379:6379 redis
+
+    #
+    # Windows services
+    #
+
+    # Windows processes need to be started with Start-Process. This creates a
+    # new process independent of this shell. That way it can run in the
+    # background when we move on to the next step.
+
+    - name: "Consul for Windows"
+      shell: powershell
+      if: ${{ inputs.consul == 'true' && runner.os == 'Windows' }}
+      run: |
+        choco install consul
+        Start-Process consul -ArgumentList 'agent',  '-dev'
+
+    - name: "DynamoDB for Windows"
+      shell: powershell
+      if: ${{ inputs.dynamodb == 'true' && runner.os == 'Windows' }}
+      run: |
+        New-Item "dynamodb-local" -ItemType "directory" | Out-Null
+        $ProgressPreference = "SilentlyContinue"
+        wget "https://s3.us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip" -OutFile "./dynamodb-local/dynamodb.zip"
+        Expand-Archive -Path ./dynamodb-local/dynamodb.zip -DestinationPath ./dynamodb-local
+        Start-Process java -ArgumentList '-Djava.library.path=./dynamodb-local/DynamoDBLocal_lib', '-jar', './dynamodb-local/DynamoDBLocal.jar', '-sharedDb'
+
+    - name: "Redis for Windows"
+      shell: powershell
+      if: ${{ inputs.redis == 'true' && runner.os == 'Windows' }}
+      run: |
+        choco install redis
+        Start-Process redis-server
+
+    #
+    # MacOS services
+    #
+
+    - name: "Consul for MacOS"
+      shell: bash
+      if: ${{ inputs.consul == 'true' && runner.os == 'MacOS' }}
+      run: |
+        brew install consul
+        brew services start consul
+
+    - name: "DynamoDB for MacOS"
+      shell: bash
+      if: ${{ inputs.dynamodb == 'true' && runner.os == 'MacOS' }}
+      run: |
+        brew install dynamodb-local
+        nohup dynamodb-local &
+
+    - name: "Redis for MacOS"
+      shell: bash
+      if: ${{ inputs.redis == 'true' && runner.os == 'MacOS' }}
+      run: |
+        brew install redis
+        brew services start redis

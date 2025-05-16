@@ -5,14 +5,14 @@ on:
     branches: [ main, 'feat/**' ]
     paths:
       - 'pkgs/dotnet-server-sdk-consul/**'
-      - '.github/workflows/server-sdk-consul-ci.yml'
+      - '.github/**'
     paths-ignore:
       - '**.md' # Do not need to run CI for markdown changes.
   pull_request:
     branches: [ main, 'feat/**' ]
     paths:
       - 'pkgs/dotnet-server-sdk-consul/**'
-      - '.github/workflows/server-sdk-consul-ci.yml'
+      - '.github/**'
     paths-ignore:
       - '**.md'
 

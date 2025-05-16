@@ -27,19 +27,19 @@ runs:
           7.0
 
     - name: Setup Consul if needed
-      uses: ./.github/actions/persistent-stores
+      uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
       if: contains(inputs.project_file, 'ServerSdk.Consul')
       with:
         consul: true
 
     - name: Setup DynamoDB if needed
-      uses: ./.github/actions/persistent-stores
+      uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
       if: contains(inputs.project_file, 'ServerSdk.DynamoDB')
       with:
         dynamodb: true
 
     - name: Setup Redis if needed
-      uses: ./.github/actions/persistent-stores
+      uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
       if: contains(inputs.project_file, 'ServerSdk.Redis')
       with:
         redis: true

@@ -4,14 +4,16 @@ on:
   push:
     branches: [ main, 'feat/**' ]
     paths:
-      - 'pkgs/dotnet-server-sdk-consul/**'
       - '.github/**'
+      - 'global.example.json'
+      - 'pkgs/dotnet-server-sdk-consul/**'
       - '!**.md'
   pull_request:
     branches: [ main, 'feat/**' ]
     paths:
-      - 'pkgs/dotnet-server-sdk-consul/**'
       - '.github/**'
+      - 'global.example.json'
+      - 'pkgs/dotnet-server-sdk-consul/**'
       - '!**.md'
 
 jobs:

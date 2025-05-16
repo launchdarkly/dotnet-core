@@ -28,10 +28,10 @@ dotnet build src/LaunchDarkly.ClientSdk.csproj
 
 Currently this command can only be run on MacOS, because that is the only platform that allows building for all of the targets (.NET Standard, Android, and iOS).
 
-To build the SDK for only one of the supported platforms, add `/p:TargetFramework=X` where `X` is one of the items in the `<TargetFrameworks>` list of `LaunchDarkly.ClientSdk.csproj`: `netstandard2.0` for .NET Standard 2.0, `net8.0-android` for Android, etc.:
+To build the SDK for only one of the supported platforms, add `/p:TargetFramework=X` where `X` is one of the items in the `<TargetFrameworks>` list of `LaunchDarkly.ClientSdk.csproj`: `netstandard2.0` for .NET Standard 2.0, `net7.0-android` for Android, etc.:
 
 ```
-dotnet build /p:TargetFramework=net8.0-ios src/LaunchDarkly.ClientSdk.csproj
+dotnet build /p:TargetFramework=net7.0-ios src/LaunchDarkly.ClientSdk.csproj
 ```
 
 Note that the main project, `src/LaunchDarkly.ClientSdk`, contains source files that are built for all platforms (ending in just `.cs`, or `.shared.cs`), and also a smaller amount of code that is conditionally compiled for platform-specific functionality. The latter is all in the `PlatformSpecific` folder. We use `#ifdef` directives only for small sections that differ slightly between platform versions; otherwise the conditional compilation is done according to filename suffix (`.android.cs`, etc.) based on rules in the `.csproj` file.

@@ -45,7 +45,7 @@ jobs:
         with:
           project_file: ${{ env.PROJECT_FILE }}
           test_project_file: ${{ env.TEST_PROJECT_FILE }}
-          target_test_framework: "8.0"
+          target_test_framework: "net7.0"
 
       - name: Release build
         uses: ./.github/actions/build-release

@@ -22,7 +22,9 @@ runs:
     - name: Setup dotnet build tools
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0
+        dotnet-version: |
+          8.0
+          7.0
 
     - name: Copy global.json in place
       shell: bash

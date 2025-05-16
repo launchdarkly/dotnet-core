@@ -15,13 +15,13 @@ For using LaunchDarkly in *server-side* .NET applications, refer to our [Server-
 This version of the SDK is built for the following targets:
 
 * .Net Standard 2.0
-* .Net 8 Android, for use with Android 5.0 (Android API 21) and higher.
-* .Net 8 iOS, for use with iOS 11 and higher.
-* .Net 8 macOS (using Mac Catalyst), for use with macOS 10.15 and higher.
-* .Net 8 Windows (using WinUI), for Windows 11 and Windows 10 version 1809 or higher.
-* .NET 8
+* .Net 7 Android, for use with Android 5.0 (Android API 21) and higher.
+* .Net 7 iOS, for use with iOS 11 and higher.
+* .Net 7 macOS (using Mac Catalyst), for use with macOS 10.15 and higher.
+* .Net 7 Windows (using WinUI), for Windows 11 and Windows 10 version 1809 or higher.
+* .NET 7
 
-The .Net Standard and .Net 8.0 targets have no OS-specific code. This allows the SDK to be used in a desktop .NET Framework or .NET 8.0 application. However, due to the lack of OS-specific integration, SDK functionality will be limited in those environments: for instance, the SDK will not be able to detect whether networking is turned on or off.
+The .Net Standard and .Net 7.0 targets have no OS-specific code. This allows the SDK to be used in a desktop .NET Framework or .NET 7.0 application. However, due to the lack of OS-specific integration, SDK functionality will be limited in those environments: for instance, the SDK will not be able to detect whether networking is turned on or off.
 
 The .NET build tools should automatically load the most appropriate build of the SDK for whatever platform your application or library is targeted to.
 

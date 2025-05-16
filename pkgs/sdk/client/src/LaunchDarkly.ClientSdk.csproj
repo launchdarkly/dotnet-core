@@ -10,8 +10,9 @@
              that doesn't have the MAUI tools installed. That is currently the case in
              the release phase where we build HTML documentation. -->
 
-        <BuildFrameworks Condition="'$(BUILDFRAMEWORKS)' == ''">netstandard2.0;net8.0;net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-windows</BuildFrameworks>
+        <BuildFrameworks Condition="'$(BUILDFRAMEWORKS)' == ''">netstandard2.0;net7.0;net7.0-android;net7.0-ios;net7.0-maccatalyst;net7.0-windows</BuildFrameworks>
         <TargetFrameworks>$(BUILDFRAMEWORKS)</TargetFrameworks>
+        <UseMauiEssentials>true</UseMauiEssentials>
         <OutputType>Library</OutputType>
         <AssemblyName>LaunchDarkly.ClientSdk</AssemblyName>
         <PackageId>LaunchDarkly.ClientSdk</PackageId>
@@ -46,18 +47,17 @@
         <PackageReference Include="LaunchDarkly.EventSource" Version="5.0.1"/>
         <PackageReference Include="LaunchDarkly.InternalSdk" Version="3.5.0" />
         <PackageReference Include="LaunchDarkly.Logging" Version="2.0.0"/>
-        <PackageReference Include="Microsoft.Maui.Essentials" Version="8.0.100" />
         <Compile Include="**\*.cs" Exclude="PlatformSpecific\*.cs;bin\**\*.cs;obj\**\*.cs"/>
         <Compile Include="PlatformSpecific\*.shared.cs"/>
     </ItemGroup>
 
-    <!-- dependencies and source files for .NET 8.0 (all versions) -->
-    <ItemGroup Condition="$(TargetFramework.ToLower().Equals('netstandard2.0')) Or $(TargetFramework.ToLower().Equals('net8.0'))">
+    <!-- dependencies and source files for .NET 7.0 (all versions) -->
+    <ItemGroup Condition="$(TargetFramework.ToLower().Equals('netstandard2.0')) Or $(TargetFramework.ToLower().Equals('net7.0'))">
         <Compile Include="**\*.netstandard.cs"/>
     </ItemGroup>
 
     <!-- dependencies and source files for Android (all versions) -->
-    <ItemGroup Condition="$(TargetFramework.StartsWith('net8.0-android'))">
+    <ItemGroup Condition="$(TargetFramework.StartsWith('net7.0-android'))">
         <Compile Include="**\*.android.cs"/>
         <Compile Include="**\*.maui.cs"/>
         <Reference Include="System.Numerics"/>
@@ -65,7 +65,7 @@
     </ItemGroup>
 
     <!-- dependencies and source files for iOS (all versions) -->
-    <ItemGroup Condition="$(TargetFramework.ToLower().StartsWith('net8.0-ios'))">
+    <ItemGroup Condition="$(TargetFramework.ToLower().StartsWith('net7.0-ios'))">
         <Compile Include="**\*.ios.cs"/>
         <Compile Include="**\*.maui.cs"/>
         <Reference Include="System.Numerics"/>
@@ -73,7 +73,7 @@
     </ItemGroup>
 
     <!-- dependencies and source files for MacCatalyst (all versions) -->
-    <ItemGroup Condition="$(TargetFramework.ToLower().StartsWith('net8.0-maccatalyst'))">
+    <ItemGroup Condition="$(TargetFramework.ToLower().StartsWith('net7.0-maccatalyst'))">
         <Compile Include="**\*.maccatalyst.cs"/>
         <Compile Include="**\*.maui.cs"/>
         <Reference Include="System.Numerics"/>
@@ -88,7 +88,7 @@
     </ItemGroup>
 
     <!-- dependencies and source files for Windows (all versions) -->
-    <ItemGroup Condition="$(TargetFramework.ToLower().StartsWith('net8.0-windows'))">
+    <ItemGroup Condition="$(TargetFramework.ToLower().StartsWith('net7.0-windows'))">
         <Compile Include="**\*.windows.cs"/>
         <Compile Include="**\*.maui.cs"/>
         <Reference Include="System.Numerics"/>

@@ -39,17 +39,17 @@ namespace LaunchDarkly.Sdk.Client.Internal
         /// </remarks>
         internal static string DotNetTargetFramework =>
             // We'll need to update this whenever we add or remove supported target frameworks in the .csproj file.
-            // Order of these conditonals matters.  Specific frameworks come before net8.0 intentionally.
+            // Order of these conditonals matters.  Specific frameworks come before net7.0 intentionally.
 #if ANDROID
-            "net8.0-android";
+            "net7.0-android";
 #elif IOS
-            "net8.0-ios";
+            "net7.0-ios";
 #elif MACCATALYST
-            "net8.0-maccatalyst";
+            "net7.0-maccatalyst";
 #elif WINDOWS
-            "net8.0-windows";
-#elif NET8_0
-            "net8.0";
+            "net7.0-windows";
+#elif NET7_0
+            "net7.0";
 #else
             "unknown";
 #endif

@@ -1,0 +1,22 @@
+name: 'Xcode Version Selector'
+description: 'Lists available Xcode versions, selects a specific version, and shows the current version'
+inputs:
+  xcode-version:
+    description: 'The version of Xcode to select'
+    required: true
+    default: '16.2'
+
+runs:
+  using: composite
+  steps:
+    - name: List Available Xcode Versions
+      shell: bash
+      run: ls -la /Applications/ | grep "Xcode"
+
+    - name: Select Xcode Version
+      shell: bash
+      run: sudo xcode-select -switch /Applications/Xcode_${{ inputs.xcode-version }}.app
+
+    - name: Show Current Xcode Version
+      shell: bash
+      run: xcodebuild -version 

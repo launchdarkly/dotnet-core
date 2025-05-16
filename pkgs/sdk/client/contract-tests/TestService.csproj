@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TestFramework Condition="'$(TESTFRAMEWORK)' == ''">net7.0</TestFramework>
+    <TestFramework Condition="'$(TESTFRAMEWORK)' == ''">net8.0</TestFramework>
     <TargetFrameworks>$(TESTFRAMEWORK)</TargetFrameworks>
     <DebugType>portable</DebugType>
     <AssemblyName>ContractTestService</AssemblyName>

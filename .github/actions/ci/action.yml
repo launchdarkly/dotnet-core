@@ -10,7 +10,7 @@ inputs:
   target_test_framework:
     description: 'The target test framework to use.'
     required: false
-    default: 'net6.0'
+    default: 'net8.0'
   test_verbosity:
     description: 'The verbosity level of the test output.'
     required: false
@@ -23,8 +23,8 @@ runs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-              6.0
-              7.0
+          8.0
+          7.0
 
     - name: Copy global.json in place
       shell: bash

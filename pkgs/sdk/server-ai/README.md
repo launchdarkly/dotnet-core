@@ -22,7 +22,7 @@ Currently there is no client-side AI SDK for .NET. If you're interested, please 
 
 This version of the AI SDK is built for the following targets:
 
-* .NET 7.0: runs on .NET 7.0 and above (including higher major versions).
+* .NET 8.0: runs on .NET 8.0 and above (including higher major versions).
 * .NET Framework 4.6.2: runs on .NET Framework 4.6.2 and above.
 * .NET Standard 2.0: runs in any project that is targeted to .NET Standard 2.x rather than to a specific runtime platform.
 

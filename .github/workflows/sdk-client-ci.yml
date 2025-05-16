@@ -20,6 +20,9 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Print Xcode Version
+        run: xcodebuild -version
+
       - uses: actions/checkout@v4
 
       - name: Setup Env from project's Env file

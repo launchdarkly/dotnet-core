@@ -6,15 +6,13 @@ on:
     paths:
       - 'pkgs/dotnet-server-sdk-redis/**'
       - '.github/**'
-    paths-ignore:
-      - '**.md' # Do not need to run CI for markdown changes.
+      - '!**.md'
   pull_request:
     branches: [ main, 'feat/**' ]
     paths:
       - 'pkgs/dotnet-server-sdk-redis/**'
       - '.github/**'
-    paths-ignore:
-      - '**.md'
+      - '!**.md'
 
 jobs:
   build-and-test:

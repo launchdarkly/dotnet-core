@@ -14,7 +14,7 @@ For using LaunchDarkly in *client-side* .NET applications, including mobile (MAU
 
 This version of the SDK is built for the following targets:
 
-* .NET 6.0: runs on .NET 6.0 and above (including higher major versions).
+* .NET 8.0: runs on .NET 8.0 and above (including higher major versions).
 * .NET Framework 4.6.2: runs on .NET Framework 4.6.2 and above.
 * .NET Standard 2.0: runs in any project that is targeted to .NET Standard 2.x rather than to a specific runtime platform.
 
@@ -22,8 +22,8 @@ The .NET build tools should automatically load the most appropriate build of the
 
 The only differences in the SDK between platforms are these:
 
-* Setting a TCP connection timeout is only supported in .NET Core and .NET 6.0+. For more details, see `HttpConfigurationBuilder.ConnectTimeout`.
-* The SDK requires the `System.Text.Json` API to be available; it is built into the standard runtime library in .NET Core and .NET 6.0+, but not on other platforms, so on other platforms the SDK brings in `System.Text.Json` as a NuGet package dependency.
+* Setting a TCP connection timeout is only supported in .NET Core and .NET 8.0+. For more details, see `HttpConfigurationBuilder.ConnectTimeout`.
+* The SDK requires the `System.Text.Json` API to be available; it is built into the standard runtime library in .NET Core and .NET 8.0+, but not on other platforms, so on other platforms the SDK brings in `System.Text.Json` as a NuGet package dependency.
 
 ## Getting started
 

@@ -10,7 +10,7 @@ inputs:
   target_test_framework:
     description: 'The target test framework to use.'
     required: false
-    default: 'net6.0'
+    default: 'net8.0'
   test_verbosity:
     description: 'The verbosity level of the test output.'
     required: false

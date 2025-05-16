@@ -1,0 +1,48 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "./src",
+          "files": [
+            "**/*.csproj",
+            "**/bin/**/**LaunchDarkly**.dll"
+          ]
+        }
+      ],
+      "dest": "./api",
+      "properties" : {
+        "Configuration": "Debug"
+      }
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "docs/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "docs",
+    "template": [
+      "default"
+    ],
+    "globalMetadata": {
+      "_appName": "Consul integration for the LaunchDarkly SDK for Server-side .NET ",
+      "_appTitle": "Consul integration for the LaunchDarkly SDK for Server-side .NET ",
+      "_enableSearch": true,
+      "pdf": false
+    }
+  }
+}

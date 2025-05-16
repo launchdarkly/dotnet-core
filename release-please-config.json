@@ -3,6 +3,27 @@
   "separate-pull-requests": true,
   "include-component-in-tag": true,
   "packages": {
+    "pkgs/dotnet-server-sdk-consul": {
+      "release-type": "simple",
+      "package-name": "LaunchDarkly.ServerSdk.Consul",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.Consul.csproj"
+      ]
+    },
+    "pkgs/dotnet-server-sdk-dynamodb": {
+      "release-type": "simple",
+      "package-name": "LaunchDarkly.ServerSdk.DynamoDb",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.DynamoDb.csproj"
+      ]
+    },
+    "pkgs/dotnet-server-sdk-redis": {
+      "release-type": "simple",
+      "package-name": "LaunchDarkly.ServerSdk.Redis",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.Redis.csproj"
+      ]
+    },
     "pkgs/sdk/server": {
       "package-name": "LaunchDarkly.ServerSdk",
       "extra-files": [

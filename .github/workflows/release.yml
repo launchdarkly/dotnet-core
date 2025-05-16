@@ -1,42 +1,62 @@
-name: Publish Package
+name: Release Server Package
 on:
   workflow_dispatch:
     inputs:
-      pkg_workspace:
+      package_path:
         description: 'The package to publish'
-        required: true
         type: choice
+        required: true
         options:
-          # pkgs/sdk/client is omitted here since this workflow is for ubuntu and the client sdk build process requires macos.  Use release-sdk-client for client sdk.
+          # pkgs/sdk/client is omitted here since this workflow is for ubuntu and the client sdk build process requires macos
+          - pkgs/dotnet-server-sdk-consul
+          - pkgs/dotnet-server-sdk-dynamodb
+          - pkgs/dotnet-server-sdk-redis
           - pkgs/sdk/server
-          - pkgs/telemetry
           - pkgs/sdk/server-ai
+          - pkgs/telemetry
       dry_run:
         description: 'Is this a dry run. If so no package will be published.'
         type: boolean
         required: true
       generate_provenance:
-        description: 'Whether or not to generate provenance for this publish. Default behavior: generate only on main branch.'
-        type: choice
-        options:
-          - Default
-          - Generate
-          - Do not generate
+        description: 'Whether to generate provenance for this publish. Note: Workflow must be run from a tag (not a branch) for provenance generation to succeed.'
+        type: boolean
+        required: true
+        default: true
+  workflow_call:
+    inputs:
+      package_path:
+        description: 'Path to the package directory (e.g. pkgs/dotnet-server-sdk-redis)'
+        type: string
+        required: true
+      dry_run:
+        description: 'Is this a dry run. If so no package will be published.'
+        type: boolean
+        required: true
+      generate_provenance:
+        description: 'Whether to generate provenance for this publish.'
+        type: boolean
+        default: true
+      tag_name:
+        description: 'The tag name to use for the provenance file'
+        type: string
+        required: true
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
       contents: write
+      pull-requests: write
     outputs:
-      full-release-hashes: ${{ steps.full-release.outputs.hashes }}
+      hashes: ${{ steps.full-release.outputs.hashes }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Env from project's Env file
         shell: bash
-        run: echo "$(cat ${{ inputs.pkg_workspace }}/github_actions.env)" >> $GITHUB_ENV
+        run: echo "$(cat ${{ inputs.package_path }}/github_actions.env)" >> $GITHUB_ENV
 
       - uses: ./.github/actions/full-release
         id: full-release
@@ -51,15 +71,15 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   release-provenance:
-    needs: ['build']
+    needs: ['release']
     permissions:
       actions: read
       id-token: write
       contents: write
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    if: |
-      (inputs.generate_provenance == 'Generate' || (inputs.generate_provenance == 'Default' && github.ref_name == 'main'))
+    if: inputs.generate_provenance
     with:
-      base64-subjects: "${{ needs.build.outputs.full-release-hashes }}"
+      base64-subjects: "${{ needs.release.outputs.hashes }}"
       upload-assets: true
-      provenance-name: ${{inputs.pkg_workspace}}_provenance.intoto.jsonl
+      upload-tag-name: ${{ inputs.tag_name }}
+      provenance-name: ${{ format('{0}_provenance.intoto.jsonl', inputs.tag_name) }}

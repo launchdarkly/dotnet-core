@@ -25,6 +25,18 @@ inputs:
   token:
     description: 'The GitHub token to use for publishing documentation.'
     required: true
+  run_consul:
+    description: 'Run an instance of Consul'
+    required: false
+    default: false
+  run_dynamodb:
+    description: 'Run an instance of DynamoDB'
+    required: false
+    default: false
+  run_redis:
+    description: 'Run an instance of Redis'
+    required: false
+    default: false
 outputs:
   hashes:
     description: sha256sum hashes of built artifacts
@@ -38,6 +50,9 @@ runs:
       with:
         project_file: ${{ inputs.project_file }}
         test_project_file: ${{ inputs.test_project_file }}
+        run_consul: ${{ inputs.run_consul }}
+        run_dynamodb: ${{ inputs.run_dynamodb }}
+        run_redis: ${{ inputs.run_redis }}
 
     - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
       name: Get secrets

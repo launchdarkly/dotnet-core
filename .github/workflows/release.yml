@@ -69,6 +69,9 @@ jobs:
           dry_run: ${{ inputs.dry_run }}
           aws_role: ${{ vars.AWS_ROLE_ARN }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          run_consul: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-consul' }}
+          run_dynamodb: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-dynamodb' }}
+          run_redis: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-redis' }}
 
   release-provenance:
     needs: ['release']

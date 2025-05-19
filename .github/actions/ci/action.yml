@@ -15,6 +15,18 @@ inputs:
     description: 'The verbosity level of the test output.'
     required: false
     default: 'normal'
+  run_consul:
+    description: 'Run an instance of Consul'
+    required: false
+    default: false
+  run_dynamodb:
+    description: 'Run an instance of DynamoDB'
+    required: false
+    default: false
+  run_redis:
+    description: 'Run an instance of Redis'
+    required: false
+    default: false
 
 runs:
   using: composite
@@ -28,19 +40,19 @@ runs:
 
     - name: Setup Consul if needed
       uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
-      if: contains(inputs.project_file, 'ServerSdk.Consul')
+      if: inputs.run_consul == 'true'
       with:
         consul: true
 
     - name: Setup DynamoDB if needed
       uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
-      if: contains(inputs.project_file, 'ServerSdk.DynamoDB')
+      if: inputs.run_dynamodb == 'true'
       with:
         dynamodb: true
 
     - name: Setup Redis if needed
       uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
-      if: contains(inputs.project_file, 'ServerSdk.Redis')
+      if: inputs.run_redis == 'true'
       with:
         redis: true
 

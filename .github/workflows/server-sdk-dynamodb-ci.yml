@@ -45,4 +45,5 @@ jobs:
         with:
           project_file: ${{ env.PROJECT_FILE }}
           test_project_file: ${{ env.TEST_PROJECT_FILE }}
-          target_test_framework: ${{ matrix.test_framework }} 
+          target_test_framework: ${{ matrix.test_framework }}
+          run_dynamodb: true 

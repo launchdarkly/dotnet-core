@@ -17,7 +17,7 @@ This version of the SDK is built for the following targets:
 * .Net Standard 2.0
 * .Net 8 Android, for use with Android 5.0 (Android API 21) and higher.
 * .Net 8 iOS, for use with iOS 11 and higher.
-* .Net 8 macOS (using Mac Catalyst), for use with macOS 10.15 and higher.
+* .Net 8 macOS (using Mac Catalyst), for use with macOS 11 and higher.
 * .Net 8 Windows (using WinUI), for Windows 11 and Windows 10 version 1809 or higher.
 * .NET 8
 
@@ -54,7 +54,7 @@ We encourage pull requests and other contributions from the community. Check out
     * Roll out a new feature to a subset of your users (like a group of users who opt-in to a beta tester group), gathering feedback and bug reports from real-world use cases.
     * Gradually roll out a feature to an increasing percentage of users, and track the effect that the feature has on key metrics (for instance, how likely is a user to complete a purchase if they have feature A versus feature B?).
     * Turn off a feature that you realize is causing performance problems in production, without needing to re-deploy, or even restart the application with a changed configuration file.
-    * Grant access to certain features based on user attributes, like payment plan (eg: users on the ‘gold’ plan get access to more features than users in the ‘silver’ plan). Disable parts of your application to facilitate maintenance, without taking everything offline.
+    * Grant access to certain features based on user attributes, like payment plan (eg: users on the 'gold' plan get access to more features than users in the 'silver' plan). Disable parts of your application to facilitate maintenance, without taking everything offline.
 * LaunchDarkly provides feature flag SDKs for a wide variety of languages and technologies. Check out [our documentation](https://docs.launchdarkly.com/docs) for a complete list.
 * Explore LaunchDarkly
     * [launchdarkly.com](https://www.launchdarkly.com/ "LaunchDarkly Main Website") for more information

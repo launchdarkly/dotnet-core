@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>2.0.0-alpha.2</Version>
+    <PackageId>LaunchDarkly.ServerSdk.SharedTests</PackageId>
+    <AssemblyName>LaunchDarkly.ServerSdk.SharedTests</AssemblyName>
+    <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <Description>LaunchDarkly .NET Shared Tests</Description>
+    <Company>LaunchDarkly</Company>
+    <Copyright>Copyright 2020 Catamorphic, Co.</Copyright>
+    <LicenseExpression>Apache-2.0</LicenseExpression>
+    <RootNamespace>LaunchDarkly.Sdk.Server.SharedTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LaunchDarkly.ServerSdk" Version="7.0.0-alpha.3" />
+    <PackageReference Include="LaunchDarkly.Logging" Version="[2.0.0,3.0.0)" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+  </ItemGroup>
+</Project>

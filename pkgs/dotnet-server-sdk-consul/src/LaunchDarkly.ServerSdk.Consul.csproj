@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>5.0.0</Version>
+    <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+    <PackageId>LaunchDarkly.ServerSdk.Consul</PackageId>
+    <AssemblyName>LaunchDarkly.ServerSdk.Consul</AssemblyName>
+    <OutputType>Library</OutputType>
+    <LangVersion>7.3</LangVersion>
+    <Description>LaunchDarkly .NET Client Consul Integration</Description>
+    <Company>LaunchDarkly</Company>
+    <Authors>LaunchDarkly</Authors>
+    <Owners>LaunchDarkly</Owners>
+    <Copyright>Copyright 2018 Catamorphic, Co.</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/launchdarkly/dotnet-server-sdk-consul</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/launchdarkly/dotnet-server-sdk-consul</RepositoryUrl>
+    <RepositoryBranch>main</RepositoryBranch>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <RootNamespace>LaunchDarkly.Sdk.Server.Integrations</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Consul" Version="[1.6.1.1,]" />
+    <PackageReference Include="LaunchDarkly.ServerSdk" Version="[8.0.0,9.0.0)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Integrations\" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\LaunchDarkly.ServerSdk.Consul.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>../../../LaunchDarkly.Consul.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

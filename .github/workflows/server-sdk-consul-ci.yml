@@ -1,0 +1,49 @@
+name: LaunchDarkly.ServerSdk.Consul CI
+
+on:
+  push:
+    branches: [ main, 'feat/**' ]
+    paths:
+      - '.github/**'
+      - 'global.example.json'
+      - 'pkgs/dotnet-server-sdk-consul/**'
+      - '!**.md'
+  pull_request:
+    branches: [ main, 'feat/**' ]
+    paths:
+      - '.github/**'
+      - 'global.example.json'
+      - 'pkgs/dotnet-server-sdk-consul/**'
+      - '!**.md'
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            framework: netstandard2.0
+            test_framework: net8.0
+          - os: windows-latest
+            framework: net462
+            test_framework: net462
+    
+    runs-on: ${{ matrix.os }}
+    
+    defaults:
+      run:
+        shell: ${{ matrix.os == 'windows-latest' && 'powershell' || 'bash' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: echo "$(cat pkgs/dotnet-server-sdk-consul/github_actions.env)" >> $GITHUB_ENV
+
+      - uses: ./.github/actions/ci
+        with:
+          project_file: ${{ env.PROJECT_FILE }}
+          test_project_file: ${{ env.TEST_PROJECT_FILE }}
+          target_test_framework: ${{ matrix.test_framework }}
+          run_consul: true 

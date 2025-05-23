@@ -24,6 +24,10 @@ jobs:
       package-sdk-server-tag_name: ${{ steps.release.outputs['pkgs/sdk/server--tag_name'] }}
       package-sdk-server-telemetry-released: ${{ steps.release.outputs['pkgs/telemetry--release_created'] }}
       package-sdk-server-telemetry-tag_name: ${{ steps.release.outputs['pkgs/telemetry--tag_name'] }}
+      package-shared-common-released: ${{ steps.release.outputs['pkgs/shared/common--release_created'] }}
+      package-shared-common-tag_name: ${{ steps.release.outputs['pkgs/shared/common--tag_name'] }}
+      package-shared-common-json-net-released: ${{ steps.release.outputs['pkgs/shared/common-json-net--release_created'] }}
+      package-shared-common-json-net-tag_name: ${{ steps.release.outputs['pkgs/shared/common-json-net--tag_name'] }}
       tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
@@ -115,3 +119,23 @@ jobs:
       dry_run: false
       generate_provenance: true
       tag_name: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-tag_name }}
+
+  release-shared-common:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.package-shared-common-released == 'true'}}
+    uses: ./.github/workflows/release.yml
+    with:
+      package_path: pkgs/shared/common
+      dry_run: false
+      generate_provenance: true
+      tag_name: ${{ needs.release-please.outputs.package-shared-common-tag_name }}
+
+  release-shared-common-json-net:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.package-shared-common-json-net-released == 'true'}}
+    uses: ./.github/workflows/release.yml
+    with:
+      package_path: pkgs/shared/common-json-net
+      dry_run: false
+      generate_provenance: true
+      tag_name: ${{ needs.release-please.outputs.package-shared-common-json-net-tag_name }}

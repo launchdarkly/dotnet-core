@@ -1,6 +1,9 @@
 name: Build, Test, and Publish
 description: 'Execute the full release process for a workspace.'
 inputs:
+  assembly_key_path_pair:
+    description: 'The assembly key path pair file string.'
+    required: true
   workspace_path:
     description: 'Path to the workspace being released.'
     required: true
@@ -64,7 +67,7 @@ runs:
         /production/common/releasing/digicert/client_cert_password = DIGICERT_CLIENT_CERT_PASSWORD,
         /production/common/releasing/digicert/code_signing_cert_sha1_hash = DIGICERT_CODE_SIGNING_CERT_SHA1_HASH,
         /production/common/releasing/nuget/api_key = NUGET_API_KEY'
-        s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.snk = LaunchDarkly.snk'
+        s3_path_pairs: ${{ inputs.assembly_key_path_pair }}
 
     - name: Release build
       uses: ./.github/actions/build-release

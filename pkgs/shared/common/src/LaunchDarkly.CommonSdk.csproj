@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>7.0.0</Version>
+    <!-- The BUILDFRAMEWORKS variable allows us to override the target frameworks with a
+     single framework that we are testing; this allows us to test with older SDK
+     versions that would error out if they saw any newer target frameworks listed
+     here, even if we weren't running those. -->
+    <BuildFrameworks Condition="'$(BUILDFRAMEWORKS)' == ''">netstandard2.0;net462;net8.0</BuildFrameworks>
+    <TargetFrameworks>$(BUILDFRAMEWORKS)</TargetFrameworks>
+    <DebugType>portable</DebugType>
+    <AssemblyName>LaunchDarkly.CommonSdk</AssemblyName>
+    <OutputType>Library</OutputType>
+    <LangVersion>7.3</LangVersion>
+    <PackageId>LaunchDarkly.CommonSdk</PackageId>
+    <Description>LaunchDarkly common code for .NET and Xamarin clients</Description>
+    <Company>LaunchDarkly</Company>
+    <Authors>LaunchDarkly</Authors>
+    <Owners>LaunchDarkly</Owners>
+    <Copyright>Copyright 2018 LaunchDarkly</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/launchdarkly/dotnet-core</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/launchdarkly/dotnet-core</RepositoryUrl>
+    <RepositoryBranch>main</RepositoryBranch>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- fail if XML comments are missing or invalid -->
+    <WarningsAsErrors>1570,1572,1573,1574,1580,1581,1591,1711,1712</WarningsAsErrors>
+
+    <!-- ensure that dependency DLLs are copied to output folder too - this makes life easier for the packaging-test script -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\LaunchDarkly.CommonSdk.xml</DocumentationFile>
+    <RootNamespace>LaunchDarkly.Sdk</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LaunchDarkly.Logging" Version="2.0.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net462'">
+    <PackageReference Include="System.Text.Json" Version="6.0.0" />
+    <!-- it's a built-in package in net8.0 -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+    <Folder Include="Json\" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+
+  <ItemGroup> <!-- see https://github.com/dotnet/sourcelink -->
+    <PackageReference Include="Microsoft.SourceLink.GitLab" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

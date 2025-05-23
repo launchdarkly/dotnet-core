@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestFramework Condition="'$(TESTFRAMEWORK)' == ''">net462;net8.0</TestFramework>
+    <TargetFrameworks>$(TESTFRAMEWORK)</TargetFrameworks>
+    <AssemblyName>LaunchDarkly.CommonSdk.Tests</AssemblyName>
+    <RootNamespace>LaunchDarkly.Sdk</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\LaunchDarkly.CommonSdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.console" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
+    <PackageReference Include="JunitXml.TestLogger" Version="3.0.114" />
+    <PackageReference Include="LaunchDarkly.TestHelpers" Version="2.0.0" />
+  </ItemGroup>
+
+</Project>

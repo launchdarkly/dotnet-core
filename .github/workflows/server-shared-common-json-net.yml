@@ -1,4 +1,4 @@
-name: LaunchDarkly.ServerSdk.Redis CI
+name: LaunchDarkly.CommonSdk.JsonNet CI
 
 on:
   push:
@@ -46,4 +46,3 @@ jobs:
           project_file: ${{ env.PROJECT_FILE }}
           test_project_file: ${{ env.TEST_PROJECT_FILE }}
           target_test_framework: ${{ matrix.test_framework }}
-          run_redis: true 

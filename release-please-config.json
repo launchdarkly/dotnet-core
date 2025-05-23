@@ -48,6 +48,18 @@
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Telemetry.csproj"
       ]
+    },
+    "pkgs/shared/common": {
+      "package-name": "LaunchDarkly.ServerSdk.Common",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.Common.csproj"
+      ]
+    },
+    "pkgs/shared/common-json-net": {
+      "package-name": "LaunchDarkly.ServerSdk.Common.JsonNet",
+      "extra-files": [
+        "src/LaunchDarkly.ServerSdk.Common.JsonNet.csproj"
+      ]
     }
   }
 }

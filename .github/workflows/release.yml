@@ -14,6 +14,8 @@ on:
           - pkgs/sdk/server
           - pkgs/sdk/server-ai
           - pkgs/telemetry
+          - pkgs/shared/common
+          - pkgs/shared/common-json-net
       dry_run:
         description: 'Is this a dry run. If so no package will be published.'
         type: boolean
@@ -61,6 +63,7 @@ jobs:
       - uses: ./.github/actions/full-release
         id: full-release
         with:
+          assembly_key_path_pair: ${{ env.ASSEMBLY_KEY_PATH_PAIR }}
           workspace_path: ${{ env.WORKSPACE_PATH }}
           project_file: ${{ env.PROJECT_FILE }}
           build_output_path: ${{ env.BUILD_OUTPUT_PATH }}

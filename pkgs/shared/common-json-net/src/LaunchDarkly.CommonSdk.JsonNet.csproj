@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.CommonSdk.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 </Project>

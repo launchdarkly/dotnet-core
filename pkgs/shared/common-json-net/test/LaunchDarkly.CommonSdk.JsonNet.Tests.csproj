@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\LaunchDarkly.CommonSdk.JsonNet\LaunchDarkly.CommonSdk.JsonNet.csproj" />
-    <ProjectReference Include="..\..\src\LaunchDarkly.CommonSdk\LaunchDarkly.CommonSdk.csproj" />
+    <ProjectReference Include="..\src\LaunchDarkly.CommonSdk.JsonNet.csproj" />
+    <ProjectReference Include="..\..\common\src\LaunchDarkly.CommonSdk.csproj" />
   </ItemGroup>
 
   <ItemGroup>

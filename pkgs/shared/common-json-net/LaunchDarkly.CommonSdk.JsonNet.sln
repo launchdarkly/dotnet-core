@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.CommonSdk.JsonNet", "src\LaunchDarkly.CommonSdk.JsonNet\LaunchDarkly.CommonSdk.JsonNet.csproj", "{8BFB500A-D88B-4213-8099-3B45A2B430FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.CommonSdk.JsonNet", "src\LaunchDarkly.CommonSdk.JsonNet.csproj", "{8BFB500A-D88B-4213-8099-3B45A2B430FA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.CommonSdk.JsonNet.Tests", "test\LaunchDarkly.CommonSdk.JsonNet.Tests\LaunchDarkly.CommonSdk.JsonNet.Tests.csproj", "{867B496F-0D48-4A85-B237-D8DC132F0673}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.CommonSdk.JsonNet.Tests", "test\LaunchDarkly.CommonSdk.JsonNet.Tests.csproj", "{867B496F-0D48-4A85-B237-D8DC132F0673}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

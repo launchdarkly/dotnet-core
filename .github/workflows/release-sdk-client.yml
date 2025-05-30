@@ -151,7 +151,7 @@ jobs:
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
           ssm_parameter_pairs: '/production/common/releasing/nuget/api_key = NUGET_API_KEY'
-          s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk = LaunchDarkly.ClientSdk.snk'
+          s3_path_pairs: ${{ env.ASSEMBLY_KEY_PATH_PAIR }}
 
       - name: Publish Nupkg
         id: publish

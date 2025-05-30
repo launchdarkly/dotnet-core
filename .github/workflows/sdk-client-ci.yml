@@ -20,10 +20,11 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Print Xcode Version
-        run: xcodebuild -version
-
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/xcode-select
+        with:
+          xcode-version: '16.2'
 
       - name: Setup Env from project's Env file
         shell: bash
@@ -39,7 +40,7 @@ jobs:
         with:
           project_file: ${{ env.PROJECT_FILE}}
           test_project_file: ${{ env.TEST_PROJECT_FILE}}
-          target_test_framework: "net7.0"
+          target_test_framework: "net8.0"
 
       - uses: ./.github/actions/contract-tests
         with:

@@ -30,12 +30,6 @@ jobs:
         shell: bash
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
-      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
-        name: Get secrets
-        with:
-          aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
-          s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk = LaunchDarkly.ClientSdk.snk'
-
       - uses: ./.github/actions/ci
         with:
           project_file: ${{ env.PROJECT_FILE}}

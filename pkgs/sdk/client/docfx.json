@@ -11,7 +11,10 @@
         }
       ],
       "dest": "./api",
-      "namespaceLayout": "nested"
+      "namespaceLayout": "nested",
+      "properties" : {
+        "Configuration": "Debug"
+      }
     }
   ],
   "build": {

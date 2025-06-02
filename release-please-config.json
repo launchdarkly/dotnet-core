@@ -25,12 +25,14 @@
       ]
     },
     "pkgs/sdk/server": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk",
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.csproj"
       ]
     },
     "pkgs/sdk/server-ai": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Ai",
       "bump-minor-pre-major": true,
       "extra-files": [
@@ -38,24 +40,28 @@
       ]
     },
     "pkgs/sdk/client": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ClientSdk",
       "extra-files": [
         "src/LaunchDarkly.ClientSdk.csproj"
       ]
     },
     "pkgs/telemetry": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Telemetry",
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Telemetry.csproj"
       ]
     },
     "pkgs/shared/common": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk",
       "extra-files": [
         "src/LaunchDarkly.CommonSdk.csproj"
       ]
     },
     "pkgs/shared/common-json-net": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk.JsonNet",
       "extra-files": [
         "src/LaunchDarkly.CommonSdk.JsonNet.csproj"

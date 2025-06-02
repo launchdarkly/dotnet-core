@@ -39,8 +39,8 @@
       "default"
     ],
     "globalMetadata": {
-      "_appName": "LaunchDarkly.ServerSdk.DynamoDb",
-      "_appTitle": "DynamoDB integration for the LaunchDarkly SDK for Server-side .NET",
+      "_appName": "LaunchDarkly.CommonSdk",
+      "_appTitle": "Shared dotnet classes for Server and Client SDKs",
       "_enableSearch": true,
       "pdf": false
     }

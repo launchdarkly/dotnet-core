@@ -50,15 +50,15 @@
       ]
     },
     "pkgs/shared/common": {
-      "package-name": "LaunchDarkly.ServerSdk.Common",
+      "package-name": "LaunchDarkly.CommonSdk",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Common.csproj"
+        "src/LaunchDarkly.CommonSdk.csproj"
       ]
     },
     "pkgs/shared/common-json-net": {
-      "package-name": "LaunchDarkly.ServerSdk.Common.JsonNet",
+      "package-name": "LaunchDarkly.CommonSdk.JsonNet",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Common.JsonNet.csproj"
+        "src/LaunchDarkly.CommonSdk.JsonNet.csproj"
       ]
     }
   }

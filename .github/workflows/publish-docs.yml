@@ -34,7 +34,7 @@ jobs:
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
-          s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk = LaunchDarkly.ClientSdk.snk'
+          s3_path_pairs: ${{ env.ASSEMBLY_KEY_PATH_PAIR }}
 
       - id: build
         name: Build and Test SDK

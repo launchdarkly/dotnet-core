@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.CommonSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [7.0.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk.JsonNet-v7.0.1...LaunchDarkly.CommonSdk.JsonNet-v7.0.2) (2025-06-02)
+
+
+### Bug Fixes
+
+* Bump System.Text.Json to 6.0.0, 6.0.10 ([#129](https://github.com/launchdarkly/dotnet-core/issues/129)) ([ed49d2f](https://github.com/launchdarkly/dotnet-core/commit/ed49d2f94e1d9381b1816f42eb438622a2315dfe))
+
 ## [7.0.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk.JsonNet-v7.0.0...LaunchDarkly.CommonSdk.JsonNet-v7.0.1) (2025-06-02)
 
 

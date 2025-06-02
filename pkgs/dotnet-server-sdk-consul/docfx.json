@@ -39,8 +39,8 @@
       "default"
     ],
     "globalMetadata": {
-      "_appName": "Consul integration for the LaunchDarkly SDK for Server-side .NET ",
-      "_appTitle": "Consul integration for the LaunchDarkly SDK for Server-side .NET ",
+      "_appName": "LaunchDarkly.ServerSdk.Consul",
+      "_appTitle": "Consul integration for the LaunchDarkly SDK for Server-side .NET",
       "_enableSearch": true,
       "pdf": false
     }

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Change log | Add-on package allows JSON-serializable data types from LaunchDarkly .NET SDKs </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Change log | Add-on package allows JSON-serializable data types from LaunchDarkly .NET SDKs ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="LaunchDarkly.CommonSdk.JsonNet">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="change-log">Change log</h1>
+
+<p>All notable changes to <code>LaunchDarkly.CommonSdk</code> will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to <a href="http://semver.org">Semantic Versioning</a>.</p>
+<h2 id="702-2025-06-02"><a href="https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk.JsonNet-v7.0.1...LaunchDarkly.CommonSdk.JsonNet-v7.0.2">7.0.2</a> (2025-06-02)</h2>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li>Bump System.Text.Json to 6.0.0, 6.0.10 (<a href="https://github.com/launchdarkly/dotnet-core/issues/129">#129</a>) (<a href="https://github.com/launchdarkly/dotnet-core/commit/ed49d2f94e1d9381b1816f42eb438622a2315dfe">ed49d2f</a>)</li>
+</ul>
+<h2 id="701-2025-06-02"><a href="https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk.JsonNet-v7.0.0...LaunchDarkly.CommonSdk.JsonNet-v7.0.1">7.0.1</a> (2025-06-02)</h2>
+<h3 id="bug-fixes-1">Bug Fixes</h3>
+<ul>
+<li><a href="https://github.com/launchdarkly/dotnet-core/issues/104">#104</a> dependency optimisation (<a href="https://github.com/launchdarkly/dotnet-core/issues/111">#111</a>) (<a href="https://github.com/launchdarkly/dotnet-core/commit/2c7ff629a4c16ad866c6e4ea5b24abc622942f0e">2c7ff62</a>)</li>
+</ul>
+<h2 id="700---2023-10-17">[7.0.0] - 2023-10-17</h2>
+<h3 id="changed">Changed:</h3>
+<ul>
+<li>IEnvironmentReporter now reports nullable values.</li>
+</ul>
+<h2 id="620---2023-10-10">[6.2.0] - 2023-10-10</h2>
+<h3 id="added">Added:</h3>
+<ul>
+<li>Adds locale to auto environment attribute layer.</li>
+</ul>
+<h2 id="610---2023-10-10">[6.1.0] - 2023-10-10</h2>
+<h3 id="added-1">Added:</h3>
+<ul>
+<li>Adds ApplicationInfo and EnvironmentReporter and respective builders.</li>
+</ul>
+<h2 id="601---2023-04-04">[6.0.1] - 2023-04-04</h2>
+<h3 id="fixed">Fixed:</h3>
+<ul>
+<li>Fixed an issue with generating the <code>FullyQualifiedKey</code>. The key generation was not sorted by the kind, so the key was not stable depending on the order of the context construction. This also affected the generation of the secure mode hash for mulit-contexts.</li>
+</ul>
+<h2 id="600---2022-12-01">[6.0.0] - 2022-12-01</h2>
+<p>This major version release of <code>LaunchDarkly.CommonSdk</code> corresponds to the upcoming v7.0.0 release of the LaunchDarkly server-side .NET SDK (<code>LaunchDarkly.ServerSdk</code>) and the v3.0.0 release of the LaunchDarkly client-side .NET SDK (<code>LaunchDarkly.ClientSdk</code>), and cannot be used with earlier SDK versions.</p>
+<h3 id="added-2">Added:</h3>
+<ul>
+<li>In <code>LaunchDarkly.Sdk</code>, the types <code>Context</code> and <code>ContextKind</code> define the new &quot;context&quot; model. &quot;Contexts&quot; are a replacement for the earlier concept of &quot;users&quot;; they can be populated with attributes in more or less the same way as before, but they also support new behaviors. More information about these features will be included in the release notes for the <code>LaunchDarkly.ServerSdk</code> 7.0.0 and <code>LaunchDarkly.ClientSdk</code> 3.0.0 releases.</li>
+</ul>
+<h3 id="changed-1">Changed:</h3>
+<ul>
+<li>.NET Core 2.1, .NET Framework 4.5.2, .NET Framework 4.6.1, and .NET 5.0 are now unsupported. The minimum platform versions are now .NET Core 3.1, .NET Framework 4.6.2, .NET 6.0, and .NET Standard 2.0.</li>
+<li>It was previously allowable to set a user key to an empty string. In the new context model, the key is not allowed to be empty. Trying to use an empty key will cause evaluations to fail and return the default value.</li>
+<li>There is no longer such a thing as a <code>Secondary</code> meta-attribute that affects percentage rollouts. If you set an attribute with that name in a <code>Context</code>, it will simply be a custom attribute like any other.</li>
+<li>The <code>Anonymous</code> attribute in <code>LDUser</code> is now a simple boolean, with no distinction between a false state and a null state.</li>
+<li>There is no longer a dependency on <code>LaunchDarkly.JsonStream</code>. This package existed because some platforms did not support the <code>System.Text.Json</code> API, but that is no longer the case and the SDK now uses <code>System.Text.Json</code> directly for all of its JSON operations.</li>
+<li>If you are using the package <code>LaunchDarkly.CommonSdk.JsonNet</code> for interoperability with the Json.NET library, you must update this to the latest major version.</li>
+</ul>
+<h3 id="removed">Removed:</h3>
+<ul>
+<li>Removed all types, fields, and methods that were deprecated as of the most recent release.</li>
+<li>Removed the <code>Secondary</code> meta-attribute in <code>User</code> and <code>UserBuilder</code>.</li>
+</ul>
+<h2 id="550---2022-02-02">[5.5.0] - 2022-02-02</h2>
+<h3 id="added-3">Added:</h3>
+<ul>
+<li><code>UnixMillisecondTime</code> now has a JSON converter like other <code>LaunchDarkly.Sdk</code> types.</li>
+</ul>
+<h3 id="fixed-1">Fixed:</h3>
+<ul>
+<li>When using <code>LaunchDarkly.CommonSdk.JsonNet</code>, nullable value types such as <code>EvaluationReason?</code> were not being serialized correctly.</li>
+</ul>
+<h2 id="541---2021-11-02">[5.4.1] - 2021-11-02</h2>
+<h3 id="fixed-2">Fixed:</h3>
+<ul>
+<li>Copying a user with <code>User.Builder(existingUser)</code> was incorrectly changing the default <code>null</code> value of <code>AnonymousOptional</code> to <code>false</code>. This normally has no significance since LaunchDarkly treats those two values the same, but it could have broken tests that expected a copied user to be equal.</li>
+</ul>
+<h2 id="540---2021-10-22">[5.4.0] - 2021-10-22</h2>
+<h3 id="added-4">Added:</h3>
+<ul>
+<li><code>LdValue.ObjectBuilder.Remove</code>.</li>
+<li>User builder <code>Custom</code> overloads for <code>long</code> and <code>double</code>.</li>
+</ul>
+<h3 id="changed-2">Changed:</h3>
+<ul>
+<li>Added more doc comment text about numeric precision issues with JSON numbers.</li>
+<li>Updated <code>LaunchDarkly.JsonStream</code> to 1.0.3.</li>
+</ul>
+<h2 id="530---2021-10-14">[5.3.0] - 2021-10-14</h2>
+<h3 id="added-5">Added:</h3>
+<ul>
+<li>Convenience methods for working with JSON object and array values: <code>LdValue.Dictionary</code>, <code>LdValue.List</code>, <code>LdValue.ObjectBuilder.Set</code>, and <code>LdValue.ObjectBuilder.Copy</code>.</li>
+</ul>
+<h2 id="521---2021-10-05">[5.2.1] - 2021-10-05</h2>
+<h3 id="changed-3">Changed:</h3>
+<ul>
+<li>Changed dependency version for <code>System.Collections.Immutable</code> to 1.7.1, to match the version used by <code>LaunchDarkly.ServerSdk</code>. This has no effect on SDK functionality, but it reduces the chance that a binding redirect will be required to reconcile dependency versions in .NET Framework.</li>
+</ul>
+<h2 id="520---2021-07-19">[5.2.0] - 2021-07-19</h2>
+<h3 id="added-6">Added:</h3>
+<ul>
+<li>In <code>EvaluationReason</code>, added optional status information related to the new big segments feature.</li>
+</ul>
+<h2 id="510---2021-06-17">[5.1.0] - 2021-06-17</h2>
+<h3 id="added-7">Added:</h3>
+<ul>
+<li>The SDK now supports the ability to control the proportion of traffic allocation to an experiment. This works in conjunction with a new platform feature now available to early access customers.</li>
+</ul>
+<h2 id="502---2021-06-07">[5.0.2] - 2021-06-07</h2>
+<h3 id="fixed-3">Fixed:</h3>
+<ul>
+<li>Updated the minimum dependency version for <code>LaunchDarkly.JsonStream</code> to exclude versions that have a known JSON parsing bug.</li>
+</ul>
+<h2 id="501---2021-02-02">[5.0.1] - 2021-02-02</h2>
+<h3 id="fixed-4">Fixed:</h3>
+<ul>
+<li>Updated dependencies in <code>LaunchDarkly.CommonSdk.JsonNet</code> to the correct versions.</li>
+</ul>
+<h2 id="500---2021-02-02">[5.0.0] - 2021-02-02</h2>
+<h3 id="added-8">Added:</h3>
+<ul>
+<li><code>LaunchDarkly.Sdk.Json</code> namespace with JSON serialization helpers. Also, there is now a separate package defined in this repo, <code>LaunchDarkly.CommonSdk.JsonNet</code>, for interoperability with <code>Newtonsoft.Json</code>.</li>
+<li><code>UnixMillisecondTime</code> type, a convenient wrapper for the date/time format that is used by LaunchDarkly services. Applications normally won't need to use this unless they are interacting directly with the analytics event system.</li>
+<li><code>LdValue</code> now has <code>==</code> and <code>!=</code> operators.</li>
+<li>Releases now publish <a href="https://github.com/dotnet/sourcelink/blob/master/README.md">Source Link</a> data.</li>
+</ul>
+<h3 id="changed-4">Changed:</h3>
+<ul>
+<li>The base namespace is now <code>LaunchDarkly.Sdk</code> rather than <code>LaunchDarkly.Client</code>.</li>
+<li><code>EvaluationReason</code> is now a struct.</li>
+<li><code>EvaluationReasonKind</code> and <code>EvaluationErrorKind</code> enum names now use regular .NET-style capitalization (<code>RuleMatch</code>) instead of Java-style capitalization (<code>RULE_MATCH</code>).</li>
+<li>JSON-serializable types (<code>User</code>, etc.) now automatically encode and decode correctly with <code>System.Text.Json</code>.</li>
+</ul>
+<h3 id="removed-1">Removed:</h3>
+<ul>
+<li><code>EvaluationReason</code> subclasses.</li>
+<li>There is no longer a package dependency on <code>Newtonsoft.Json</code>.</li>
+<li>Non-public helpers used by SDKs have been removed, and are now in <code>LaunchDarkly.InternalSdk</code> instead.</li>
+</ul>
+<h2 id="431---2020-01-15">[4.3.1] - 2020-01-15</h2>
+<h3 id="fixed-5">Fixed:</h3>
+<ul>
+<li>A bug in the SDK prevented the sending of events from being retried after a failure. The SDK now retries once after an event flush fails as was intended.</li>
+<li>The SDK now specifies a uniquely identifiable request header when sending events to LaunchDarkly to ensure that events are only processed once, even if the SDK sends them two times due to a failed initial attempt.</li>
+</ul>
+<h2 id="430---2020-01-13">[4.3.0] - 2020-01-13</h2>
+<h3 id="added-9">Added:</h3>
+<ul>
+<li><code>EvaluationReason</code> static methods and properties for creating reason instances.</li>
+<li><code>LdValue</code> helpers for dealing with array/object values, without having to use an intermediate <code>List</code> or <code>Dictionary</code>: <code>BuildArray</code>, <code>BuildObject</code>, <code>Count</code>, <code>Get</code>.</li>
+<li><code>LdValue.Parse()</code>.</li>
+<li><code>IUserBuilder.Secondary</code> is a new name for <code>SecondaryKey</code> (for consistency with other SDKs), and allows you to make the <code>secondary</code> attribute private.</li>
+<li><code>User.Secondary</code> (same as <code>SecondaryKey</code>).</li>
+</ul>
+<h3 id="changed-5">Changed:</h3>
+<ul>
+<li><code>EvaluationReason</code> properties all exist on the base class now, so for instance you do not need to cast to <code>RuleMatch</code> to get the <code>RuleId</code> property. This is in preparation for a future API change in which <code>EvaluationReason</code> will become a struct instead of a base class.</li>
+</ul>
+<h3 id="fixed-6">Fixed:</h3>
+<ul>
+<li>Improved memory usage and performance when processing analytics events: the SDK now encodes event data to JSON directly, instead of creating intermediate objects and serializing them via reflection.</li>
+<li>When parsing arbitrary JSON values, the SDK now always stores them internally as <code>LdValue</code> rather than <code>JToken</code>. This means that no additional copying step is required when the application accesses that value, if it is of a complex type.</li>
+<li><code>LdValue.Equals()</code> incorrectly returned true for object (dictionary) values that were not equal.</li>
+</ul>
+<h3 id="deprecated">Deprecated:</h3>
+<ul>
+<li><code>EvaluationReason</code> subclasses. Use only the base class properties and methods to ensure compatibility with future versions.</li>
+<li><code>IUserBuilder.SecondaryKey</code>, <code>User.SecondaryKey</code>.</li>
+</ul>
+<h2 id="421---2019-10-23">[4.2.1] - 2019-10-23</h2>
+<h3 id="fixed-7">Fixed:</h3>
+<ul>
+<li>The JSON serialization of <code>User</code> was producing an extra <code>Anonymous</code> property in addition to <code>anonymous</code>. If Newtonsoft.Json was configured globally to force all properties to lowercase, this would cause an exception when serializing a user since the two properties would end up with the same name.</li>
+</ul>
+<h2 id="420---2019-10-10">[4.2.0] - 2019-10-10</h2>
+<h3 id="added-10">Added:</h3>
+<ul>
+<li>Added <code>LaunchDarkly.Logging.ConsoleAdapter</code> as a convenience for quickly enabling console logging; this is equivalent to <code>Common.Logging.Simple.ConsoleOutLoggerFactoryAdapter</code>, but the latter is not available on some platforms.</li>
+</ul>
+<h2 id="410---2019-10-07">[4.1.0] - 2019-10-07</h2>
+<h3 id="added-11">Added:</h3>
+<ul>
+<li><code>IUserBuilder.AnonymousOptional</code> and <code>User.AnonymousOption</code> allow treating the <code>Anonymous</code> property as nullable (necessary for consistency with other SDKs). See note about this under Fixed.</li>
+</ul>
+<h3 id="fixed-8">Fixed:</h3>
+<ul>
+<li><code>IUserBuilder</code> was incorrectly setting the user's <code>Anonymous</code> property to <code>null</code> even if it had been explicitly set to <code>false</code>. Null and false behave the same in terms of LaunchDarkly's user indexing behavior, but currently it is possible to create a feature flag rule that treats them differently. So <code>IUserBuilder.Anonymous(false)</code> now correctly sets it to <code>false</code>.</li>
+<li><code>LdValue.Convert.Long</code> was mistakenly converting to an <code>int</code> rather than a <code>long</code>. (<a href="https://github.com/launchdarkly/dotnet-sdk-common/issues/32">#32</a>)</li>
+</ul>
+<h2 id="401---2019-09-13">[4.0.1] - 2019-09-13</h2>
+<p><em>The 4.0.0 release was broken.</em></p>
+<h3 id="added-12">Added:</h3>
+<ul>
+<li><code>LdValue</code> now has methods for converting to and from complex types (list, dictionary).</li>
+</ul>
+<h3 id="changed-6">Changed:</h3>
+<ul>
+<li><code>ImmutableJsonValue</code> is now called <code>LdValue</code>.</li>
+<li>All public APIs now use <code>ImmutableJsonValue</code> instead of <code>JToken</code>.</li>
+</ul>
+<h3 id="removed-2">Removed:</h3>
+<ul>
+<li>Public <code>ImmutableJsonValue</code> methods and properties that refer to <code>JToken</code>, <code>JObject</code>, or <code>JArray</code>.</li>
+</ul>
+<h2 id="310---2019-08-30">[3.1.0] - 2019-08-30</h2>
+<h3 id="added-13">Added:</h3>
+<ul>
+<li><code>SetOffline</code> method in <code>IEventProcessor</code>/<code>DefaultEventProcessor</code>.</li>
+<li>XML documentation comments are now included in the package for all target frameworks. Previously they were only included for .NET Standard 1.4.</li>
+</ul>
+<h2 id="300---2019-08-09">[3.0.0] - 2019-08-09</h2>
+<h3 id="added-14">Added:</h3>
+<ul>
+<li><code>User.Builder</code> provides a fluent builder pattern for constructing <code>User</code> objects. This is now the only method for building a user if you want to set any properties other than the <code>Key</code>.</li>
+<li>The <code>ImmutableJsonValue</code> type provides a wrapper for the Newtonsoft.Json types that prevents accidentally modifying JSON object properties or array values that are shared by other objects.</li>
+<li>Helper type <code>ValueType</code>/<code>ValueTypes</code> for use by the SDK <code>Variation</code> methods.</li>
+<li>Internal interfaces for configuring specific components, like <code>IEventProcessorConfiguration</code>. These replace <code>IBaseConfiguration</code>.</li>
+</ul>
+<h3 id="changed-7">Changed:</h3>
+<ul>
+<li><code>User</code> objects are now immutable.</li>
+<li>In <code>User</code>, <code>IpAddress</code> has been renamed to <code>IPAddress</code> (standard .NET capitalization for two-letter acronyms).</li>
+<li>Custom attributes in <code>User.Custom</code> now use the type <code>ImmutableJsonValue</code> instead of <code>JToken</code>.</li>
+<li>Uses of mutable <code>IDictionary</code> and <code>ISet</code> in the configuration and user objects have been changed to immutable types.</li>
+</ul>
+<h3 id="removed-3">Removed:</h3>
+<ul>
+<li><code>UserExtensions</code> (use <code>User.Builder</code>).</li>
+<li><code>User</code> constructors (use <code>User.WithKey</code> or <code>User.Builder</code>).</li>
+<li><code>User</code> property setters.</li>
+<li><code>IBaseConfiguration</code> and <code>ICommonLdClient</code> interfaces.</li>
+</ul>
+<h3 id="fixed-9">Fixed:</h3>
+<ul>
+<li>No longer assumes that we are overriding the <code>HttpMessageHandler</code> (if it is null in the configuration, just use the default <code>HttpClient</code> constructor). This is important for Xamarin.</li>
+</ul>
+<h2 id="2111---2020-11-05">[2.11.1] - 2020-11-05</h2>
+<h3 id="changed-8">Changed:</h3>
+<ul>
+<li>Updated the <code>LaunchDarkly.EventSource</code> dependency to a version that has a specific target for .NET Standard 2.0. Previously, that package targeted only .NET Standard 1.4 and .NET Framework 4.5. There is no functional difference between these targets, but .NET Core application developers may wish to avoid linking to any .NET Standard 1.x assemblies on general principle.</li>
+</ul>
+<h2 id="2110---2020-01-31">[2.11.0] - 2020-01-31</h2>
+<h3 id="added-15">Added:</h3>
+<ul>
+<li><code>DefaultEventProcessor</code> now supports sending diagnostic data to LaunchDarkly regarding the OS version, performance statistics, etc. The exact implementation of this is determined by the platform-specific SDKs (.NET or Xamarin).</li>
+<li>The SDK now specifies a uniquely identifiable request header when sending events to LaunchDarkly to ensure that events are only processed once, even if the SDK sends them two times due to a failed initial attempt.</li>
+</ul>
+<h2 id="2101---2020-01-15">[2.10.1] - 2020-01-15</h2>
+<h3 id="fixed-10">Fixed:</h3>
+<ul>
+<li>A bug in the SDK prevented the sending of events from being retried after a failure. The SDK now retries once after an event flush fails as was intended.</li>
+<li>The SDK now specifies a uniquely identifiable request header when sending events to LaunchDarkly to ensure that events are only processed once, even if the SDK sends them two times due to a failed initial attempt.</li>
+</ul>
+<h2 id="2100---2020-01-03">[2.10.0] - 2020-01-03</h2>
+<h3 id="added-16">Added:</h3>
+<ul>
+<li><code>IUserBuilder.Secondary</code> is a new name for <code>SecondaryKey</code> (for consistency with other SDKs), and allows you to make the <code>secondary</code> attribute private.</li>
+<li><code>User.Secondary</code> (same as <code>SecondaryKey</code>).</li>
+</ul>
+<h3 id="deprecated-1">Deprecated:</h3>
+<ul>
+<li><code>IUserBuilder.SecondaryKey</code>, <code>User.SecondaryKey</code>.</li>
+</ul>
+<h2 id="292---2019-11-12">[2.9.2] - 2019-11-12</h2>
+<h3 id="fixed-11">Fixed:</h3>
+<ul>
+<li><code>LdValue.Equals()</code> incorrectly returned true for object (dictionary) values that were not equal.</li>
+<li>Summary events incorrectly had <code>unknown:true</code> for all evaluation errors, rather than just for &quot;flag not found&quot; errors (bug introduced in 2.9.0, not used in any current SDK).</li>
+</ul>
+<h2 id="291---2019-11-08">[2.9.1] - 2019-11-08</h2>
+<h3 id="fixed-12">Fixed:</h3>
+<ul>
+<li>Fixed an exception when serializing user custom attributes in events (bug in 2.9.0).</li>
+</ul>
+<h2 id="290---2019-11-08">[2.9.0] - 2019-11-08</h2>
+<h3 id="added-17">Added:</h3>
+<ul>
+<li><code>EvaluationReason</code> static methods and properties for creating reason instances.</li>
+<li><code>LdValue</code> helpers for dealing with array/object values, without having to use an intermediate <code>List</code> or <code>Dictionary</code>: <code>BuildArray</code>, <code>BuildObject</code>, <code>Count</code>, <code>Get</code>.</li>
+<li><code>LdValue.Parse()</code>. It is also possible to use <code>Newtonsoft.Json.JsonConvert</code> to parse or serialize <code>LdValue</code>, but since the implementation may change in the future, using the type's own methods is preferable.</li>
+</ul>
+<h3 id="changed-9">Changed:</h3>
+<ul>
+<li><code>EvaluationReason</code> properties all exist on the base class now, so for instance you do not need to cast to <code>RuleMatch</code> to get the <code>RuleId</code> property. This is in preparation for a future API change in which <code>EvaluationReason</code> will become a struct instead of a base class.</li>
+</ul>
+<h3 id="fixed-13">Fixed:</h3>
+<ul>
+<li>Improved memory usage and performance when processing analytics events: the SDK now encodes event data to JSON directly, instead of creating intermediate objects and serializing them via reflection.</li>
+</ul>
+<h3 id="deprecated-2">Deprecated:</h3>
+<ul>
+<li><code>EvaluationReason</code> subclasses. Use only the base class properties and methods to ensure compatibility with future versions.</li>
+</ul>
+<h2 id="280---2019-10-10">[2.8.0] - 2019-10-10</h2>
+<h3 id="added-18">Added:</h3>
+<ul>
+<li>Added <code>LaunchDarkly.Logging.ConsoleAdapter</code> as a convenience for quickly enabling console logging; this is equivalent to <code>Common.Logging.Simple.ConsoleOutLoggerFactoryAdapter</code>, but the latter is not available on some platforms.</li>
+</ul>
+<h2 id="270---2019-10-03">[2.7.0] - 2019-10-03</h2>
+<h3 id="added-19">Added:</h3>
+<ul>
+<li><code>IUserBuilder.AnonymousOptional</code> allows setting the <code>Anonymous</code> property to <code>null</code> (necessary for consistency with other SDKs). See note about this under Fixed.</li>
+</ul>
+<h3 id="fixed-14">Fixed:</h3>
+<ul>
+<li><code>IUserBuilder</code> was incorrectly setting the user's <code>Anonymous</code> property to <code>null</code> even if it had been explicitly set to <code>false</code>. Null and false behave the same in terms of LaunchDarkly's user indexing behavior, but currently it is possible to create a feature flag rule that treats them differently. So <code>IUserBuilder.Anonymous(false)</code> now correctly sets it to <code>false</code>, just as the deprecated method <code>UserExtensions.WithAnonymous(false)</code> would.</li>
+<li><code>LdValue.Convert.Long</code> was mistakenly converting to an <code>int</code> rather than a <code>long</code>. (<a href="https://github.com/launchdarkly/dotnet-sdk-common/issues/32">#32</a>)</li>
+</ul>
+<h2 id="261---2019-09-12">[2.6.1] - 2019-09-12</h2>
+<h3 id="fixed-15">Fixed:</h3>
+<ul>
+<li>A packaging error made the <code>LaunchDarkly.CommonSdk.StrongName</code> package unusable in 2.6.0.</li>
+</ul>
+<h2 id="260---2019-09-12">[2.6.0] - 2019-09-12</h2>
+<h3 id="added-20">Added:</h3>
+<ul>
+<li>Value type <code>LdValue</code>, to be used in place of <code>JToken</code> whenever possible.</li>
+</ul>
+<h3 id="changed-10">Changed:</h3>
+<ul>
+<li>All event-related code except for public properties now uses <code>LdValue</code>.</li>
+</ul>
+<h3 id="removed-4">Removed:</h3>
+<ul>
+<li>Internal helper type <code>ValueType</code>, unnecessary now because we can use <code>LdValue.Convert</code>.</li>
+</ul>
+<h2 id="251---2019-08-30">[2.5.1] - 2019-08-30</h2>
+<h3 id="fixed-16">Fixed:</h3>
+<ul>
+<li>Many improvements to XML documentation comments.</li>
+</ul>
+<h2 id="250---2019-08-30">[2.5.0] - 2019-08-30</h2>
+<h3 id="added-21">Added:</h3>
+<ul>
+<li>Internal helper types <code>ValueType</code> and <code>ValueTypes</code>.</li>
+<li>XML documentation comments are now included in the package for all target frameworks. Previously they were only included for .NET Standard 1.4.</li>
+</ul>
+<h3 id="changed-11">Changed:</h3>
+<ul>
+<li>Internal types are now sealed.</li>
+<li>Changed some internal classes to structs for efficiency.</li>
+</ul>
+<h3 id="deprecated-3">Deprecated:</h3>
+<ul>
+<li><code>IBaseConfiguration</code> and <code>ICommonLdClient</code> interfaces.</li>
+</ul>
+<h2 id="240---2019-07-31">[2.4.0] - 2019-07-31</h2>
+<h3 id="added-22">Added:</h3>
+<ul>
+<li><code>IBaseConfiguration.EventCapacity</code> and <code>IBaseConfiguration.EventFlushInterval</code>.</li>
+<li><code>UserBuilder.Key</code> setter.</li>
+</ul>
+<h3 id="deprecated-4">Deprecated:</h3>
+<ul>
+<li><code>IBaseConfiguration.SamplingInterval</code>.</li>
+<li><code>IBaseConfiguration.EventQueueCapacity</code> (now a synonym for <code>EventCapacity</code>).</li>
+<li><code>IBaseConfiguration.EventQueueFrequency</code> (now a synonym for <code>EventFlushInterval</code>).</li>
+</ul>
+<h2 id="230---2019-07-23">[2.3.0] - 2019-07-23</h2>
+<h3 id="deprecated-5">Deprecated:</h3>
+<ul>
+<li><code>User</code> constructors.</li>
+<li><code>User.Custom</code> and <code>User.PrivateAttributeNames</code> will be changed to immutable collections in the future.</li>
+</ul>
+<h2 id="220---2019-07-23">[2.2.0] - 2019-07-23</h2>
+<h3 id="added-23">Added:</h3>
+<ul>
+<li><code>User.Builder</code> provides a fluent builder pattern for constructing <code>User</code> objects. This is now the preferred method for building a user, rather than setting <code>User</code> properties directly or using <code>UserExtension</code> methods like <code>AndName()</code> that modify the existing user object.</li>
+<li><code>User.IPAddress</code> is equivalent to <code>User.IpAddress</code>, but has the standard .NET capitalization for two-letter acronyms.</li>
+</ul>
+<h3 id="deprecated-6">Deprecated:</h3>
+<ul>
+<li><code>User.IpAddress</code> (use <code>IPAddress</code>).</li>
+<li>All <code>UserExtension</code> methods are now deprecated. The setters for all <code>User</code> properties should also be considered deprecated, although C# does not allow these to be marked with <code>[Obsolete]</code>.</li>
+</ul>
+<h2 id="212---2019-05-10">[2.1.2] - 2019-05-10</h2>
+<h3 id="fixed-17">Fixed:</h3>
+<ul>
+<li>Fixed a build error that caused classes to be omitted from <code>LaunchDarkly.CommonSdk.StrongName</code>.</li>
+</ul>
+<h2 id="211---2019-05-10">[2.1.1] - 2019-05-10</h2>
+<h3 id="changed-12">Changed:</h3>
+<ul>
+<li>The package and assembly name are now <code>LaunchDarkly.CommonSdk</code>, and the <code>InternalsVisibleTo</code> directives now refer to <code>LaunchDarkly.ServerSdk</code> and <code>LaunchDarkly.XamarinSdk</code>. There are no other changes. All future releases of the LaunchDarkly server-side .NET SDK and client-side Xamarin SDK will use the new package names, and no further updates of the old <code>LaunchDarkly.Common</code> package will be published.</li>
+</ul>
+<h2 id="210---2019-04-16">[2.1.0] - 2019-04-16</h2>
+<h3 id="added-24">Added:</h3>
+<ul>
+<li>Added support for planned future LaunchDarkly features related to analytics events and experimentation (metric values).</li>
+</ul>
+<h2 id="200---2019-03-26">[2.0.0] - 2019-03-26</h2>
+<h3 id="added-25">Added:</h3>
+<ul>
+<li>Added support for planned future LaunchDarkly features related to analytics events and experimentation.</li>
+<li>It is now possible to deserialize evaluation reasons from JSON (this is used by the Xamarin client).</li>
+</ul>
+<h3 id="changed-13">Changed:</h3>
+<ul>
+<li>The <code>IFlagEventProperties</code> interface was extended and modified to support the aforementioned features.</li>
+</ul>
+<h3 id="fixed-18">Fixed:</h3>
+<ul>
+<li>Under some circumstances, a <code>CancellationTokenSource</code> might not be disposed of after making an HTTP request, which could cause a timer object to be leaked.</li>
+</ul>
+<h2 id="123---2018-01-14">[1.2.3] - 2018-01-14</h2>
+<h3 id="fixed-19">Fixed:</h3>
+<ul>
+<li>The assemblies in this package now have Authenticode signatures.</li>
+</ul>
+<h2 id="122---2018-01-09">[1.2.2] - 2018-01-09</h2>
+<p>This release was an error. It works, but there are no changes from 1.2.1 except for using a newer version of <code>dotnet-eventsource</code>, which was also an unintended re-release of the previous version.</p>
+<h2 id="121---2018-12-17">[1.2.1] - 2018-12-17</h2>
+<h3 id="changed-14">Changed</h3>
+<p>The only changes in this version are to the build:</p>
+<ul>
+<li>What is published to NuGet is now the Release configuration, without debug information.</li>
+<li>The Debug configuration (the default) no longer performs strong-name signing. This makes local development easier.</li>
+<li><code>LaunchDarkly.Common</code> now has an <code>InternalsVisibleTo</code> directive for an <em>unsigned</em> version of the <code>LaunchDarkly.Client</code> unit tests. Again this is to support local development, since the client will be unsigned by default as well.</li>
+</ul>
+<h2 id="120---2018-10-24">[1.2.0] - 2018-10-24</h2>
+<h3 id="changed-15">Changed</h3>
+<ul>
+<li><p>The non-strong-named version of this library (<code>LaunchDarkly.Common</code>) can now be used with a non-strong-named version of <code>LaunchDarkly.Client</code>, which does not normally exist but could be built as part of a fork of the SDK.</p>
+</li>
+<li><p>Previously, the delay before stream reconnect attempts would increase exponentially only if the previous connection could not be made at all or returned an HTTP error; if it received an HTTP 200 status, the delay would be reset to the minimum even if the connection then immediately failed. Now, if the stream connection fails after it has been up for less than a minute, the reconnect delay will continue to increase. (changed in <code>LaunchDarkly.EventSource</code> 3.2.0)</p>
+</li>
+</ul>
+<h3 id="fixed-20">Fixed</h3>
+<ul>
+<li><p>Fixed an <a href="https://blogs.msdn.microsoft.com/pfxteam/2011/09/28/task-exception-handling-in-net-4-5/">unobserved exception</a> that could occur following a stream timeout, which could cause a crash in .NET 4.0. (fixed in <code>LaunchDarkly.EventSource</code> 3.2.0)</p>
+</li>
+<li><p>A <code>NullReferenceException</code> could sometimes be logged if a stream connection failed. (fixed in <code>LaunchDarkly.EventSource</code> 3.2.0)</p>
+</li>
+</ul>
+<h2 id="111---2018-08-29">[1.1.1] - 2018-08-29</h2>
+<p>Incorporates the fix from 1.0.6 that was not included in 1.1.0.</p>
+<h2 id="110---2018-08-22">[1.1.0] - 2018-08-22</h2>
+<h3 id="added-26">Added</h3>
+<ul>
+<li>New <code>EvaluationDetail</code> and <code>EvaluationReason</code> classes will be used in future SDK versions that support capturing evaluation reasons.</li>
+</ul>
+<h2 id="106---2018-08-30">[1.0.6] - 2018-08-30</h2>
+<h3 id="fixed-21">Fixed</h3>
+<ul>
+<li>Updated LaunchDarkly.EventSource to fix a bug that prevented the client from reconnecting to the stream if it received an HTTP error status from the server (as opposed to simply losing the connection).</li>
+</ul>
+<h2 id="105---2018-08-14">[1.0.5] - 2018-08-14</h2>
+<h3 id="fixed-22">Fixed</h3>
+<ul>
+<li>The reconnection attempt counter is no longer shared among all StreamManager instances. Previously, if you connected to more than one stream, all but the first would behave as if they were reconnecting and would have a backoff delay.</li>
+</ul>
+<h2 id="104---2018-08-02">[1.0.4] - 2018-08-02</h2>
+<h3 id="changed-16">Changed</h3>
+<ul>
+<li>Updated the dependency on <code>LaunchDarkly.EventSource</code>, which no longer has package references to System assemblies.</li>
+</ul>
+<h2 id="103---2018-07-27">[1.0.3] - 2018-07-27</h2>
+<h3 id="changed-17">Changed</h3>
+<ul>
+<li>The package <code>LaunchDarkly.Common</code> is no longer strong-named. Instead, we are now building two packages: <code>LaunchDarkly.Common</code> and <code>LaunchDarkly.Common.StrongName</code>. This is because the Xamarin project requires an unsigned version of the package, whereas the main .NET SDK uses the signed one.</li>
+<li>The project now uses a framework reference (<code>Reference</code>) instead of a package reference (<code>PackageReference</code>) to refer to <code>System.Net.Http</code>. An unnecessary reference to <code>System.Runtime</code> was removed.</li>
+<li>The stream processor now propagates an exception out of its initialization <code>Task</code> if it encounters an unrecoverable error.</li>
+</ul>
+<h2 id="102---2018-07-24">[1.0.2] - 2018-07-24</h2>
+<p>''This release is broken and should not be used.''</p>
+<h2 id="101---2018-07-02">[1.0.1] - 2018-07-02</h2>
+<h3 id="changed-18">Changed</h3>
+<ul>
+<li>When targeting .NET 4.5, the dependency on <code>Newtonsoft.Json</code> now has a minimum version of 6.0.1 rather than 9.0.1. This should not affect any applications that specify a higher version for this assembly.</li>
+</ul>
+<h3 id="removed-5">Removed</h3>
+<ul>
+<li>The <code>Identify</code> method is no longer part of <code>ILdCommonClient</code>, since it does not have the same signature in the Xamarin client as in the server-side .NET SDK.</li>
+</ul>
+<h2 id="100---2018-06-26">[1.0.0] - 2018-06-26</h2>
+<p>Initial release, corresponding to .net-client version 5.1.0.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/common-json-net/CHANGELOG.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

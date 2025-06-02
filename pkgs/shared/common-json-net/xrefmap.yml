@@ -1,0 +1,28 @@
+### YamlMime:XRefMap
+sorted: true
+references:
+- uid: LaunchDarkly.Sdk.Json
+  name: LaunchDarkly.Sdk.Json
+  href: api/LaunchDarkly.Sdk.Json.html
+  commentId: N:LaunchDarkly.Sdk.Json
+  fullName: LaunchDarkly.Sdk.Json
+  nameWithType: LaunchDarkly.Sdk.Json
+- uid: LaunchDarkly.Sdk.Json.LdJsonNet
+  name: LdJsonNet
+  href: api/LaunchDarkly.Sdk.Json.LdJsonNet.html
+  commentId: T:LaunchDarkly.Sdk.Json.LdJsonNet
+  fullName: LaunchDarkly.Sdk.Json.LdJsonNet
+  nameWithType: LdJsonNet
+- uid: LaunchDarkly.Sdk.Json.LdJsonNet.Converter
+  name: Converter
+  href: api/LaunchDarkly.Sdk.Json.LdJsonNet.html#LaunchDarkly_Sdk_Json_LdJsonNet_Converter
+  commentId: P:LaunchDarkly.Sdk.Json.LdJsonNet.Converter
+  fullName: LaunchDarkly.Sdk.Json.LdJsonNet.Converter
+  nameWithType: LdJsonNet.Converter
+- uid: LaunchDarkly.Sdk.Json.LdJsonNet.Converter*
+  name: Converter
+  href: api/LaunchDarkly.Sdk.Json.LdJsonNet.html#LaunchDarkly_Sdk_Json_LdJsonNet_Converter_
+  commentId: Overload:LaunchDarkly.Sdk.Json.LdJsonNet.Converter
+  isSpec: "True"
+  fullName: LaunchDarkly.Sdk.Json.LdJsonNet.Converter
+  nameWithType: LdJsonNet.Converter

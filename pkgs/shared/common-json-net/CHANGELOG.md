@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.CommonSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [7.0.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk.JsonNet-v7.0.0...LaunchDarkly.CommonSdk.JsonNet-v7.0.1) (2025-06-02)
+
+
+### Bug Fixes
+
+* [#104](https://github.com/launchdarkly/dotnet-core/issues/104) dependency optimisation ([#111](https://github.com/launchdarkly/dotnet-core/issues/111)) ([2c7ff62](https://github.com/launchdarkly/dotnet-core/commit/2c7ff629a4c16ad866c6e4ea5b24abc622942f0e))
+
 ## [7.0.0] - 2023-10-17
 ### Changed:
 - IEnvironmentReporter now reports nullable values.

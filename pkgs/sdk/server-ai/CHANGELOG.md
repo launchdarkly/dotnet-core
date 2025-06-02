@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.7.0...LaunchDarkly.ServerSdk.Ai-v0.8.0) (2025-06-02)
+
+
+### Features
+
+* Update to net8 ([ddae814](https://github.com/launchdarkly/dotnet-core/commit/ddae814250cb21e0de2b953808202addd7098c4c))
+
 ## [0.7.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.6.0...LaunchDarkly.ServerSdk.Ai-v0.7.0) (2025-02-06)
 
 

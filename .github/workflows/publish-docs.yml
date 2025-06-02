@@ -7,9 +7,14 @@ on:
         type: choice
         options:
           - pkgs/sdk/client
+          - pkgs/dotnet-server-sdk-consul
+          - pkgs/dotnet-server-sdk-dynamodb
+          - pkgs/dotnet-server-sdk-redis
           - pkgs/sdk/server
           - pkgs/sdk/server-ai
           - pkgs/telemetry
+          - pkgs/shared/common
+          - pkgs/shared/common-json-net
 
 name: Publish Docs
 jobs:
@@ -29,7 +34,7 @@ jobs:
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
-          s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk = LaunchDarkly.ClientSdk.snk'
+          s3_path_pairs: ${{ env.ASSEMBLY_KEY_PATH_PAIR }}
 
       - id: build
         name: Build and Test SDK

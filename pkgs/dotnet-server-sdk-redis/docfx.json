@@ -39,8 +39,8 @@
       "default"
     ],
     "globalMetadata": {
-      "_appName": "LaunchDarkly.ServerSdk.DynamoDb",
-      "_appTitle": "DynamoDB integration for the LaunchDarkly SDK for Server-side .NET",
+      "_appName": "LaunchDarkly.ServerSdk.Redis",
+      "_appTitle": "Redis integration for the LaunchDarkly SDK for Server-side .NET ",
       "_enableSearch": true,
       "pdf": false
     }

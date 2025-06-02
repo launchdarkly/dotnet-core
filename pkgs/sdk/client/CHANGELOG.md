@@ -3,6 +3,21 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.5.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.4.0...LaunchDarkly.ClientSdk-v5.5.0) (2025-06-02)
+
+
+### Features
+
+* Update SDK client to net8 ([aea1514](https://github.com/launchdarkly/dotnet-core/commit/aea1514b104007d703aafa58adc2ff318f8182b1))
+* Update to net8 ([ddae814](https://github.com/launchdarkly/dotnet-core/commit/ddae814250cb21e0de2b953808202addd7098c4c))
+
+
+### Bug Fixes
+
+* [#104](https://github.com/launchdarkly/dotnet-core/issues/104) dependency optimisation ([#111](https://github.com/launchdarkly/dotnet-core/issues/111)) ([2c7ff62](https://github.com/launchdarkly/dotnet-core/commit/2c7ff629a4c16ad866c6e4ea5b24abc622942f0e))
+* Bump Internal SDK version ([#112](https://github.com/launchdarkly/dotnet-core/issues/112)) ([3cb5ae4](https://github.com/launchdarkly/dotnet-core/commit/3cb5ae4e1de89f55d9221997c3ba2c7179ae4a2d))
+* Update CommonSDK to v7.0.1 ([#126](https://github.com/launchdarkly/dotnet-core/issues/126)) ([fad338e](https://github.com/launchdarkly/dotnet-core/commit/fad338e651ffe856d6cf5c6e71ba6ff1526d422a))
+
 ## [5.4.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.3.0...LaunchDarkly.ClientSdk-v5.4.0) (2025-05-07)
 
 

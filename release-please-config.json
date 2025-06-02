@@ -7,58 +7,100 @@
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Consul",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Consul.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.ServerSdk.Consul.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/dotnet-server-sdk-dynamodb": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.DynamoDb",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.DynamoDb.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.ServerSdk.DynamoDb.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/dotnet-server-sdk-redis": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Redis",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Redis.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.ServerSdk.Redis.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/sdk/server": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.ServerSdk.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/sdk/server-ai": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Ai",
       "bump-minor-pre-major": true,
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Ai.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.ServerSdk.Ai.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/sdk/client": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ClientSdk",
       "extra-files": [
-        "src/LaunchDarkly.ClientSdk.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.ClientSdk.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/telemetry": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Telemetry",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Telemetry.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.ServerSdk.Telemetry.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/shared/common": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk",
       "extra-files": [
-        "src/LaunchDarkly.CommonSdk.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.CommonSdk.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     },
     "pkgs/shared/common-json-net": {
+      "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk.JsonNet",
       "extra-files": [
-        "src/LaunchDarkly.CommonSdk.JsonNet.csproj"
+        {
+          "type": "xml",
+          "path": "src/LaunchDarkly.CommonSdk.JsonNet.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
       ]
     }
   }

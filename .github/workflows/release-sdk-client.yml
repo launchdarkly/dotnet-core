@@ -42,14 +42,14 @@ jobs:
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
-          s3_path_pairs: 'launchdarkly-releaser/dotnet/LaunchDarkly.ClientSdk.snk = LaunchDarkly.ClientSdk.snk'
+          s3_path_pairs: ${{ env.ASSEMBLY_KEY_PATH_PAIR }}
 
       - name: CI check
         uses: ./.github/actions/ci
         with:
           project_file: ${{ env.PROJECT_FILE }}
           test_project_file: ${{ env.TEST_PROJECT_FILE }}
-          target_test_framework: "8.0"
+          target_test_framework: "net8.0"
 
       - name: Release build
         uses: ./.github/actions/build-release

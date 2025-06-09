@@ -213,6 +213,55 @@ namespace LaunchDarkly.Sdk.Server.Migrations
             Assert.Empty(LogCapture.GetMessages());
         }
 
+        [Fact]
+        public void ItRecordsLatencyInMillisecondsGreaterThanASecond()
+        {
+            var tracker = BasicTracker();
+            tracker.Op(MigrationOperation.Read);
+            tracker.Invoked(MigrationOrigin.New);
+            tracker.Invoked(MigrationOrigin.Old);
+
+            // 2.5 seconds = 2500 milliseconds
+            var oldLatency = TimeSpan.FromMilliseconds(2500);
+            var newLatency = TimeSpan.FromMilliseconds(1500);
+
+            tracker.Latency(MigrationOrigin.Old, oldLatency);
+            tracker.Latency(MigrationOrigin.New, newLatency);
+
+            var optEvent = tracker.CreateEvent();
+            Assert.True(optEvent.HasValue);
+            var migrationOpEvent = optEvent.Value;
+
+            Assert.True(migrationOpEvent.Latency.HasValue);
+            Assert.Equal(2500, migrationOpEvent.Latency?.Old);
+            Assert.Equal(1500, migrationOpEvent.Latency?.New);
+            Assert.Empty(LogCapture.GetMessages());
+        }
+
+        [Fact]
+        public void ItHandlesExtremelyLargeLatencyWithoutException()
+        {
+            var tracker = BasicTracker();
+            tracker.Op(MigrationOperation.Read);
+            tracker.Invoked(MigrationOrigin.New);
+            tracker.Invoked(MigrationOrigin.Old);
+
+            var hugeLatency = TimeSpan.MaxValue;
+
+            Exception ex = Record.Exception(() =>
+            {
+                tracker.Latency(MigrationOrigin.Old, hugeLatency);
+                tracker.Latency(MigrationOrigin.New, hugeLatency);
+                var optEvent = tracker.CreateEvent();
+                var migrationOpEvent = optEvent.Value;
+                Assert.Equal((long?)TimeSpan.MaxValue.TotalMilliseconds, migrationOpEvent.Latency?.Old);
+                Assert.Equal((long?)TimeSpan.MaxValue.TotalMilliseconds, migrationOpEvent.Latency?.New);
+                Assert.Empty(LogCapture.GetMessages());
+            });
+
+            Assert.Null(ex);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

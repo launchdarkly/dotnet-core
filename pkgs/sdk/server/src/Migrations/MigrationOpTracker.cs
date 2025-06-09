@@ -279,8 +279,9 @@ namespace LaunchDarkly.Sdk.Server.Migrations
                 {
                     migrationOpEvent.Latency = new EventProcessorTypes.MigrationOpEvent.LatencyMeasurement
                     {
-                        Old = _oldLatency?.Milliseconds,
-                        New = _newLatency?.Milliseconds
+                        // Fractional milliseconds are trucated as LatencyMeasurement does not support them.
+                        Old = (long?)_oldLatency?.TotalMilliseconds,
+                        New = (long?)_newLatency?.TotalMilliseconds
                     };
                 }
 

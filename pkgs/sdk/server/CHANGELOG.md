@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.9.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.9.0...LaunchDarkly.ServerSdk-v8.9.1) (2025-06-09)
+
+
+### Bug Fixes
+
+* Track latencies greater than 1 second ([#133](https://github.com/launchdarkly/dotnet-core/issues/133)) ([4416c86](https://github.com/launchdarkly/dotnet-core/commit/4416c86fdf6deab170538fda4dd9474860c85892))
+
 ## [8.9.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.8.0...LaunchDarkly.ServerSdk-v8.9.0) (2025-06-02)
 
 

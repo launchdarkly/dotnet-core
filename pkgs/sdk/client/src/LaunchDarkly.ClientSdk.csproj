@@ -43,7 +43,7 @@
         <PackageReference Include="System.Numerics.Vectors" Version="4.5.0"/>
         <PackageReference Include="LaunchDarkly.CommonSdk" Version="7.0.1"/>
         <PackageReference Include="LaunchDarkly.EventSource" Version="5.0.1"/>
-        <PackageReference Include="LaunchDarkly.InternalSdk" Version="3.5.1" />
+        <PackageReference Include="LaunchDarkly.InternalSdk" Version="3.5.2" />
         <PackageReference Include="LaunchDarkly.Logging" Version="2.0.0"/>
         <PackageReference Include="Microsoft.Maui.Essentials" Version="8.0.100" />
         <Compile Include="**\*.cs" Exclude="PlatformSpecific\*.cs;bin\**\*.cs;obj\**\*.cs"/>

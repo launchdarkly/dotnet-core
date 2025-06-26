@@ -44,58 +44,50 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
 
             internal void Push(T value)
             {
-                if (_hasFirstValue)
-                {
-                    if (_values is null)
-                    {
-                        _values = new List<T>
-                        {
-                            _firstValue
-                        };
-                    }
-                    _values.Add(value);
-                }
-                else
+                if (!_hasFirstValue)
                 {
                     _firstValue = value;
                     _hasFirstValue = true;
+                    return;
                 }
+
+                if (_values is null)
+                {
+                    _values = new List<T>();
+                }
+                _values.Add(value);
             }
 
             internal T Pop()
             {
-                if (_values is null || _values.Count <= 1)
+                if (!_hasFirstValue)
                 {
-                    if (!_hasFirstValue)
-                    {
-                        throw new InvalidOperationException();
-                    }
-                    _hasFirstValue = false;
-                    _values = null;
-                    return _firstValue;
+                    throw new InvalidOperationException();
                 }
-                var value = _values[_values.Count - 1];
-                _values.RemoveAt(_values.Count - 1);
-                return value;
+
+                if (_values != null && _values.Count > 0)
+                {
+                    var value = _values[_values.Count - 1];
+                    _values.RemoveAt(_values.Count - 1);
+                    return value;
+                }
+
+                _hasFirstValue = false;
+                return _firstValue;
             }
 
             internal bool Contains(T value)
             {
-                if (_hasFirstValue && _firstValue.Equals(value))
+                if (!_hasFirstValue)
+                {
+                    return false;
+                }
+                else if (_firstValue.Equals(value))
                 {
                     return true;
                 }
-                if (!(_values is null))
-                {
-                    foreach (var v in _values)
-                    {
-                        if (v.Equals(value))
-                        {
-                            return true;
-                        }
-                    }
-                }
-                return false;
+
+                return _values != null && _values.Contains(value);
             }
         }
 

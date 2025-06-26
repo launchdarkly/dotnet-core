@@ -48,8 +48,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                 {
                     if (_values is null)
                     {
-                        _values = new List<T>();
-                        _values.Add(_firstValue);
+                        _values = new List<T>
+                        {
+                            _firstValue
+                        };
                     }
                     _values.Add(value);
                 }
@@ -62,13 +64,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
 
             internal T Pop()
             {
-                if (_values is null || _values.Count == 0)
+                if (_values is null || _values.Count <= 1)
                 {
                     if (!_hasFirstValue)
                     {
                         throw new InvalidOperationException();
                     }
                     _hasFirstValue = false;
+                    _values = null;
                     return _firstValue;
                 }
                 var value = _values[_values.Count - 1];

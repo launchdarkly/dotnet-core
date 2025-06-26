@@ -37,7 +37,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
 
         // EvalState is a container for mutable state information and immutable parameters whose scope is a
         // single call to Evaluator.Evaluate(). The flag being evaluated is *not* part of the state-- we pass
-        // it around as a parameter-- because  a single Evaluate may cause multiple flags to be evaluated due
+        // it around as a parameter-- because a single Evaluate may cause multiple flags to be evaluated due
         // to prerequisite relationships. But the Context is part of the state, because it is always the same
         // no matter how many nested things are being evaluated.
         internal struct EvalState

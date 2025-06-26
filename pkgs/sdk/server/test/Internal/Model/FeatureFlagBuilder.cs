@@ -367,6 +367,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
 
         public static Clause ShouldMatchSegment(params string[] segmentKeys) =>
             new ClauseBuilder().Attribute("").Op("segmentMatch").Values(segmentKeys).Build();
+
+        public static Clause ShouldNotMatchSegment(params string[] segmentKeys) =>
+            new ClauseBuilder().Attribute("").Op("segmentMatch").Values(segmentKeys).Negate(true).Build();
     }
 
     internal class TargetBuilder

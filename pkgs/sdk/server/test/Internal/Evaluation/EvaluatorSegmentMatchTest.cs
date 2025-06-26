@@ -23,7 +23,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
         {
             var s = new SegmentBuilder("test").Version(1).
                 IncludedContext(kind1, "key1").IncludedContext(kind2, "key2").Build();
-            
+
             Assert.True(SegmentMatchesUser(s, Context.New(kind1, "key1")));
             Assert.True(SegmentMatchesUser(s, Context.New(kind2, "key2")));
             Assert.False(SegmentMatchesUser(s, Context.New(kind1, "key2")));
@@ -170,6 +170,34 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
             var evaluator = BasicEvaluator.WithStoredSegments(segment);
             var result = evaluator.Evaluate(flag, context);
             return result.Result.Value.AsBool;
+        }
+
+        [Fact]
+        public void ContextNotInExcludedNestedSegment()
+        {
+            var nestedSegment = new SegmentBuilder("nested-segment")
+                .Rules(new SegmentRuleBuilder().Clauses(ClauseBuilder.ShouldMatchUser(Context.New("user1"))).Build())
+                .Build();
+            var parentSegment = new SegmentBuilder("parent-segment")
+                .Rules(new SegmentRuleBuilder().Clauses(ClauseBuilder.ShouldMatchSegment(nestedSegment.Key)).Build())
+                .Build();
+            var excludeOtherSegments = new SegmentBuilder("exclude-other-segments")
+                .Rules(new SegmentRuleBuilder().Clauses(ClauseBuilder.ShouldNotMatchSegment(parentSegment.Key)).Build())
+                .Build();
+
+            var flag = new FeatureFlagBuilder("key").On(true).OffVariation(0)
+                .FallthroughVariation(0)
+                .Variations(false, true)
+                .Rules(
+                    new RuleBuilder().Id("id1").Variation(0).Clauses(ClauseBuilder.ShouldMatchSegment(parentSegment.Key)).Build(),
+                    new RuleBuilder().Id("id2").Variation(1).Clauses(ClauseBuilder.ShouldMatchSegment(excludeOtherSegments.Key)).Build()
+                )
+                .Build();
+            var logCapture = Logs.Capture();
+            var evaluator = BasicEvaluator.WithStoredSegments(nestedSegment, parentSegment, excludeOtherSegments).WithLogger(logCapture.Logger(""));
+            var result = evaluator.Evaluate(flag, Context.New("key"));
+            Assert.Null(result.Result.Reason.ErrorKind);
+            Assert.True(result.Result.Value.AsBool);
         }
     }
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.9.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.9.1...LaunchDarkly.ServerSdk-v8.9.2) (2025-06-26)
+
+
+### Bug Fixes
+
+* Invalid circular reference detection for nested segments ([#137](https://github.com/launchdarkly/dotnet-core/issues/137)) ([98f418e](https://github.com/launchdarkly/dotnet-core/commit/98f418e14f3c40057cf63276d1bbd2ea83d6e592))
+
 ## [8.9.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.9.0...LaunchDarkly.ServerSdk-v8.9.1) (2025-06-09)
 
 

@@ -112,6 +112,10 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         public HookConfigurationBuilder Hooks { get; }
 
+        /// <summary>
+        /// </summary>
+        public PluginConfigurationBuilder Plugins { get; }
+
         #endregion
 
         #region Public methods
@@ -189,6 +193,7 @@ namespace LaunchDarkly.Sdk.Server
             ApplicationInfo = builder._applicationInfo;
             WrapperInfo = builder._wrapperInfo;
             Hooks = builder._hooks;
+            Plugins = builder._plugins;
         }
 
         #endregion

@@ -39,6 +39,7 @@ namespace LaunchDarkly.Sdk.Server
         internal bool _diagnosticOptOut = false;
         internal IComponentConfigurer<IEventProcessor> _events = null;
         internal HookConfigurationBuilder _hooks = null;
+        internal PluginConfigurationBuilder _plugins = null;
         internal IComponentConfigurer<HttpConfiguration> _http = null;
         internal IComponentConfigurer<LoggingConfiguration> _logging = null;
         internal bool _offline = false;
@@ -65,6 +66,7 @@ namespace LaunchDarkly.Sdk.Server
             _diagnosticOptOut = copyFrom.DiagnosticOptOut;
             _events = copyFrom.Events;
             _hooks = copyFrom.Hooks;
+            _plugins = copyFrom.Plugins;
             _http = copyFrom.Http;
             _logging = copyFrom.Logging;
             _offline = copyFrom.Offline;
@@ -288,6 +290,17 @@ namespace LaunchDarkly.Sdk.Server
         public ConfigurationBuilder Hooks(HookConfigurationBuilder hooksConfig)
         {
             _hooks = hooksConfig;
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the SDK's plugins.
+        /// </summary>
+        /// <param name="pluginsConfig">the plugin configuration</param>
+        /// <returns>the same builder</returns>
+        public ConfigurationBuilder Plugins(PluginConfigurationBuilder pluginsConfig)
+        {
+            _plugins = pluginsConfig;
             return this;
         }
 

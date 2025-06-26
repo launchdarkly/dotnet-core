@@ -7,6 +7,7 @@ using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal;
+using LaunchDarkly.Sdk.Server.Plugins;
 using LaunchDarkly.Sdk.Server.Internal.BigSegments;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
@@ -199,9 +200,48 @@ namespace LaunchDarkly.Sdk.Server
             _flagTracker = new FlagTrackerImpl(dataSourceUpdates,
                 (string key, Context context) => JsonVariation(key, context, LdValue.Null));
 
+            var allHooks = new List<Hook>();
+            
             var hookConfig = (config.Hooks ?? Components.Hooks()).Build();
-            _hookExecutor =  hookConfig.Hooks.Any() ?
-                (IHookExecutor) new Executor(_log.SubLogger(LogNames.HooksSubLog), hookConfig.Hooks)
+            allHooks.AddRange(hookConfig.Hooks);
+            
+            var pluginConfig = (config.Plugins ?? Components.Plugins()).Build();
+            if (pluginConfig.Plugins.Any())
+            {
+                var environmentMetadata = CreateEnvironmentMetadata(config, clientContext);
+                
+                foreach (var plugin in pluginConfig.Plugins)
+                {
+                    try
+                    {
+                        var pluginHooks = plugin.GetHooks(environmentMetadata);
+                        if (pluginHooks != null)
+                        {
+                            allHooks.AddRange(pluginHooks);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error("Error getting hooks from plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
+                    }
+                }
+                
+                foreach (var plugin in pluginConfig.Plugins)
+                {
+                    try
+                    {
+                        plugin.Register(this, environmentMetadata);
+                        _log.Debug("Registered plugin: {0}", plugin.GetMetadata()?.Name ?? "unknown");
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error("Error registering plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
+                    }
+                }
+            }
+            
+            _hookExecutor = allHooks.Any() ?
+                (IHookExecutor) new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
                 : new NoopExecutor();
 
 
@@ -692,6 +732,26 @@ namespace LaunchDarkly.Sdk.Server
                 return dataStoreMetadata.GetMetadata()?.EnvironmentId;
             }
             return null;
+        }
+
+        private EnvironmentMetadata CreateEnvironmentMetadata(Configuration config, LdClientContext clientContext)
+        {
+            var applicationInfo = clientContext.ApplicationInfo;
+            var wrapperInfo = config.WrapperInfo?.Build();
+            
+            var sdkMetadata = new SdkMetadata(
+                "dotnet-server-sdk",
+                AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)),
+                wrapperInfo?.WrapperName,
+                wrapperInfo?.WrapperVersion
+            );
+            
+            var applicationMetadata = new ApplicationMetadata(
+                applicationInfo?.ApplicationId,
+                applicationInfo?.ApplicationVersion
+            );
+            
+            return new EnvironmentMetadata(sdkMetadata, config.SdkKey, applicationMetadata);
         }
 
         #endregion

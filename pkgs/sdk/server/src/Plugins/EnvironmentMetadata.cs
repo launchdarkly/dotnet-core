@@ -18,7 +18,9 @@ namespace LaunchDarkly.Sdk.Server.Plugins
 
         /// <summary>
         /// </summary>
+        /// <param name="sdk">the SDK metadata</param>
         /// <param name="sdkKey">the SDK key</param>
+        /// <param name="application">the application metadata</param>
         public EnvironmentMetadata(SdkMetadata sdk, string sdkKey, ApplicationMetadata application)
         {
             Sdk = sdk;

@@ -28,6 +28,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         /// <summary>
+        /// Adds a plugin to the configuration.
         /// </summary>
         /// <returns>the builder</returns>
         public PluginConfigurationBuilder Add(Plugin plugin)

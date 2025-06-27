@@ -206,9 +206,10 @@ namespace LaunchDarkly.Sdk.Server
             allHooks.AddRange(hookConfig.Hooks);
             
             var pluginConfig = (config.Plugins ?? Components.Plugins()).Build();
+            EnvironmentMetadata environmentMetadata = null;
             if (pluginConfig.Plugins.Any())
             {
-                var environmentMetadata = CreateEnvironmentMetadata(config, clientContext);
+                environmentMetadata = CreateEnvironmentMetadata(config, clientContext);
                 
                 foreach (var plugin in pluginConfig.Plugins)
                 {
@@ -225,7 +226,14 @@ namespace LaunchDarkly.Sdk.Server
                         _log.Error("Error getting hooks from plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
                     }
                 }
-                
+            }
+            
+            _hookExecutor = allHooks.Any() ?
+                (IHookExecutor) new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
+                : new NoopExecutor();
+
+            if (pluginConfig.Plugins.Any() && environmentMetadata != null)
+            {
                 foreach (var plugin in pluginConfig.Plugins)
                 {
                     try
@@ -239,10 +247,6 @@ namespace LaunchDarkly.Sdk.Server
                     }
                 }
             }
-            
-            _hookExecutor = allHooks.Any() ?
-                (IHookExecutor) new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
-                : new NoopExecutor();
 
 
             var initTask = _dataSource.Start();

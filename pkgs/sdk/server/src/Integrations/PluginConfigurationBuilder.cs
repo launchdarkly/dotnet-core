@@ -6,6 +6,7 @@ using LaunchDarkly.Sdk.Server.Subsystems;
 namespace LaunchDarkly.Sdk.Server.Integrations
 {
     /// <summary>
+    /// PluginConfigurationBuilder is a builder for the SDK's plugin configuration.
     /// </summary>
     public sealed class PluginConfigurationBuilder
     {
@@ -38,6 +39,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// <summary>
         /// Builds the configuration.
         /// </summary>
+        /// <returns>the built configuration</returns>
         public PluginConfiguration Build()
         {
             return new PluginConfiguration(_plugins);

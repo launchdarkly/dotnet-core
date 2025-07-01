@@ -131,7 +131,7 @@ namespace LaunchDarkly.Sdk.Server
         {
             _configuration = config;
 
-            var logConfig = (config.Logging ?? Components.Logging()).Build(new LdClientContext(config.SdkKey));
+            var logConfig = (_configuration.Logging ?? Components.Logging()).Build(new LdClientContext(_configuration.SdkKey));
 
             _log = logConfig.LogAdapter.Logger(logConfig.BaseLoggerName ?? LogNames.DefaultBase);
             _log.Info("Starting LaunchDarkly client {0}",
@@ -141,20 +141,20 @@ namespace LaunchDarkly.Sdk.Server
             var taskExecutor = new TaskExecutor(this, _log);
 
             var clientContext = new LdClientContext(
-                config.SdkKey,
+                _configuration.SdkKey,
                 null,
                 null,
                 null,
                 _log,
-                config.Offline,
-                config.ServiceEndpoints,
+                _configuration.Offline,
+                _configuration.ServiceEndpoints,
                 null,
                 taskExecutor,
-                config.ApplicationInfo?.Build() ?? new ApplicationInfo(),
-                config.WrapperInfo?.Build()
+                _configuration.ApplicationInfo?.Build() ?? new ApplicationInfo(),
+                _configuration.WrapperInfo?.Build()
                 );
 
-            var httpConfig = (config.Http ?? Components.HttpConfiguration()).Build(clientContext);
+            var httpConfig = (_configuration.Http ?? Components.HttpConfiguration()).Build(clientContext);
             clientContext = clientContext.WithHttp(httpConfig);
 
             var diagnosticStore = _configuration.DiagnosticOptOut ? null :
@@ -186,14 +186,14 @@ namespace LaunchDarkly.Sdk.Server
                 );
 
             var eventProcessorFactory =
-                config.Offline ? Components.NoEvents :
-                (_configuration.Events?? Components.SendEvents());
+                _configuration.Offline ? Components.NoEvents :
+                (_configuration.Events ?? Components.SendEvents());
             _eventProcessor = eventProcessorFactory.Build(clientContext);
 
             var dataSourceUpdates = new DataSourceUpdatesImpl(_dataStore, _dataStoreStatusProvider,
                 taskExecutor, _log, logConfig.LogDataSourceOutageAsErrorAfter);
             IComponentConfigurer<IDataSource> dataSourceFactory =
-                config.Offline ? Components.ExternalUpdatesOnly :
+                _configuration.Offline ? Components.ExternalUpdatesOnly :
                 (_configuration.DataSource ?? Components.StreamingDataSource());
             _dataSource = dataSourceFactory.Build(clientContext.WithDataSourceUpdates(dataSourceUpdates));
             _dataSourceStatusProvider = new DataSourceStatusProviderImpl(dataSourceUpdates);
@@ -201,53 +201,19 @@ namespace LaunchDarkly.Sdk.Server
                 (string key, Context context) => JsonVariation(key, context, LdValue.Null));
 
             var allHooks = new List<Hook>();
-            
-            var hookConfig = (config.Hooks ?? Components.Hooks()).Build();
+
+            var hookConfig = (_configuration.Hooks ?? Components.Hooks()).Build();
             allHooks.AddRange(hookConfig.Hooks);
-            
-            var pluginConfig = (config.Plugins ?? Components.Plugins()).Build();
-            EnvironmentMetadata environmentMetadata = null;
-            if (pluginConfig.Plugins.Any())
-            {
-                environmentMetadata = CreateEnvironmentMetadata(config, clientContext);
-                
-                foreach (var plugin in pluginConfig.Plugins)
-                {
-                    try
-                    {
-                        var pluginHooks = plugin.GetHooks(environmentMetadata);
-                        if (pluginHooks != null)
-                        {
-                            allHooks.AddRange(pluginHooks);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _log.Error("Error getting hooks from plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
-                    }
-                }
-            }
-            
+
+            var pluginConfig = (_configuration.Plugins ?? Components.Plugins()).Build();
+            EnvironmentMetadata environmentMetadata = CreateEnvironmentMetadata(clientContext);
+            allHooks.AddRange(GetPluginHooks(pluginConfig, environmentMetadata));
+
             _hookExecutor = allHooks.Any() ?
-                (IHookExecutor) new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
+                (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
                 : new NoopExecutor();
 
-            if (pluginConfig.Plugins.Any() && environmentMetadata != null)
-            {
-                foreach (var plugin in pluginConfig.Plugins)
-                {
-                    try
-                    {
-                        plugin.Register(this, environmentMetadata);
-                        _log.Debug("Registered plugin: {0}", plugin.GetMetadata()?.Name ?? "unknown");
-                    }
-                    catch (Exception ex)
-                    {
-                        _log.Error("Error registering plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
-                    }
-                }
-            }
-
+            RegisterPlugins(pluginConfig, environmentMetadata);
 
             var initTask = _dataSource.Start();
 
@@ -367,7 +333,7 @@ namespace LaunchDarkly.Sdk.Server
             var (detail, flag) = EvaluateWithHooks(Method.MigrationVariation, key, context, LdValue.Of(defaultStage.ToDataModelString()),
                               LdValue.Convert.String, true, EventFactory.Default);
 
-            var nullableStage  = MigrationStageExtensions.FromDataModelString(detail.Value);
+            var nullableStage = MigrationStageExtensions.FromDataModelString(detail.Value);
             var stage = nullableStage ?? defaultStage;
             if (nullableStage == null)
             {
@@ -692,24 +658,34 @@ namespace LaunchDarkly.Sdk.Server
 
         #region Private methods
 
-        private FeatureFlag GetFlag(string key)
+        /// <summary>
+        /// Creates metadata about the environment, including SDK and application information.
+        /// </summary>
+        /// <param name="clientContext">The client context containing application and wrapper information.</param>
+        /// <returns>An <see cref="EnvironmentMetadata"/> instance containing the environment metadata.</returns>
+        /// <remarks>
+        /// This method constructs the environment metadata using the SDK key, application ID, and version,
+        /// along with any wrapper information if available. It is used to provide context for plugins and
+        /// hooks that may need to interact with the environment.
+        /// </remarks>
+        private EnvironmentMetadata CreateEnvironmentMetadata(LdClientContext clientContext)
         {
-            var maybeItem = _dataStore.Get(DataModel.Features, key);
-            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
-            {
-                return f;
-            }
-            return null;
-        }
+            var applicationInfo = clientContext.ApplicationInfo;
+            var wrapperInfo = _configuration.WrapperInfo?.Build();
 
-        private Segment GetSegment(string key)
-        {
-            var maybeItem = _dataStore.Get(DataModel.Segments, key);
-            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is Segment s)
-            {
-                return s;
-            }
-            return null;
+            var sdkMetadata = new SdkMetadata(
+                "dotnet-server-sdk",
+                AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)),
+                wrapperInfo?.Name,
+                wrapperInfo?.Version
+            );
+
+            var applicationMetadata = new ApplicationMetadata(
+                applicationInfo.ApplicationId,
+                applicationInfo.ApplicationVersion
+            );
+
+            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, applicationMetadata);
         }
 
         private void Dispose(bool disposing)
@@ -738,24 +714,77 @@ namespace LaunchDarkly.Sdk.Server
             return null;
         }
 
-        private EnvironmentMetadata CreateEnvironmentMetadata(Configuration config, LdClientContext clientContext)
+        private FeatureFlag GetFlag(string key)
         {
-            var applicationInfo = clientContext.ApplicationInfo;
-            var wrapperInfo = config.WrapperInfo?.Build();
-            
-            var sdkMetadata = new SdkMetadata(
-                "dotnet-server-sdk",
-                AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)),
-                wrapperInfo?.WrapperName,
-                wrapperInfo?.WrapperVersion
-            );
-            
-            var applicationMetadata = new ApplicationMetadata(
-                applicationInfo?.ApplicationId,
-                applicationInfo?.ApplicationVersion
-            );
-            
-            return new EnvironmentMetadata(sdkMetadata, config.SdkKey, applicationMetadata);
+            var maybeItem = _dataStore.Get(DataModel.Features, key);
+            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
+            {
+                return f;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieves all hooks from the plugins defined in the plugin configuration.
+        /// </summary>
+        /// <param name="pluginConfig">The plugin configuration containing the list of plugins.</param>
+        /// <param name="environmentMetadata">Metadata about the environment to pass to the plugins.</param>
+        /// <returns>A list of hooks retrieved from the plugins.</returns>
+        private List<Hook> GetPluginHooks(PluginConfiguration pluginConfig, EnvironmentMetadata environmentMetadata)
+        {
+            var allHooks = new List<Hook>();
+            foreach (var plugin in pluginConfig.Plugins)
+            {
+                try
+                {
+                    var pluginHooks = plugin.GetHooks(environmentMetadata);
+                    if (pluginHooks != null)
+                    {
+                        allHooks.AddRange(pluginHooks);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.Error("Error getting hooks from plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
+                }
+            }
+
+            return allHooks;
+        }
+
+        private Segment GetSegment(string key)
+        {
+            var maybeItem = _dataStore.Get(DataModel.Segments, key);
+            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is Segment s)
+            {
+                return s;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Registers all plugins with the client and environment metadata.
+        /// </summary>
+        /// <param name="pluginConfig">The plugin configuration containing the list of plugins.</param>
+        /// <param name="environmentMetadata">Metadata about the environment to pass to the plugins.</param>
+        /// <remarks>
+        /// This method iterates through each plugin in the configuration and calls its `Register` method
+        /// to initialize it with the client and environment metadata. It logs any exceptions that occur during
+        /// the registration process, allowing the client to continue functioning even if some plugins fail to register.
+        /// </remarks>
+        private void RegisterPlugins(PluginConfiguration pluginConfig, EnvironmentMetadata environmentMetadata)
+        {
+            foreach (var plugin in pluginConfig.Plugins)
+            {
+                try
+                {
+                    plugin.Register(this, environmentMetadata);
+                }
+                catch (Exception ex)
+                {
+                    _log.Error("Error registering plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
+                }
+            }
         }
 
         #endregion

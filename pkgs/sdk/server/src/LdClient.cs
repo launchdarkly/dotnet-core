@@ -158,7 +158,7 @@ namespace LaunchDarkly.Sdk.Server
             clientContext = clientContext.WithHttp(httpConfig);
 
             var diagnosticStore = _configuration.DiagnosticOptOut ? null :
-                new ServerDiagnosticStore(config, clientContext);
+                new ServerDiagnosticStore(_configuration, clientContext);
             clientContext = clientContext.WithDiagnosticStore(diagnosticStore);
 
             var dataStoreUpdates = new DataStoreUpdatesImpl(taskExecutor, _log.SubLogger(LogNames.DataStoreSubLog));
@@ -208,7 +208,6 @@ namespace LaunchDarkly.Sdk.Server
             var pluginConfig = (_configuration.Plugins ?? Components.Plugins()).Build();
             EnvironmentMetadata environmentMetadata = CreateEnvironmentMetadata(clientContext);
             allHooks.AddRange(GetPluginHooks(pluginConfig, environmentMetadata));
-
             _hookExecutor = allHooks.Any() ?
                 (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
                 : new NoopExecutor();
@@ -785,6 +784,25 @@ namespace LaunchDarkly.Sdk.Server
                     _log.Error("Error registering plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
                 }
             }
+
+        private EnvironmentMetadata CreateEnvironmentMetadata(LdClientContext clientContext)
+        {
+            var applicationInfo = clientContext.ApplicationInfo;
+            var wrapperInfo = _configuration.WrapperInfo?.Build();
+            
+            var sdkMetadata = new SdkMetadata(
+                "dotnet-server-sdk",
+                AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)),
+                wrapperInfo?.Name,
+                wrapperInfo?.Version
+            );
+            
+            var applicationMetadata = new ApplicationMetadata(
+                applicationInfo?.ApplicationId,
+                applicationInfo?.ApplicationVersion
+            );
+            
+            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, applicationMetadata);
         }
 
         #endregion

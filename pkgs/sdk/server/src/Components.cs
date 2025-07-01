@@ -6,6 +6,7 @@ using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Integrations;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal;
+using LaunchDarkly.Sdk.Server.Plugins;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server
@@ -217,6 +218,27 @@ namespace LaunchDarkly.Sdk.Server
         /// <param name="hooks">a collection of hooks</param>
         /// <returns>a configuration builder</returns>
         public static HookConfigurationBuilder Hooks(IEnumerable<Hook> hooks) => new HookConfigurationBuilder(hooks);
+
+        /// <summary>
+        /// Returns a configuration builder for the SDK's plugin configuration.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder(sdkKey)
+        ///         .Add(new MyPlugin(...))
+        ///         .Add(new MyOtherPlugin(...))
+        ///     ).Build();
+        /// </code>
+        /// </example>
+        /// <returns>a configuration builder</returns>
+        public static PluginConfigurationBuilder Plugins() => new PluginConfigurationBuilder();
+
+        /// <summary>
+        /// Returns a configuration builder for the SDK's plugin configuration, with an initial set of plugins.
+        /// </summary>
+        /// <param name="plugins">a collection of plugins</param>
+        /// <returns>a configuration builder</returns>
+        public static PluginConfigurationBuilder Plugins(IEnumerable<Plugin> plugins) => new PluginConfigurationBuilder(plugins);
 
         /// <summary>
         /// Returns a configuration object that disables analytics events.

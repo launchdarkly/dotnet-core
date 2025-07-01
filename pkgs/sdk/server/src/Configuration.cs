@@ -112,6 +112,11 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         public HookConfigurationBuilder Hooks { get; }
 
+        /// <summary>
+        /// Contains methods for configuring the SDK's 'plugins' to extend or customize SDK behavior.
+        /// </summary>
+        public PluginConfigurationBuilder Plugins { get; }
+
         #endregion
 
         #region Public methods
@@ -189,6 +194,7 @@ namespace LaunchDarkly.Sdk.Server
             ApplicationInfo = builder._applicationInfo;
             WrapperInfo = builder._wrapperInfo;
             Hooks = builder._hooks;
+            Plugins = builder._plugins;
         }
 
         #endregion

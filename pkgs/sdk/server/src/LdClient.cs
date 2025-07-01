@@ -784,25 +784,6 @@ namespace LaunchDarkly.Sdk.Server
                     _log.Error("Error registering plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
                 }
             }
-
-        private EnvironmentMetadata CreateEnvironmentMetadata(LdClientContext clientContext)
-        {
-            var applicationInfo = clientContext.ApplicationInfo;
-            var wrapperInfo = _configuration.WrapperInfo?.Build();
-            
-            var sdkMetadata = new SdkMetadata(
-                "dotnet-server-sdk",
-                AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)),
-                wrapperInfo?.Name,
-                wrapperInfo?.Version
-            );
-            
-            var applicationMetadata = new ApplicationMetadata(
-                applicationInfo?.ApplicationId,
-                applicationInfo?.ApplicationVersion
-            );
-            
-            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, applicationMetadata);
         }
 
         #endregion

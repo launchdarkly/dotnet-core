@@ -12,6 +12,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         public IEnumerable<Plugin> Plugins { get; }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PluginConfiguration"/> class with the specified plugins.
         /// </summary>
         public PluginConfiguration(IEnumerable<Plugin> plugins)
         {

@@ -11,6 +11,7 @@ namespace LaunchDarkly.Sdk.Server.Plugins
         public string Name { get; }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PluginMetadata"/> class with the specified name.
         /// </summary>
         public PluginMetadata(string name)
         {

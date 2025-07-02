@@ -31,7 +31,7 @@
 
     <!-- ensure that dependency DLLs are copied to output folder too - this makes life easier for the packaging-test script -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-
+    
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\LaunchDarkly.CommonSdk.xml</DocumentationFile>
     <RootNamespace>LaunchDarkly.Sdk</RootNamespace>
   </PropertyGroup>

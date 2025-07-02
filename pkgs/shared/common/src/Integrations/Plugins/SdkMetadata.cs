@@ -1,6 +1,7 @@
-namespace LaunchDarkly.Sdk.Server.Plugins
+namespace LaunchDarkly.Sdk.Integrations.Plugins
 {
     /// <summary>
+    /// Metadata about the SDK itself.
     /// </summary>
     public sealed class SdkMetadata
     {
@@ -40,4 +41,4 @@ namespace LaunchDarkly.Sdk.Server.Plugins
             WrapperVersion = wrapperVersion;
         }
     }
-}
+} 

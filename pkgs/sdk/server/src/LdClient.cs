@@ -7,7 +7,7 @@ using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal;
-using LaunchDarkly.Sdk.Server.Plugins;
+using LaunchDarkly.Sdk.Integrations.Plugins;
 using LaunchDarkly.Sdk.Server.Internal.BigSegments;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
@@ -207,12 +207,12 @@ namespace LaunchDarkly.Sdk.Server
 
             var pluginConfig = (_configuration.Plugins ?? Components.Plugins()).Build();
             EnvironmentMetadata environmentMetadata = CreateEnvironmentMetadata(clientContext);
-            allHooks.AddRange(GetPluginHooks(pluginConfig, environmentMetadata));
+            allHooks.AddRange(this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log));
             _hookExecutor = allHooks.Any() ?
                 (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
                 : new NoopExecutor();
 
-            RegisterPlugins(pluginConfig, environmentMetadata);
+            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
             var initTask = _dataSource.Start();
 
@@ -723,34 +723,6 @@ namespace LaunchDarkly.Sdk.Server
             return null;
         }
 
-        /// <summary>
-        /// Retrieves all hooks from the plugins defined in the plugin configuration.
-        /// </summary>
-        /// <param name="pluginConfig">The plugin configuration containing the list of plugins.</param>
-        /// <param name="environmentMetadata">Metadata about the environment to pass to the plugins.</param>
-        /// <returns>A list of hooks retrieved from the plugins.</returns>
-        private List<Hook> GetPluginHooks(PluginConfiguration pluginConfig, EnvironmentMetadata environmentMetadata)
-        {
-            var allHooks = new List<Hook>();
-            foreach (var plugin in pluginConfig.Plugins)
-            {
-                try
-                {
-                    var pluginHooks = plugin.GetHooks(environmentMetadata);
-                    if (pluginHooks != null)
-                    {
-                        allHooks.AddRange(pluginHooks);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _log.Error("Error getting hooks from plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
-                }
-            }
-
-            return allHooks;
-        }
-
         private Segment GetSegment(string key)
         {
             var maybeItem = _dataStore.Get(DataModel.Segments, key);
@@ -759,31 +731,6 @@ namespace LaunchDarkly.Sdk.Server
                 return s;
             }
             return null;
-        }
-
-        /// <summary>
-        /// Registers all plugins with the client and environment metadata.
-        /// </summary>
-        /// <param name="pluginConfig">The plugin configuration containing the list of plugins.</param>
-        /// <param name="environmentMetadata">Metadata about the environment to pass to the plugins.</param>
-        /// <remarks>
-        /// This method iterates through each plugin in the configuration and calls its `Register` method
-        /// to initialize it with the client and environment metadata. It logs any exceptions that occur during
-        /// the registration process, allowing the client to continue functioning even if some plugins fail to register.
-        /// </remarks>
-        private void RegisterPlugins(PluginConfiguration pluginConfig, EnvironmentMetadata environmentMetadata)
-        {
-            foreach (var plugin in pluginConfig.Plugins)
-            {
-                try
-                {
-                    plugin.Register(this, environmentMetadata);
-                }
-                catch (Exception ex)
-                {
-                    _log.Error("Error registering plugin {0}: {1}", plugin.GetMetadata()?.Name ?? "unknown", ex);
-                }
-            }
         }
 
         #endregion

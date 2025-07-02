@@ -1,6 +1,7 @@
-namespace LaunchDarkly.Sdk.Server.Plugins
+namespace LaunchDarkly.Sdk.Integrations.Plugins
 {
     /// <summary>
+    /// Metadata about the environment where the SDK is running.
     /// </summary>
     public sealed class EnvironmentMetadata
     {
@@ -32,4 +33,4 @@ namespace LaunchDarkly.Sdk.Server.Plugins
             Application = applicationMetadata;
         }
     }
-}
+} 

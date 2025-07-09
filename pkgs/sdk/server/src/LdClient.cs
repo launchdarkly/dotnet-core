@@ -684,7 +684,7 @@ namespace LaunchDarkly.Sdk.Server
                 applicationInfo.ApplicationVersion
             );
 
-            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, applicationMetadata);
+            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, CredentialType.SdkKey, applicationMetadata);
         }
 
         private void Dispose(bool disposing)

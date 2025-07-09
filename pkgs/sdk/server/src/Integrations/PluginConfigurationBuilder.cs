@@ -13,18 +13,11 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         private readonly List<Plugin> _plugins;
 
         /// <summary>
-        /// Constructs a configuration representing no plugins by default.
-        /// </summary>
-        public PluginConfigurationBuilder() : this(new List<Plugin>())
-        {
-        }
-
-        /// <summary>
         /// Constructs a configuration from an existing collection of plugins.
         /// </summary>
-        public PluginConfigurationBuilder(IEnumerable<Plugin> plugins)
+        public PluginConfigurationBuilder(IEnumerable<Plugin> plugins = null)
         {
-            _plugins = plugins.ToList();
+            _plugins = plugins is null ? new List<Plugin>() : plugins.ToList();
         }
 
         /// <summary>
@@ -43,7 +36,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// <returns>the built configuration</returns>
         public PluginConfiguration Build()
         {
-            return new PluginConfiguration(_plugins);
+            return new PluginConfiguration(_plugins.ToList());
         }
     }
 }

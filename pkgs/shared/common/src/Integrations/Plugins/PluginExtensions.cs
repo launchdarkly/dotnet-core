@@ -38,8 +38,8 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("Error registering plugin {0}: {1}", 
-                        plugin.GetMetadata()?.Name ?? "unknown", ex);
+                    logger.Error("Error registering plugin {0}: {1}",
+                        plugin.Metadata.Name ?? "unknown", ex);
                 }
             }
         }
@@ -78,11 +78,11 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("Error getting hooks from plugin {0}: {1}", 
-                        plugin.GetMetadata()?.Name ?? "unknown", ex);
+                    logger.Error("Error getting hooks from plugin {0}: {1}",
+                        plugin.Metadata.Name ?? "unknown", ex);
                 }
             }
             return allHooks;
         }
     }
-} 
+}

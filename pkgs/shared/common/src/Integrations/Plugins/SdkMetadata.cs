@@ -6,7 +6,7 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
     public sealed class SdkMetadata
     {
         /// <summary>
-        /// Gets the id of the SDK. This should match the identifier in the SDK. 
+        /// Gets the id of the SDK. This should match the identifier in the SDK.
         /// This field should be either the x-launchdarkly-user-agent or the user-agent.
         /// </summary>
         public string Name { get; }
@@ -41,4 +41,4 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
             WrapperVersion = wrapperVersion;
         }
     }
-} 
+}

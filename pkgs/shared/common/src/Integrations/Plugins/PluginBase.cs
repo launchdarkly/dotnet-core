@@ -19,7 +19,16 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         /// Get metadata about the plugin implementation.
         /// </summary>
         /// <returns>Metadata describing this plugin</returns>
-        public abstract PluginMetadata GetMetadata();
+        public PluginMetadata Metadata { get; private set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PluginBase{TClient, THook}"/> class with the specified name.
+        /// </summary>
+        /// <param name="name">The name of the plugin.</param>
+        public PluginBase(string name)
+        {
+            Metadata = new PluginMetadata(name);
+        }
 
         /// <summary>
         /// Registers the plugin with the specified LaunchDarkly client and environment metadata.

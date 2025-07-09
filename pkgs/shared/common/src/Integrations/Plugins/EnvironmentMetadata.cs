@@ -13,7 +13,12 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         /// <summary>
         /// Gets the SDK key.
         /// </summary>
-        public string SdkKey { get; }
+        public string Credential { get; }
+
+        /// <summary>
+        /// Gets the type of credential used (e.g., Mobile Key or SDK Key).
+        /// </summary>
+        public CredentialType CredentialType { get; }
 
         /// <summary>
         /// Gets the application metadata.
@@ -24,13 +29,15 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         /// Initializes a new instance of the <see cref="EnvironmentMetadata"/> class.
         /// </summary>
         /// <param name="sdkMetadata">the SDK metadata</param>
-        /// <param name="sdkKey">the SDK key</param>
+        /// <param name="credential">the SDK Key or Mobile Key</param>
+        /// <param name="credentialType">the type of credential</param>
         /// <param name="applicationMetadata">the application metadata</param>
-        public EnvironmentMetadata(SdkMetadata sdkMetadata, string sdkKey, ApplicationMetadata applicationMetadata)
+        public EnvironmentMetadata(SdkMetadata sdkMetadata, string credential, CredentialType credentialType, ApplicationMetadata applicationMetadata)
         {
             Sdk = sdkMetadata;
-            SdkKey = sdkKey;
+            Credential = credential;
+            CredentialType = credentialType;
             Application = applicationMetadata;
         }
     }
-} 
+}

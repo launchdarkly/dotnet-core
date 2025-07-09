@@ -24,7 +24,7 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         /// Gets the application version name.
         /// </summary>
         public string VersionName { get; }
-                
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationMetadata"/> class with the specified application ID, version, name, and version name.
         /// </summary>
@@ -40,4 +40,4 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
             VersionName = versionName;
         }
     }
-} 
+}

@@ -9,7 +9,7 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         public void CanConstructWithValidName()
         {
             var pluginMetadata = new PluginMetadata("test-plugin");
-            
+
             Assert.Equal("test-plugin", pluginMetadata.Name);
         }
 
@@ -20,4 +20,4 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
             Assert.Null(pluginMetadata.Name);
         }
     }
-} 
+}

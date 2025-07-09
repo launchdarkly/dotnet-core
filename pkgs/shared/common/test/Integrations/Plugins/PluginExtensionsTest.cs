@@ -33,7 +33,7 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         {
             if (ThrowOnRegister)
                 throw new InvalidOperationException("Test exception");
-            
+
             client.RegisteredPlugins.Add(Metadata.Name);
         }
 
@@ -41,10 +41,10 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         {
             if (ThrowOnGetHooks)
                 throw new InvalidOperationException("Test exception");
-            
+
             if (ReturnNullHooks)
                 return null;
-            
+
             return Hooks;
         }
     }
@@ -110,15 +110,15 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
         [Fact]
         public void GetPluginHooks_ReturnsAllHooksFromAllPlugins()
         {
-            var plugin1 = new MockPlugin("plugin1") 
+            var plugin1 = new MockPlugin("plugin1")
             {
                 Hooks = new List<MockHook> { new MockHook { Name = "hook1" } }
             };
-            var plugin2 = new MockPlugin("plugin2") 
+            var plugin2 = new MockPlugin("plugin2")
             {
-                Hooks = new List<MockHook> 
+                Hooks = new List<MockHook>
                 {
-                    new MockHook { Name = "hook2" }, 
+                    new MockHook { Name = "hook2" },
                     new MockHook { Name = "hook3" }
                 }
             };
@@ -206,4 +206,4 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
                 catch { }
             }).Logger("");
     }
-} 
+}

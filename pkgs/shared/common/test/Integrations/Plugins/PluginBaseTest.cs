@@ -60,7 +60,7 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
             var plugin = new TestPluginWithCustomHooks();
             plugin.CustomHooks.Add("hook1");
             plugin.CustomHooks.Add("hook2");
-            
+
             var metadata = new EnvironmentMetadata(
                 new SdkMetadata("test-sdk", "1.0.0"),
                 "test-key",
@@ -98,4 +98,4 @@ namespace LaunchDarkly.Sdk.Integrations.Plugins
             plugin.Register("test-client", metadata);
         }
     }
-} 
+}

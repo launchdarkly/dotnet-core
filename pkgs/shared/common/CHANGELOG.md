@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.CommonSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [7.1.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.0.1...LaunchDarkly.CommonSdk-v7.1.0) (2025-07-10)
+
+
+### Features
+
+* Add experimental support for plugins ([#140](https://github.com/launchdarkly/dotnet-core/issues/140)) ([f00a718](https://github.com/launchdarkly/dotnet-core/commit/f00a718cd9cb1f10a449e07b3ee1f0a0d3d15903))
+
 ## [7.0.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.0.0...LaunchDarkly.CommonSdk-v7.0.1) (2025-06-02)
 
 

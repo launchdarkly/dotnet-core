@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.9.2...LaunchDarkly.ServerSdk-v8.10.0) (2025-07-11)
+
+
+### Features
+
+* Add experimental plugin support ([#139](https://github.com/launchdarkly/dotnet-core/issues/139)) ([b34431e](https://github.com/launchdarkly/dotnet-core/commit/b34431e171f97031ace2d03d5a9347e14fa01df7))
+
 ## [8.9.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.9.1...LaunchDarkly.ServerSdk-v8.9.2) (2025-06-26)
 
 

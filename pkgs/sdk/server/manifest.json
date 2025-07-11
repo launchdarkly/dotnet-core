@@ -1,0 +1,3666 @@
+{
+  "source_base_path": "/home/runner/work/dotnet-core/dotnet-core/pkgs/sdk/server",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "Resource",
+      "output": {
+        "resource": {
+          "relative_path": "index.json"
+        }
+      }
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "CHANGELOG.md",
+      "output": {
+        ".html": {
+          "relative_path": "CHANGELOG.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "CONTRIBUTING.md",
+      "output": {
+        ".html": {
+          "relative_path": "CONTRIBUTING.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "README.md",
+      "output": {
+        ".html": {
+          "relative_path": "README.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Cache.CacheBuilder-2.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Cache.CacheBuilder-2.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Cache.CacheBuilder<K, V>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Cache.CacheBuilderBase-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Cache.CacheBuilderBase-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Cache.CacheBuilderBase<B>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Cache.Caches.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Cache.Caches.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Cache.Caches",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Cache.ICache-2.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Cache.ICache-2.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Cache.ICache<K, V>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Cache.ISingleValueCache-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Cache.ISingleValueCache-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Cache.ISingleValueCache<V>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Cache.SingleValueCacheBuilder-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Cache.SingleValueCacheBuilder-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Cache.SingleValueCacheBuilder<V>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Cache.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Cache.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Cache",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.CommentReceivedEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.CommentReceivedEventArgs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.CommentReceivedEventArgs",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.Configuration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.Configuration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.Configuration",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.ConfigurationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.ConfigurationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.ConfigurationBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.EventSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.EventSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.EventSource",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.EventSourceServiceCancelledException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.EventSourceServiceCancelledException.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.EventSourceServiceCancelledException",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.EventSourceServiceUnsuccessfulResponseException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.EventSourceServiceUnsuccessfulResponseException.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.EventSourceServiceUnsuccessfulResponseException",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.ExceptionEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.ExceptionEventArgs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.ExceptionEventArgs",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.IEventSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.IEventSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.IEventSource",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.MessageEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.MessageEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.MessageEvent",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.MessageReceivedEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.MessageReceivedEventArgs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.MessageReceivedEventArgs",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.ReadTimeoutException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.ReadTimeoutException.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.ReadTimeoutException",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.ReadyState.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.ReadyState.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.ReadyState",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.StateChangedEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.StateChangedEventArgs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.StateChangedEventArgs",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.Utf8ByteSpan.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.Utf8ByteSpan.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource.Utf8ByteSpan",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.EventSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.EventSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.EventSource",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.Extensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.Extensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.Extensions",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.IChannel.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.IChannel.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.IChannel",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.ILogAdapter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.ILogAdapter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.ILogAdapter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.ILogAdapterExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.ILogAdapterExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.ILogAdapterExtensions",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.LogCapture.Message.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.LogCapture.Message.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.LogCapture.Message",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.LogCapture.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.LogCapture.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.LogCapture",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.LogLevel.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.LogLevel.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.LogLevel",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.LogValues.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.LogValues.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.LogValues",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.Logger.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.Logger.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.Logger",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.Logs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.Logs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.Logs",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.SimpleLogging.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.SimpleLogging.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging.SimpleLogging",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Logging.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Logging.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Logging",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.ApplicationInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.ApplicationInfo.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.ApplicationInfo",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.ApplicationInfoBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.ApplicationInfoBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.ApplicationInfoBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.AttributeRef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.AttributeRef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.AttributeRef",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.BigSegmentsStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.BigSegmentsStatus.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.BigSegmentsStatus",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Context.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Context.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Context",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.ContextBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.ContextBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.ContextBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.ContextKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.ContextKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.ContextKind",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.ContextMultiBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.ContextMultiBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.ContextMultiBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.CredentialType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.CredentialType.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.CredentialType",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.ConfigLayerBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.ConfigLayerBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting.ConfigLayerBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.EnvironmentReporterBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.EnvironmentReporterBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting.EnvironmentReporterBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.IEnvironmentReporter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.IEnvironmentReporter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting.IEnvironmentReporter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.Layer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.Layer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting.Layer",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.LayerModels.DeviceInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.LayerModels.DeviceInfo.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting.LayerModels.DeviceInfo",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.LayerModels.OsInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.LayerModels.OsInfo.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting.LayerModels.OsInfo",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.LayerModels.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.LayerModels.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting.LayerModels",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EnvReporting.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EnvReporting.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EnvReporting",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EvaluationDetail-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EvaluationDetail-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EvaluationDetail<T>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EvaluationErrorKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EvaluationErrorKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EvaluationErrorKind",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EvaluationReason.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EvaluationReason.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EvaluationReason",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.EvaluationReasonKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.EvaluationReasonKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.EvaluationReasonKind",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Helpers.ValidationUtils.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Helpers.ValidationUtils.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Helpers.ValidationUtils",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Helpers.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Helpers.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Helpers",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.IUserBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.IUserBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.IUserBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.IUserBuilderCanMakeAttributePrivate.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.IUserBuilderCanMakeAttributePrivate.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.IUserBuilderCanMakeAttributePrivate",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.ApplicationMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.ApplicationMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Integrations.Plugins.ApplicationMetadata",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.EnvironmentMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.EnvironmentMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Integrations.Plugins.EnvironmentMetadata",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.PluginBase-2.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.PluginBase-2.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Integrations.Plugins.PluginBase<TClient, THook>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.PluginMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.PluginMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Integrations.Plugins.PluginMetadata",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.SdkMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.SdkMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Integrations.Plugins.SdkMetadata",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Integrations.Plugins.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Integrations.Plugins",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.AssemblyVersions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.AssemblyVersions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.AssemblyVersions",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.AsyncUtils.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.AsyncUtils.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Concurrent.AsyncUtils",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.AtomicBoolean.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.AtomicBoolean.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Concurrent.AtomicBoolean",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.StateMonitor-2.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.StateMonitor-2.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Concurrent.StateMonitor<StateT, UpdateT>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Concurrent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Concurrent",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DefaultEventSender.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DefaultEventSender.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.DefaultEventSender",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DeliveryStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DeliveryStatus.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.DeliveryStatus",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticConfigProperties.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticConfigProperties.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.DiagnosticConfigProperties",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.DiagnosticEvent",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticId.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticId.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.DiagnosticId",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DisabledChangedArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.DisabledChangedArgs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.DisabledChangedArgs",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventDataKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventDataKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventDataKind",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventProcessor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventProcessor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventProcessor",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventSenderResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventSenderResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventSenderResult",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.CustomEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.CustomEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.CustomEvent",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.EvaluationEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.EvaluationEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.EvaluationEvent",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.IdentifyEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.IdentifyEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.IdentifyEvent",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.ConsistentMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.ConsistentMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.ConsistentMeasurement",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.ErrorMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.ErrorMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.ErrorMeasurement",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.InvokedMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.InvokedMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.InvokedMeasurement",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.LatencyMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.LatencyMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.LatencyMeasurement",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes.MigrationOpEvent",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventTypes.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventTypes",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventsConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.EventsConfiguration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.EventsConfiguration",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IContextDeduplicator.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IContextDeduplicator.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.IContextDeduplicator",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IDiagnosticDisabler.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IDiagnosticDisabler.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.IDiagnosticDisabler",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IDiagnosticStore.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IDiagnosticStore.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.IDiagnosticStore",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IEventSender.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.IEventSender.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.IEventSender",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.Sampler.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.Sampler.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events.Sampler",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Events.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Events.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Events",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.HashCodeBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.HashCodeBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.HashCodeBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Http.HttpErrors.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Http.HttpErrors.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Http.HttpErrors",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Http.HttpProperties.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Http.HttpProperties.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Http.HttpProperties",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Http.UnsuccessfulResponseException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Http.UnsuccessfulResponseException.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Http.UnsuccessfulResponseException",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.Http.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.Http.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.Http",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.JsonConverterHelpers.ArrayHelper.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.JsonConverterHelpers.ArrayHelper.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.JsonConverterHelpers.ArrayHelper",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.JsonConverterHelpers.ObjectHelper.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.JsonConverterHelpers.ObjectHelper.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.JsonConverterHelpers.ObjectHelper",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.JsonConverterHelpers.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.JsonConverterHelpers.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.JsonConverterHelpers",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.LogHelpers.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.LogHelpers.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.LogHelpers",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.TaskExecutor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.TaskExecutor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.TaskExecutor",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.UriExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.UriExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal.UriExtensions",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Internal.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Internal.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Internal",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.IJsonSerializable.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.IJsonSerializable.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.IJsonSerializable",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.AttributeRefConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.AttributeRefConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.AttributeRefConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.BigSegmentsStatusConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.BigSegmentsStatusConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.BigSegmentsStatusConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.ContextConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.ContextConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.ContextConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationErrorKindConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationErrorKindConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationErrorKindConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationReasonConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationReasonConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationReasonConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationReasonKindConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationReasonKindConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.EvaluationReasonKindConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.LdValueConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.LdValueConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.LdValueConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.UnixMillisecondTimeConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.UnixMillisecondTimeConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.UnixMillisecondTimeConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.UserConverter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.UserConverter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters.UserConverter",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonConverters.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonConverters",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonSerialization.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.LdJsonSerialization.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json.LdJsonSerialization",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Json.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Json.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Json",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.LdValue.ArrayBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.LdValue.ArrayBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.LdValue.ArrayBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.LdValue.Convert.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.LdValue.Convert.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.LdValue.Convert",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.LdValue.Converter-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.LdValue.Converter-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.LdValue.Converter<T>",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.LdValue.ObjectBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.LdValue.ObjectBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.LdValue.ObjectBuilder",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.LdValue.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.LdValue.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.LdValue",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.LdValueType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.LdValueType.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.LdValueType",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Components.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Components.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Components",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Components.yml\" sourcestartlinenumber=\"1\">Provides factories for the standard implementations of LaunchDarkly component interfaces.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Configuration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Configuration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Configuration",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Configuration.yml\" sourcestartlinenumber=\"1\">Configuration options for <xref href=\"LaunchDarkly.Sdk.Server.LdClient\" data-throw-if-not-resolved=\"false\"></xref>. This class should normally be constructed with\n<xref href=\"LaunchDarkly.Sdk.Server.Configuration.Builder(System.String)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.ConfigurationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.ConfigurationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.ConfigurationBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.ConfigurationBuilder.yml\" sourcestartlinenumber=\"1\">A mutable object that uses the Builder pattern to specify properties for a <xref href=\"LaunchDarkly.Sdk.Server.Configuration\" data-throw-if-not-resolved=\"false\"></xref> object.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.DataModel.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.DataModel.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.DataModel",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.DataModel.yml\" sourcestartlinenumber=\"1\">Contains information about the internal data model for feature flags and user segments.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.FeatureFlagsState.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.FeatureFlagsState.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.FeatureFlagsState",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.FeatureFlagsState.yml\" sourcestartlinenumber=\"1\">A snapshot of the state of all feature flags with regard to a specific user. See\ncalling <xref href=\"LaunchDarkly.Sdk.Server.Interfaces.ILdClient.AllFlagsState(LaunchDarkly.Sdk.Context%2cLaunchDarkly.Sdk.Server.FlagsStateOption%5b%5d)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.FeatureFlagsStateBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.FeatureFlagsStateBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.FeatureFlagsStateBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.FeatureFlagsStateBuilder.yml\" sourcestartlinenumber=\"1\">A builder for constructing <xref href=\"LaunchDarkly.Sdk.Server.FeatureFlagsState\" data-throw-if-not-resolved=\"false\"></xref> instances.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.FlagsStateOption.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.FlagsStateOption.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.FlagsStateOption",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.FlagsStateOption.yml\" sourcestartlinenumber=\"1\">Optional parameters that can be passed to <xref href=\"LaunchDarkly.Sdk.Server.Interfaces.ILdClient.AllFlagsState(LaunchDarkly.Sdk.Context%2cLaunchDarkly.Sdk.Server.FlagsStateOption%5b%5d)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.EvaluationSeriesContext.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.EvaluationSeriesContext.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Hooks.EvaluationSeriesContext",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.EvaluationSeriesContext.yml\" sourcestartlinenumber=\"1\">EvaluationSeriesContext represents parameters associated with a feature flag evaluation. It is\nmade available in <xref href=\"LaunchDarkly.Sdk.Server.Hooks.Hook\" data-throw-if-not-resolved=\"false\"></xref> stage callbacks.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.Hook.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.Hook.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Hooks.Hook",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.Hook.yml\" sourcestartlinenumber=\"1\">A Hook is a set of user-defined callbacks that are executed by the SDK at various points\nof interest. To create your own hook with customized logic, derive from Hook and override its methods.</p>\n<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.Hook.yml\" sourcestartlinenumber=\"4\">Hook currently defines an &quot;evaluation&quot; series, which is composed of two stages:\n&quot;beforeEvaluation&quot; and &quot;afterEvaluation&quot;.</p>\n<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.Hook.yml\" sourcestartlinenumber=\"7\">These are executed by the SDK before and after the evaluation of a\nfeature flag.</p>\n<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.Hook.yml\" sourcestartlinenumber=\"10\">Multiple hooks may be configured in the SDK. By default, the SDK will execute each hook's beforeEvaluation\nstage in the order they were configured, and afterEvaluation in reverse order.</p>\n<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.Hook.yml\" sourcestartlinenumber=\"13\">This means the last hook defined will tightly wrap the evaluation process, while hooks defined earlier in the\nsequence are nested outside of it.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.HookMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.HookMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Hooks.HookMetadata",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.HookMetadata.yml\" sourcestartlinenumber=\"1\">HookMetadata contains information related to a Hook which can be inspected by the SDK, or within\na hook stage.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.Method.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.Method.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Hooks.Method",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.Method.yml\" sourcestartlinenumber=\"1\">Method represents the SDK client method that triggered a hook invocation.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.SeriesDataBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.SeriesDataBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Hooks.SeriesDataBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.SeriesDataBuilder.yml\" sourcestartlinenumber=\"1\">Builder for constructing series data, which is passed to between <xref href=\"LaunchDarkly.Sdk.Server.Hooks.Hook\" data-throw-if-not-resolved=\"false\"></xref> methods.</p>\n<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Hooks.SeriesDataBuilder.yml\" sourcestartlinenumber=\"3\">Use of this builder is optional; it is provided for convenience.</p>\n<example>\n<pre><code class=\"lang-csharp\">// ImmutableDictionary passed into Hook method:\nvar data = ...\n// Add a new key and return an updated dictionary:\nreturn new SeriesDataBuilder(data).Set(\"key\", \"value\").Build();</code></pre>\n</example>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Hooks.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Hooks",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.ILdClientExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.ILdClientExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.ILdClientExtensions",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.ILdClientExtensions.yml\" sourcestartlinenumber=\"1\">Convenience methods that extend the <xref href=\"LaunchDarkly.Sdk.Server.Interfaces.ILdClient\" data-throw-if-not-resolved=\"false\"></xref> interface.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.BigSegmentsConfigurationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.BigSegmentsConfigurationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.BigSegmentsConfigurationBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.BigSegmentsConfigurationBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring the SDK's Big Segments behavior.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.EventProcessorBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.EventProcessorBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.EventProcessorBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.EventProcessorBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring delivery of analytics events.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileData.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileData.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.FileData",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.FileData.yml\" sourcestartlinenumber=\"1\">Integration between the LaunchDarkly SDK and file data.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataSourceBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataSourceBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.FileDataSourceBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.FileDataSourceBuilder.yml\" sourcestartlinenumber=\"1\">A builder for configuring the file data source.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.DuplicateKeysHandling.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.DuplicateKeysHandling.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.DuplicateKeysHandling",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.DuplicateKeysHandling.yml\" sourcestartlinenumber=\"1\">Determines how duplicate feature flag or segment keys are handled.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.IFileReader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.IFileReader.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.IFileReader",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.IFileReader.yml\" sourcestartlinenumber=\"1\">Interface for customizing how data files are read.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.FileDataTypes",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.FileDataTypes.yml\" sourcestartlinenumber=\"1\">Types that are used in configuring <xref href=\"LaunchDarkly.Sdk.Server.Integrations.FileDataSourceBuilder\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.HookConfigurationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.HookConfigurationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.HookConfigurationBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.HookConfigurationBuilder.yml\" sourcestartlinenumber=\"1\">HookConfigurationBuilder is a builder for the SDK's hook configuration.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.HttpConfigurationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.HttpConfigurationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.HttpConfigurationBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.HttpConfigurationBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring the SDK's networking behavior.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.LoggingConfigurationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.LoggingConfigurationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.LoggingConfigurationBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.LoggingConfigurationBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring the SDK's logging behavior.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.PersistentDataStoreBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.PersistentDataStoreBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.PersistentDataStoreBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.PersistentDataStoreBuilder.yml\" sourcestartlinenumber=\"1\">A configurable data store factory that adds caching behavior to a persistent data\nstore implementation.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.PluginConfigurationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.PluginConfigurationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.PluginConfigurationBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.PluginConfigurationBuilder.yml\" sourcestartlinenumber=\"1\">PluginConfigurationBuilder is a builder for the SDK's plugin configuration.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.PollingDataSourceBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.PollingDataSourceBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.PollingDataSourceBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.PollingDataSourceBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring the polling data source.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.ServiceEndpointsBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.ServiceEndpointsBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.ServiceEndpointsBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.ServiceEndpointsBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring the SDK's service URIs.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.StreamingDataSourceBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.StreamingDataSourceBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.StreamingDataSourceBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.StreamingDataSourceBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring the streaming data source.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.TestData.FlagBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagBuilder.yml\" sourcestartlinenumber=\"1\">A builder for feature flag configurations to be used with <xref href=\"LaunchDarkly.Sdk.Server.Integrations.TestData\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagMigrationBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagMigrationBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.TestData.FlagMigrationBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagMigrationBuilder.yml\" sourcestartlinenumber=\"1\">Used to build the migration settings for a feature flag.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagRuleBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagRuleBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.TestData.FlagRuleBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.TestData.FlagRuleBuilder.yml\" sourcestartlinenumber=\"1\">A builder for feature flag rules to be used with <xref href=\"LaunchDarkly.Sdk.Server.Integrations.TestData.FlagBuilder\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.TestData.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.TestData",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.TestData.yml\" sourcestartlinenumber=\"1\">A mechanism for providing dynamically updatable feature flag state in a simplified form to an SDK\nclient in test scenarios.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.WrapperInfoBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.WrapperInfoBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations.WrapperInfoBuilder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Integrations.WrapperInfoBuilder.yml\" sourcestartlinenumber=\"1\">Contains methods for configuring wrapper information.</p>\n<p>\nIf the WrapperBuilder is used, then it will replace the wrapper information from the HttpConfigurationBuilder.\n</p>\n<p>\nAdditionally, any wrapper SDK may overwrite any application developer provided wrapper information.\n</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Integrations.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Integrations",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.BigSegmentStoreStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.BigSegmentStoreStatus.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.BigSegmentStoreStatus",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.BigSegmentStoreStatus.yml\" sourcestartlinenumber=\"1\">Information about the status of a Big Segment store, provided by\n<xref href=\"LaunchDarkly.Sdk.Server.Interfaces.IBigSegmentStoreStatusProvider\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceState.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceState.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.DataSourceState",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceState.yml\" sourcestartlinenumber=\"1\">An enumeration of possible values for <xref href=\"LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.State\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorInfo.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorInfo",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorInfo.yml\" sourcestartlinenumber=\"1\">A description of an error condition that the data source encountered.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorKind",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorKind.yml\" sourcestartlinenumber=\"1\">An enumeration describing the general type of an error reported in <xref href=\"LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.ErrorInfo\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatus.yml\" sourcestartlinenumber=\"1\">Information about the data source's status and about the last status change.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatusExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatusExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatusExtensions",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.DataSourceStatusExtensions.yml\" sourcestartlinenumber=\"1\">Extension helper methods for use with data source status types.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataStoreStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.DataStoreStatus.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.DataStoreStatus",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.DataStoreStatus.yml\" sourcestartlinenumber=\"1\">Information about a data store status change.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.FlagChangeEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.FlagChangeEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.FlagChangeEvent",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.FlagChangeEvent.yml\" sourcestartlinenumber=\"1\">A parameter class used with <xref href=\"LaunchDarkly.Sdk.Server.Interfaces.IFlagTracker.FlagChanged\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.FlagValueChangeEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.FlagValueChangeEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.FlagValueChangeEvent",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.FlagValueChangeEvent.yml\" sourcestartlinenumber=\"1\">A parameter class used with <xref href=\"LaunchDarkly.Sdk.Server.Interfaces.IFlagTracker.FlagValueChangeHandler(System.String%2cLaunchDarkly.Sdk.Context%2cSystem.EventHandler%7bLaunchDarkly.Sdk.Server.Interfaces.FlagValueChangeEvent%7d)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IBigSegmentStoreStatusProvider.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IBigSegmentStoreStatusProvider.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.IBigSegmentStoreStatusProvider",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.IBigSegmentStoreStatusProvider.yml\" sourcestartlinenumber=\"1\">An interface for querying the status of a Big Segment store.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IDataSourceStatusProvider.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IDataSourceStatusProvider.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.IDataSourceStatusProvider",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.IDataSourceStatusProvider.yml\" sourcestartlinenumber=\"1\">An interface for querying the status of the SDK's data source.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IDataStoreStatusProvider.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IDataStoreStatusProvider.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.IDataStoreStatusProvider",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.IDataStoreStatusProvider.yml\" sourcestartlinenumber=\"1\">An interface for querying the status of a persistent data store.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IFlagTracker.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.IFlagTracker.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.IFlagTracker",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.IFlagTracker.yml\" sourcestartlinenumber=\"1\">An interface for tracking changes in feature flag configurations.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.ILdClient.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.ILdClient.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.ILdClient",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.ILdClient.yml\" sourcestartlinenumber=\"1\">Interface defining the public methods of <xref href=\"LaunchDarkly.Sdk.Server.LdClient\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.ServiceEndpoints.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.ServiceEndpoints.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.ServiceEndpoints",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.ServiceEndpoints.yml\" sourcestartlinenumber=\"1\">Specifies the base service URIs used by SDK components.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.WrapperInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.WrapperInfo.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces.WrapperInfo",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Interfaces.WrapperInfo.yml\" sourcestartlinenumber=\"1\">Contains wrapper SDK information.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Interfaces.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Interfaces",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Internal.HeaderConstants.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Internal.HeaderConstants.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Internal.HeaderConstants",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Internal.HeaderConstants.yml\" sourcestartlinenumber=\"1\">Constants for headers returned from, or sent to, LaunchDarkly.</p>\n<p>\nAll header keys should be lowercase.\n</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Internal.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Internal.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Internal",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.LdClient.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.LdClient.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.LdClient",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.LdClient.yml\" sourcestartlinenumber=\"1\">A client for the LaunchDarkly API. Client instances are thread-safe. Applications should instantiate\na single <xref href=\"LaunchDarkly.Sdk.Server.LdClient\" data-throw-if-not-resolved=\"false\"></xref> for the lifetime of their application.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.IMigration-4.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.IMigration-4.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.IMigration<TReadResult, TWriteResult, TReadInput, TWriteInput>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.IMigration-4.yml\" sourcestartlinenumber=\"1\">Interface for managing technology migrations</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationBuilder-4.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationBuilder-4.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationBuilder<TReadResult, TWriteResult, TReadInput, TWriteInput>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationBuilder-4.yml\" sourcestartlinenumber=\"1\">This builder is used to construct <xref href=\"LaunchDarkly.Sdk.Server.Migrations.Migration%604\" data-throw-if-not-resolved=\"false\"></xref> instances.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationExecution.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationExecution.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationExecution",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationExecution.yml\" sourcestartlinenumber=\"1\">This class is used to control the execution mechanism for migrations.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationExecutionMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationExecutionMode.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationExecutionMode",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationExecutionMode.yml\" sourcestartlinenumber=\"1\">Execution mode for a migration.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.Result-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.Result-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.Result<TResult>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.Result-1.yml\" sourcestartlinenumber=\"1\">Results of a method associated with a migration origin.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationMethod",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.yml\" sourcestartlinenumber=\"1\">Static class for creation <xref href=\"LaunchDarkly.Sdk.Server.Migrations.MigrationMethod.Result%601\" data-throw-if-not-resolved=\"false\"></xref> instances.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOpTracker.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOpTracker.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationOpTracker",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationOpTracker.yml\" sourcestartlinenumber=\"1\">Used to track information related to a migration operation.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOperation.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOperation.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationOperation",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationOperation.yml\" sourcestartlinenumber=\"1\">The type of migration operation.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOperationExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOperationExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationOperationExtensions",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationOperationExtensions.yml\" sourcestartlinenumber=\"1\">Extension methods for migration operations.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOrigin.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOrigin.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationOrigin",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationOrigin.yml\" sourcestartlinenumber=\"1\">The origin/source for a migration step.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOriginExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationOriginExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationOriginExtensions",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationOriginExtensions.yml\" sourcestartlinenumber=\"1\">Extension methods for migration origins.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationResult-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationResult-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationResult<TResult>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationResult-1.yml\" sourcestartlinenumber=\"1\">This class represents the result of a migration operation.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationSerialOrder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationSerialOrder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationSerialOrder",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationSerialOrder.yml\" sourcestartlinenumber=\"1\">When using serial execution controls the order reads are executed.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationStage.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationStage.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationStage",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationStage.yml\" sourcestartlinenumber=\"1\">Stage denotes one of six possible stages a technology migration could be a\npart of, progressing through the following order.</p>\n<p>\nOff DualWrite Shadow Live RampDown Complete\n</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationStageExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationStageExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationStageExtensions",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationStageExtensions.yml\" sourcestartlinenumber=\"1\">Extension methods for migration stages.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationVariation.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationVariation.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationVariation",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationVariation.yml\" sourcestartlinenumber=\"1\">The result of an <xref href=\"LaunchDarkly.Sdk.Server.Migrations.MigrationVariation\" data-throw-if-not-resolved=\"false\"></xref> call.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationWriteResult-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.MigrationWriteResult-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations.MigrationWriteResult<TResult>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Migrations.MigrationWriteResult-1.yml\" sourcestartlinenumber=\"1\">The result of a migration write.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Migrations.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Migrations",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Plugins.Plugin.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Plugins.Plugin.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Plugins.Plugin",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Plugins.Plugin.yml\" sourcestartlinenumber=\"1\">Abstract base class for extending SDK functionality via plugins in the server-side SDK.\nAll provided server-side plugin implementations MUST inherit from this class.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Plugins.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Plugins.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Plugins",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.IMembership.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.IMembership.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.IMembership",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.IMembership.yml\" sourcestartlinenumber=\"1\">A query interface returned by <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IBigSegmentStore.GetMembershipAsync(System.String)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.StoreMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.StoreMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.StoreMetadata",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.StoreMetadata.yml\" sourcestartlinenumber=\"1\">Values returned by <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IBigSegmentStore.GetMetadataAsync\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes.yml\" sourcestartlinenumber=\"1\">Types that are used by the <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IBigSegmentStore\" data-throw-if-not-resolved=\"false\"></xref> interface.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentsConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentsConfiguration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.BigSegmentsConfiguration",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.BigSegmentsConfiguration.yml\" sourcestartlinenumber=\"1\">Encapsulates the SDK's configuration with regard to Big Segments.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.DataKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.DataKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.DataKind",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.DataKind.yml\" sourcestartlinenumber=\"1\">Represents a separately namespaced collection of storable data items.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.FullDataSet-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.FullDataSet-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.FullDataSet<TDescriptor>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.FullDataSet-1.yml\" sourcestartlinenumber=\"1\">Wrapper for a set of storable items being passed to a data store.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.InitMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.InitMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.InitMetadata",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.InitMetadata.yml\" sourcestartlinenumber=\"1\">Meta-data associated with feature store initialization.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.ItemDescriptor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.ItemDescriptor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.ItemDescriptor",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.ItemDescriptor.yml\" sourcestartlinenumber=\"1\">A versioned item (or placeholder) storeable in an <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IDataStore\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.KeyedItems-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.KeyedItems-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.KeyedItems<TDescriptor>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.KeyedItems-1.yml\" sourcestartlinenumber=\"1\">Wrapper for a set of storable items being passed to a data store, within a\nsingle <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.DataKind\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.SerializedItemDescriptor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.SerializedItemDescriptor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.SerializedItemDescriptor",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.SerializedItemDescriptor.yml\" sourcestartlinenumber=\"1\">A versioned item (or placeholder) storeable in an <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStore\" data-throw-if-not-resolved=\"false\"></xref>\nor <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStoreAsync\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes.yml\" sourcestartlinenumber=\"1\">Types that are used by the <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IDataStore\" data-throw-if-not-resolved=\"false\"></xref> interface.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.CustomEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.CustomEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.CustomEvent",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.CustomEvent.yml\" sourcestartlinenumber=\"1\">Parameters for <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor.RecordCustomEvent(LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.CustomEvent)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.EvaluationEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.EvaluationEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.EvaluationEvent",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.EvaluationEvent.yml\" sourcestartlinenumber=\"1\">Parameters for <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor.RecordEvaluationEvent(LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.EvaluationEvent)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.IdentifyEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.IdentifyEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.IdentifyEvent",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.IdentifyEvent.yml\" sourcestartlinenumber=\"1\">Parameters for <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor.RecordIdentifyEvent(LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.IdentifyEvent)\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ConsistentMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ConsistentMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ConsistentMeasurement",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ConsistentMeasurement.yml\" sourcestartlinenumber=\"1\">Consistency measurement.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ErrorMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ErrorMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ErrorMeasurement",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.ErrorMeasurement.yml\" sourcestartlinenumber=\"1\">Error measurements for invoked methods.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.InvokedMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.InvokedMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.InvokedMeasurement",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.InvokedMeasurement.yml\" sourcestartlinenumber=\"1\">Information about what origins were invoked.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.LatencyMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.LatencyMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.LatencyMeasurement",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.LatencyMeasurement.yml\" sourcestartlinenumber=\"1\">Latency measurements for invoked methods.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent.yml\" sourcestartlinenumber=\"1\">Parameters for <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor.RecordMigrationEvent(LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.MigrationOpEvent)\" data-throw-if-not-resolved=\"false\"></xref></p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.EventProcessorTypes.yml\" sourcestartlinenumber=\"1\">Parameter types for use by <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor\" data-throw-if-not-resolved=\"false\"></xref> implementations.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.HookConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.HookConfiguration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.HookConfiguration",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.HookConfiguration.yml\" sourcestartlinenumber=\"1\">HookConfiguration represents the hooks that will be executed by the SDK at runtime.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.HttpConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.HttpConfiguration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.HttpConfiguration",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.HttpConfiguration.yml\" sourcestartlinenumber=\"1\">Encapsulates top-level HTTP configuration that applies to all SDK components.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IBigSegmentStore.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IBigSegmentStore.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IBigSegmentStore",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IBigSegmentStore.yml\" sourcestartlinenumber=\"1\">Interface for a read-only data store that allows querying of user membership in Big Segments.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer-1.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer<T>",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer-1.yml\" sourcestartlinenumber=\"1\">The common interface for SDK component factories and configuration builders. Applications should not\nneed to implement this interface.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IDataSource",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IDataSource.yml\" sourcestartlinenumber=\"1\">Interface for an object that receives updates to feature flags, user segments, and anything\nelse that might come from LaunchDarkly.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdates.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdates.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdates",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdates.yml\" sourcestartlinenumber=\"1\">Interface that an implementation of <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IDataSource\" data-throw-if-not-resolved=\"false\"></xref> will use to push data into the SDK.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdatesHeaders.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdatesHeaders.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdatesHeaders",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IDataSourceUpdatesHeaders.yml\" sourcestartlinenumber=\"1\">This interface is to allow extending init without a major version.\nThis interface should be removed in the next major version of the SDK and headers\nshould be added in the IDataStore interface.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataStore.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataStore.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IDataStore",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IDataStore.yml\" sourcestartlinenumber=\"1\">Interface for a data store that holds feature flags and related data received by the SDK.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataStoreMetadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataStoreMetadata.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IDataStoreMetadata",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IDataStoreMetadata.yml\" sourcestartlinenumber=\"1\">This interface is to allow extending init without a major version.\nThis interface should be removed in the next major version of the SDK and headers\nshould be added in the IDataStore interface.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataStoreUpdates.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDataStoreUpdates.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IDataStoreUpdates",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IDataStoreUpdates.yml\" sourcestartlinenumber=\"1\">Interface that an implementation of <xref href=\"LaunchDarkly.Sdk.Server.Subsystems.IDataStore\" data-throw-if-not-resolved=\"false\"></xref> can use to report\ninformation back to the SDK.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription.yml\" sourcestartlinenumber=\"1\">Optional interface for components to describe their own configuration.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IEventProcessor.yml\" sourcestartlinenumber=\"1\">Interface for an object that can send or store analytics events.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStore.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStore.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStore",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStore.yml\" sourcestartlinenumber=\"1\">Interface for a data store that holds feature flags and related data in a\nserialized form.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStoreAsync.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStoreAsync.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStoreAsync",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStoreAsync.yml\" sourcestartlinenumber=\"1\">Interface for a data store that holds feature flags and related data in a\nserialized form.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.LdClientContext.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.LdClientContext.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.LdClientContext",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.LdClientContext.yml\" sourcestartlinenumber=\"1\">Encapsulates SDK client context when creating components.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.LoggingConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.LoggingConfiguration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.LoggingConfiguration",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.LoggingConfiguration.yml\" sourcestartlinenumber=\"1\">Encapsulates the SDK's general logging configuration.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.PluginConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.PluginConfiguration.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems.PluginConfiguration",
+      "Summary": "<p sourcefile=\"api/LaunchDarkly.Sdk.Server.Subsystems.PluginConfiguration.yml\" sourcestartlinenumber=\"1\">Configuration containing plugins for the SDK.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.Subsystems.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server.Subsystems",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.Server.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.Server.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.Server",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.UnixMillisecondTime.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.UnixMillisecondTime.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.UnixMillisecondTime",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.User.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.User.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.User",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.UserAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.UserAttribute.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk.UserAttribute",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/LaunchDarkly.Sdk.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/LaunchDarkly.Sdk.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "LaunchDarkly.Sdk",
+      "Summary": null
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "api/toc.yml",
+      "output": {
+        ".json": {
+          "relative_path": "api/toc.json"
+        },
+        ".html": {
+          "relative_path": "api/toc.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "contract-tests/README.md",
+      "output": {
+        ".html": {
+          "relative_path": "contract-tests/README.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs-src/README.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs-src/README.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Json.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Json.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.Integrations.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.Integrations.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.Interfaces.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.Interfaces.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.Subsystems.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.Subsystems.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.Server.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs-src/namespaces/LaunchDarkly.Sdk.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "src/Internal/BigSegments/NamespaceReadme.md",
+      "output": {
+        ".html": {
+          "relative_path": "src/Internal/BigSegments/NamespaceReadme.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "src/Internal/DataSources/NamespaceReadme.md",
+      "output": {
+        ".html": {
+          "relative_path": "src/Internal/DataSources/NamespaceReadme.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "src/Internal/DataStores/NamespaceReadme.md",
+      "output": {
+        ".html": {
+          "relative_path": "src/Internal/DataStores/NamespaceReadme.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "src/Internal/Evaluation/NamespaceReadme.md",
+      "output": {
+        ".html": {
+          "relative_path": "src/Internal/Evaluation/NamespaceReadme.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "src/Internal/Events/NamespaceReadme.md",
+      "output": {
+        ".html": {
+          "relative_path": "src/Internal/Events/NamespaceReadme.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "src/Internal/Model/NamespaceReadme.md",
+      "output": {
+        ".html": {
+          "relative_path": "src/Internal/Model/NamespaceReadme.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "src/Internal/NamespaceReadme.md",
+      "output": {
+        ".html": {
+          "relative_path": "src/Internal/NamespaceReadme.html"
+        }
+      },
+      "version": ""
+    }
+  ],
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}

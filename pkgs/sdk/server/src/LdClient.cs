@@ -7,6 +7,7 @@ using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal;
+using LaunchDarkly.Sdk.Integrations.Plugins;
 using LaunchDarkly.Sdk.Server.Internal.BigSegments;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
@@ -130,7 +131,7 @@ namespace LaunchDarkly.Sdk.Server
         {
             _configuration = config;
 
-            var logConfig = (config.Logging ?? Components.Logging()).Build(new LdClientContext(config.SdkKey));
+            var logConfig = (_configuration.Logging ?? Components.Logging()).Build(new LdClientContext(_configuration.SdkKey));
 
             _log = logConfig.LogAdapter.Logger(logConfig.BaseLoggerName ?? LogNames.DefaultBase);
             _log.Info("Starting LaunchDarkly client {0}",
@@ -140,24 +141,24 @@ namespace LaunchDarkly.Sdk.Server
             var taskExecutor = new TaskExecutor(this, _log);
 
             var clientContext = new LdClientContext(
-                config.SdkKey,
+                _configuration.SdkKey,
                 null,
                 null,
                 null,
                 _log,
-                config.Offline,
-                config.ServiceEndpoints,
+                _configuration.Offline,
+                _configuration.ServiceEndpoints,
                 null,
                 taskExecutor,
-                config.ApplicationInfo?.Build() ?? new ApplicationInfo(),
-                config.WrapperInfo?.Build()
+                _configuration.ApplicationInfo?.Build() ?? new ApplicationInfo(),
+                _configuration.WrapperInfo?.Build()
                 );
 
-            var httpConfig = (config.Http ?? Components.HttpConfiguration()).Build(clientContext);
+            var httpConfig = (_configuration.Http ?? Components.HttpConfiguration()).Build(clientContext);
             clientContext = clientContext.WithHttp(httpConfig);
 
             var diagnosticStore = _configuration.DiagnosticOptOut ? null :
-                new ServerDiagnosticStore(config, clientContext);
+                new ServerDiagnosticStore(_configuration, clientContext);
             clientContext = clientContext.WithDiagnosticStore(diagnosticStore);
 
             var dataStoreUpdates = new DataStoreUpdatesImpl(taskExecutor, _log.SubLogger(LogNames.DataStoreSubLog));
@@ -185,25 +186,33 @@ namespace LaunchDarkly.Sdk.Server
                 );
 
             var eventProcessorFactory =
-                config.Offline ? Components.NoEvents :
-                (_configuration.Events?? Components.SendEvents());
+                _configuration.Offline ? Components.NoEvents :
+                (_configuration.Events ?? Components.SendEvents());
             _eventProcessor = eventProcessorFactory.Build(clientContext);
 
             var dataSourceUpdates = new DataSourceUpdatesImpl(_dataStore, _dataStoreStatusProvider,
                 taskExecutor, _log, logConfig.LogDataSourceOutageAsErrorAfter);
             IComponentConfigurer<IDataSource> dataSourceFactory =
-                config.Offline ? Components.ExternalUpdatesOnly :
+                _configuration.Offline ? Components.ExternalUpdatesOnly :
                 (_configuration.DataSource ?? Components.StreamingDataSource());
             _dataSource = dataSourceFactory.Build(clientContext.WithDataSourceUpdates(dataSourceUpdates));
             _dataSourceStatusProvider = new DataSourceStatusProviderImpl(dataSourceUpdates);
             _flagTracker = new FlagTrackerImpl(dataSourceUpdates,
                 (string key, Context context) => JsonVariation(key, context, LdValue.Null));
 
-            var hookConfig = (config.Hooks ?? Components.Hooks()).Build();
-            _hookExecutor =  hookConfig.Hooks.Any() ?
-                (IHookExecutor) new Executor(_log.SubLogger(LogNames.HooksSubLog), hookConfig.Hooks)
+            var allHooks = new List<Hook>();
+
+            var hookConfig = (_configuration.Hooks ?? Components.Hooks()).Build();
+            allHooks.AddRange(hookConfig.Hooks);
+
+            var pluginConfig = (_configuration.Plugins ?? Components.Plugins()).Build();
+            EnvironmentMetadata environmentMetadata = CreateEnvironmentMetadata(clientContext);
+            allHooks.AddRange(this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log));
+            _hookExecutor = allHooks.Any() ?
+                (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
                 : new NoopExecutor();
 
+            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
             var initTask = _dataSource.Start();
 
@@ -323,7 +332,7 @@ namespace LaunchDarkly.Sdk.Server
             var (detail, flag) = EvaluateWithHooks(Method.MigrationVariation, key, context, LdValue.Of(defaultStage.ToDataModelString()),
                               LdValue.Convert.String, true, EventFactory.Default);
 
-            var nullableStage  = MigrationStageExtensions.FromDataModelString(detail.Value);
+            var nullableStage = MigrationStageExtensions.FromDataModelString(detail.Value);
             var stage = nullableStage ?? defaultStage;
             if (nullableStage == null)
             {
@@ -648,24 +657,34 @@ namespace LaunchDarkly.Sdk.Server
 
         #region Private methods
 
-        private FeatureFlag GetFlag(string key)
+        /// <summary>
+        /// Creates metadata about the environment, including SDK and application information.
+        /// </summary>
+        /// <param name="clientContext">The client context containing application and wrapper information.</param>
+        /// <returns>An <see cref="EnvironmentMetadata"/> instance containing the environment metadata.</returns>
+        /// <remarks>
+        /// This method constructs the environment metadata using the SDK key, application ID, and version,
+        /// along with any wrapper information if available. It is used to provide context for plugins and
+        /// hooks that may need to interact with the environment.
+        /// </remarks>
+        private EnvironmentMetadata CreateEnvironmentMetadata(LdClientContext clientContext)
         {
-            var maybeItem = _dataStore.Get(DataModel.Features, key);
-            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
-            {
-                return f;
-            }
-            return null;
-        }
+            var applicationInfo = clientContext.ApplicationInfo;
+            var wrapperInfo = _configuration.WrapperInfo?.Build();
 
-        private Segment GetSegment(string key)
-        {
-            var maybeItem = _dataStore.Get(DataModel.Segments, key);
-            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is Segment s)
-            {
-                return s;
-            }
-            return null;
+            var sdkMetadata = new SdkMetadata(
+                "dotnet-server-sdk",
+                AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)),
+                wrapperInfo?.Name,
+                wrapperInfo?.Version
+            );
+
+            var applicationMetadata = new ApplicationMetadata(
+                applicationInfo.ApplicationId,
+                applicationInfo.ApplicationVersion
+            );
+
+            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, CredentialType.SdkKey, applicationMetadata);
         }
 
         private void Dispose(bool disposing)
@@ -690,6 +709,26 @@ namespace LaunchDarkly.Sdk.Server
             if (_dataStore is IDataStoreMetadata dataStoreMetadata)
             {
                 return dataStoreMetadata.GetMetadata()?.EnvironmentId;
+            }
+            return null;
+        }
+
+        private FeatureFlag GetFlag(string key)
+        {
+            var maybeItem = _dataStore.Get(DataModel.Features, key);
+            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
+            {
+                return f;
+            }
+            return null;
+        }
+
+        private Segment GetSegment(string key)
+        {
+            var maybeItem = _dataStore.Get(DataModel.Segments, key);
+            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is Segment s)
+            {
+                return s;
             }
             return null;
         }

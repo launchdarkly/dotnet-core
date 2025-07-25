@@ -21,7 +21,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private const string Duration = "$ld:ai:duration:total";
     private const string FeedbackPositive = "$ld:ai:feedback:user:positive";
     private const string FeedbackNegative = "$ld:ai:feedback:user:negative";
-    private const string Generation = "$ld:ai:generation";
     private const string GenerationSuccess = "$ld:ai:generation:success";
     private const string GenerationError = "$ld:ai:generation:error";
     private const string TokenTotal = "$ld:ai:tokens:total";
@@ -96,14 +95,12 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     public void TrackSuccess()
     {
         _client.Track(GenerationSuccess, _context, _trackData, 1);
-        _client.Track(Generation, _context, _trackData, 1);
     }
 
     /// <inheritdoc/>
     public void TrackError()
     {
         _client.Track(GenerationError, _context, _trackData, 1);
-        _client.Track(Generation, _context, _trackData, 1);
     }
 
     /// <inheritdoc/>

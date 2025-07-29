@@ -50,7 +50,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) },
             { "modelName", LdValue.Of(config.Model?.Name) },
             { "providerName", LdValue.Of(config.Provider?.Name) },
-            { "providerName", LdValue.Of(config.Provider.Name) },
         });
     }
 

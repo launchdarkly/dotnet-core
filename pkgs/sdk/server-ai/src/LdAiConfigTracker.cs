@@ -47,7 +47,9 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         {
             { "variationKey", LdValue.Of(config.VariationKey)},
             { "version", LdValue.Of(config.Version)},
-            { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) }
+            { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) },
+            { "modelName", LdValue.Of(config.Model.Name) },
+            { "providerName", LdValue.Of(config.Provider.Name) },
         });
     }
 

@@ -44,7 +44,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
 
@@ -63,7 +65,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
 
@@ -82,7 +86,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -103,7 +109,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -124,7 +132,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -159,7 +169,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -181,7 +193,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -210,7 +224,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object,  flagKey, config, context);
@@ -254,7 +270,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
@@ -289,7 +307,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
                 { "version", LdValue.Of(config.Version) },
-                { "configKey", LdValue.Of(flagKey) }
+                { "configKey", LdValue.Of(flagKey) },
+                { "modelName", LdValue.Of(config.Model.Name) },
+                { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
             var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);

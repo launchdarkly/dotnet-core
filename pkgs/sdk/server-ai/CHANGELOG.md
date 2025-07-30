@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.8.0...LaunchDarkly.ServerSdk.Ai-v0.9.0) (2025-07-30)
+
+
+### Features
+
+* added provider and model to ai tracker ([#145](https://github.com/launchdarkly/dotnet-core/issues/145)) ([2ba2dd4](https://github.com/launchdarkly/dotnet-core/commit/2ba2dd4cd9c009dbb2c42a5f4792a6d0be8e84e6))
+
+
+### Bug Fixes
+
+* Remove deprecated track generation event ([#143](https://github.com/launchdarkly/dotnet-core/issues/143)) ([ac1bb78](https://github.com/launchdarkly/dotnet-core/commit/ac1bb7835e05ee26ed72251cc443e740cfe0b11d))
+
 ## [0.8.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.7.0...LaunchDarkly.ServerSdk.Ai-v0.8.0) (2025-06-02)
 
 

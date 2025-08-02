@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using StackExchange.Redis;
 
@@ -57,6 +59,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     public abstract class RedisStoreBuilder<T> : IComponentConfigurer<T>, IDiagnosticDescription
     {
         internal ConfigurationOptions _redisConfig = new ConfigurationOptions();
+        internal IConnectionMultiplexer _externalConnection;
         internal string _prefix = Redis.DefaultPrefix;
 
         internal RedisStoreBuilder()
@@ -224,6 +227,47 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             return this;
         }
 
+        /// <summary>
+        /// Specifies a pre-configured Redis connection multiplexer to use instead of creating one
+        /// from configuration options. This allows for advanced scenarios such as Azure AAD authentication.
+        /// </summary>
+        /// <param name="connection">the pre-configured connection multiplexer</param>
+        /// <returns>the builder</returns>
+        public RedisStoreBuilder<T> Connection(IConnectionMultiplexer connection)
+        {
+            _externalConnection = connection ?? throw new ArgumentNullException(nameof(connection));
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the connection to use - either the externally provided one or creates a new one from configuration.
+        /// </summary>
+        /// <param name="log">Logger for connection creation</param>
+        /// <returns>The Redis connection multiplexer to use</returns>
+        protected IConnectionMultiplexer GetOrCreateConnection(Logger log)
+        {
+            if (_externalConnection != null)
+            {
+                log.Info("Using pre-configured Redis connection with prefix \"{0}\"", _prefix);
+                return _externalConnection;
+            }
+
+            log.Info("Creating Redis connection to {0} with prefix \"{1}\"",
+                string.Join(", ", _redisConfig.EndPoints.Select(DescribeEndPoint)), _prefix);
+            
+            var redisConfigCopy = _redisConfig.Clone();
+            return ConnectionMultiplexer.Connect(redisConfigCopy);
+        }
+
+        private string DescribeEndPoint(EndPoint e)
+        {
+            // The default ToString() method of DnsEndPoint adds a prefix of "Unspecified", which looks
+            // confusing in our log messages.
+            return (e is DnsEndPoint de) ?
+                string.Format("{0}:{1}", de.Host, de.Port) :
+                e.ToString();
+        }
+
         /// <inheritdoc/>
         public abstract T Build(LdClientContext context);
 
@@ -234,13 +278,19 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 
     internal sealed class BuilderForDataStore : RedisStoreBuilder<IPersistentDataStore>
     {
-        public override IPersistentDataStore Build(LdClientContext context) =>
-            new RedisDataStoreImpl(_redisConfig, _prefix, context.Logger.SubLogger("DataStore.Redis"));
+        public override IPersistentDataStore Build(LdClientContext context)
+        {
+            var connection = GetOrCreateConnection(context.Logger.SubLogger("DataStore.Redis"));
+            return new RedisDataStoreImpl(connection, _prefix, context.Logger.SubLogger("DataStore.Redis"));
+        }
     }
 
     internal sealed class BuilderForBigSegments : RedisStoreBuilder<IBigSegmentStore>
     {
-        public override IBigSegmentStore Build(LdClientContext context) =>
-            new RedisBigSegmentStoreImpl(_redisConfig, _prefix, context.Logger.SubLogger("BigSegments.Redis"));
+        public override IBigSegmentStore Build(LdClientContext context)
+        {
+            var connection = GetOrCreateConnection(context.Logger.SubLogger("BigSegments.Redis"));
+            return new RedisBigSegmentStoreImpl(connection, _prefix, context.Logger.SubLogger("BigSegments.Redis"));
+        }
     }
 }

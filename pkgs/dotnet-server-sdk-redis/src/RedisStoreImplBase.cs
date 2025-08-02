@@ -20,9 +20,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             Logger log
             )
         {
-            _log = log ?? throw new ArgumentNullException(nameof(log));
-            _redis = redis ?? throw new ArgumentNullException(nameof(redis));
-            _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
+            _log = log;
+            _redis = redis;
+            _prefix = prefix;
             _log.Info("Using Redis connection with prefix \"{0}\"", prefix);
         }
 

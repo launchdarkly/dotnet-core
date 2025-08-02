@@ -40,10 +40,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         private readonly string _initedKey;
 
         internal RedisDataStoreImpl(
-            ConfigurationOptions redisConfig,
+            IConnectionMultiplexer redis,
             string prefix,
             Logger log
-            ) : base(redisConfig, prefix, log)
+            ) : base(redis, prefix, log)
         {
             _initedKey = prefix + ":$inited";
         }

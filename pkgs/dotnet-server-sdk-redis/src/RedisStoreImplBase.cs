@@ -10,22 +10,20 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 {
     internal abstract class RedisStoreImplBase : IDisposable
     {
-        protected readonly ConnectionMultiplexer _redis;
+        protected readonly IConnectionMultiplexer _redis;
         protected readonly string _prefix;
         protected readonly Logger _log;
 
         protected RedisStoreImplBase(
-            ConfigurationOptions redisConfig,
+            IConnectionMultiplexer redis,
             string prefix,
             Logger log
             )
         {
-            _log = log;
-            var redisConfigCopy = redisConfig.Clone();
-            _redis = ConnectionMultiplexer.Connect(redisConfigCopy);
-            _prefix = prefix;
-            _log.Info("Using Redis data store at {0} with prefix \"{1}\"",
-                string.Join(", ", redisConfig.EndPoints.Select(DescribeEndPoint)), prefix);
+            _log = log ?? throw new ArgumentNullException(nameof(log));
+            _redis = redis ?? throw new ArgumentNullException(nameof(redis));
+            _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
+            _log.Info("Using Redis connection with prefix \"{0}\"", prefix);
         }
 
         public void Dispose()
@@ -42,13 +40,5 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             }
         }
 
-        private string DescribeEndPoint(EndPoint e)
-        {
-            // The default ToString() method of DnsEndPoint adds a prefix of "Unspecified", which looks
-            // confusing in our log messages.
-            return (e is DnsEndPoint de) ?
-                string.Format("{0}:{1}", de.Host, de.Port) :
-                e.ToString();
-        }
     }
 }

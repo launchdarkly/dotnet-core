@@ -42,14 +42,27 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         }
 
         /// <summary>
+        /// The TracingHook will include the flag value in the current activity, if one exists.
+        /// The value representation is a JSON string. Disabled by default.
+        /// </summary>
+        /// <param name="includeValue">true to include value, false otherwise</param>
+        /// <returns>this builder</returns>
+        public TracingHookBuilder IncludeValue(bool includeValue = true)
+        {
+            _includeValue = includeValue;
+            return this;
+        }
+
+        /// <summary>
         /// The TracingHook will include the flag variant in the current activity, if one exists.
         /// The variant representation is a JSON string. Disabled by default.
         /// </summary>
-        /// <param name="includeValue">true to include variants, false otherwise</param>
+        /// <param name="includeVariant">true to include variants, false otherwise</param>
         /// <returns>this builder</returns>
-        public TracingHookBuilder includeValue(bool includeValue = true)
+        [System.Obsolete("IncludeVariant is deprecated. Use IncludeValue instead.")]
+        public TracingHookBuilder IncludeVariant(bool includeVariant = true)
         {
-            _includeValue = includeValue;
+            _includeValue = includeVariant;
             return this;
         }
 
@@ -223,14 +236,14 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 attributes.Add(SemanticAttributes.FeatureFlagValue, detail.Value.ToJsonString());
             }
 
-            if (false)
-            {  // TODO: add this data given appropriate condition
-                attributes.Add(SemanticAttributes.FeatureFlagVariationIndex, "");
+            if (detail.Reason.InExperiment)
+            {
+                attributes.Add(SemanticAttributes.FeatureFlagInExperiment, detail.Reason.InExperiment);
             }
 
-            if (false)
-            {  // TODO: add this data given appropriate condition
-                attributes.Add(SemanticAttributes.FeatureFlagInExperiment, "");
+            if (detail.VariationIndex.HasValue)
+            {
+                attributes.Add(SemanticAttributes.FeatureFlagVariationIndex, detail.VariationIndex.Value);
             }
 
             Activity.Current?.AddEvent(new ActivityEvent(name: SemanticAttributes.EventName, tags: attributes));

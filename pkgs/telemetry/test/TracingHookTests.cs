@@ -40,7 +40,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         public void ConfigurationOptionsDoNotThrowExceptions(bool includeValue, bool createSpans)
         {
             var hook = TracingHook.Builder()
-                .includeValue(includeValue)
+                .IncludeValue(includeValue)
                 .CreateActivities(createSpans)
                 .Build();
             var context = new EvaluationSeriesContext("foo", Context.New("bar"), LdValue.Null, "testMethod");
@@ -178,7 +178,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
 
             var testSource = new ActivitySource("test-source", "1.0.0");
 
-            var hookUnderTest = TracingHook.Builder().includeValue(includeValue).Build();
+            var hookUnderTest = TracingHook.Builder().IncludeValue(includeValue).Build();
             var featureKey = "feature-key";
             var context = Context.New("foo");
 

@@ -37,10 +37,10 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void ConfigurationOptionsDoNotThrowExceptions(bool includeVariant, bool createSpans)
+        public void ConfigurationOptionsDoNotThrowExceptions(bool includeValue, bool createSpans)
         {
             var hook = TracingHook.Builder()
-                .IncludeVariant(includeVariant)
+                .includeValue(includeValue)
                 .CreateActivities(createSpans)
                 .Build();
             var context = new EvaluationSeriesContext("foo", Context.New("bar"), LdValue.Null, "testMethod");
@@ -164,7 +164,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TracingHookIncludesVariant(bool includeVariant)
+        public void TracingHookIncludesVariant(bool includeValue)
         {
             ICollection<Activity> exportedItems = new Collection<Activity>();
 
@@ -178,7 +178,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
 
             var testSource = new ActivitySource("test-source", "1.0.0");
 
-            var hookUnderTest = TracingHook.Builder().IncludeVariant(includeVariant).Build();
+            var hookUnderTest = TracingHook.Builder().includeValue(includeValue).Build();
             var featureKey = "feature-key";
             var context = Context.New("foo");
 
@@ -203,21 +203,21 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
             Assert.Single(items);
             Assert.Equal("root-activity", items[0].OperationName);
 
-            if (includeVariant)
+            if (includeValue)
             {
                 // The idea is to check that the span has two events attached to it, and those events contain the feature
                 // flag variants. It's awkward to check because we don't know the exact order of the events or those
                 // events' tags.
                 var events = items[0].Events;
                 Assert.Single(events.Where(e =>
-                    e.Tags.Contains(new KeyValuePair<string, object>("feature_flag.variant", "true"))));
+                    e.Tags.Contains(new KeyValuePair<string, object>("feature_flag.result.value", "true"))));
                 Assert.Single(events.Where(e =>
-                    e.Tags.Contains(new KeyValuePair<string, object>("feature_flag.variant", "\"default\""))));
+                    e.Tags.Contains(new KeyValuePair<string, object>("feature_flag.result.value", "\"default\""))));
             }
             else
             {
                 // If not including the variant, then we shouldn't see any variant tag on any events.
-                Assert.All(items, i => i.Events.All(e => e.Tags.All(kvp => kvp.Key != "feature_flag.variant")));
+                Assert.All(items, i => i.Events.All(e => e.Tags.All(kvp => kvp.Key != "feature_flag.result.value")));
             }
         }
 

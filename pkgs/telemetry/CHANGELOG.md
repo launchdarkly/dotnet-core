@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.2.0...LaunchDarkly.ServerSdk.Telemetry-v1.3.0) (2025-08-08)
+
+
+### Features
+
+* Updating semantic conventions ([#148](https://github.com/launchdarkly/dotnet-core/issues/148)) ([a73d332](https://github.com/launchdarkly/dotnet-core/commit/a73d3320a16d628f44b38d2a09230835d808a41d))
+
 ## [1.2.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.1.0...LaunchDarkly.ServerSdk.Telemetry-v1.2.0) (2025-06-02)
 
 

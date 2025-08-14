@@ -49,6 +49,53 @@ public class LdAiClientTest
         Assert.Equal(defaultConfig, tracker.Config);
     }
 
+    [Fact]
+    public void ConfigMethodCallsTrackWithCorrectParameters()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var context = Context.New(ContextKind.Default, "user-key");
+        var configKey = "test-config-key";
+
+        mockClient.Setup(c => c.JsonVariation(
+                It.IsAny<string>(),
+                It.IsAny<Context>(),
+                It.IsAny<LdValue>()))
+            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["variationKey"] = LdValue.Of("test-variation"),
+                    ["version"] = LdValue.Of(1)
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("test-model")
+                }),
+                ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("test-provider")
+                }),
+                ["messages"] = LdValue.ArrayOf()
+            }));
+
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var defaultConfig = LdAiConfig.New().Build();
+
+        var tracker = client.Config(configKey, context, defaultConfig);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:config:function:single",
+            context,
+            LdValue.Of(configKey),
+            1), Times.Once);
+
+        Assert.NotNull(tracker);
+    }
+
     private const string MetaDisabledExplicitly = """
                                                   {
                                                     "_ldMeta": {"variationKey": "1", "enabled": false},

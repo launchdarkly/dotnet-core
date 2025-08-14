@@ -47,6 +47,7 @@ public sealed class LdAiClient : ILdAiClient
     public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null)
     {
+        _client.Track("$ld:ai:config:function:single", context, LdValue.Of(key), 1);
 
         var result = _client.JsonVariation(key, context, defaultValue.ToLdValue());
 

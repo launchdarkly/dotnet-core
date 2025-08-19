@@ -27,15 +27,6 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 string.Join(", ", redis.GetEndPoints().Select(DescribeEndPoint)), prefix);
         }
 
-        private string DescribeEndPoint(EndPoint e)
-        {
-            // The default ToString() method of DnsEndPoint adds a prefix of "Unspecified", which looks
-            // confusing in our log messages.
-            return (e is DnsEndPoint de) ?
-                string.Format("{0}:{1}", de.Host, de.Port) :
-                e.ToString();
-        }
-
         public void Dispose()
         {
             Dispose(true);
@@ -50,5 +41,13 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             }
         }
 
+        private string DescribeEndPoint(EndPoint e)
+        {
+            // The default ToString() method of DnsEndPoint adds a prefix of "Unspecified", which looks
+            // confusing in our log messages.
+            return (e is DnsEndPoint de) ?
+                string.Format("{0}:{1}", de.Host, de.Port) :
+                e.ToString();
+        }
     }
 }

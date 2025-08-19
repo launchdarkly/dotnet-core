@@ -68,13 +68,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                     {
                         Assert.Equal(LogLevel.Info, m.Level);
                         Assert.Equal("BaseLoggerName.DataStore.Redis", m.LoggerName);
-                        Assert.Contains("Creating Redis connection to localhost:6379 with prefix \"my-prefix\"", m.Text);
-                    },
-                    m =>
-                    {
-                        Assert.Equal(LogLevel.Info, m.Level);
-                        Assert.Equal("BaseLoggerName.DataStore.Redis", m.LoggerName);
-                        Assert.Equal("Using Redis connection with prefix \"my-prefix\"", m.Text);
+                        Assert.Contains("Using Redis data store at localhost:6379 with prefix \"my-prefix\"", m.Text);
                     });
             }
         }

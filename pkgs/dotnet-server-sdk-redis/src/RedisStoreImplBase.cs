@@ -23,7 +23,17 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             _log = log;
             _redis = redis;
             _prefix = prefix;
-            _log.Info("Using Redis connection with prefix \"{0}\"", prefix);
+            _log.Info("Using Redis data store at {0} with prefix \"{1}\"",
+                string.Join(", ", redis.GetEndPoints().Select(DescribeEndPoint)), prefix);
+        }
+
+        private string DescribeEndPoint(EndPoint e)
+        {
+            // The default ToString() method of DnsEndPoint adds a prefix of "Unspecified", which looks
+            // confusing in our log messages.
+            return (e is DnsEndPoint de) ?
+                string.Format("{0}:{1}", de.Host, de.Port) :
+                e.ToString();
         }
 
         public void Dispose()

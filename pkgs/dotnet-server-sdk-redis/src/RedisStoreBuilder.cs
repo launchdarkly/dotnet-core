@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using StackExchange.Redis;
 
@@ -228,8 +227,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         /// <summary>
-        /// Specifies a pre-configured Redis connection multiplexer to use instead of creating one
-        /// from configuration options. This allows for advanced scenarios such as Azure AAD authentication.
+        /// Specifies a pre-configured Redis connection multiplexer to use and will ignore
+        /// all other redis configuration options. The SDK will also close the connection
+        /// when it is disposed.
         /// </summary>
         /// <param name="connection">the pre-configured connection multiplexer</param>
         /// <returns>the builder</returns>
@@ -242,30 +242,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// <summary>
         /// Gets the connection to use - either the externally provided one or creates a new one from configuration.
         /// </summary>
-        /// <param name="log">Logger for connection creation</param>
         /// <returns>The Redis connection multiplexer to use</returns>
-        protected IConnectionMultiplexer GetOrCreateConnection(Logger log)
+        protected IConnectionMultiplexer GetOrCreateConnection()
         {
             if (_externalConnection != null)
             {
-                log.Info("Using pre-configured Redis connection with prefix \"{0}\"", _prefix);
                 return _externalConnection;
             }
 
-            log.Info("Creating Redis connection to {0} with prefix \"{1}\"",
-                string.Join(", ", _redisConfig.EndPoints.Select(DescribeEndPoint)), _prefix);
-            
             var redisConfigCopy = _redisConfig.Clone();
             return ConnectionMultiplexer.Connect(redisConfigCopy);
-        }
-
-        private string DescribeEndPoint(EndPoint e)
-        {
-            // The default ToString() method of DnsEndPoint adds a prefix of "Unspecified", which looks
-            // confusing in our log messages.
-            return (e is DnsEndPoint de) ?
-                string.Format("{0}:{1}", de.Host, de.Port) :
-                e.ToString();
         }
 
         /// <inheritdoc/>
@@ -280,7 +266,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     {
         public override IPersistentDataStore Build(LdClientContext context)
         {
-            var connection = GetOrCreateConnection(context.Logger.SubLogger("DataStore.Redis"));
+            var connection = GetOrCreateConnection();
             return new RedisDataStoreImpl(connection, _prefix, context.Logger.SubLogger("DataStore.Redis"));
         }
     }
@@ -289,7 +275,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     {
         public override IBigSegmentStore Build(LdClientContext context)
         {
-            var connection = GetOrCreateConnection(context.Logger.SubLogger("BigSegments.Redis"));
+            var connection = GetOrCreateConnection();
             return new RedisBigSegmentStoreImpl(connection, _prefix, context.Logger.SubLogger("BigSegments.Redis"));
         }
     }

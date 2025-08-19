@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using StackExchange.Redis;

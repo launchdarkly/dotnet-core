@@ -239,9 +239,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         /// <summary>
-        /// Gets the connection to use - either the externally provided one or creates a new one from configuration.
+        /// Gets the connection to use - either the externally provided one or creates a new one
+        /// from configuration.
         /// </summary>
-        /// <returns>The Redis connection multiplexer to use</returns>
+        /// <returns>the Redis connection multiplexer to use</returns>
         protected IConnectionMultiplexer ConnectionMultiplexerFactory()
         {
             if (_externalConnection != null)

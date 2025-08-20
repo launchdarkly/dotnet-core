@@ -7,7 +7,7 @@ All notable changes to the LaunchDarkly .NET SDK Redis integration will be docum
 
 ### Features
 
-* add Connection method to RedisStoreBuilder for external Redis connections ([#147](https://github.com/launchdarkly/dotnet-core/issues/147)) ([8ae31c6](https://github.com/launchdarkly/dotnet-core/commit/8ae31c6604a059f6cff34c5ce8b06494b32e8352))
+* Add `Connection` method to RedisStoreBuilder for external Redis connections ([#147](https://github.com/launchdarkly/dotnet-core/issues/147)) ([8ae31c6](https://github.com/launchdarkly/dotnet-core/commit/8ae31c6604a059f6cff34c5ce8b06494b32e8352))
 
 ## [5.0.0] - 2023-10-16
 ### Changed:

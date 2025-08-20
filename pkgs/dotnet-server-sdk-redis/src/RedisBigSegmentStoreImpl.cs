@@ -17,10 +17,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         private readonly string _excludedKeyPrefix;
 
         internal RedisBigSegmentStoreImpl(
-            IConnectionMultiplexer redis,
+            Func<IConnectionMultiplexer> connectionFactory,
             string prefix,
             Logger log
-            ) : base(redis, prefix, log)
+            ) : base(connectionFactory, prefix, log)
         {
             _syncTimeKey = prefix + ":big_segments_synchronized_on";
             _includedKeyPrefix = prefix + ":big_segment_include:";

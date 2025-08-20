@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Reflection;
-using LaunchDarkly.Sdk.Server.Subsystems;
 using StackExchange.Redis;
 using Xunit;
 
@@ -121,37 +119,39 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public void ConnectionWithNull()
         {
             var builder = Redis.DataStore();
-            
+
             // Setting null connection should throw ArgumentNullException
             Assert.Throws<ArgumentNullException>(() => builder.Connection(null));
         }
 
         [Fact]
-        public void ConnectionMethodExists()
+        public void ConnectionMethodSetsExternalConnection()
         {
             var builder = Redis.DataStore();
-            
+            var connection = ConnectionMultiplexer.Connect(new ConfigurationOptions()
+            {
+                EndPoints = { "localhost:6379" }
+            });
+
             // Initially no external connection
             Assert.Null(builder._externalConnection);
-            
-            // Test that the Connection method exists by checking if we can call it
-            // Use reflection to verify the method exists without requiring a real connection
-            var connectionMethod = typeof(RedisStoreBuilder<IPersistentDataStore>)
-                .GetMethod("Connection", new[] { typeof(IConnectionMultiplexer) });
-            
-            Assert.NotNull(connectionMethod);
-            Assert.Equal(typeof(RedisStoreBuilder<IPersistentDataStore>), connectionMethod.ReturnType);
+
+            // Set the connection
+            builder.Connection(connection);
+
+            // Verify the connection was set
+            Assert.Same(connection, builder._externalConnection);
         }
 
         [Fact]
         public void ConnectionWorksWithOtherBuilderMethods()
         {
             var builder = Redis.DataStore();
-            
-            // Chain with other builder methods  
+
+            // Chain with other builder methods
             builder.HostAndPort("test", 9999)
                    .Prefix("test-prefix");
-            
+
             // Config should be set
             Assert.Collection(builder._redisConfig.EndPoints,
                 e => Assert.Equal(new DnsEndPoint("test", 9999), e));

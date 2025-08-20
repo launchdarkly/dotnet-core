@@ -15,16 +15,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         protected readonly Logger _log;
 
         protected RedisStoreImplBase(
-            IConnectionMultiplexer redis,
+            Func<IConnectionMultiplexer> connectionFactory,
             string prefix,
             Logger log
             )
         {
             _log = log;
-            _redis = redis;
             _prefix = prefix;
+            _redis = connectionFactory();
             _log.Info("Using Redis data store at {0} with prefix \"{1}\"",
-                string.Join(", ", redis.GetEndPoints().Select(DescribeEndPoint)), prefix);
+                string.Join(", ", _redis.GetEndPoints().Select(DescribeEndPoint)), prefix);
         }
 
         public void Dispose()

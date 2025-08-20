@@ -227,8 +227,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 
         /// <summary>
         /// Specifies a pre-configured Redis connection multiplexer to use and will ignore
-        /// all other redis configuration options. The SDK will also close the connection
-        /// when it is disposed.
+        /// all other redis configuration options. Once you provide a multiplexer the SDK
+        /// will own it and will dispose it.
         /// </summary>
         /// <param name="connection">the pre-configured connection multiplexer</param>
         /// <returns>the builder</returns>
@@ -242,7 +242,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// Gets the connection to use - either the externally provided one or creates a new one from configuration.
         /// </summary>
         /// <returns>The Redis connection multiplexer to use</returns>
-        protected IConnectionMultiplexer GetOrCreateConnection()
+        protected IConnectionMultiplexer ConnectionMultiplexerFactory()
         {
             if (_externalConnection != null)
             {
@@ -265,8 +265,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     {
         public override IPersistentDataStore Build(LdClientContext context)
         {
-            var connection = GetOrCreateConnection();
-            return new RedisDataStoreImpl(connection, _prefix, context.Logger.SubLogger("DataStore.Redis"));
+            return new RedisDataStoreImpl(
+                ConnectionMultiplexerFactory,
+                _prefix,
+                context.Logger.SubLogger("DataStore.Redis"));
         }
     }
 
@@ -274,8 +276,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     {
         public override IBigSegmentStore Build(LdClientContext context)
         {
-            var connection = GetOrCreateConnection();
-            return new RedisBigSegmentStoreImpl(connection, _prefix, context.Logger.SubLogger("BigSegments.Redis"));
+            return new RedisBigSegmentStoreImpl(
+                ConnectionMultiplexerFactory,
+                _prefix,
+                context.Logger.SubLogger("BigSegments.Redis"));
         }
     }
 }

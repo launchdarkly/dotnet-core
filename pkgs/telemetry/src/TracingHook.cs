@@ -15,13 +15,13 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
     public class TracingHookBuilder
     {
         private bool _createActivities;
-        private bool _includeVariant;
+        private bool _includeValue;
         private string _environmentId;
 
         internal TracingHookBuilder()
         {
             _createActivities = false;
-            _includeVariant = false;
+            _includeValue = false;
             _environmentId = null;
         }
 
@@ -42,14 +42,27 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         }
 
         /// <summary>
+        /// The TracingHook will include the flag value in the current activity, if one exists.
+        /// The value representation is a JSON string. Disabled by default.
+        /// </summary>
+        /// <param name="includeValue">true to include value, false otherwise</param>
+        /// <returns>this builder</returns>
+        public TracingHookBuilder IncludeValue(bool includeValue = true)
+        {
+            _includeValue = includeValue;
+            return this;
+        }
+
+        /// <summary>
         /// The TracingHook will include the flag variant in the current activity, if one exists.
         /// The variant representation is a JSON string. Disabled by default.
         /// </summary>
         /// <param name="includeVariant">true to include variants, false otherwise</param>
         /// <returns>this builder</returns>
+        [System.Obsolete("IncludeVariant is deprecated. Use IncludeValue instead.")]
         public TracingHookBuilder IncludeVariant(bool includeVariant = true)
         {
-            _includeVariant = includeVariant;
+            _includeValue = includeVariant;
             return this;
         }
 
@@ -77,7 +90,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         /// <returns>the new hook</returns>
         public TracingHook Build()
         {
-            return new TracingHook(new TracingHook.Options(_createActivities, _includeVariant, _environmentId));
+            return new TracingHook(new TracingHook.Options(_createActivities, _includeValue, _environmentId));
         }
     }
 
@@ -107,23 +120,25 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         {
             public const string EventName = "feature_flag";
             public const string FeatureFlagKey = "feature_flag.key";
-            public const string FeatureFlagProviderName = "feature_flag.provider_name";
-            public const string FeatureFlagVariant = "feature_flag.variant";
-            public const string FeatureFlagContextKeyAttributeName = "feature_flag.context.key";
+            public const string FeatureFlagProviderName = "feature_flag.provider.name";
+            public const string FeatureFlagValue = "feature_flag.result.value";
+            public const string FeatureFlagVariationIndex = "feature_flag.result.variationIndex";
+            public const string FeatureFlagInExperiment = "feature_flag.result.reason.inExperiment";
+            public const string FeatureFlagContextKeyAttributeName = "feature_flag.context.id";
             public const string FeatureFlagSetId = "feature_flag.set.id";
         }
 
         internal struct Options
         {
             public bool CreateActivities { get; }
-            public bool IncludeVariant { get; }
+            public bool IncludeValue { get; }
 
             public string EnvironmentId { get; }
 
-            public Options(bool createActivities, bool includeVariant, string environmentId = null)
+            public Options(bool createActivities, bool includeValue, string environmentId = null)
             {
                 CreateActivities = createActivities;
-                IncludeVariant = includeVariant;
+                IncludeValue = includeValue;
                 EnvironmentId = environmentId;
             }
         }
@@ -179,7 +194,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
 
         /// <summary>
         /// Ends the activity created in BeforeEvaluation, if it exists. Adds the feature flag key, provider name, and context key
-        /// to the existing activity. If IncludeVariant is enabled, also adds the variant.
+        /// to the existing activity. If includeValue is enabled, also adds the variant.
         /// </summary>
         /// <param name="context">the evaluation parameters</param>
         /// <param name="data">the series data</param>
@@ -216,9 +231,19 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 attributes[SemanticAttributes.FeatureFlagSetId] = context.EnvironmentId;
             }
 
-            if (_options.IncludeVariant)
+            if (_options.IncludeValue)
             {
-                attributes.Add(SemanticAttributes.FeatureFlagVariant, detail.Value.ToJsonString());
+                attributes.Add(SemanticAttributes.FeatureFlagValue, detail.Value.ToJsonString());
+            }
+
+            if (detail.Reason.InExperiment)
+            {
+                attributes.Add(SemanticAttributes.FeatureFlagInExperiment, detail.Reason.InExperiment);
+            }
+
+            if (detail.VariationIndex.HasValue)
+            {
+                attributes.Add(SemanticAttributes.FeatureFlagVariationIndex, detail.VariationIndex.Value);
             }
 
             Activity.Current?.AddEvent(new ActivityEvent(name: SemanticAttributes.EventName, tags: attributes));

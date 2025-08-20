@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!--x-release-please-start-version-->
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <!--x-release-please-end-->
     <!-- The BUILDFRAMEWORKS variable allows us to override the target frameworks with a
          single framework that we are testing; this allows us to test with older SDK
@@ -42,7 +42,7 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net462'">
     <!-- Use any 5.x to 8.x.  It's a built-in package in net8.0, hence conditional for targets -->
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[5,9)" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[5,10)" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

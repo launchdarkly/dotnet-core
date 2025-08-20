@@ -10,22 +10,21 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 {
     internal abstract class RedisStoreImplBase : IDisposable
     {
-        protected readonly ConnectionMultiplexer _redis;
+        protected readonly IConnectionMultiplexer _redis;
         protected readonly string _prefix;
         protected readonly Logger _log;
 
         protected RedisStoreImplBase(
-            ConfigurationOptions redisConfig,
+            Func<IConnectionMultiplexer> connectionFactory,
             string prefix,
             Logger log
             )
         {
             _log = log;
-            var redisConfigCopy = redisConfig.Clone();
-            _redis = ConnectionMultiplexer.Connect(redisConfigCopy);
             _prefix = prefix;
+            _redis = connectionFactory();
             _log.Info("Using Redis data store at {0} with prefix \"{1}\"",
-                string.Join(", ", redisConfig.EndPoints.Select(DescribeEndPoint)), prefix);
+                string.Join(", ", _redis.GetEndPoints().Select(DescribeEndPoint)), prefix);
         }
 
         public void Dispose()

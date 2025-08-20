@@ -57,6 +57,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     public abstract class RedisStoreBuilder<T> : IComponentConfigurer<T>, IDiagnosticDescription
     {
         internal ConfigurationOptions _redisConfig = new ConfigurationOptions();
+        internal IConnectionMultiplexer _externalConnection;
         internal string _prefix = Redis.DefaultPrefix;
 
         internal RedisStoreBuilder()
@@ -224,6 +225,35 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             return this;
         }
 
+        /// <summary>
+        /// Specifies a pre-configured Redis connection multiplexer to use and will ignore
+        /// all other redis configuration options. Once you provide a multiplexer the SDK
+        /// will own it and will dispose it.
+        /// </summary>
+        /// <param name="connection">the pre-configured connection multiplexer</param>
+        /// <returns>the builder</returns>
+        public RedisStoreBuilder<T> Connection(IConnectionMultiplexer connection)
+        {
+            _externalConnection = connection ?? throw new ArgumentNullException(nameof(connection));
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the connection to use - either the externally provided one or creates a new one
+        /// from configuration.
+        /// </summary>
+        /// <returns>the Redis connection multiplexer to use</returns>
+        protected IConnectionMultiplexer ConnectionMultiplexerFactory()
+        {
+            if (_externalConnection != null)
+            {
+                return _externalConnection;
+            }
+
+            var redisConfigCopy = _redisConfig.Clone();
+            return ConnectionMultiplexer.Connect(redisConfigCopy);
+        }
+
         /// <inheritdoc/>
         public abstract T Build(LdClientContext context);
 
@@ -234,13 +264,23 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 
     internal sealed class BuilderForDataStore : RedisStoreBuilder<IPersistentDataStore>
     {
-        public override IPersistentDataStore Build(LdClientContext context) =>
-            new RedisDataStoreImpl(_redisConfig, _prefix, context.Logger.SubLogger("DataStore.Redis"));
+        public override IPersistentDataStore Build(LdClientContext context)
+        {
+            return new RedisDataStoreImpl(
+                ConnectionMultiplexerFactory,
+                _prefix,
+                context.Logger.SubLogger("DataStore.Redis"));
+        }
     }
 
     internal sealed class BuilderForBigSegments : RedisStoreBuilder<IBigSegmentStore>
     {
-        public override IBigSegmentStore Build(LdClientContext context) =>
-            new RedisBigSegmentStoreImpl(_redisConfig, _prefix, context.Logger.SubLogger("BigSegments.Redis"));
+        public override IBigSegmentStore Build(LdClientContext context)
+        {
+            return new RedisBigSegmentStoreImpl(
+                ConnectionMultiplexerFactory,
+                _prefix,
+                context.Logger.SubLogger("BigSegments.Redis"));
+        }
     }
 }

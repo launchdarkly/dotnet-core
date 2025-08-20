@@ -40,10 +40,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         private readonly string _initedKey;
 
         internal RedisDataStoreImpl(
-            ConfigurationOptions redisConfig,
+            Func<IConnectionMultiplexer> connectionFactory,
             string prefix,
             Logger log
-            ) : base(redisConfig, prefix, log)
+            ) : base(connectionFactory, prefix, log)
         {
             _initedKey = prefix + ":$inited";
         }
@@ -70,7 +70,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             txn.StringSetAsync(_initedKey, "");
             txn.Execute();
         }
-        
+
         public SerializedItemDescriptor? Get(DataKind kind, string key)
         {
             IDatabase db = _redis.GetDatabase();

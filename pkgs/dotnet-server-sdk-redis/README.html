@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>LaunchDarkly Server-Side SDK for .NET - Redis integration | Redis integration for the LaunchDarkly SDK for Server-side .NET  </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="LaunchDarkly Server-Side SDK for .NET - Redis integration | Redis integration for the LaunchDarkly SDK for Server-side .NET  ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="LaunchDarkly.ServerSdk.Redis">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="launchdarkly-server-side-sdk-for-net---redis-integration">LaunchDarkly Server-Side SDK for .NET - Redis integration</h1>
+
+<p><a href="https://www.nuget.org/packages/LaunchDarkly.ServerSdk.Redis/"><img src="https://img.shields.io/nuget/v/LaunchDarkly.ServerSdk.Redis.svg?style=flat-square" alt="NuGet"></a>
+<a href="https://circleci.com/gh/launchdarkly/dotnet-server-sdk-redis"><img src="https://circleci.com/gh/launchdarkly/dotnet-server-sdk-redis.svg?style=shield" alt="CircleCI"></a>
+<a href="https://launchdarkly.github.io/dotnet-server-sdk-redis"><img src="https://img.shields.io/static/v1?label=GitHub+Pages&amp;message=API+reference&amp;color=00add8" alt="Documentation"></a></p>
+<p>This library provides a Redis-backed persistence mechanism (data store) for the <a href="https://github.com/launchdarkly/dotnet-server-sdk">LaunchDarkly .NET SDK</a>, replacing the default in-memory data store. The underlying Redis client implementation is <a href="https://github.com/StackExchange/StackExchange.Redis">StackExchange.Redis</a>.</p>
+<p>For more information, see also: <a href="https://docs.launchdarkly.com/sdk/features/storing-data/redis#net-server-side">Using Redis as a persistent feature store</a>.</p>
+<p>Version 5.0.0 and above of this library works with version 8.0.0 and above of the LaunchDarkly .NET SDK. For earlier versions of the SDK, see the changelog for which version of this library to use.</p>
+<p>It has a dependency on StackExchange.Redis version 2.0.513. If you are using a higher version of StackExchange.Redis, you should install it explicitly as a dependency in your application to override this minimum version.</p>
+<p>For full usage details and examples, see the <a href="http://launchdarkly.github.io/dotnet-server-sdk-redis">API reference</a>.</p>
+<h2 id="supported-net-versions">Supported .NET versions</h2>
+<p>This version of the library is built for the following targets:</p>
+<ul>
+<li>.NET Framework 4.6.2: works in .NET Framework of that version or higher.</li>
+<li>.NET Standard 2.0: works in .NET Core 3.x, .NET 6.x, or in a library targeted to .NET Standard 2.x.</li>
+</ul>
+<p>The .NET build tools should automatically load the most appropriate build of the library for whatever platform your application or library is targeted to.</p>
+<h2 id="signing">Signing</h2>
+<p>The published version of this assembly is both digitally signed by LaunchDarkly and <a href="https://docs.microsoft.com/en-us/dotnet/framework/app-domains/strong-named-assemblies">strong-named</a>.</p>
+<p>Building the code locally in the default Debug configuration does not sign the assembly and does not require a key file.</p>
+<h2 id="contributing">Contributing</h2>
+<p>We encourage pull requests and other contributions from the community. Check out our <a href="CONTRIBUTING.html">contributing guidelines</a> for instructions on how to contribute to this project.</p>
+<h2 id="about-launchdarkly">About LaunchDarkly</h2>
+<ul>
+<li>LaunchDarkly is a continuous delivery platform that provides feature flags as a service and allows developers to iterate quickly and safely. We allow you to easily flag your features and manage them from the LaunchDarkly dashboard.  With LaunchDarkly, you can:
+<ul>
+<li>Roll out a new feature to a subset of your users (like a group of users who opt-in to a beta tester group), gathering feedback and bug reports from real-world use cases.</li>
+<li>Gradually roll out a feature to an increasing percentage of users, and track the effect that the feature has on key metrics (for instance, how likely is a user to complete a purchase if they have feature A versus feature B?).</li>
+<li>Turn off a feature that you realize is causing performance problems in production, without needing to re-deploy, or even restart the application with a changed configuration file.</li>
+<li>Grant access to certain features based on user attributes, like payment plan (eg: users on the ‘gold’ plan get access to more features than users in the ‘silver’ plan). Disable parts of your application to facilitate maintenance, without taking everything offline.</li>
+</ul>
+</li>
+<li>LaunchDarkly provides feature flag SDKs for a wide variety of languages and technologies. Read <a href="https://docs.launchdarkly.com/sdk">our documentation</a> for a complete list.</li>
+<li>Explore LaunchDarkly
+<ul>
+<li><a href="https://www.launchdarkly.com/" title="LaunchDarkly Main Website">launchdarkly.com</a> for more information</li>
+<li><a href="https://docs.launchdarkly.com/" title="LaunchDarkly Documentation">docs.launchdarkly.com</a> for our documentation and SDK reference guides</li>
+<li><a href="https://apidocs.launchdarkly.com/" title="LaunchDarkly API Documentation">apidocs.launchdarkly.com</a> for our API documentation</li>
+<li><a href="https://blog.launchdarkly.com/" title="LaunchDarkly Blog Documentation">blog.launchdarkly.com</a> for the latest product updates</li>
+</ul>
+</li>
+</ul>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/README.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

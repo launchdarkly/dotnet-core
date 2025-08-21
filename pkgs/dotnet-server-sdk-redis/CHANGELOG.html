@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Change log | Redis integration for the LaunchDarkly SDK for Server-side .NET  </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Change log | Redis integration for the LaunchDarkly SDK for Server-side .NET  ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="LaunchDarkly.ServerSdk.Redis">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="change-log">Change log</h1>
+
+<p>All notable changes to the LaunchDarkly .NET SDK Redis integration will be documented in this file. This project adheres to <a href="http://semver.org">Semantic Versioning</a>.</p>
+<h2 id="510-2025-08-20"><a href="https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Redis-v5.0.0...LaunchDarkly.ServerSdk.Redis-v5.1.0">5.1.0</a> (2025-08-20)</h2>
+<h3 id="features">Features</h3>
+<ul>
+<li>Add <code>Connection</code> method to RedisStoreBuilder for external Redis connections (<a href="https://github.com/launchdarkly/dotnet-core/issues/147">#147</a>) (<a href="https://github.com/launchdarkly/dotnet-core/commit/8ae31c6604a059f6cff34c5ce8b06494b32e8352">8ae31c6</a>)</li>
+</ul>
+<h2 id="500---2023-10-16">[5.0.0] - 2023-10-16</h2>
+<h3 id="changed">Changed:</h3>
+<ul>
+<li>This release requires the <code>8.0.0</code> release of the <code>LaunchDarkly.ServerSdk</code>.</li>
+</ul>
+<h2 id="400---2022-12-07">[4.0.0] - 2022-12-07</h2>
+<p>This release corresponds to the 7.0.0 release of the LaunchDarkly server-side .NET SDK. Any application code that is being updated to use the 7.0.0 SDK, and was using a 3.x version of <code>LaunchDarkly.ServerSdk.Redis</code>, should now use a 4.x version instead.</p>
+<p>There are no functional differences in the behavior of the Redis integration; the differences are only related to changes in the usage of interface types for configuration in the SDK.</p>
+<h3 id="added">Added:</h3>
+<ul>
+<li><code>Redis.BigSegmentStore()</code>, which creates a configuration builder for use with Big Segments. Previously, the <code>Redis.DataStore()</code> builder was used for both regular data stores and Big Segment stores.</li>
+</ul>
+<h3 id="changed-1">Changed:</h3>
+<ul>
+<li>The type <code>RedisDataStoreBuilder</code> has been removed, replaced by a generic type <code>RedisStoreBuilder</code>. Application code would not normally need to reference these types by name, but if necessary, use either <code>RedisStoreBuilder&lt;PersistentDataStore&gt;</code> or <code>RedisStoreBuilder&lt;BigSegmentStore&gt;</code> depending on whether you are configuring a regular data store or a Big Segment store.</li>
+</ul>
+<h2 id="310---2021-07-22">[3.1.0] - 2021-07-22</h2>
+<h3 id="added-1">Added:</h3>
+<ul>
+<li>Added support for Big Segments. An Early Access Program for creating and syncing Big Segments from customer data platforms is available to enterprise customers.</li>
+</ul>
+<h2 id="300---2021-06-09">[3.0.0] - 2021-06-09</h2>
+<p>This release is for use with versions 6.0.0 and higher of <a href="https://github.com/launchdarkly/dotnet-server-sdk"><code>LaunchDarkly.ServerSdk</code></a>.</p>
+<p>For more information about changes in the SDK database integrations, see the <a href="https://docs-stg.launchdarkly.com/252/sdk/server-side/dotnet/migration-5-to-6">5.x to 6.0 migration guide</a>.</p>
+<p>Like the previous major version of this library, it uses version 2.x of <code>StackExchange.Redis</code>.</p>
+<h3 id="changed-2">Changed:</h3>
+<ul>
+<li>The namespace is now <code>LaunchDarkly.Sdk.Server.Integrations</code>.</li>
+<li>The entry point is now <code>LaunchDarkly.Sdk.Server.Integrations.Redis</code> rather than <code>LaunchDarkly.Client.Integrations.Redis</code> (or, in earlier versions, <code>LaunchDarkly.Client.Redis.RedisComponents</code>).</li>
+<li>The logger name is now <code>LaunchDarkly.Sdk.DataStore.Redis</code> rather than <code>LaunchDarkly.Client.Redis.RedisFeatureStoreCore</code>.</li>
+</ul>
+<h3 id="removed">Removed:</h3>
+<ul>
+<li>Removed the deprecated <code>RedisComponents</code> entry point and <code>RedisFeatureStoreBuilder</code>.</li>
+<li>The package no longer has a dependency on <code>Common.Logging</code> but instead integrates with the SDK's logging mechanism.</li>
+</ul>
+<h2 id="201---2021-06-01">[2.0.1] - 2021-06-01</h2>
+<h3 id="fixed">Fixed:</h3>
+<ul>
+<li>The library was not fully compliant with the standard usage of Redis keys by other LaunchDarkly SDKs and by the Relay Proxy, as follows: although feature flag data was stored with the correct keys, the wrong key was used for the special value that indicates that the database has been initialized. As a result, if the Relay Proxy had stored data in Redis, the .NET SDK would not detect it, and if the .NET SDK had stored data in Redis, other SDKs might not detect it.</li>
+</ul>
+<h2 id="200---2021-02-01">[2.0.0] - 2021-02-01</h2>
+<p>This release updates the third-party dependency on <code>StackExchange.Redis</code> to use the 2.x version of that library. For details about how <code>StackExchange.Redis</code> 2.x differs from the 1.x versions, see its <a href="https://stackexchange.github.io/StackExchange.Redis/ReleaseNotes.html">release notes</a>.</p>
+<p>This version of <code>LaunchDarkly.ServerSdk.Redis</code> requires version 5.14 or higher of the LaunchDarkly .NET SDK (<code>LaunchDarkly.ServerSdk</code>). It supports both the older configuration API used in previous versions, and the newer configuration API that was introduced in version 5.14 of the SDK and in the <a href="https://github.com/launchdarkly/dotnet-server-sdk-redis/releases/tag/1.2.0">1.2.0</a> release of this package. Using the newer API (see <code>LaunchDarkly.Client.Integrations.Redis</code> in this package) is preferable because that is how configuration will work in the 6.0 release of the SDK.</p>
+<h3 id="added-2">Added:</h3>
+<ul>
+<li>The <code>OperationTimeout</code> configuration property, which corresponds to <code>SyncTimeout</code> in the <code>StackExchange.Redis</code> API.</li>
+</ul>
+<h3 id="changed-3">Changed:</h3>
+<ul>
+<li>The minimum version of <code>StackExchange.Redis</code> is now 2.0.513.</li>
+<li>The minimum version of <code>LaunchDarkly.ServerSdk</code> is now 5.14.0.</li>
+<li>There is no longer a separate <code>LaunchDarkly.ServerSdk.Redis.StrongName</code> package that is the strong-named version; instead, there is just <code>LaunchDarkly.ServerSdk.Redis</code> which is always strong-named. That distinction was previously necessary because the <code>StackExchange.Redis</code> package had both strong-named and non-strong-named versions, which is no longer the case.</li>
+<li>The lowest compatible version of .NET Framework is now 4.6.1 (because that is the lowest version supported by <code>StackExchange.Redis</code> 2.x). The package still has a .NET Standard 2.0 target as well.</li>
+</ul>
+<h3 id="removed-1">Removed:</h3>
+<ul>
+<li>The <code>ResponseTimeout</code> configuration property, which is no longer supported by <code>StackExchange.Redis</code>.</li>
+</ul>
+<h2 id="121---2021-06-01">[1.2.1] - 2021-06-01</h2>
+<h3 id="fixed-1">Fixed:</h3>
+<ul>
+<li>The library was not fully compliant with the standard usage of Redis keys by other LaunchDarkly SDKs and by the Relay Proxy, as follows: although feature flag data was stored with the correct keys, the wrong key was used for the special value that indicates that the database has been initialized. As a result, if the Relay Proxy had stored data in Redis, the .NET SDK would not detect it, and if the .NET SDK had stored data in Redis, other SDKs might not detect it.</li>
+</ul>
+<h2 id="120---2021-01-26">[1.2.0] - 2021-01-26</h2>
+<h3 id="added-3">Added:</h3>
+<ul>
+<li>New classes <code>LaunchDarkly.Client.Integrations.Redis</code> and <code>LaunchDarkly.Client.Integrations.RedisDataStoreBuilder</code>, which serve the same purpose as the previous classes but are designed to work with the newer persistent data store API introduced in .NET SDK 5.14.0.</li>
+</ul>
+<h3 id="deprecated">Deprecated:</h3>
+<ul>
+<li>The old API in the <code>LaunchDarkly.Client.Redis</code> namespace.</li>
+</ul>
+<h2 id="111---2019-05-13">[1.1.1] - 2019-05-13</h2>
+<h3 id="changed-4">Changed:</h3>
+<ul>
+<li>Corresponding to the SDK package name change from <code>LaunchDarkly.Client</code> to <code>LaunchDarkly.ServerSdk</code>, this package is now called <code>LaunchDarkly.ServerSdk.Redis</code> (or <code>LaunchDarkly.ServerSdk.Redis.StrongName</code>). The functionality of the package, including the namespaces and class names, has not changed.</li>
+</ul>
+<h2 id="110---2019-01-14">[1.1.0] - 2019-01-14</h2>
+<h3 id="added-4">Added</h3>
+<ul>
+<li><code>RedisFeatureStoreBuilder.WithCaching</code> is the new way to configure local caching behavior, using the new SDK class <code>FeatureStoreCacheConfig</code>. This allows you to specify a limit on the number of cached items, which was not previously possible. Future releases of the SDK may add more caching parameters, which will then be automatically supported by this library.</li>
+<li>The assemblies in this package now have Authenticode signatures.</li>
+</ul>
+<h3 id="changed-5">Changed</h3>
+<ul>
+<li>The minimum LaunchDarkly.Client version for use with this library is now 5.6.1.</li>
+</ul>
+<h3 id="deprecated-1">Deprecated</h3>
+<ul>
+<li><code>RedisFeatureStoreBuilder.WithCacheExpiration</code></li>
+</ul>
+<h2 id="100---2018-09-28">[1.0.0] - 2018-09-28</h2>
+<p>Initial release.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/CHANGELOG.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

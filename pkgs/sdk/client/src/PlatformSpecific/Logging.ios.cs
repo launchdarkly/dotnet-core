@@ -70,14 +70,45 @@ namespace LaunchDarkly.Sdk.Client.PlatformSpecific
                 public void Log(LogLevel level, object message) =>
                     LogString(level, message.ToString());
 
-                public void Log(LogLevel level, string format, object param) =>
-                    LogString(level, string.Format(format, param));
+                public void Log(LogLevel level, string format, object param)
+                {
+                    try
+                    {
+                        LogString(level, string.Format(format, param));
+                    }
+                    catch (FormatException)
+                    {
+                        // Fallback: log the format string and parameters separately if formatting fails
+                        LogString(level, $"[Format Error] {format} | Param: {param}");
+                    }
+                }
 
-                public void Log(LogLevel level, string format, object param1, object param2) =>
-                    LogString(level, string.Format(format, param1, param2));
+                public void Log(LogLevel level, string format, object param1, object param2)
+                {
+                    try
+                    {
+                        LogString(level, string.Format(format, param1, param2));
+                    }
+                    catch (FormatException)
+                    {
+                        // Fallback: log the format string and parameters separately if formatting fails
+                        LogString(level, $"[Format Error] {format} | Param1: {param1} | Param2: {param2}");
+                    }
+                }
 
-                public void Log(LogLevel level, string format, params object[] allParams) =>
-                    LogString(level, string.Format(format, allParams));
+                public void Log(LogLevel level, string format, params object[] allParams)
+                {
+                    try
+                    {
+                        LogString(level, string.Format(format, allParams));
+                    }
+                    catch (FormatException)
+                    {
+                        // Fallback: log the format string and parameters separately if formatting fails
+                        var paramsStr = allParams != null ? string.Join(", ", allParams) : "null";
+                        LogString(level, $"[Format Error] {format} | Params: {paramsStr}");
+                    }
+                }
             }
         }
     }

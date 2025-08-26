@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.0...LaunchDarkly.ServerSdk-v8.10.1) (2025-08-26)
+
+
+### Bug Fixes
+
+* Bump Internal SDK to 3.5.4 and Common SDK to 7.1.0 ([#154](https://github.com/launchdarkly/dotnet-core/issues/154)) ([2746c1a](https://github.com/launchdarkly/dotnet-core/commit/2746c1aa06628cb8af7ff03a65c2b7542195aeff))
+
 ## [8.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.9.2...LaunchDarkly.ServerSdk-v8.10.0) (2025-07-11)
 
 

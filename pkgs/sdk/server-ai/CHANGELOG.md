@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.0...LaunchDarkly.ServerSdk.Ai-v0.9.1) (2025-08-29)
+
+
+### Bug Fixes
+
+* Add usage tracking to config method ([#151](https://github.com/launchdarkly/dotnet-core/issues/151)) ([95e1e7b](https://github.com/launchdarkly/dotnet-core/commit/95e1e7b8df6d04e4b92068c6c144c5702a48f244))
+
 ## [0.9.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.8.0...LaunchDarkly.ServerSdk.Ai-v0.9.0) (2025-07-30)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.10.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.1...LaunchDarkly.ServerSdk-v8.10.2) (2025-09-25)
+
+
+### Bug Fixes
+
+* Update EventSource to 5.2.1 ([#159](https://github.com/launchdarkly/dotnet-core/issues/159)) ([35d08d7](https://github.com/launchdarkly/dotnet-core/commit/35d08d7160512850c6d3a81e4fc312696cbb808e))
+
 ## [8.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.0...LaunchDarkly.ServerSdk-v8.10.1) (2025-08-26)
 
 

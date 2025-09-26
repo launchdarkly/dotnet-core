@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.CommonSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [7.1.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.1.0...LaunchDarkly.CommonSdk-v7.1.1) (2025-09-26)
+
+
+### Bug Fixes
+
+* Add validation format check for SDK key ([#163](https://github.com/launchdarkly/dotnet-core/issues/163)) ([02c6ed7](https://github.com/launchdarkly/dotnet-core/commit/02c6ed793f1984cce878f0c53667476533acb896))
+
 ## [7.1.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.0.1...LaunchDarkly.CommonSdk-v7.1.0) (2025-07-10)
 
 

@@ -187,7 +187,7 @@ namespace LaunchDarkly.Sdk.Server
             Events = builder._events;
             Http = builder._http;
             Logging = builder._logging;
-            Offline = builder._sdkKey == null || builder._offline;
+            Offline = builder._offline;
             SdkKey = builder._sdkKey;
             ServiceEndpoints = (builder._serviceEndpointsBuilder ?? Components.ServiceEndpoints()).Build();
             StartWaitTime = builder._startWaitTime;

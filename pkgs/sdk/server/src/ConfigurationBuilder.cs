@@ -59,7 +59,7 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         private void SetSdkKeyIfValid(string sdkKey)
         {
-            if (ValidationUtils.ValidateStringValue(sdkKey) == null)
+            if (ValidationUtils.ValidateSdkKeyFormat(sdkKey) == null)
             {
                 _sdkKey = sdkKey;
             }

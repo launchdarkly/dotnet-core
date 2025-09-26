@@ -137,7 +137,7 @@ namespace LaunchDarkly.Sdk.Server
             _log.Info("Starting LaunchDarkly client {0}",
                 AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)));
 
-            if (_configuration.SdkKey == null && !_configuration.offline)
+            if (_configuration.SdkKey == null && !_configuration.Offline)
             {
                 _log.Error("The SDK key provided is invalid.");
             }

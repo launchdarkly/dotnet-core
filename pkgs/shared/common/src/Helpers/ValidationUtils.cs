@@ -15,7 +15,7 @@ namespace LaunchDarkly.Sdk.Helpers
         /// Validates that a string does not contain invalid characters and is not too long for our systems.
         /// </summary>
         /// <param name="sdkKey">the SDK key to validate.</param>
-        /// <returns>True if the SDK key is valid or null/empty, false if it is invalid.</returns>
+        /// <returns>True if the SDK key format is valid, otherwise false.</returns>
         public static bool IsValidSdkKeyFormat(string sdkKey)
         {
             // For offline mode, we allow a null or empty SDK key and it is not invalid.

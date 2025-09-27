@@ -136,6 +136,12 @@ namespace LaunchDarkly.Sdk.Server
             _log = logConfig.LogAdapter.Logger(logConfig.BaseLoggerName ?? LogNames.DefaultBase);
             _log.Info("Starting LaunchDarkly client {0}",
                 AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)));
+
+            if (_configuration.SdkKey == null && !_configuration.Offline)
+            {
+                _log.Error("The SDK key provided is invalid.");
+            }
+
             _evalLog = _log.SubLogger(LogNames.EvaluationSubLog);
 
             var taskExecutor = new TaskExecutor(this, _log);

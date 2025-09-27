@@ -62,7 +62,7 @@ namespace LaunchDarkly.Sdk.Server
             var testData = TestData.DataSource();
             testData.Update(testData.Flag(flagKey).On(false));
 
-            var config = Configuration.Builder("").DataSource(testData)
+            var config = Configuration.Builder("sdk-key").DataSource(testData)
                 .Events(Components.NoEvents).Build();
 
             using (var client = new LdClient(config))
@@ -136,7 +136,7 @@ namespace LaunchDarkly.Sdk.Server
             var config = BasicConfig()
                 .DataSource(testData)
                 .Build();
-            
+
             using (var client = new LdClient(config))
             {
                 var statuses = new EventSink<DataSourceStatus>();

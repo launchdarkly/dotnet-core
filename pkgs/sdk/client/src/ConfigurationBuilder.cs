@@ -81,7 +81,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </summary>
         private void SetMobileKeyIfValid(string mobileKey)
         {
-            if (ValidationUtils.ValidateStringValue(mobileKey) == null)
+            if (ValidationUtils.IsValidSdkKeyFormat(mobileKey))
             {
                 _mobileKey = mobileKey;
             }

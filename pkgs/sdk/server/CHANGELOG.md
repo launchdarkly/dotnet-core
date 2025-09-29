@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.10.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.2...LaunchDarkly.ServerSdk-v8.10.3) (2025-09-29)
+
+
+### Bug Fixes
+
+* Validate string format of SDK key ([#162](https://github.com/launchdarkly/dotnet-core/issues/162)) ([27a26fb](https://github.com/launchdarkly/dotnet-core/commit/27a26fb9e226f7e5208928d9df43fbd6d5a68037))
+
 ## [8.10.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.1...LaunchDarkly.ServerSdk-v8.10.2) (2025-09-25)
 
 

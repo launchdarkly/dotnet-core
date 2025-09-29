@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Helpers;
 using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Integrations;
 using LaunchDarkly.Sdk.Server.Interfaces;
@@ -53,9 +54,20 @@ namespace LaunchDarkly.Sdk.Server
 
         #region Internal constructors
 
+        /// <summary>
+        /// Sets the SDK key only if it passes validation rules.
+        /// </summary>
+        private void SetSdkKeyIfValid(string sdkKey)
+        {
+            if (ValidationUtils.IsValidSdkKeyFormat(sdkKey))
+            {
+                _sdkKey = sdkKey;
+            }
+        }
+
         internal ConfigurationBuilder(string sdkKey)
         {
-            _sdkKey = sdkKey;
+            SetSdkKeyIfValid(sdkKey);
         }
 
         internal ConfigurationBuilder(Configuration copyFrom)
@@ -70,7 +82,8 @@ namespace LaunchDarkly.Sdk.Server
             _http = copyFrom.Http;
             _logging = copyFrom.Logging;
             _offline = copyFrom.Offline;
-            _sdkKey = copyFrom.SdkKey;
+            // The SDK key from Configuration should already be valid, but we validate just in case
+            SetSdkKeyIfValid(copyFrom.SdkKey);
             _serviceEndpointsBuilder = new ServiceEndpointsBuilder(copyFrom.ServiceEndpoints);
             _startWaitTime = copyFrom.StartWaitTime;
             _applicationInfo = copyFrom.ApplicationInfo;
@@ -317,15 +330,15 @@ namespace LaunchDarkly.Sdk.Server
 
         /// <summary>
         /// Sets the SDK key for your LaunchDarkly environment.
+        /// They key will not be updated if the provided key contains invalid characters.
         /// </summary>
         /// <param name="sdkKey">the SDK key</param>
         /// <returns>the same builder</returns>
         public ConfigurationBuilder SdkKey(string sdkKey)
         {
-            _sdkKey = sdkKey;
+            SetSdkKeyIfValid(sdkKey);
             return this;
         }
-
         /// <summary>
         /// Sets the SDK's service URIs, using a configuration builder obtained from
         /// <see cref="Components.ServiceEndpoints"/>.

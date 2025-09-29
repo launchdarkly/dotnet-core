@@ -3,6 +3,7 @@ using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Client.Integrations;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
 using LaunchDarkly.Sdk.Client.Subsystems;
+using LaunchDarkly.Sdk.Helpers;
 
 namespace LaunchDarkly.Sdk.Client
 {
@@ -75,9 +76,20 @@ namespace LaunchDarkly.Sdk.Client
         internal IBackgroundModeManager _backgroundModeManager;
         internal IConnectivityStateManager _connectivityStateManager;
 
+        /// <summary>
+        /// Sets the mobile key only if it passes validation rules.
+        /// </summary>
+        private void SetMobileKeyIfValid(string mobileKey)
+        {
+            if (ValidationUtils.IsValidSdkKeyFormat(mobileKey))
+            {
+                _mobileKey = mobileKey;
+            }
+        }
+
         internal ConfigurationBuilder(string mobileKey, AutoEnvAttributes autoEnvAttributes)
         {
-            _mobileKey = mobileKey;
+            SetMobileKeyIfValid(mobileKey);
             _autoEnvAttributes = autoEnvAttributes == AutoEnvAttributes.Enabled; // map enum to boolean
         }
 
@@ -92,7 +104,8 @@ namespace LaunchDarkly.Sdk.Client
             _events = copyFrom.Events;
             _httpConfigurationBuilder = copyFrom.HttpConfigurationBuilder;
             _loggingConfigurationBuilder = copyFrom.LoggingConfigurationBuilder;
-            _mobileKey = copyFrom.MobileKey;
+            // The mobile key from Configuration should already be valid, but we validate just in case
+            SetMobileKeyIfValid(copyFrom.MobileKey);
             _offline = copyFrom.Offline;
             _persistenceConfigurationBuilder = copyFrom.PersistenceConfigurationBuilder;
             _serviceEndpointsBuilder = new ServiceEndpointsBuilder(copyFrom.ServiceEndpoints);
@@ -362,6 +375,7 @@ namespace LaunchDarkly.Sdk.Client
 
         /// <summary>
         /// Sets the key for your LaunchDarkly environment.
+        /// The key will not be updated if the provided key contains invalid characters.
         /// </summary>
         /// <remarks>
         /// This should be the "mobile key" field for the environment on your LaunchDarkly dashboard.
@@ -370,7 +384,7 @@ namespace LaunchDarkly.Sdk.Client
         /// <returns>the same builder</returns>
         public ConfigurationBuilder MobileKey(string mobileKey)
         {
-            _mobileKey = mobileKey;
+            SetMobileKeyIfValid(mobileKey);
             return this;
         }
 

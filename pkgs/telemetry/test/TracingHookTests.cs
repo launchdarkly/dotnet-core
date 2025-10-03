@@ -56,9 +56,11 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void TracingHookCreatesRootSpans(bool createSpans)
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void TracingHookCreatesRootSpans(bool createSpans, bool includeAllAttributesInSpan)
         {
             ICollection<Activity> exportedItems = new Collection<Activity>();
 
@@ -67,7 +69,11 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 .AddInMemoryExporter(exportedItems)
                 .Build();
 
-            var hookUnderTest = TracingHook.Builder().CreateActivities(createSpans).Build();
+            var hookUnderTest = TracingHook.Builder()
+                .CreateActivities(createSpans)
+                .IncludeValue(true)
+                .IncludeAllAttributesInSpan(includeAllAttributesInSpan)
+                .Build();
             var featureKey = "feature-key";
             var context = Context.New("foo");
 
@@ -93,6 +99,30 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 Assert.Equal("LdClient.BoolVariation", items[0].OperationName);
                 Assert.Equal("LdClient.StringVariation", items[1].OperationName);
                 Assert.True(items.All(i => i.Parent == null));
+
+                Assert.All(items, activity =>
+                {
+                    Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.key" && tag.Value.ToString() == featureKey);
+                    Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.context.id" && tag.Value.ToString() == context.FullyQualifiedKey);
+                });
+
+                // Verify span attributes based on includeAllAttributesInSpan setting
+                if (includeAllAttributesInSpan)
+                {
+                    Assert.All(items, activity =>
+                    {
+                        Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.provider.name" && tag.Value.ToString() == "LaunchDarkly");
+                        Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.result.value");
+                    });
+                }
+                else
+                {
+                    // When includeAllAttributesInSpan is false, only the initial attributes from BeforeEvaluation should be present
+                    Assert.All(items, activity =>
+                    {
+                        Assert.DoesNotContain(activity.Tags, tag => tag.Key == "feature_flag.result.value");
+                    });
+                }
             }
             else
             {
@@ -103,9 +133,11 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
 
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void TracingHookCreatesChildSpans(bool createSpans)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void TracingHookCreatesChildSpans(bool createSpans, bool includeAllAttributesInSpan)
         {
             ICollection<Activity> exportedItems = new Collection<Activity>();
 
@@ -120,7 +152,11 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 .AddInMemoryExporter(exportedItems)
                 .Build();
 
-            var hookUnderTest = TracingHook.Builder().CreateActivities(createSpans).Build();
+            var hookUnderTest = TracingHook.Builder()
+                .CreateActivities(createSpans)
+                .IncludeValue(true)
+                .IncludeAllAttributesInSpan(includeAllAttributesInSpan)
+                .Build();
             var featureKey = "feature-key";
             var context = Context.New("foo");
 
@@ -151,6 +187,34 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 Assert.Equal("LdClient.StringVariation", items[1].OperationName);
                 Assert.Equal("root-activity", items[2].OperationName);
                 Assert.Equal(items[2].SpanId, items[0].ParentSpanId);
+
+                // Get only the LaunchDarkly child spans (not the root activity)
+                var childSpans = items.Where(i => i.OperationName != "root-activity").ToList();
+
+                // Verify initial attributes are always present on child spans
+                Assert.All(childSpans, activity =>
+                {
+                    Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.key" && tag.Value.ToString() == featureKey);
+                    Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.context.id" && tag.Value.ToString() == context.FullyQualifiedKey);
+                });
+
+                // Verify span attributes based on includeAllAttributesInSpan setting
+                if (includeAllAttributesInSpan)
+                {
+                    Assert.All(childSpans, activity =>
+                    {
+                        Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.provider.name" && tag.Value.ToString() == "LaunchDarkly");
+                        Assert.Contains(activity.Tags, tag => tag.Key == "feature_flag.result.value");
+                    });
+                }
+                else
+                {
+                    // When includeAllAttributesInSpan is false, only the initial attributes from BeforeEvaluation should be present
+                    Assert.All(childSpans, activity =>
+                    {
+                        Assert.DoesNotContain(activity.Tags, tag => tag.Key == "feature_flag.result.value");
+                    });
+                }
             }
             else
             {
@@ -220,7 +284,6 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
                 Assert.All(items, i => i.Events.All(e => e.Tags.All(kvp => kvp.Key != "feature_flag.result.value")));
             }
         }
-
 
         [Fact]
         public void TracingHookIncludesEnvironmentIdWhenSpecified()

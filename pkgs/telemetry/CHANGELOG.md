@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.3.0...LaunchDarkly.ServerSdk.Telemetry-v1.4.0) (2025-10-06)
+
+
+### Features
+
+* add all available attributes to a span ([#167](https://github.com/launchdarkly/dotnet-core/issues/167)) ([7350aac](https://github.com/launchdarkly/dotnet-core/commit/7350aac8ef35630b0273d3b12d34e77fa682ff9c))
+
 ## [1.3.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.2.0...LaunchDarkly.ServerSdk.Telemetry-v1.3.0) (2025-08-11)
 
 

@@ -16,12 +16,15 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
     {
         private bool _createActivities;
         private bool _includeValue;
+
+        private bool _includeAllAttributesInSpan;
         private string _environmentId;
 
         internal TracingHookBuilder()
         {
             _createActivities = false;
             _includeValue = false;
+            _includeAllAttributesInSpan = false;
             _environmentId = null;
         }
 
@@ -67,6 +70,19 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         }
 
         /// <summary>
+        /// The TracingHook will include all attributes in the span if set to true.
+        /// A span is only created if CreateActivities is set to true.
+        /// This is disabled by default.
+        /// </summary>
+        /// <param name="includeAllAttributesInSpan">true to include all attributes, false otherwise</param>
+        /// <returns>this builder</returns>
+        public TracingHookBuilder IncludeAllAttributesInSpan(bool includeAllAttributesInSpan = true)
+        {
+            _includeAllAttributesInSpan = includeAllAttributesInSpan;
+            return this;
+        }
+
+        /// <summary>
         /// The environment ID associated with the SDK configuration. In typical usage the environment ID should not be
         /// specified. The environment ID only needs to be manually specified if it cannot be retrieved from the SDK.
         /// <para>
@@ -90,7 +106,7 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         /// <returns>the new hook</returns>
         public TracingHook Build()
         {
-            return new TracingHook(new TracingHook.Options(_createActivities, _includeValue, _environmentId));
+            return new TracingHook(new TracingHook.Options(_createActivities, _includeValue, _includeAllAttributesInSpan, _environmentId));
         }
     }
 
@@ -133,12 +149,15 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
             public bool CreateActivities { get; }
             public bool IncludeValue { get; }
 
+            public bool IncludeAllAttributesInSpan { get; }
+
             public string EnvironmentId { get; }
 
-            public Options(bool createActivities, bool includeValue, string environmentId = null)
+            public Options(bool createActivities, bool includeValue, bool includeAllAttributesInSpan, string environmentId = null)
             {
                 CreateActivities = createActivities;
                 IncludeValue = includeValue;
+                IncludeAllAttributesInSpan = includeAllAttributesInSpan;
                 EnvironmentId = environmentId;
             }
         }
@@ -202,19 +221,6 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
         /// <returns></returns>
         public override SeriesData AfterEvaluation(EvaluationSeriesContext context, SeriesData data, EvaluationDetail<LdValue> detail)
         {
-            if (_options.CreateActivities && data.TryGetValue(ActivityFieldKey, out var value))
-            {
-                try
-                {
-                    var activity = (Activity) value;
-                    activity?.Stop();
-                }
-                catch (System.InvalidCastException)
-                {
-                    // This should never happen, but if it does, don't crash the application.
-                }
-            }
-
             var attributes = new ActivityTagsCollection
             {
                 {SemanticAttributes.FeatureFlagKey, context.FlagKey},
@@ -244,6 +250,29 @@ namespace LaunchDarkly.Sdk.Server.Telemetry
             if (detail.VariationIndex.HasValue)
             {
                 attributes.Add(SemanticAttributes.FeatureFlagVariationIndex, detail.VariationIndex.Value);
+            }
+
+            if (_options.CreateActivities && data.TryGetValue(ActivityFieldKey, out var value))
+            {
+                try
+                {
+                    var activity = (Activity)value;
+                    if (activity != null)
+                    {
+                        if (activity.IsAllDataRequested == true && _options.IncludeAllAttributesInSpan)
+                        {
+                            foreach (var kvp in attributes)
+                            {
+                                activity.SetTag(kvp.Key, kvp.Value);
+                            }
+                        }
+                        activity.Stop();
+                    }
+                }
+                catch (System.InvalidCastException)
+                {
+                    // This should never happen, but if it does, don't crash the application.
+                }
             }
 
             Activity.Current?.AddEvent(new ActivityEvent(name: SemanticAttributes.EventName, tags: attributes));

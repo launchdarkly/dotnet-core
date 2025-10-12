@@ -196,7 +196,13 @@ namespace LaunchDarkly.Sdk.Json
 
             internal static BigSegmentsStatus FromIdentifier(string value)
             {
-                foreach (BigSegmentsStatus k in Enum.GetValues(typeof(BigSegmentsStatus)))
+                foreach (BigSegmentsStatus k in
+#if NET5_0_OR_GREATER
+                    Enum.GetValues<BigSegmentsStatus>()
+#else
+                    Enum.GetValues(typeof(BigSegmentsStatus))
+#endif
+                )
                 {
                     if (ToIdentifier(k) == value)
                     {
@@ -243,7 +249,13 @@ namespace LaunchDarkly.Sdk.Json
 
             internal static EvaluationErrorKind FromIdentifier(string value)
             {
-                foreach (EvaluationErrorKind k in Enum.GetValues(typeof(EvaluationErrorKind)))
+                foreach (EvaluationErrorKind k in
+#if NET5_0_OR_GREATER
+                    Enum.GetValues<EvaluationErrorKind>()
+#else
+                    Enum.GetValues(typeof(EvaluationErrorKind))
+#endif
+                )
                 {
                     if (ToIdentifier(k) == value)
                     {
@@ -294,7 +306,13 @@ namespace LaunchDarkly.Sdk.Json
 
             internal static EvaluationReasonKind FromIdentifier(string value)
             {
-                foreach (EvaluationReasonKind k in Enum.GetValues(typeof(EvaluationErrorKind)))
+                foreach (EvaluationReasonKind k in
+#if NET5_0_OR_GREATER
+                    Enum.GetValues<EvaluationReasonKind>()
+#else
+                    Enum.GetValues(typeof(EvaluationErrorKind))
+#endif
+                )
                 {
                     if (ToIdentifier(k) == value)
                     {

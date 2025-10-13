@@ -310,7 +310,7 @@ namespace LaunchDarkly.Sdk.Json
 #if NET5_0_OR_GREATER
                     Enum.GetValues<EvaluationReasonKind>()
 #else
-                    Enum.GetValues(typeof(EvaluationErrorKind))
+                    Enum.GetValues(typeof(EvaluationReasonKind))
 #endif
                 )
                 {

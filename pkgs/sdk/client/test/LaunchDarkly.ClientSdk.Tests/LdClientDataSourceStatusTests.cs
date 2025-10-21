@@ -150,7 +150,7 @@ namespace LaunchDarkly.Sdk.Client
         [Fact]
         public void DataSourceStatusIsRestoredWhenNoLongerSetOffline()
         {
-            var testData = TestData.DataSource();
+            var testData = TestData.DataSource().WithInitializationDelay(TimeSpan.FromMilliseconds(100));
             var config = BasicConfig().DataSource(testData).Offline(true).Build();
 
             using (var client = TestUtil.CreateClient(config, BasicUser))
@@ -187,7 +187,7 @@ namespace LaunchDarkly.Sdk.Client
         [Fact]
         public void DataSourceStatusIsRestoredWhenNetworkIsAvailableAgain()
         {
-            var testData = TestData.DataSource();
+            var testData = TestData.DataSource().WithInitializationDelay(TimeSpan.FromMilliseconds(100));
             var connectivity = new MockConnectivityStateManager(false);
             var config = BasicConfig()
                 .DataSource(testData)
@@ -247,7 +247,7 @@ namespace LaunchDarkly.Sdk.Client
         [Fact]
         public void BackgroundDisabledState()
         {
-            var testData = TestData.DataSource();
+            var testData = TestData.DataSource().WithInitializationDelay(TimeSpan.FromMilliseconds(100));
             var backgrounder = new MockBackgroundModeManager();
             var config = BasicConfig()
                 .BackgroundModeManager(backgrounder)

@@ -55,6 +55,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         private readonly Dictionary<string, FlagBuilder> _currentBuilders =
             new Dictionary<string, FlagBuilder>();
         private readonly List<DataSourceImpl> _instances = new List<DataSourceImpl>();
+        private TimeSpan _initializationDelay = TimeSpan.Zero;
 
         #endregion
 
@@ -74,6 +75,22 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         /// </remarks>
         /// <returns>a new configurable test data source</returns>
         public static TestData DataSource() => new TestData();
+
+        /// <summary>
+        /// Sets an artificial delay before the data source initializes.
+        /// </summary>
+        /// <remarks>
+        /// This is useful for testing scenarios where you need to observe intermediate
+        /// states like <see cref="DataSourceState.Initializing"/> before the data source
+        /// reaches <see cref="DataSourceState.Valid"/>.
+        /// </remarks>
+        /// <param name="delay">the delay before initialization</param>
+        /// <returns>the same <see cref="TestData"/> instance</returns>
+        public TestData WithInitializationDelay(TimeSpan delay)
+        {
+            _initializationDelay = delay;
+            return this;
+        }
 
         /// <summary>
         /// Creates or copies a <see cref="FlagBuilder"/> for building a test flag configuration.
@@ -202,7 +219,8 @@ namespace LaunchDarkly.Sdk.Client.Integrations
                 this,
                 clientContext.DataSourceUpdateSink,
                 clientContext.CurrentContext,
-                clientContext.BaseLogger.SubLogger("DataSource.TestData")
+                clientContext.BaseLogger.SubLogger("DataSource.TestData"),
+                _initializationDelay
                 );
             lock (_lock)
             {
@@ -649,21 +667,27 @@ namespace LaunchDarkly.Sdk.Client.Integrations
             private readonly TestData _parent;
             private readonly IDataSourceUpdateSink _updateSink;
             private readonly Logger _log;
+            private readonly TimeSpan _initializationDelay;
 
             internal readonly Context Context;
 
-            internal DataSourceImpl(TestData parent, IDataSourceUpdateSink updateSink, Context context, Logger log)
+            internal DataSourceImpl(TestData parent, IDataSourceUpdateSink updateSink, Context context, Logger log, TimeSpan initializationDelay)
             {
                 _parent = parent;
                 _updateSink = updateSink;
                 Context = context;
                 _log = log;
+                _initializationDelay = initializationDelay;
             }
 
-            public Task<bool> Start()
+            public async Task<bool> Start()
             {
+                if (_initializationDelay > TimeSpan.Zero)
+                {
+                    await Task.Delay(_initializationDelay);
+                }
                 _updateSink.Init(Context, _parent.MakeInitData(Context));
-                return Task.FromResult(true);
+                return true;
             }
 
             public bool Initialized => true;

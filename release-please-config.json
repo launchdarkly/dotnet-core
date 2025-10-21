@@ -12,9 +12,9 @@
     },
     "pkgs/dotnet-server-sdk-dynamodb": {
       "release-type": "simple",
-      "package-name": "LaunchDarkly.ServerSdk.DynamoDb",
+      "package-name": "LaunchDarkly.ServerSdk.DynamoDB",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.DynamoDb.csproj"
+        "src/LaunchDarkly.ServerSdk.DynamoDB.csproj"
       ]
     },
     "pkgs/dotnet-server-sdk-redis": {

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Change log | DynamoDB integration for the LaunchDarkly SDK for Server-side .NET </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Change log | DynamoDB integration for the LaunchDarkly SDK for Server-side .NET ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="LaunchDarkly.ServerSdk.DynamoDb">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="change-log">Change log</h1>
+
+<p>All notable changes to the LaunchDarkly .NET SDK DynamoDB integration will be documented in this file. This project adheres to <a href="http://semver.org">Semantic Versioning</a>.</p>
+<h2 id="402-2025-10-21"><a href="https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDB-v4.0.1...LaunchDarkly.ServerSdk.DynamoDB-v4.0.2">4.0.2</a> (2025-10-21)</h2>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li>Fix package deployment process (<a href="https://github.com/launchdarkly/dotnet-core/issues/174">#174</a>) (<a href="https://github.com/launchdarkly/dotnet-core/commit/3b2ce8b88610f12b94d79c815eeba6a49f9cbeed">3b2ce8b</a>)</li>
+<li>Prevent using incompatible AWS version (<a href="https://github.com/launchdarkly/dotnet-core/issues/171">#171</a>) (<a href="https://github.com/launchdarkly/dotnet-core/commit/5496a64bedc2bc25fdf8ca9757345de25b67f38f">5496a64</a>)</li>
+</ul>
+<h2 id="401-2025-10-21"><a href="https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDb-v4.0.0...LaunchDarkly.ServerSdk.DynamoDb-v4.0.1">4.0.1</a> (2025-10-21)</h2>
+<h3 id="bug-fixes-1">Bug Fixes</h3>
+<ul>
+<li>Prevent using incompatible AWS version (<a href="https://github.com/launchdarkly/dotnet-core/issues/171">#171</a>) (<a href="https://github.com/launchdarkly/dotnet-core/commit/5496a64bedc2bc25fdf8ca9757345de25b67f38f">5496a64</a>)</li>
+</ul>
+<h2 id="400---2023-10-16">[4.0.0] - 2023-10-16</h2>
+<h3 id="changed">Changed:</h3>
+<ul>
+<li>This release requires the <code>8.0.0</code> release of the <code>LaunchDarkly.ServerSdk</code>.</li>
+</ul>
+<h2 id="300---2022-12-07">[3.0.0] - 2022-12-07</h2>
+<p>This release corresponds to the 7.0.0 release of the LaunchDarkly server-side .NET SDK. Any application code that is being updated to use the 7.0.0 SDK, and was using a 2.x version of <code>LaunchDarkly.ServerSdk.DynamoDb</code>, should now use a 3.x version instead.</p>
+<p>There are no functional differences in the behavior of the DynamoDB integration; the differences are only related to changes in the usage of interface types for configuration in the SDK.</p>
+<h3 id="added">Added:</h3>
+<ul>
+<li><code>DynamoDb.BigSegmentStore()</code>, which creates a configuration builder for use with Big Segments. Previously, the <code>DynamoDb.DataStore()</code> builder was used for both regular data stores and Big Segment stores.</li>
+</ul>
+<h3 id="changed-1">Changed:</h3>
+<ul>
+<li>The type <code>DynamoDbDataStoreBuilder</code> has been removed, replaced by a generic type <code>DynamoDbStoreBuilder</code>. Application code would not normally need to reference these types by name, but if necessary, use either <code>DynamoDbStoreBuilder&lt;PersistentDataStore&gt;</code> or <code>DynamoDbStoreBuilder&lt;BigSegmentStore&gt;</code> depending on whether you are configuring a regular data store or a Big Segment store.</li>
+</ul>
+<h2 id="211---2022-04-19">[2.1.1] - 2022-04-19</h2>
+<h3 id="fixed">Fixed:</h3>
+<ul>
+<li>If the SDK attempts to store a feature flag or segment whose total data size is over the 400KB limit for DynamoDB items, this integration will now log (at Error level) a message like <code>The item &quot;my-flag-key&quot; in &quot;features&quot; was too large to store in DynamoDB and was dropped</code> but will still process all other data updates. Previously, it would cause the SDK to enter an error state in which the oversized item would be pointlessly retried and other updates might be lost.</li>
+</ul>
+<h2 id="210---2021-07-22">[2.1.0] - 2021-07-22</h2>
+<h3 id="added-1">Added:</h3>
+<ul>
+<li>Added support for Big Segments. An Early Access Program for creating and syncing Big Segments from customer data platforms is available to enterprise customers.</li>
+</ul>
+<h2 id="200---2021-06-09">[2.0.0] - 2021-06-09</h2>
+<p>This release is for use with versions 6.0.0 and higher of <a href="https://github.com/launchdarkly/dotnet-server-sdk"><code>LaunchDarkly.ServerSdk</code></a>.</p>
+<p>For more information about changes in the SDK database integrations, see the <a href="https://docs-stg.launchdarkly.com/252/sdk/server-side/dotnet/migration-5-to-6">5.x to 6.0 migration guide</a>.</p>
+<h3 id="changed-2">Changed:</h3>
+<ul>
+<li>The namespace is now <code>LaunchDarkly.Sdk.Server.Integrations</code>.</li>
+<li>The entry point is now <code>LaunchDarkly.Sdk.Server.Integrations.DynamoDB</code> rather than <code>LaunchDarkly.Client.Integrations.DynamoDB</code> (or, in earlier versions, <code>LaunchDarkly.Client.DynamoDB.DynamoDBComponents</code>).</li>
+<li>If you pass in an existing DynamoDB client instance with <code>DynamoDBDataStoreBuilder.ExistingClient</code>, the SDK will no longer dispose of the client on shutdown; you are responsible for its lifecycle.</li>
+<li>The logger name is now <code>LaunchDarkly.Sdk.DataStore.DynamoDB</code> rather than <code>LaunchDarkly.Client.DynamoDB.DynamoDBFeatureStoreCore</code>.</li>
+</ul>
+<h3 id="removed">Removed:</h3>
+<ul>
+<li>Removed the deprecated <code>DynamoDBComponents</code> entry point and <code>DynamoDBFeatureStoreBuilder</code>.</li>
+<li>The package no longer has a dependency on <code>Common.Logging</code> but instead integrates with the SDK's logging mechanism.</li>
+</ul>
+<h2 id="110---2021-01-26">[1.1.0] - 2021-01-26</h2>
+<h3 id="added-2">Added:</h3>
+<ul>
+<li>New classes <code>LaunchDarkly.Client.Integrations.DynamoDB</code> and <code>LaunchDarkly.Client.Integrations.DynamoDBStoreBuilder</code>, which serve the same purpose as the previous classes but are designed to work with the newer persistent data store API introduced in .NET SDK 5.14.0.</li>
+</ul>
+<h3 id="deprecated">Deprecated:</h3>
+<ul>
+<li>The old API in the <code>LaunchDarkly.Client.DynamoDB</code> namespace.</li>
+</ul>
+<h2 id="101---2019-05-10">[1.0.1] - 2019-05-10</h2>
+<h3 id="changed-3">Changed:</h3>
+<ul>
+<li>Corresponding to the SDK package name change from <code>LaunchDarkly.Client</code> to <code>LaunchDarkly.ServerSdk</code>, this package is now called <code>LaunchDarkly.ServerSdk.DynamoDB</code>. The functionality of the package, including the namespaces and class names, has not changed.</li>
+</ul>
+<h2 id="100---2019-01-11">[1.0.0] - 2019-01-11</h2>
+<p>Initial release.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-dynamodb/CHANGELOG.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

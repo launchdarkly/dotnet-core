@@ -2,6 +2,17 @@
 
 All notable changes to the LaunchDarkly .NET SDK DynamoDB integration will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.0.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDB-v4.0.2...LaunchDarkly.ServerSdk.DynamoDB-v5.0.0) (2025-10-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* Support AWSSDK.DynamoDB v4 ([#173](https://github.com/launchdarkly/dotnet-core/issues/173))
+
+### Features
+
+* Support AWSSDK.DynamoDB v4 ([#173](https://github.com/launchdarkly/dotnet-core/issues/173)) ([05c16c1](https://github.com/launchdarkly/dotnet-core/commit/05c16c16865f6978df2cd6eb9b057bdbbacb4aad))
+
 ## [4.0.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDB-v4.0.1...LaunchDarkly.ServerSdk.DynamoDB-v4.0.2) (2025-10-21)
 
 

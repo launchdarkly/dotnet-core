@@ -13,6 +13,7 @@ using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Integrations
 {
+    [Collection("DynamoDB Tests")]
     public class DynamoDBDataStoreTest : PersistentDataStoreBaseTests, IAsyncLifetime
     {
         const string BadItemKey = "baditem";

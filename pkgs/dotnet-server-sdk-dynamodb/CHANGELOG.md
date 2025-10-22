@@ -7,7 +7,7 @@ All notable changes to the LaunchDarkly .NET SDK DynamoDB integration will be do
 
 ### ⚠ BREAKING CHANGES
 
-* Support AWSSDK.DynamoDB v4 ([#173](https://github.com/launchdarkly/dotnet-core/issues/173))
+* Drop support for AWSSDK.DynamoDB v3 ([#173](https://github.com/launchdarkly/dotnet-core/issues/173))
 
 ### Features
 

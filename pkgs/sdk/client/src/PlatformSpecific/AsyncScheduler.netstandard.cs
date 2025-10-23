@@ -5,17 +5,13 @@ namespace LaunchDarkly.Sdk.Client.PlatformSpecific
 {
     internal static partial class AsyncScheduler
     {
+        private static volatile Task _lastScheduledTask = Task.CompletedTask;
+
         private static void PlatformScheduleAction(Action a)
         {
-            try
-            {
-                // Wait for the task to complete to ensure that actions are executed in the correct order.
-                Task.Run(a).Wait();
-            }
-            catch (Exception)
-            {
-                // Swallow exceptions to prevent them from propagating to the caller.
-            }
+            // Chain the new action to run after the previous one completes
+            // This ensures actions run in order while maintaining fire-and-forget behavior
+            _lastScheduledTask = _lastScheduledTask.ContinueWith(_ => a(), TaskContinuationOptions.ExecuteSynchronously);
         }
     }
 }

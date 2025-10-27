@@ -282,8 +282,11 @@ namespace LaunchDarkly.Sdk
         /// <exception cref="JsonException">if the string could not be parsed as JSON</exception>
         /// <see cref="ToJsonString"/>
         public static LdValue Parse(string jsonString) =>
+#if NET7_0_OR_GREATER
+            JsonSerializer.Deserialize(jsonString, LdJsonSerializerContext.Default.LdValue);
+#else
             LdJsonSerialization.DeserializeObject<LdValue>(jsonString);
-
+#endif
         #endregion
 
         #region Public properties
@@ -550,7 +553,11 @@ namespace LaunchDarkly.Sdk
                 case LdValueType.Bool:
                     return _boolValue ? "true" : "false";
                 default:
+#if NET7_0_OR_GREATER
+                    return JsonSerializer.Serialize(this, LdJsonSerializerContext.Default.LdValue);
+#else
                     return JsonSerializer.Serialize(this);
+#endif
             }
         }
 

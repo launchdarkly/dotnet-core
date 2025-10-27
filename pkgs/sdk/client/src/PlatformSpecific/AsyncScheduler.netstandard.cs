@@ -11,7 +11,7 @@ namespace LaunchDarkly.Sdk.Client.PlatformSpecific
         {
             // Chain the new action to run after the previous one completes
             // This ensures actions run in order while maintaining fire-and-forget behavior
-            _lastScheduledTask = _lastScheduledTask.ContinueWith(_ => a(), TaskContinuationOptions.ExecuteSynchronously);
+            _lastScheduledTask = _lastScheduledTask.ContinueWith(_ => a());
         }
     }
 }

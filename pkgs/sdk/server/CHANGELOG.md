@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.10.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.3...LaunchDarkly.ServerSdk-v8.10.4) (2025-11-10)
+
+
+### Bug Fixes
+
+* Use thread-safe hash for big segments hashing. ([#180](https://github.com/launchdarkly/dotnet-core/issues/180)) ([06196d8](https://github.com/launchdarkly/dotnet-core/commit/06196d881d306e2bd09631469c657a4f11685fcc))
+
 ## [8.10.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.2...LaunchDarkly.ServerSdk-v8.10.3) (2025-09-29)
 
 

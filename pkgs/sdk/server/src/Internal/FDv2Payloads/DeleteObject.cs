@@ -17,19 +17,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
         /// <summary>
         /// The kind of the object being deleted ("flag" or "segment").
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public string Kind { get; }
 
         /// <summary>
         /// The identifier of the object.
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public string Key { get; }
 
+        /// <summary>
+        /// Constructs a new DeleteObject.
+        /// </summary>
+        /// <param name="version">The minimum payload version this change applies to.</param>
+        /// <param name="kind">The kind of object being deleted ("flag" or "segment").</param>
+        /// <param name="key">The identifier of the object.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="kind"/> or <paramref name="key"/> is null.</exception>
         public DeleteObject(int version, string kind, string key)
         {
             Version = version;
-            Kind = kind;
-            Key = key;
+            Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+            Key = key ?? throw new ArgumentNullException(nameof(key));
         }
     }
 
@@ -79,16 +92,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         {
             writer.WriteStartObject();
             writer.WriteNumber(AttributeVersion, value.Version);
-            if (value.Kind != null)
-            {
-                writer.WriteString(AttributeKind, value.Kind);
-            }
-
-            if (value.Key != null)
-            {
-                writer.WriteString(AttributeKey, value.Key);
-            }
-
+            writer.WriteString(AttributeKind, value.Kind);
+            writer.WriteString(AttributeKey, value.Key);
             writer.WriteEndObject();
         }
     }

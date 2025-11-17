@@ -14,12 +14,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
     {
         /// <summary>
         /// The list of payloads the server will be transferring data for.
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public ImmutableList<ServerIntentPayload> Payloads { get; }
 
+        /// <summary>
+        /// Constructs a new ServerIntent.
+        /// </summary>
+        /// <param name="payloads">The list of payloads the server will be transferring data for.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="payloads"/> is null.</exception>
         public ServerIntent(ImmutableList<ServerIntentPayload> payloads)
         {
-            Payloads = payloads ?? ImmutableList<ServerIntentPayload>.Empty;
+            Payloads = payloads ?? throw new ArgumentNullException(nameof(payloads));
         }
     }
 
@@ -30,6 +38,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
     {
         /// <summary>
         /// The unique string identifier.
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public string Id { get; }
 
@@ -41,20 +52,34 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
         /// <summary>
         /// Indicates how the server intends to operate with respect to sending payload data.
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public string IntentCode { get; }
 
         /// <summary>
         /// Reason the server is operating with the provided code.
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public string Reason { get; }
 
+        /// <summary>
+        /// Constructs a new ServerIntentPayload.
+        /// </summary>
+        /// <param name="id">The unique string identifier.</param>
+        /// <param name="target">The target version for the payload.</param>
+        /// <param name="intentCode">How the server intends to operate with respect to sending payload data.</param>
+        /// <param name="reason">Reason the server is operating with the provided code.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/>, <paramref name="intentCode"/>, or <paramref name="reason"/> is null.</exception>
         public ServerIntentPayload(string id, int target, string intentCode, string reason)
         {
-            Id = id;
+            Id = id ?? throw new ArgumentNullException(nameof(id));
             Target = target;
-            IntentCode = intentCode;
-            Reason = reason;
+            IntentCode = intentCode ?? throw new ArgumentNullException(nameof(intentCode));
+            Reason = reason ?? throw new ArgumentNullException(nameof(reason));
         }
     }
 
@@ -111,6 +136,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             writer.WriteEndObject();
         }
 
+        private static readonly string[] RequiredPayloadProperties =
+            { AttributeId, AttributeTarget, AttributeIntentCode, AttributeReason };
+
         private static ServerIntentPayload ReadServerIntentPayload(ref Utf8JsonReader reader)
         {
             string id = null;
@@ -118,7 +146,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             string intentCode = null;
             string reason = null;
 
-            for (var obj = RequireObject(ref reader); obj.Next(ref reader);)
+            for (var obj = RequireObject(ref reader).WithRequiredProperties(RequiredPayloadProperties);
+                 obj.Next(ref reader);)
             {
                 switch (obj.Name)
                 {
@@ -146,22 +175,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         private static void WriteServerIntentPayload(Utf8JsonWriter writer, ServerIntentPayload payload)
         {
             writer.WriteStartObject();
-            if (payload.Id != null)
-            {
-                writer.WriteString(AttributeId, payload.Id);
-            }
-
+            writer.WriteString(AttributeId, payload.Id);
             writer.WriteNumber(AttributeTarget, payload.Target);
-            if (payload.IntentCode != null)
-            {
-                writer.WriteString(AttributeIntentCode, payload.IntentCode);
-            }
-
-            if (payload.Reason != null)
-            {
-                writer.WriteString(AttributeReason, payload.Reason);
-            }
-
+            writer.WriteString(AttributeIntentCode, payload.IntentCode);
+            writer.WriteString(AttributeReason, payload.Reason);
             writer.WriteEndObject();
         }
     }

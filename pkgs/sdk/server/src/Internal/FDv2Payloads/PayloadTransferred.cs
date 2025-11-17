@@ -12,6 +12,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
     {
         /// <summary>
         /// The unique string representing the payload state.
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public string State { get; }
 
@@ -20,9 +23,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// </summary>
         public int Version { get; }
 
+        /// <summary>
+        /// Constructs a new PayloadTransferred.
+        /// </summary>
+        /// <param name="state">The unique string representing the payload state.</param>
+        /// <param name="version">The version of the payload that was transferred to the client.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="state"/> is null.</exception>
         public PayloadTransferred(string state, int version)
         {
-            State = state;
+            State = state ?? throw new ArgumentNullException(nameof(state));
             Version = version;
         }
     }
@@ -36,7 +45,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         private const string AttributeVersion = "version";
 
         internal static readonly PayloadTransferredConverter Instance = new PayloadTransferredConverter();
-        private static readonly string[] RequiredProperties = new string[] { AttributeState, AttributeVersion };
+        private static readonly string[] RequiredProperties = { AttributeState, AttributeVersion };
 
         public override PayloadTransferred Read(ref Utf8JsonReader reader, Type typeToConvert,
             JsonSerializerOptions options)
@@ -66,11 +75,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         public override void Write(Utf8JsonWriter writer, PayloadTransferred value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            if (value.State != null)
-            {
-                writer.WriteString(AttributeState, value.State);
-            }
-
+            writer.WriteString(AttributeState, value.State);
             writer.WriteNumber(AttributeVersion, value.Version);
             writer.WriteEndObject();
         }

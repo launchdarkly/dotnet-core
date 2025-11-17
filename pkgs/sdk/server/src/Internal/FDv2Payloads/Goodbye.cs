@@ -15,6 +15,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// </summary>
         public string Reason { get; }
 
+        /// <summary>
+        /// Constructs a new Goodbye.
+        /// </summary>
+        /// <param name="reason">Reason for the disconnection.</param>
         public Goodbye(string reason)
         {
             Reason = reason;

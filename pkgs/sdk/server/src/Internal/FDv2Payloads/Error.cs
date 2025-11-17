@@ -18,13 +18,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
         /// <summary>
         /// Human-readable reason the error occurred.
+        /// <para>
+        /// This field is required and will never be null.
+        /// </para>
         /// </summary>
         public string Reason { get; }
 
+        /// <summary>
+        /// Constructs a new Error.
+        /// </summary>
+        /// <param name="id">The unique string identifier of the entity the error relates to.</param>
+        /// <param name="reason">Human-readable reason the error occurred.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="reason"/> is null.</exception>
         public Error(string id, string reason)
         {
             Id = id;
-            Reason = reason;
+            Reason = reason ?? throw new ArgumentNullException(nameof(reason));
         }
     }
 
@@ -71,11 +80,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 writer.WriteString(AttributeId, value.Id);
             }
 
-            if (value.Reason != null)
-            {
-                writer.WriteString(AttributeReason, value.Reason);
-            }
-
+            writer.WriteString(AttributeReason, value.Reason);
             writer.WriteEndObject();
         }
     }

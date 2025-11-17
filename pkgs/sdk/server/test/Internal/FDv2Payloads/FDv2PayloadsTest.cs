@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.Model;
@@ -448,6 +449,70 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         }
 
         [Fact]
+        public void ServerIntent_ThrowsWhenPayloadIdFieldMissing()
+        {
+            const string json = @"{
+                ""payloads"": [
+                    {
+                        ""target"": 42,
+                        ""intentCode"": ""xfer-full"",
+                        ""reason"": ""payload-missing""
+                    }
+                ]
+            }";
+            Assert.ThrowsAny<JsonException>(() =>
+                JsonSerializer.Deserialize<ServerIntent>(json, GetJsonOptions()));
+        }
+
+        [Fact]
+        public void ServerIntent_ThrowsWhenPayloadTargetFieldMissing()
+        {
+            const string json = @"{
+                ""payloads"": [
+                    {
+                        ""id"": ""payload-123"",
+                        ""intentCode"": ""xfer-full"",
+                        ""reason"": ""payload-missing""
+                    }
+                ]
+            }";
+            Assert.ThrowsAny<JsonException>(() =>
+                JsonSerializer.Deserialize<ServerIntent>(json, GetJsonOptions()));
+        }
+
+        [Fact]
+        public void ServerIntent_ThrowsWhenPayloadIntentCodeFieldMissing()
+        {
+            const string json = @"{
+                ""payloads"": [
+                    {
+                        ""id"": ""payload-123"",
+                        ""target"": 42,
+                        ""reason"": ""payload-missing""
+                    }
+                ]
+            }";
+            Assert.ThrowsAny<JsonException>(() =>
+                JsonSerializer.Deserialize<ServerIntent>(json, GetJsonOptions()));
+        }
+
+        [Fact]
+        public void ServerIntent_ThrowsWhenPayloadReasonFieldMissing()
+        {
+            const string json = @"{
+                ""payloads"": [
+                    {
+                        ""id"": ""payload-123"",
+                        ""target"": 42,
+                        ""intentCode"": ""xfer-full""
+                    }
+                ]
+            }";
+            Assert.ThrowsAny<JsonException>(() =>
+                JsonSerializer.Deserialize<ServerIntent>(json, GetJsonOptions()));
+        }
+
+        [Fact]
         public void PutObject_ThrowsWhenVersionFieldMissing()
         {
             const string json = @"{
@@ -589,6 +654,66 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             }";
             Assert.ThrowsAny<JsonException>(() =>
                 JsonSerializer.Deserialize<FDv2PollEvent>(json, GetJsonOptions()));
+        }
+
+        [Fact]
+        public void ServerIntent_ThrowsArgumentNullExceptionWhenPayloadsIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new ServerIntent(null));
+        }
+
+        [Fact]
+        public void ServerIntentPayload_ThrowsArgumentNullExceptionWhenIdIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new ServerIntentPayload(null, 42, "xfer-full", "reason"));
+        }
+
+        [Fact]
+        public void ServerIntentPayload_ThrowsArgumentNullExceptionWhenIntentCodeIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new ServerIntentPayload("id-123", 42, null, "reason"));
+        }
+
+        [Fact]
+        public void ServerIntentPayload_ThrowsArgumentNullExceptionWhenReasonIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new ServerIntentPayload("id-123", 42, "xfer-full", null));
+        }
+
+        [Fact]
+        public void PutObject_ThrowsArgumentNullExceptionWhenKindIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new PutObject(1, null, "key", default));
+        }
+
+        [Fact]
+        public void PutObject_ThrowsArgumentNullExceptionWhenKeyIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new PutObject(1, "flag", null, default));
+        }
+
+        [Fact]
+        public void DeleteObject_ThrowsArgumentNullExceptionWhenKindIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new DeleteObject(1, null, "key"));
+        }
+
+        [Fact]
+        public void DeleteObject_ThrowsArgumentNullExceptionWhenKeyIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new DeleteObject(1, "flag", null));
+        }
+
+        [Fact]
+        public void PayloadTransferred_ThrowsArgumentNullExceptionWhenStateIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new PayloadTransferred(null, 42));
+        }
+
+        [Fact]
+        public void Error_ThrowsArgumentNullExceptionWhenReasonIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Error("id", null));
         }
 
         [Fact]

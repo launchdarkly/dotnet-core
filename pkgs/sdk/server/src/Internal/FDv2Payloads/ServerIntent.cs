@@ -52,11 +52,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
         /// <summary>
         /// Indicates how the server intends to operate with respect to sending payload data.
-        /// <para>
-        /// This field is required and will never be null.
-        /// </para>
         /// </summary>
-        public string IntentCode { get; }
+        public IntentCode IntentCode { get; }
 
         /// <summary>
         /// Reason the server is operating with the provided code.
@@ -73,12 +70,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// <param name="target">The target version for the payload.</param>
         /// <param name="intentCode">How the server intends to operate with respect to sending payload data.</param>
         /// <param name="reason">Reason the server is operating with the provided code.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/>, <paramref name="intentCode"/>, or <paramref name="reason"/> is null.</exception>
-        public ServerIntentPayload(string id, int target, string intentCode, string reason)
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/> or <paramref name="reason"/> is null.</exception>
+        public ServerIntentPayload(string id, int target, IntentCode intentCode, string reason)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Target = target;
-            IntentCode = intentCode ?? throw new ArgumentNullException(nameof(intentCode));
+            IntentCode = intentCode;
             Reason = reason ?? throw new ArgumentNullException(nameof(reason));
         }
     }
@@ -143,7 +140,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         {
             string id = null;
             var target = 0;
-            string intentCode = null;
+            IntentCode intentCode = default;
             string reason = null;
 
             for (var obj = RequireObject(ref reader).WithRequiredProperties(RequiredPayloadProperties);
@@ -158,7 +155,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                         target = reader.GetInt32();
                         break;
                     case AttributeIntentCode:
-                        intentCode = reader.GetString();
+                        var intentCodeString = reader.GetString();
+                        try
+                        {
+                            intentCode = IntentCodeExtensions.ParseIntentCode(intentCodeString);
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            throw new JsonException($"Unknown intent code: {intentCodeString}", ex);
+                        }
                         break;
                     case AttributeReason:
                         reason = reader.GetString();
@@ -177,7 +182,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             writer.WriteStartObject();
             writer.WriteString(AttributeId, payload.Id);
             writer.WriteNumber(AttributeTarget, payload.Target);
-            writer.WriteString(AttributeIntentCode, payload.IntentCode);
+            try
+            {
+                writer.WriteString(AttributeIntentCode, payload.IntentCode.ToStringValue());
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                throw new JsonException($"Unknown intent code: {payload.IntentCode}", ex);
+            }
             writer.WriteString(AttributeReason, payload.Reason);
             writer.WriteEndObject();
         }

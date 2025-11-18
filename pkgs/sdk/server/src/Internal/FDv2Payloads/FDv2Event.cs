@@ -6,10 +6,10 @@ using static LaunchDarkly.Sdk.Internal.JsonConverterHelpers;
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 {
     /// <summary>
-    /// Represents a FDv2 polling event with partial deserialization.
-    /// The event type is deserialized, but the data is kept as a JsonElement for lazy deserialization.
+    /// Represents an FDv2 event. This event may be constructed from an SSE event, or it may be directly serialized/
+    /// deserialized from a polling response.
     /// </summary>
-    internal sealed class FDv2PollEvent
+    internal sealed class FDv2Event
     {
         /// <summary>
         /// The event type string (e.g., "server-intent", "put-object", "delete-object", etc.).
@@ -22,7 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// </summary>
         public JsonElement Data { get; }
 
-        public FDv2PollEvent(string eventType, JsonElement data)
+        public FDv2Event(string eventType, JsonElement data)
         {
             EventType = eventType;
             Data = data;
@@ -92,7 +92,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
     /// <summary>
     /// JsonConverter for FDv2PollEvent wrapper with partial deserialization.
     /// </summary>
-    internal sealed class FDv2PollEventConverter : JsonConverter<FDv2PollEvent>
+    internal sealed class FDv2PollEventConverter : JsonConverter<FDv2Event>
     {
         private const string AttributeEvent = "event";
         private const string AttributeData = "data";
@@ -100,7 +100,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         internal static readonly FDv2PollEventConverter Instance = new FDv2PollEventConverter();
         private static readonly string[] RequiredProperties = new string[] { AttributeEvent, AttributeData };
 
-        public override FDv2PollEvent Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override FDv2Event Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             string eventType = null;
             JsonElement data = default;
@@ -122,10 +122,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 }
             }
 
-            return new FDv2PollEvent(eventType, data);
+            return new FDv2Event(eventType, data);
         }
 
-        public override void Write(Utf8JsonWriter writer, FDv2PollEvent value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, FDv2Event value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
             if (value.EventType != null)

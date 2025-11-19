@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
@@ -34,6 +34,36 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         InternalError,
     }
 
+    internal enum FDv2ProtocolErrorType
+    {
+        /// <summary>
+        /// Received a protocol event, which is not of a recognized type.
+        /// </summary>
+        UnknownEvent,
+
+        /// <summary>
+        /// Server intent was received which didn't have any payloads.
+        /// </summary>
+        MissingPayload,
+
+        /// <summary>
+        /// The JSON couldn't be parsed, which includes non-conformance to the schema.
+        /// This includes a sever-intent that isn't recognized.
+        /// </summary>
+        JsonError,
+
+        /// <summary>
+        /// Represents an error in implementation. Should only be seen during development/testing.
+        /// </summary>
+        ImplementationError,
+
+        /// <summary>
+        /// Represents a violation of the protocol. For example, a payload complete being received for which
+        /// there is no known intent.
+        /// </summary>
+        ProtocolError,
+    }
+
     internal interface IFDv2ProtocolAction
     {
         FDv2ProtocolActionType Action { get; }
@@ -42,9 +72,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
     internal sealed class FDv2ActionChangeset : IFDv2ProtocolAction
     {
         public FDv2ProtocolActionType Action => FDv2ProtocolActionType.Changeset;
-        public ChangeSet Changeset { get; }
+        public FDv2ChangeSet Changeset { get; }
 
-        public FDv2ActionChangeset(ChangeSet changeset)
+        public FDv2ActionChangeset(FDv2ChangeSet changeset)
         {
             Changeset = changeset;
         }
@@ -81,9 +111,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public FDv2ProtocolActionType Action => FDv2ProtocolActionType.InternalError;
         public string Message { get; }
 
-        public FDv2ActionInternalError(string message)
+        public FDv2ProtocolErrorType ErrorType { get; }
+
+        public FDv2ActionInternalError(string message, FDv2ProtocolErrorType errorType)
         {
             Message = message;
+            ErrorType = errorType;
         }
     }
 
@@ -128,7 +161,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             Full,
         }
 
-        private readonly List<Change> _changes = new List<Change>();
+        private readonly List<FDv2Change> _changes = new List<FDv2Change>();
         private FDv2ProtocolState _state = FDv2ProtocolState.Inactive;
 
         /// <summary>
@@ -146,15 +179,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// server-intent event and must not crash/error when receiving messages that contain
         /// multiple payloads.
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown if there is an unexpected intent code. This would represent an implementation error where the
-        /// intent code enumeration was extended, but this switch case was not updated.
-        /// </exception>
         private IFDv2ProtocolAction ServerIntent(ServerIntent intent)
         {
             // Requirement 3.4.2: Ignore all but the first payload
             var payload = intent.Payloads?.FirstOrDefault();
-            if (payload == null) return new FDv2ActionInternalError("No payload present in server-intent");
+            if (payload == null)
+                return new FDv2ActionInternalError("No payload present in server-intent",
+                    FDv2ProtocolErrorType.MissingPayload);
 
             switch (payload.IntentCode)
             {
@@ -165,7 +196,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     // We will start listening to changes.
                     _state = FDv2ProtocolState.Changes;
                     _changes.Clear();
-                    return new FDv2ActionChangeset(ChangeSet.None);
+                    return new FDv2ActionChangeset(FDv2ChangeSet.None);
                 case IntentCode.TransferFull:
                     // Requirement 3.3.1: Prepare to fully replace local payload representation.
                     // The server will send all objects via put-object events.
@@ -176,7 +207,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     _state = FDv2ProtocolState.Changes;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return new FDv2ActionInternalError("Unhandled event code: " + payload.IntentCode,
+                        FDv2ProtocolErrorType.ImplementationError);
             }
 
             // Clear any partial data from previous incomplete transfers
@@ -195,8 +227,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// </remarks>
         private void PutObject(PutObject put)
         {
-            _changes.Add(new Change(
-                ChangeType.Put, put.Kind, put.Key, put.Version, put.Object));
+            _changes.Add(new FDv2Change(
+                FDv2ChangeType.Put, put.Kind, put.Key, put.Version, put.Object));
         }
 
         /// <summary>
@@ -210,8 +242,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// </remarks>
         private void DeleteObject(DeleteObject delete)
         {
-            _changes.Add(new Change(
-                ChangeType.Delete, delete.Kind, delete.Key, delete.Version));
+            _changes.Add(new FDv2Change(
+                FDv2ChangeType.Delete, delete.Kind, delete.Key, delete.Version));
         }
 
         /// <summary>
@@ -224,17 +256,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// until receiving the payload-transferred event for the corresponding payload state X.
         /// This method finalizes the accumulated changes and returns the complete changeset.
         /// </remarks>
-        /// <exception cref="InvalidOperationException">
-        /// Indicates that the protocol handler was not in a valid state to generate changeset.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown if there is an unexpected intent code or state. This would represent an implementation error
-        /// where an enumeration was extended, but the handling was not updated.
-        /// </exception>
         private IFDv2ProtocolAction PayloadTransferred(PayloadTransferred payload)
         {
-            var changeset = new ChangeSet(ChangesetType(), _changes.ToImmutableList(),
-                Selector.Make(payload.Version, payload.State));
+            FDv2ChangeSetType changeSetType;
+            switch (_state)
+            {
+                case FDv2ProtocolState.Inactive:
+                    return new FDv2ActionInternalError(
+                        $"A payload transferred has been received without an intent having been established.",
+                        FDv2ProtocolErrorType.ProtocolError);
+                case FDv2ProtocolState.Changes:
+                    changeSetType = FDv2ChangeSetType.Partial;
+                    break;
+                case FDv2ProtocolState.Full:
+                    changeSetType = FDv2ChangeSetType.Full;
+                    break;
+                default:
+                    return new FDv2ActionInternalError($"Unhandled procol state: {_state}",
+                        FDv2ProtocolErrorType.ImplementationError);
+            }
+
+            var changeset = new FDv2ChangeSet(changeSetType, _changes.ToImmutableList(),
+                FDv2Selector.Make(payload.Version, payload.State));
             _state = FDv2ProtocolState.Changes;
             _changes.Clear();
             return new FDv2ActionChangeset(changeset);
@@ -275,33 +318,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         /// <summary>
-        /// Get the change set type based on the current state.
-        /// </summary>
-        /// <returns>The changeset type.</returns>
-        /// <exception cref="InvalidOperationException">
-        /// Indicates that the protocol handler was not in a valid state to generate changeset.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown if there is an unexpected intent code. This would represent an implementation error where the
-        /// intent code enumeration was extended, but this switch case was not updated.
-        /// </exception>
-        private ChangeSetType ChangesetType()
-        {
-            switch (_state)
-            {
-                case FDv2ProtocolState.Inactive:
-                    throw new InvalidOperationException(
-                        "A payload transferred has been received without an intent having been established.");
-                case FDv2ProtocolState.Changes:
-                    return ChangeSetType.Partial;
-                case FDv2ProtocolState.Full:
-                    return ChangeSetType.Full;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        /// <summary>
         /// Process an FDv2 event and update the protocol state accordingly.
         /// </summary>
         /// <param name="evt">The event to process.</param>
@@ -325,30 +341,48 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// </remarks>
         public IFDv2ProtocolAction HandleEvent(FDv2Event evt)
         {
-            switch (evt.EventType)
+            try
             {
-                case FDv2EventTypes.ServerIntent:
-                    return ServerIntent(evt.AsServerIntent());
-                case FDv2EventTypes.DeleteObject:
-                    DeleteObject(evt.AsDeleteObject());
-                    break;
-                case FDv2EventTypes.PutObject:
-                    PutObject(evt.AsPutObject());
-                    break;
-                case FDv2EventTypes.Error:
-                    return Error(evt.AsError());
-                case FDv2EventTypes.Goodbye:
-                    return Goodbye(evt.AsGoodbye());
-                case FDv2EventTypes.PayloadTransferred:
-                    return PayloadTransferred(evt.AsPayloadTransferred());
-                case FDv2EventTypes.HeartBeat:
-                    // Requirement 3.3.9: Silently handle/ignore heartbeat events
-                    break;
-                default:
-                    return new FDv2ActionInternalError($"Received an unknown event of type {evt.EventType}");
-            }
+                switch (evt.EventType)
+                {
+                    case FDv2EventTypes.ServerIntent:
+                        return ServerIntent(evt.AsServerIntent());
+                    case FDv2EventTypes.DeleteObject:
+                        DeleteObject(evt.AsDeleteObject());
+                        break;
+                    case FDv2EventTypes.PutObject:
+                        PutObject(evt.AsPutObject());
+                        break;
+                    case FDv2EventTypes.Error:
+                        return Error(evt.AsError());
+                    case FDv2EventTypes.Goodbye:
+                        return Goodbye(evt.AsGoodbye());
+                    case FDv2EventTypes.PayloadTransferred:
+                        return PayloadTransferred(evt.AsPayloadTransferred());
+                    case FDv2EventTypes.HeartBeat:
+                        // Requirement 3.3.9: Silently handle/ignore heartbeat events
+                        break;
+                    default:
+                        return new FDv2ActionInternalError($"Received an unknown event of type {evt.EventType}",
+                            FDv2ProtocolErrorType.UnknownEvent);
+                }
 
-            return FDv2ActionNone.Instance;
+                return FDv2ActionNone.Instance;
+            }
+            catch (FDv2EventTypeMismatchException ex)
+            {
+                // If this happens, it indicates an implementation error.
+                return new FDv2ActionInternalError(
+                    $"Event type mismatch: {ex.Message}",
+                    FDv2ProtocolErrorType.ImplementationError);
+            }
+            catch (JsonException ex)
+            {
+                // JSON deserialization failed - malformed data from server
+                return new FDv2ActionInternalError(
+                    $"Failed to deserialize {evt.EventType} event: {ex.Message}",
+                    FDv2ProtocolErrorType.JsonError);
+            }
         }
     }
 }

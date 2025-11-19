@@ -93,7 +93,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             Assert.IsType<FDv2ActionChangeset>(action);
             var changesetAction = (FDv2ActionChangeset)action;
-            Assert.Equal(ChangeSetType.None, changesetAction.Changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.None, changesetAction.Changeset.Type);
             Assert.Empty(changesetAction.Changeset.Changes);
         }
 
@@ -131,12 +131,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             Assert.IsType<FDv2ActionChangeset>(transferredAction);
             var changesetAction = (FDv2ActionChangeset)transferredAction;
-            Assert.Equal(ChangeSetType.Full, changesetAction.Changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.Full, changesetAction.Changeset.Type);
             Assert.Equal(2, changesetAction.Changeset.Changes.Count);
             Assert.Equal("flag-123", changesetAction.Changeset.Changes[0].Key);
             Assert.Equal("flag-abc", changesetAction.Changeset.Changes[1].Key);
-            Assert.Equal("(p:payload-123:52)", changesetAction.Changeset.Selector.State);
-            Assert.Equal(52, changesetAction.Changeset.Selector.Version);
+            Assert.Equal("(p:payload-123:52)", changesetAction.Changeset.FDv2Selector.State);
+            Assert.Equal(52, changesetAction.Changeset.FDv2Selector.Version);
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:2)", 2));
 
             var changesetAction = (FDv2ActionChangeset)action;
-            Assert.Equal(ChangeSetType.Full, changesetAction.Changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.Full, changesetAction.Changeset.Type);
             // Should only have flag-2, not flag-1
             Assert.Single(changesetAction.Changeset.Changes);
             Assert.Equal("flag-2", changesetAction.Changeset.Changes[0].Key);
@@ -206,15 +206,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             Assert.IsType<FDv2ActionChangeset>(transferredAction);
             var changesetAction = (FDv2ActionChangeset)transferredAction;
-            Assert.Equal(ChangeSetType.Partial, changesetAction.Changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.Partial, changesetAction.Changeset.Type);
             Assert.Equal(4, changesetAction.Changeset.Changes.Count);
-            Assert.Equal(ChangeType.Put, changesetAction.Changeset.Changes[0].Type);
+            Assert.Equal(FDv2ChangeType.Put, changesetAction.Changeset.Changes[0].Type);
             Assert.Equal("flag-cat", changesetAction.Changeset.Changes[0].Key);
-            Assert.Equal(ChangeType.Put, changesetAction.Changeset.Changes[1].Type);
+            Assert.Equal(FDv2ChangeType.Put, changesetAction.Changeset.Changes[1].Type);
             Assert.Equal("flag-dog", changesetAction.Changeset.Changes[1].Key);
-            Assert.Equal(ChangeType.Delete, changesetAction.Changeset.Changes[2].Type);
+            Assert.Equal(FDv2ChangeType.Delete, changesetAction.Changeset.Changes[2].Type);
             Assert.Equal("flag-bat", changesetAction.Changeset.Changes[2].Key);
-            Assert.Equal(ChangeType.Put, changesetAction.Changeset.Changes[3].Type);
+            Assert.Equal(FDv2ChangeType.Put, changesetAction.Changeset.Changes[3].Type);
             Assert.Equal("flag-cow", changesetAction.Changeset.Changes[3].Key);
         }
 
@@ -247,17 +247,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         /// <summary>
-        /// Tests that payload-transferred event throws if received without prior server-intent.
+        /// Tests that payload-transferred event returns protocol error if received without prior server-intent.
         /// </summary>
         [Fact]
-        public void PayloadTransferred_WithoutServerIntent_ThrowsInvalidOperationException()
+        public void PayloadTransferred_WithoutServerIntent_ReturnsProtocolError()
         {
             var handler = new FDv2ProtocolHandler();
 
             // Attempt to send payload-transferred without server-intent
             var transferredEvt = CreatePayloadTransferredEvent("(p:payload-123:52)", 52);
 
-            Assert.Throws<InvalidOperationException>(() => handler.HandleEvent(transferredEvt));
+            var action = handler.HandleEvent(transferredEvt);
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.ProtocolError, internalError.ErrorType);
+            Assert.Contains("without an intent", internalError.Message);
         }
 
         #endregion
@@ -319,7 +323,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             var changesetAction = (FDv2ActionChangeset)action;
             // Should still be Partial (the state is maintained).
-            Assert.Equal(ChangeSetType.Partial, changesetAction.Changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.Partial, changesetAction.Changeset.Type);
             Assert.Single(changesetAction.Changeset.Changes);
             Assert.Equal("f2", changesetAction.Changeset.Changes[0].Key);
         }
@@ -396,18 +400,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
             var changesetAction =
                 (FDv2ActionChangeset)handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:1)", 1));
-            Assert.Equal(ChangeSetType.Partial, changesetAction.Changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.Partial, changesetAction.Changeset.Type);
         }
 
         #endregion
 
-        #region Unknown Event Handling
+        #region Error Type Handling
 
         /// <summary>
-        /// Tests that unknown event types are handled gracefully with an internal error action.
+        /// Tests that unknown event types are handled gracefully with UnknownEvent error type.
         /// </summary>
         [Fact]
-        public void UnknownEventType_ReturnsInternalErrorAction()
+        public void UnknownEventType_ReturnsUnknownEventError()
         {
             var handler = new FDv2ProtocolHandler();
             var unknownEvt = new FDv2Event("unknown-event-type", JsonDocument.Parse("{}").RootElement);
@@ -416,7 +420,46 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             Assert.IsType<FDv2ActionInternalError>(action);
             var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.UnknownEvent, internalError.ErrorType);
             Assert.Contains("unknown-event-type", internalError.Message);
+        }
+
+        /// <summary>
+        /// Tests that server-intent with empty payload list returns MissingPayload error type.
+        /// </summary>
+        [Fact]
+        public void ServerIntent_WithEmptyPayloadList_ReturnsMissingPayloadError()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            var intent = new ServerIntent(ImmutableList<ServerIntentPayload>.Empty);
+            var json = JsonSerializer.Serialize(intent, GetJsonOptions());
+            var data = JsonDocument.Parse(json).RootElement;
+            var evt = new FDv2Event(FDv2EventTypes.ServerIntent, data);
+
+            var action = handler.HandleEvent(evt);
+
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.MissingPayload, internalError.ErrorType);
+            Assert.Contains("No payload present", internalError.Message);
+        }
+
+        /// <summary>
+        /// Tests that payload-transferred without server-intent returns ProtocolError error type.
+        /// </summary>
+        [Fact]
+        public void PayloadTransferred_WithoutServerIntent_ReturnsProtocolErrorType()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            var transferredEvt = CreatePayloadTransferredEvent("(p:payload-123:52)", 52);
+            var action = handler.HandleEvent(transferredEvt);
+
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.ProtocolError, internalError.ErrorType);
+            Assert.Contains("without an intent", internalError.Message);
         }
 
         #endregion
@@ -438,14 +481,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action1 = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:1)", 1));
 
             var changeset1 = ((FDv2ActionChangeset)action1).Changeset;
-            Assert.Equal(ChangeSetType.Full, changeset1.Type);
+            Assert.Equal(FDv2ChangeSetType.Full, changeset1.Type);
 
             // Now send more changes without new server-intent - should be Partial
             handler.HandleEvent(CreatePutObjectEvent("flag", "f2", 2));
             var action2 = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:2)", 2));
 
             var changeset2 = ((FDv2ActionChangeset)action2).Changeset;
-            Assert.Equal(ChangeSetType.Partial, changeset2.Type);
+            Assert.Equal(FDv2ChangeSetType.Partial, changeset2.Type);
         }
 
         /// <summary>
@@ -464,7 +507,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:2)", 2));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.Equal(ChangeSetType.Partial, changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.Partial, changeset.Type);
         }
 
         #endregion
@@ -491,7 +534,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
             Assert.Single(changeset.Changes);
-            Assert.Equal(ChangeType.Put, changeset.Changes[0].Type);
+            Assert.Equal(FDv2ChangeType.Put, changeset.Changes[0].Type);
             Assert.Equal("flag", changeset.Changes[0].Kind);
             Assert.Equal("test-flag", changeset.Changes[0].Key);
             Assert.Equal(42, changeset.Changes[0].Version);
@@ -517,7 +560,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
             Assert.Single(changeset.Changes);
-            Assert.Equal(ChangeType.Delete, changeset.Changes[0].Type);
+            Assert.Equal(FDv2ChangeType.Delete, changeset.Changes[0].Type);
             Assert.Equal("segment", changeset.Changes[0].Kind);
             Assert.Equal("old-segment", changeset.Changes[0].Key);
             Assert.Equal(99, changeset.Changes[0].Version);
@@ -543,13 +586,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
             Assert.Equal(4, changeset.Changes.Count);
-            Assert.Equal(ChangeType.Put, changeset.Changes[0].Type);
+            Assert.Equal(FDv2ChangeType.Put, changeset.Changes[0].Type);
             Assert.Equal("f1", changeset.Changes[0].Key);
-            Assert.Equal(ChangeType.Delete, changeset.Changes[1].Type);
+            Assert.Equal(FDv2ChangeType.Delete, changeset.Changes[1].Type);
             Assert.Equal("f2", changeset.Changes[1].Key);
-            Assert.Equal(ChangeType.Put, changeset.Changes[2].Type);
+            Assert.Equal(FDv2ChangeType.Put, changeset.Changes[2].Type);
             Assert.Equal("s1", changeset.Changes[2].Key);
-            Assert.Equal(ChangeType.Delete, changeset.Changes[3].Type);
+            Assert.Equal(FDv2ChangeType.Delete, changeset.Changes[3].Type);
             Assert.Equal("s2", changeset.Changes[3].Key);
         }
 
@@ -574,7 +617,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action1 = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:52)", 52));
 
             var changeset1 = ((FDv2ActionChangeset)action1).Changeset;
-            Assert.Equal(ChangeSetType.Full, changeset1.Type);
+            Assert.Equal(FDv2ChangeSetType.Full, changeset1.Type);
             Assert.Equal(2, changeset1.Changes.Count);
 
             // Second incremental transfer (some time later)
@@ -583,7 +626,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action2 = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:53)", 53));
 
             var changeset2 = ((FDv2ActionChangeset)action2).Changeset;
-            Assert.Equal(ChangeSetType.Partial, changeset2.Type);
+            Assert.Equal(FDv2ChangeSetType.Partial, changeset2.Type);
             Assert.Equal(2, changeset2.Changes.Count);
 
             // Third incremental transfer
@@ -591,7 +634,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action3 = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:54)", 54));
 
             var changeset3 = ((FDv2ActionChangeset)action3).Changeset;
-            Assert.Equal(ChangeSetType.Partial, changeset3.Type);
+            Assert.Equal(FDv2ChangeSetType.Partial, changeset3.Type);
             Assert.Single(changeset3.Changes);
         }
 
@@ -637,28 +680,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:1)", 1));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.Equal(ChangeSetType.Full, changeset.Type);
+            Assert.Equal(FDv2ChangeSetType.Full, changeset.Type);
             Assert.Empty(changeset.Changes);
-        }
-
-        /// <summary>
-        /// Tests that server-intent with an empty payload list returns internal error.
-        /// </summary>
-        [Fact]
-        public void ServerIntent_WithEmptyPayloadList_ReturnsInternalError()
-        {
-            var handler = new FDv2ProtocolHandler();
-
-            var intent = new ServerIntent(ImmutableList<ServerIntentPayload>.Empty);
-            var json = JsonSerializer.Serialize(intent, GetJsonOptions());
-            var data = JsonDocument.Parse(json).RootElement;
-            var evt = new FDv2Event(FDv2EventTypes.ServerIntent, data);
-
-            var action = handler.HandleEvent(evt);
-
-            Assert.IsType<FDv2ActionInternalError>(action);
-            var internalError = (FDv2ActionInternalError)action;
-            Assert.Contains("No payload present", internalError.Message);
         }
 
         #endregion
@@ -678,9 +701,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:test-payload-id:42)", 42));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.False(changeset.Selector.IsEmpty);
-            Assert.Equal("(p:test-payload-id:42)", changeset.Selector.State);
-            Assert.Equal(42, changeset.Selector.Version);
+            Assert.False(changeset.FDv2Selector.IsEmpty);
+            Assert.Equal("(p:test-payload-id:42)", changeset.FDv2Selector.State);
+            Assert.Equal(42, changeset.FDv2Selector.Version);
         }
 
         /// <summary>
@@ -694,7 +717,155 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreateServerIntentEvent(IntentCode.None, "p1", 1, "up-to-date"));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.True(changeset.Selector.IsEmpty);
+            Assert.True(changeset.FDv2Selector.IsEmpty);
+        }
+
+        #endregion
+
+        #region FDv2Event Type Validation
+
+        /// <summary> /// Tests that AsServerIntent throws FDv2EventTypeMismatchException when called on a non-server-intent event.
+        /// </summary>
+        [Fact]
+        public void AsServerIntent_WithWrongEventType_ThrowsFDv2EventTypeMismatchException()
+        {
+            var evt = CreatePutObjectEvent("flag", "f1", 1);
+            var ex = Assert.Throws<FDv2EventTypeMismatchException>(() => evt.AsServerIntent());
+            Assert.Equal(FDv2EventTypes.PutObject, ex.ActualEventType);
+            Assert.Equal(FDv2EventTypes.ServerIntent, ex.ExpectedEventType);
+        }
+
+        /// <summary>
+        /// Tests that AsPutObject throws FDv2EventTypeMismatchException when called on a non-put-object event.
+        /// </summary>
+        [Fact]
+        public void AsPutObject_WithWrongEventType_ThrowsFDv2EventTypeMismatchException()
+        {
+            var evt = CreateServerIntentEvent(IntentCode.None);
+            var ex = Assert.Throws<FDv2EventTypeMismatchException>(() => evt.AsPutObject());
+            Assert.Equal(FDv2EventTypes.ServerIntent, ex.ActualEventType);
+            Assert.Equal(FDv2EventTypes.PutObject, ex.ExpectedEventType);
+        }
+
+        /// <summary>
+        /// Tests that AsDeleteObject throws FDv2EventTypeMismatchException when called on a non-delete-object event.
+        /// </summary>
+        [Fact]
+        public void AsDeleteObject_WithWrongEventType_ThrowsFDv2EventTypeMismatchException()
+        {
+            var evt = CreateServerIntentEvent(IntentCode.None);
+            var ex = Assert.Throws<FDv2EventTypeMismatchException>(() => evt.AsDeleteObject());
+            Assert.Equal(FDv2EventTypes.ServerIntent, ex.ActualEventType);
+            Assert.Equal(FDv2EventTypes.DeleteObject, ex.ExpectedEventType);
+        }
+
+        /// <summary>
+        /// Tests that AsPayloadTransferred throws FDv2EventTypeMismatchException when called on a non-payload-transferred event.
+        /// </summary>
+        [Fact]
+        public void AsPayloadTransferred_WithWrongEventType_ThrowsFDv2EventTypeMismatchException()
+        {
+            var evt = CreateServerIntentEvent(IntentCode.None);
+            var ex = Assert.Throws<FDv2EventTypeMismatchException>(() => evt.AsPayloadTransferred());
+            Assert.Equal(FDv2EventTypes.ServerIntent, ex.ActualEventType);
+            Assert.Equal(FDv2EventTypes.PayloadTransferred, ex.ExpectedEventType);
+        }
+
+        /// <summary>
+        /// Tests that AsError throws FDv2EventTypeMismatchException when called on a non-error event.
+        /// </summary>
+        [Fact]
+        public void AsError_WithWrongEventType_ThrowsFDv2EventTypeMismatchException()
+        {
+            var evt = CreateServerIntentEvent(IntentCode.None);
+            var ex = Assert.Throws<FDv2EventTypeMismatchException>(() => evt.AsError());
+            Assert.Equal(FDv2EventTypes.ServerIntent, ex.ActualEventType);
+            Assert.Equal(FDv2EventTypes.Error, ex.ExpectedEventType);
+        }
+
+        /// <summary>
+        /// Tests that AsGoodbye throws FDv2EventTypeMismatchException when called on a non-goodbye event.
+        /// </summary>
+        [Fact]
+        public void AsGoodbye_WithWrongEventType_ThrowsFDv2EventTypeMismatchException()
+        {
+            var evt = CreateServerIntentEvent(IntentCode.None);
+            var ex = Assert.Throws<FDv2EventTypeMismatchException>(() => evt.AsGoodbye());
+            Assert.Equal(FDv2EventTypes.ServerIntent, ex.ActualEventType);
+            Assert.Equal(FDv2EventTypes.Goodbye, ex.ExpectedEventType);
+        }
+
+        #endregion
+
+        #region JSON Deserialization Error Handling
+
+        /// <summary>
+        /// Tests that HandleEvent returns JsonError when event data is malformed JSON.
+        /// </summary>
+        [Fact]
+        public void HandleEvent_WithMalformedJson_ReturnsJsonError()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            // Create an event with invalid JSON data for server-intent
+            var badData = JsonDocument.Parse(@"{""invalid"":""data""}").RootElement;
+            var evt = new FDv2Event(FDv2EventTypes.ServerIntent, badData);
+
+            var action = handler.HandleEvent(evt);
+
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.JsonError, internalError.ErrorType);
+            Assert.Contains("Failed to deserialize", internalError.Message);
+            Assert.Contains(FDv2EventTypes.ServerIntent, internalError.Message);
+        }
+
+        /// <summary>
+        /// Tests that HandleEvent returns JsonError when put-object data is malformed.
+        /// </summary>
+        [Fact]
+        public void HandleEvent_WithMalformedPutObject_ReturnsJsonError()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            // First set up the state with a valid server-intent
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+
+            // Now send a malformed put-object
+            var badData = JsonDocument.Parse(@"{""missing"":""required fields""}").RootElement;
+            var evt = new FDv2Event(FDv2EventTypes.PutObject, badData);
+
+            var action = handler.HandleEvent(evt);
+
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.JsonError, internalError.ErrorType);
+            Assert.Contains("Failed to deserialize", internalError.Message);
+            Assert.Contains(FDv2EventTypes.PutObject, internalError.Message);
+        }
+
+        /// <summary>
+        /// Tests that HandleEvent returns JsonError when payload-transferred data is malformed.
+        /// </summary>
+        [Fact]
+        public void HandleEvent_WithMalformedPayloadTransferred_ReturnsJsonError()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            // First set up the state with a valid server-intent
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+
+            // Now send a malformed payload-transferred
+            var badData = JsonDocument.Parse(@"{""incomplete"":""data""}").RootElement;
+            var evt = new FDv2Event(FDv2EventTypes.PayloadTransferred, badData);
+
+            var action = handler.HandleEvent(evt);
+
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.JsonError, internalError.ErrorType);
+            Assert.Contains("Failed to deserialize", internalError.Message);
+            Assert.Contains(FDv2EventTypes.PayloadTransferred, internalError.Message);
         }
 
         #endregion

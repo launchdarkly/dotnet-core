@@ -7,7 +7,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
     /// <summary>
     /// Represents the type of change operation.
     /// </summary>
-    internal enum ChangeType
+    internal enum FDv2ChangeType
     {
         /// <summary>
         /// Indicates an upsert operation (insert or update).
@@ -20,7 +20,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         Delete
     }
 
-    internal enum ChangeSetType
+    internal enum FDv2ChangeSetType
     {
         /// <summary>
         /// Changeset represent a full payload to use as a basis.
@@ -41,12 +41,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
     /// <summary>
     /// Represents a single change to a data object.
     /// </summary>
-    internal sealed class Change
+    internal sealed class FDv2Change
     {
         /// <summary>
         /// The type of change operation.
         /// </summary>
-        public ChangeType Type { get; }
+        public FDv2ChangeType Type { get; }
 
         /// <summary>
         /// The kind of object being changed ("flag" or "segment").
@@ -83,7 +83,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <param name="version">The version of the change.</param>
         /// <param name="obj">The serialized object data (required for Put operations).</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="kind"/> or <paramref name="key"/> is null.</exception>
-        public Change(ChangeType type, string kind, string key, int version, JsonElement? obj = null)
+        public FDv2Change(FDv2ChangeType type, string kind, string key, int version, JsonElement? obj = null)
         {
             Type = type;
             Kind = kind ?? throw new ArgumentNullException(nameof(kind));
@@ -96,12 +96,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
     /// <summary>
     /// Represents a collection of changes with metadata about the intent and version.
     /// </summary>
-    internal sealed class ChangeSet
+    internal sealed class FDv2ChangeSet
     {
         /// <summary>
         /// The intent code indicating how the server intends to transfer data.
         /// </summary>
-        public ChangeSetType Type { get; }
+        public FDv2ChangeSetType Type { get; }
 
         /// <summary>
         /// The list of changes in this changeset.
@@ -109,31 +109,31 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// Null if there are no changes to apply.
         /// </para>
         /// </summary>
-        public ImmutableList<Change> Changes { get; }
+        public ImmutableList<FDv2Change> Changes { get; }
 
         /// <summary>
         /// The selector (version identifier) for this changeset.
         /// </summary>
-        public Selector Selector { get; }
+        public FDv2Selector FDv2Selector { get; }
 
         /// <summary>
         /// Constructs a new ChangeSet.
         /// </summary>
         /// <param name="type">The type of the changeset.</param>
         /// <param name="changes">The list of changes.</param>
-        /// <param name="selector">The selector.</param>
+        /// <param name="fDv2Selector">The selector.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="changes"/> is null.</exception>
-        public ChangeSet(ChangeSetType type, ImmutableList<Change> changes, Selector selector)
+        public FDv2ChangeSet(FDv2ChangeSetType type, ImmutableList<FDv2Change> changes, FDv2Selector fDv2Selector)
         {
             Type = type;
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));
-            Selector = selector;
+            FDv2Selector = fDv2Selector;
         }
 
         /// <summary>
         /// An empty changeset that indicates no changes are required.
         /// </summary>
-        public static ChangeSet None { get; } =
-            new ChangeSet(ChangeSetType.None, ImmutableList<Change>.Empty, Selector.Empty);
+        public static FDv2ChangeSet None { get; } =
+            new FDv2ChangeSet(FDv2ChangeSetType.None, ImmutableList<FDv2Change>.Empty, FDv2Selector.Empty);
     }
 }

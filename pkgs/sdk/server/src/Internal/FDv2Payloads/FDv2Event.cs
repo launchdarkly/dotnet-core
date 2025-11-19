@@ -1,10 +1,34 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LaunchDarkly.Sdk.Server.Internal.FDv2DataSources;
 using static LaunchDarkly.Sdk.Internal.JsonConverterHelpers;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 {
+    /// <summary>
+    /// Exception thrown when attempting to deserialize an FDv2Event as the wrong event type.
+    /// </summary>
+    internal sealed class FDv2EventTypeMismatchException : Exception
+    {
+        /// <summary>
+        /// The actual event type of the FDv2Event.
+        /// </summary>
+        public string ActualEventType { get; }
+
+        /// <summary>
+        /// The expected event type for deserialization.
+        /// </summary>
+        public string ExpectedEventType { get; }
+
+        public FDv2EventTypeMismatchException(string actualEventType, string expectedEventType)
+            : base($"Cannot deserialize event type '{actualEventType}' as '{expectedEventType}'.")
+        {
+            ActualEventType = actualEventType;
+            ExpectedEventType = expectedEventType;
+        }
+    }
+
     /// <summary>
     /// Represents an FDv2 event. This event may be constructed from an SSE event, or it may be directly serialized/
     /// deserialized from a polling response.
@@ -20,60 +44,135 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// The raw JSON element representing the event data.
         /// This should be deserialized based on the EventType.
         /// </summary>
-        public JsonElement Data { get; }
+        public JsonElement JsonData { get; }
 
-        public FDv2Event(string eventType, JsonElement data)
+        public FDv2Event(string eventType, JsonElement jsonData)
         {
             EventType = eventType;
-            Data = data;
+            JsonData = jsonData;
         }
 
         /// <summary>
         /// Deserializes the Data element as a ServerIntent.
         /// </summary>
+        /// <returns>The deserialized ServerIntent.</returns>
+        /// <exception cref="FDv2EventTypeMismatchException">
+        /// Thrown when the event type is not "server-intent".
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON data cannot be deserialized as a ServerIntent.
+        /// </exception>
         public ServerIntent AsServerIntent()
         {
-            return JsonSerializer.Deserialize<ServerIntent>(Data.GetRawText(), GetSerializerOptions());
+            return DeserializeAs<ServerIntent>(FDv2EventTypes.ServerIntent);
         }
 
         /// <summary>
         /// Deserializes the Data element as a PutObject.
         /// </summary>
+        /// <returns>The deserialized PutObject.</returns>
+        /// <exception cref="FDv2EventTypeMismatchException">
+        /// Thrown when the event type is not "put-object".
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON data cannot be deserialized as a PutObject.
+        /// </exception>
         public PutObject AsPutObject()
         {
-            return JsonSerializer.Deserialize<PutObject>(Data.GetRawText(), GetSerializerOptions());
+            return DeserializeAs<PutObject>(FDv2EventTypes.PutObject);
         }
 
         /// <summary>
         /// Deserializes the Data element as a DeleteObject.
         /// </summary>
+        /// <returns>The deserialized DeleteObject.</returns>
+        /// <exception cref="FDv2EventTypeMismatchException">
+        /// Thrown when the event type is not "delete-object".
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON data cannot be deserialized as a DeleteObject.
+        /// </exception>
         public DeleteObject AsDeleteObject()
         {
-            return JsonSerializer.Deserialize<DeleteObject>(Data.GetRawText(), GetSerializerOptions());
+            return DeserializeAs<DeleteObject>(FDv2EventTypes.DeleteObject);
         }
 
         /// <summary>
         /// Deserializes the Data element as a PayloadTransferred.
         /// </summary>
+        /// <returns>The deserialized PayloadTransferred.</returns>
+        /// <exception cref="FDv2EventTypeMismatchException">
+        /// Thrown when the event type is not "payload-transferred".
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON data cannot be deserialized as a PayloadTransferred.
+        /// </exception>
         public PayloadTransferred AsPayloadTransferred()
         {
-            return JsonSerializer.Deserialize<PayloadTransferred>(Data.GetRawText(), GetSerializerOptions());
+            return DeserializeAs<PayloadTransferred>(FDv2EventTypes.PayloadTransferred);
         }
 
         /// <summary>
         /// Deserializes the Data element as an Error.
         /// </summary>
+        /// <returns>The deserialized Error.</returns>
+        /// <exception cref="FDv2EventTypeMismatchException">
+        /// Thrown when the event type is not "error".
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON data cannot be deserialized as an Error.
+        /// </exception>
         public Error AsError()
         {
-            return JsonSerializer.Deserialize<Error>(Data.GetRawText(), GetSerializerOptions());
+            return DeserializeAs<Error>(FDv2EventTypes.Error);
         }
 
         /// <summary>
         /// Deserializes the Data element as a Goodbye.
         /// </summary>
+        /// <returns>The deserialized Goodbye.</returns>
+        /// <exception cref="FDv2EventTypeMismatchException">
+        /// Thrown when the event type is not "goodbye".
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON data cannot be deserialized as a Goodbye.
+        /// </exception>
         public Goodbye AsGoodbye()
         {
-            return JsonSerializer.Deserialize<Goodbye>(Data.GetRawText(), GetSerializerOptions());
+            return DeserializeAs<Goodbye>(FDv2EventTypes.Goodbye);
+        }
+
+        /// <summary>
+        /// Helper method to deserialize the Data element as the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type to deserialize to.</typeparam>
+        /// <param name="expectedEventType">The expected event type string.</param>
+        /// <returns>The deserialized object of type T.</returns>
+        /// <exception cref="FDv2EventTypeMismatchException">
+        /// Thrown when the actual event type doesn't match the expected event type.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON data cannot be deserialized as type T.
+        /// </exception>
+        private T DeserializeAs<T>(string expectedEventType)
+        {
+            if (EventType != expectedEventType)
+            {
+                throw new FDv2EventTypeMismatchException(EventType, expectedEventType);
+            }
+
+            try
+            {
+                return JsonData.Deserialize<T>(GetSerializerOptions());
+            }
+            catch (JsonException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new JsonException($"Failed to deserialize {expectedEventType} event data.", ex);
+            }
         }
 
         private static JsonSerializerOptions GetSerializerOptions()
@@ -98,7 +197,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         private const string AttributeData = "data";
 
         internal static readonly FDv2PollEventConverter Instance = new FDv2PollEventConverter();
-        private static readonly string[] RequiredProperties = new string[] { AttributeEvent, AttributeData };
+        private static readonly string[] RequiredProperties = { AttributeEvent, AttributeData };
 
         public override FDv2Event Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -134,7 +233,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             }
 
             writer.WritePropertyName(AttributeData);
-            value.Data.WriteTo(writer);
+            value.JsonData.WriteTo(writer);
             writer.WriteEndObject();
         }
     }

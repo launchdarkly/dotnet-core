@@ -44,12 +44,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// The raw JSON element representing the event data.
         /// This should be deserialized based on the EventType.
         /// </summary>
-        public JsonElement? Data { get; }
+        public JsonElement? JsonData { get; }
 
-        public FDv2Event(string eventType, JsonElement? data)
+        public FDv2Event(string eventType, JsonElement? jsonData)
         {
             EventType = eventType;
-            Data = data;
+            JsonData = jsonData;
         }
 
         /// <summary>
@@ -161,14 +161,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 throw new FDv2EventTypeMismatchException(EventType, expectedEventType);
             }
 
-            if (!Data.HasValue)
+            if (!JsonData.HasValue)
             {
                 throw new JsonException($"Failed to deserialize {expectedEventType} event data. Data was not present.");
             }
 
+
             try
             {
-                return JsonSerializer.Deserialize<T>(Data.Value.GetRawText(), GetSerializerOptions());
+                return JsonData.Value.Deserialize<T>(GetSerializerOptions());
             }
             catch (JsonException)
             {
@@ -231,7 +232,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
         public override void Write(Utf8JsonWriter writer, FDv2Event value, JsonSerializerOptions options)
         {
-            if (!value.Data.HasValue)
+            if (!value.JsonData.HasValue)
             {
                 throw new JsonException($"Failed to write {value.EventType} to event.");
             }
@@ -243,7 +244,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             }
 
             writer.WritePropertyName(AttributeData);
-            value.Data.Value.WriteTo(writer);
+            value.JsonData.Value.WriteTo(writer);
             writer.WriteEndObject();
         }
     }

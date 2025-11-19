@@ -9,7 +9,10 @@ namespace LaunchDarkly.Sdk.Server.Internal
 
         internal const string DataSourceSubLog = "DataSource";
 
+        internal const string FDv2DataSourceSubLog = "FDv2DataSource";
+
         internal const string DataStoreSubLog = "DataStore";
+        
 
         internal const string EvaluationSubLog = "Evaluation";
 

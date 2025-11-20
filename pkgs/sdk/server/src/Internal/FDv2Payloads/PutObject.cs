@@ -33,7 +33,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         public string Key { get; }
 
         /// <summary>
-        /// The raw JSON element representing the object being PUT (flag or segment).
+        /// The raw JSON string representing the object being PUT (flag or segment).
         /// <para>
         /// This will be deserialized separately based on the Kind.
         /// </para>
@@ -41,7 +41,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// This field is required.
         /// </para>
         /// </summary>
-        public JsonElement Object { get; }
+        public string Object { get; }
 
         /// <summary>
         /// Constructs a new PutObject.
@@ -49,9 +49,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// <param name="version">The minimum payload version this change applies to.</param>
         /// <param name="kind">The kind of object being PUT ("flag" or "segment").</param>
         /// <param name="key">The identifier of the object.</param>
-        /// <param name="obj">The raw JSON element representing the object being PUT.</param>
+        /// <param name="obj">The raw JSON string representing the object being PUT.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="kind"/> or <paramref name="key"/> is null.</exception>
-        public PutObject(int version, string kind, string key, JsonElement obj)
+        public PutObject(int version, string kind, string key, string obj)
         {
             Version = version;
             Kind = kind ?? throw new ArgumentNullException(nameof(kind));
@@ -80,7 +80,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             var version = 0;
             string kind = null;
             string key = null;
-            JsonElement obj = default;
+            string obj = null;
 
             for (var objIter = RequireObject(ref reader).WithRequiredProperties(RequiredProperties);
                  objIter.Next(ref reader);)
@@ -97,8 +97,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                         key = reader.GetString();
                         break;
                     case AttributeObject:
-                        // Store the raw JSON element for later deserialization
-                        obj = JsonElement.ParseValue(ref reader);
+                        // Store the raw JSON string for later deserialization
+                        var element = JsonElement.ParseValue(ref reader);
+                        obj = element.GetRawText();
                         break;
                     default:
                         reader.Skip();
@@ -116,7 +117,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             writer.WriteString(AttributeKind, value.Kind);
             writer.WriteString(AttributeKey, value.Key);
             writer.WritePropertyName(AttributeObject);
-            value.Object.WriteTo(writer);
+            writer.WriteRawValue(value.Object);
             writer.WriteEndObject();
         }
     }

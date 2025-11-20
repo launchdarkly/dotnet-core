@@ -53,7 +53,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             Uri baseUri,
             TimeSpan initialReconnectDelay,
             SelectorSource selectorSource,
-            EventSourceCreator eventSourceCreator
+            EventSourceCreator eventSourceCreator = null
         )
         {
             _log = context.Logger.SubLogger(LogNames.FDv2DataSourceSubLog);

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.EventSource;
@@ -10,21 +9,20 @@ using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Internal.Events;
+using LaunchDarkly.Sdk.Internal.Http;
 using LaunchDarkly.Sdk.Server.Interfaces;
-using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
-    // TODO: Commonize.
-    internal delegate FDv2Selector SelectorSource();
-
-    internal delegate IEventSource EventSourceCreator(Uri streamUri,
-        HttpConfiguration httpConfig);
-
     internal sealed class FDv2StreamingDataSource : IDataSource
     {
+        internal delegate FDv2Selector SelectorSource();
+
+        internal delegate IEventSource EventSourceCreator(Uri streamUri,
+            HttpConfiguration httpConfig);
+
         // The read timeout for the stream is different from the read timeout that can be set in the SDK configuration.
         // It is a fixed value that is set to be slightly longer than the expected interval between heartbeats
         // from the LaunchDarkly streaming server. If this amount of time elapses with no new data, the connection
@@ -46,6 +44,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private readonly bool _storeStatusMonitoringEnabled;
 
         private readonly SelectorSource _selectorSource;
+
+        /// <summary>
+        /// When the store enters a failed state, and we don't have "data source monitoring", we want to log
+        /// a message that we are restarting the event source. We don't want to log this message on multiple
+        /// sequential failures. This boolean is used to determine if the previous attempt to write also
+        /// failed, and in which case we will not log.
+        /// </summary>
+        private readonly AtomicBoolean _lastStoreUpdateFailed = new AtomicBoolean(false);
 
         internal FDv2StreamingDataSource(
             LdClientContext context,
@@ -91,6 +97,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             if (!disposing) return;
 
+            Shutdown();
+        }
+
+        private void Shutdown()
+        {
             _es.Close();
             if (_storeStatusMonitoringEnabled)
             {
@@ -112,11 +123,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         public bool Initialized => _initialized.Get();
 
-        private bool HandleBasis(FDv2ChangeSet changeset,
+        private bool HandleFullTransfer(FDv2ChangeSet changeset,
             IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
         {
             // TODO: Check if the data source updates implementation supports the transactional store interface.
             // If it does, then apply the data using that mechanism.
+            // Alternatively only support the transactional interface and report an error.
             var putData = FDv2ChangeSetTranslator.TranslatePutData(changeset, _log);
             if (_dataSourceUpdates is IDataSourceUpdatesHeaders dataSourceUpdatesHeaders)
             {
@@ -130,6 +142,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             // TODO: Check if the data source updates implementation supports the transactional store interface.
             // If it does, then apply the data using that mechanism.
+            // Alternatively only support the transactional interface and report an error.
             var patches = FDv2ChangeSetTranslator.TranslatePatchData(changeset, _log);
             var success = true;
             foreach (var patch in patches)
@@ -144,50 +157,110 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             return success;
         }
 
+        private void HandleJsonError(string message)
+        {
+            _log.Error("LaunchDarkly service request failed or received invalid data: {0}", message);
+
+            var errorInfo = new DataSourceStatus.ErrorInfo
+            {
+                Kind = DataSourceStatus.ErrorKind.InvalidData,
+                Message = message,
+                Time = DateTime.Now
+            };
+            _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+
+            _es.Restart(false);
+        }
+
+        private void HandleStoreError(string message)
+        {
+            var errorInfo = new DataSourceStatus.ErrorInfo
+            {
+                Kind = DataSourceStatus.ErrorKind.StoreError,
+                Message = message,
+                Time = DateTime.Now
+            };
+            _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+            if (_storeStatusMonitoringEnabled) return;
+
+            // If the value before the set was false, then we log the warning.
+            // We want to only log this once per outage.
+            if (!_lastStoreUpdateFailed.GetAndSet(true))
+            {
+                _log.Warn("Restarting stream to ensure that we have the latest data");
+            }
+
+            _es.Restart(false);
+        }
+
         private void OnMessage(object sender, MessageReceivedEventArgs e)
         {
             var data = e.Message.Data != null ? JsonDocument.Parse(e.Message.Data) : null;
             var evt = new FDv2Event(e.Message.Name, data?.RootElement);
             var res = _protocolHandler.HandleEvent(evt);
-
+            
             switch (res)
             {
                 case FDv2ActionChangeset changeAction:
+                {
+                    var storeUpdated = false;
                     var changeset = changeAction.Changeset;
                     switch (changeset.Type)
                     {
                         case FDv2ChangeSetType.Full:
-                            HandleBasis(changeset, _headers);
-                            // TODO: Handle failed store write.
-                            MaybeMarkInitialized();
+                            storeUpdated = HandleFullTransfer(changeset, _headers);
                             break;
                         case FDv2ChangeSetType.Partial:
-                            // TODO: Handle failed store write.
-                            HandlePartial(changeset);
+                            storeUpdated = HandlePartial(changeset);
                             break;
                         case FDv2ChangeSetType.None:
-                            // TODO: Implement.
-                            MaybeMarkInitialized();
                             break;
                         default:
                             _log.Error("Unhandled FDv2 Changeset Type.");
                             break;
                     }
 
+                    if (storeUpdated)
+                    {
+                        _lastStoreUpdateFailed.GetAndSet(false);
+
+                        // TODO: This may be more nuanced or not required once we have the composite
+                        // data source.
+                        MaybeMarkInitialized();
+                    }
+                    else
+                    {
+                        HandleStoreError($"failed to write changeset: {changeset.Type}");
+                    }
+                }
+
                     break;
                 case FDv2ActionError errorAction:
                     _log.Error(errorAction.Reason);
-                    // TODO: Implement error handling.
                     break;
                 case FDv2ActionGoodbye goodbyeAction:
                     _log.Info(goodbyeAction.Reason);
-                    // TODO: Don't log an error for the coming disconnect.
+                    // TODO: Should we handle this proactively in any way?
                     break;
                 case FDv2ActionNone _:
                     break;
                 case FDv2ActionInternalError internalErrorEvent:
                     _log.Error(internalErrorEvent.Message);
-                    // TODO: Implement error handling.
+                    switch (internalErrorEvent.ErrorType)
+                    {
+                        case FDv2ProtocolErrorType.JsonError:
+                            HandleJsonError(internalErrorEvent.Message);
+                            break;
+                        case FDv2ProtocolErrorType.MissingPayload:
+                        case FDv2ProtocolErrorType.ProtocolError:
+                        case FDv2ProtocolErrorType.UnknownEvent:
+                        // TODO: Should we consider restarting in these situations?
+                        case FDv2ProtocolErrorType.ImplementationError:
+                        default:
+                            _log.Error(internalErrorEvent.Message);
+                            break;
+                    }
+
                     break;
                 default:
                     // Represents an implementation error. Actions expanded without the handling
@@ -208,7 +281,41 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private void OnError(object sender, ExceptionEventArgs e)
         {
-            // TODO: Implement.
+            var ex = e.Exception;
+            var recoverable = true;
+            DataSourceStatus.ErrorInfo errorInfo;
+
+            if (ex is EventSourceServiceUnsuccessfulResponseException respEx)
+            {
+                var status = respEx.StatusCode;
+                errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status);
+                RecordStreamInit(true);
+                if (!HttpErrors.IsRecoverable(status))
+                {
+                    recoverable = false;
+                    _log.Error(HttpErrors.ErrorMessage(status, "streaming connection", ""));
+                }
+                else
+                {
+                    _log.Warn(HttpErrors.ErrorMessage(status, "streaming connection", "will retry"));
+                }
+            }
+            else
+            {
+                errorInfo = DataSourceStatus.ErrorInfo.FromException(ex);
+                _log.Warn("Encountered EventSource error: {0}", LogValues.ExceptionSummary(ex));
+                _log.Debug(LogValues.ExceptionTrace(ex));
+            }
+
+            _dataSourceUpdates.UpdateStatus(recoverable ? DataSourceState.Interrupted : DataSourceState.Off,
+                errorInfo);
+
+            if (recoverable) return;
+            // Make _initTask complete to tell the client to stop waiting for initialization. We use
+            // TrySetResult rather than SetResult here because it might have already been completed
+            // (if, for instance, the stream started successfully, then restarted and got a 401).
+            _initTask.TrySetResult(false);
+            Shutdown();
         }
 
         private void OnOpen(object sender, StateChangedEventArgs e)

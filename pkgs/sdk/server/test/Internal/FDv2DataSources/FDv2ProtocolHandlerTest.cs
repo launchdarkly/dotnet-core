@@ -21,7 +21,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private static FDv2Event CreatePutObjectEvent(string kind, string key, int version, JsonElement? obj = null)
         {
-            var putObj = new PutObject(version, kind, key, obj ?? JsonDocument.Parse("{}").RootElement);
+            var putObj = new PutObject(version, kind, key, "{}");
             var json = JsonSerializer.Serialize(putObj, GetJsonOptions());
             var data = JsonDocument.Parse(json).RootElement;
             return new FDv2Event(FDv2EventTypes.PutObject, data);

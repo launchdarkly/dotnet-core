@@ -70,9 +70,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public int Version { get; }
 
         /// <summary>
-        /// The serialized object data (only present for Put operations).
+        /// The raw JSON string representing the object data (only present for Put operations).
         /// </summary>
-        public JsonElement? Object { get; }
+        public string Object { get; }
 
         /// <summary>
         /// Constructs a new Change.
@@ -81,9 +81,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <param name="kind">The kind of object being changed.</param>
         /// <param name="key">The key identifying the object.</param>
         /// <param name="version">The version of the change.</param>
-        /// <param name="obj">The serialized object data (required for Put operations).</param>
+        /// <param name="obj">The raw JSON string representing the object data (required for Put operations).</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="kind"/> or <paramref name="key"/> is null.</exception>
-        public FDv2Change(FDv2ChangeType type, string kind, string key, int version, JsonElement? obj = null)
+        public FDv2Change(FDv2ChangeType type, string kind, string key, int version, string obj = null)
         {
             Type = type;
             Kind = kind ?? throw new ArgumentNullException(nameof(kind));

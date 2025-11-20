@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
@@ -43,17 +44,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 foreach (var change in kindGroup)
                 {
-                    if (change.Type == FDv2ChangeType.Put && change.Object.HasValue)
-                    {
-                        // Deserialize the object using the DataKind's deserializer
-                        var reader = change.Object.Value;
-                        var utf8JsonReader =
-                            new Utf8JsonReader(
-                                JsonSerializer.SerializeToUtf8Bytes(reader));
-                        utf8JsonReader.Read(); // Advance to first token
-                        var item = dataKind.DeserializeFromJsonReader(ref utf8JsonReader);
-                        itemsBuilder.Add(new KeyValuePair<string, DataStoreTypes.ItemDescriptor>(change.Key, item));
-                    }
+                    if (change.Type != FDv2ChangeType.Put || change.Object == null) continue;
+                    var item = dataKind.Deserialize(change.Object);
+                    itemsBuilder.Add(new KeyValuePair<string, DataStoreTypes.ItemDescriptor>(change.Key, item));
                     // Note: Delete operations in a Full changeset would be unusual, but we skip them
                     // since a full transfer should only contain items that exist
                 }
@@ -93,19 +86,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 if (change.Type == FDv2ChangeType.Put)
                 {
-                    if (!change.Object.HasValue)
+                    if (change.Object == null)
                     {
                         log.Warn($"Put operation for {change.Kind}/{change.Key} missing object data, skipping");
                         continue;
                     }
 
                     // Deserialize the object using the DataKind's deserializer
-                    var reader = change.Object.Value;
-                    var utf8JsonReader =
-                        new Utf8JsonReader(
-                            JsonSerializer.SerializeToUtf8Bytes(reader));
-                    utf8JsonReader.Read(); // Advance to first token
-                    item = dataKind.DeserializeFromJsonReader(ref utf8JsonReader);
+                    item = dataKind.Deserialize(change.Object);
                 }
                 else if (change.Type == FDv2ChangeType.Delete)
                 {

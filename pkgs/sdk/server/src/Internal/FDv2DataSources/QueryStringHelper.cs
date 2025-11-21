@@ -8,6 +8,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
     /// <summary>
     /// Simple query string parser for updating URI query parameters.
     /// </summary>
+    /// <remarks>
+    /// Newer .Net was an implementation of this in System.Web.HttpUtility. We have our own implementation to maintain
+    /// compatibility with older .Net frameworks without the introduction of additional dependencies.
+    /// </remarks>
     internal static class QueryStringHelper
     {
         /// <summary>

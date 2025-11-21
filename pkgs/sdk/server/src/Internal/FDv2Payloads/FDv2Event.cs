@@ -44,12 +44,35 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// The raw JSON element representing the event data.
         /// This should be deserialized based on the EventType.
         /// </summary>
-        public JsonElement? JsonData { get; }
+        public JsonElement JsonData { get; }
 
-        public FDv2Event(string eventType, JsonElement? jsonData)
+        public FDv2Event(string eventType, JsonElement jsonData)
         {
             EventType = eventType;
             JsonData = jsonData;
+        }
+
+        public FDv2Event(string eventType, string jsonString)
+        {
+            EventType = eventType;
+            JsonData = JsonSerializer.Deserialize<JsonElement>(jsonString);
+        }
+
+        public static bool TryDeserializeFromJsonString(string eventType, string jsonString, out FDv2Event evt, out string error)
+        {
+            try
+            {
+                evt = new FDv2Event(eventType, JsonSerializer.Deserialize<JsonElement>(jsonString));
+                error = null;
+            }
+            catch(Exception e)
+            {
+                evt = null;
+                error = e.Message;
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -161,15 +184,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 throw new FDv2EventTypeMismatchException(EventType, expectedEventType);
             }
 
-            if (!JsonData.HasValue)
-            {
-                throw new JsonException($"Failed to deserialize {expectedEventType} event data. Data was not present.");
-            }
-
-
             try
             {
-                return JsonData.Value.Deserialize<T>(GetSerializerOptions());
+                return JsonData.Deserialize<T>(GetSerializerOptions());
             }
             catch (JsonException)
             {
@@ -203,7 +220,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         private const string AttributeData = "data";
 
         internal static readonly FDv2PollEventConverter Instance = new FDv2PollEventConverter();
-        private static readonly string[] RequiredProperties = { AttributeEvent };
+        private static readonly string[] RequiredProperties = { AttributeEvent, AttributeData };
 
         public override FDv2Event Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -239,9 +256,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             }
 
             writer.WritePropertyName(AttributeData);
-            // The event doesn't have to have data.
-            value.JsonData?.WriteTo(writer);
-
+            value.JsonData.WriteTo(writer);
             writer.WriteEndObject();
         }
     }

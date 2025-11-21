@@ -139,7 +139,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
             var flagJson = JsonSerializer.Serialize(flag, GetJsonOptions());
 
-            var putObject = new PutObject(15, "flag", "my-flag", flagJson);
+            var putObject = new PutObject(15, "flag", "my-flag", JsonSerializer.Deserialize<JsonElement>(flagJson));
 
             var serialized = JsonSerializer.Serialize(putObject, GetJsonOptions());
             var deserialized = JsonSerializer.Deserialize<PutObject>(serialized, GetJsonOptions());
@@ -205,7 +205,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
             var segmentJson = JsonSerializer.Serialize(segment, GetJsonOptions());
 
-            var putObject = new PutObject(25, "segment", "my-segment", segmentJson);
+            var putObject = new PutObject(25, "segment", "my-segment",
+                JsonSerializer.Deserialize<JsonElement>(segmentJson));
 
             var serialized = JsonSerializer.Serialize(putObject, GetJsonOptions());
             var deserialized = JsonSerializer.Deserialize<PutObject>(serialized, GetJsonOptions());
@@ -677,13 +678,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         [Fact]
         public void PutObject_ThrowsArgumentNullExceptionWhenKindIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new PutObject(1, null, "key", "{}"));
+            Assert.Throws<ArgumentNullException>(() =>
+                new PutObject(1, null, "key", JsonSerializer.Deserialize<JsonElement>("{}")));
         }
 
         [Fact]
         public void PutObject_ThrowsArgumentNullExceptionWhenKeyIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new PutObject(1, "flag", null, "{}"));
+            Assert.Throws<ArgumentNullException>(() =>
+                new PutObject(1, "flag", null, JsonSerializer.Deserialize<JsonElement>("{}")));
         }
 
         [Fact]

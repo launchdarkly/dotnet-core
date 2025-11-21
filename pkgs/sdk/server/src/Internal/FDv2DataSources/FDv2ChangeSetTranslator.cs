@@ -22,7 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var dataBuilder = System.Collections.Immutable.ImmutableList
                 .CreateBuilder<KeyValuePair<DataStoreTypes.DataKind,
                     DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor>>>();
-            
+
             var changesByKind = changeset.Changes.GroupBy(c => c.Kind);
 
             foreach (var kindGroup in changesByKind)
@@ -41,8 +41,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 foreach (var change in kindGroup)
                 {
-                    if (change.Type != FDv2ChangeType.Put || change.Object == null) continue;
-                    var item = dataKind.Deserialize(change.Object);
+                    if (change.Type != FDv2ChangeType.Put || !change.Object.HasValue) continue;
+                    var item = dataKind.DeserializeFromJsonElement(change.Object.Value);
                     itemsBuilder.Add(new KeyValuePair<string, DataStoreTypes.ItemDescriptor>(change.Key, item));
                     // Note: Delete operations in a Full changeset would be unusual, but we skip them
                     // since a full transfer should only contain items that exist
@@ -83,12 +83,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 switch (change.Type)
                 {
-                    case FDv2ChangeType.Put when change.Object == null:
+                    case FDv2ChangeType.Put when !change.Object.HasValue:
                         log.Warn($"Put operation for {change.Kind}/{change.Key} missing object data, skipping");
                         continue;
                     // Deserialize the object using the DataKind's deserializer
                     case FDv2ChangeType.Put:
-                        item = dataKind.Deserialize(change.Object);
+                        item = dataKind.DeserializeFromJsonElement(change.Object.Value);
                         break;
                     case FDv2ChangeType.Delete:
                         // For deletes, create a deleted ItemDescriptor with the version

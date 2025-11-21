@@ -196,8 +196,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private void OnMessage(object sender, MessageReceivedEventArgs e)
         {
-            var data = e.Message.Data != null ? JsonDocument.Parse(e.Message.Data) : null;
-            var evt = new FDv2Event(e.Message.Name, data?.RootElement);
+            var parsed = FDv2Event.TryDeserializeFromJsonString(
+                e.Message.Name,
+                e.Message.Data,
+                out var evt,
+                out var error);
+
+            if (!parsed)
+            {
+                HandleJsonError(error);
+                return;
+            }
+
             IFDv2ProtocolAction action;
             lock (_protocolLock)
             {
@@ -208,15 +218,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 case FDv2ActionChangeset changeAction:
                 {
-                    var storeUpdated = false;
+                    var storeError = false;
                     var changeset = changeAction.Changeset;
                     switch (changeset.Type)
                     {
                         case FDv2ChangeSetType.Full:
-                            storeUpdated = HandleFullTransfer(changeset, _headers);
+                            storeError = !HandleFullTransfer(changeset, _headers);
                             break;
                         case FDv2ChangeSetType.Partial:
-                            storeUpdated = HandlePartial(changeset);
+                            storeError = !HandlePartial(changeset);
                             break;
                         case FDv2ChangeSetType.None:
                             break;
@@ -225,7 +235,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             break;
                     }
 
-                    if (storeUpdated)
+                    if (!storeError)
                     {
                         _lastStoreUpdateFailed.GetAndSet(false);
 

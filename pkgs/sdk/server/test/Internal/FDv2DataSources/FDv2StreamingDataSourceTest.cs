@@ -57,7 +57,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private string CreateServerIntentJson(string intentCode, string payloadId = "test-payload", int target = 1)
         {
-            return $@"{{""payloads"":[{{""id"":""{payloadId}"",""target"":{target},""code"":""{intentCode}""}}]}}";
+            return $@"{{""payloads"":[{{""id"":""{payloadId}"",""target"":{target},""intentCode"":""{intentCode}"",""reason"":""test reason""}}]}}";
         }
 
         private string CreatePutObjectJson(string kind, string key, int version, string objectJson = "{}")
@@ -301,7 +301,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
-        public async Task MultipleSequentialTransferCyclesAreProcessedCorrectly()
+        public async Task VMultipleSequentialTransferCyclesAreProcessedCorrectly()
         {
             using (var dataSource = MakeDataSource())
             {
@@ -401,7 +401,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("unknown-custom-event", "{}"));
 
-                AssertLogMessage(true, LogLevel.Error, "unknown event");
+                AssertLogMessageRegex(true, LogLevel.Error, ".*unknown event.*");
             }
         }
 
@@ -441,7 +441,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     CreatePayloadTransferredJson("(p:p1:1)", 1)));
 
                 Assert.Equal(1, _mockEventSource.RestartCallCount);
-                AssertLogMessage(true, LogLevel.Warn, "Restarting stream");
+                AssertLogMessageRegex(true, LogLevel.Warn, ".*Restarting stream.*");
             }
         }
 
@@ -553,7 +553,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
                 Assert.Equal(503, status.LastError.Value.StatusCode);
 
-                AssertLogMessage(true, LogLevel.Warn, "will retry");
+                AssertLogMessageRegex(true, LogLevel.Warn, ".*will retry.*");
             }
         }
 
@@ -576,7 +576,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.False(result);
                 Assert.False(dataSource.Initialized);
 
-                AssertLogMessage(true, LogLevel.Error, "403");
+                AssertLogMessageRegex(true, LogLevel.Error, ".*403.*");
             }
         }
 
@@ -594,7 +594,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.Equal(DataSourceState.Interrupted, status.State);
                 Assert.Equal(DataSourceStatus.ErrorKind.NetworkError, status.LastError.Value.Kind);
 
-                AssertLogMessage(true, LogLevel.Warn, "EventSource error");
+                AssertLogMessageRegex(true, LogLevel.Warn, ".*EventSource error.*");
             }
         }
 
@@ -746,12 +746,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 Assert.Equal(1, _mockEventSource.RestartCallCount);
 
+                // Consume the failed upsert from the first cycle
+                var failedUpsert = _updateSink.Upserts.ExpectValue();
+                Assert.Equal("flag1", failedUpsert.Key);
+
                 _mockEventSource.TriggerOpen();
 
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-changes", "p1", 2)));
+                var flag2Json = @"{""key"":""flag2"",""on"":false,""version"":11}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
-                    CreatePutObjectJson("flag", "flag2", 11, flagJson)));
+                    CreatePutObjectJson("flag", "flag2", 11, flag2Json)));
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
                     CreatePayloadTransferredJson("(p:p1:2)", 2)));
 

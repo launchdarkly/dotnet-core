@@ -384,5 +384,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     FDv2ProtocolErrorType.JsonError);
             }
         }
+
+        /// <summary>
+        /// Reset the protocol handler. This should be done whenever a connection to the source of data is reset.
+        /// </summary>
+        public void Reset()
+        {
+            _changes.Clear();
+            _state = FDv2ProtocolState.Inactive;
+        }
     }
 }

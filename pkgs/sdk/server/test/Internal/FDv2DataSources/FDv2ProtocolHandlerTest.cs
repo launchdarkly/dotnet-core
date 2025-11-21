@@ -869,5 +869,230 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         #endregion
+
+        #region Reset Method
+
+        /// <summary>
+        /// Tests that Reset clears accumulated changes and resets state to Inactive.
+        /// </summary>
+        [Fact]
+        public void Reset_ClearsAccumulatedChanges()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            // Set up state with accumulated changes
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f2", 1));
+
+            // Reset the handler
+            handler.Reset();
+
+            // Attempting to send payload-transferred without new server-intent should return protocol error
+            // because reset puts the handler back to Inactive state
+            var transferredEvt = CreatePayloadTransferredEvent("(p:p1:1)", 1);
+            var action = handler.HandleEvent(transferredEvt);
+
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.ProtocolError, internalError.ErrorType);
+            Assert.Contains("without an intent", internalError.Message);
+        }
+
+        /// <summary>
+        /// Tests that Reset allows starting a new transfer cycle.
+        /// </summary>
+        [Fact]
+        public void Reset_AllowsNewTransferCycle()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            // First transfer cycle
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+
+            // Reset
+            handler.Reset();
+
+            // New transfer cycle should work
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p2", 2, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f2", 2));
+            var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p2:2)", 2));
+
+            var changesetAction = (FDv2ActionChangeset)action;
+            Assert.Equal(FDv2ChangeSetType.Full, changesetAction.Changeset.Type);
+            // Should only have f2, not f1 (which was cleared by reset)
+            Assert.Single(changesetAction.Changeset.Changes);
+            Assert.Equal("f2", changesetAction.Changeset.Changes[0].Key);
+        }
+
+        /// <summary>
+        /// Tests that Reset during an ongoing Full transfer properly clears partial data.
+        /// </summary>
+        [Fact]
+        public void Reset_DuringFullTransfer_ClearsPartialData()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f2", 1));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f3", 1));
+
+            // Reset before payload-transferred
+            handler.Reset();
+
+            // Start new transfer
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferChanges, "p2", 2, "stale"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f4", 2));
+            var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p2:2)", 2));
+
+            var changesetAction = (FDv2ActionChangeset)action;
+            Assert.Equal(FDv2ChangeSetType.Partial, changesetAction.Changeset.Type);
+            Assert.Single(changesetAction.Changeset.Changes);
+            Assert.Equal("f4", changesetAction.Changeset.Changes[0].Key);
+        }
+
+        /// <summary>
+        /// Tests that Reset during an ongoing Changes transfer properly clears partial data.
+        /// </summary>
+        [Fact]
+        public void Reset_DuringChangesTransfer_ClearsPartialData()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferChanges, "p1", 1, "stale"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+            handler.HandleEvent(CreateDeleteObjectEvent("flag", "f2", 1));
+
+            // Reset before payload-transferred
+            handler.Reset();
+
+            // Start new transfer
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p2", 2, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f3", 2));
+            var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p2:2)", 2));
+
+            var changesetAction = (FDv2ActionChangeset)action;
+            Assert.Equal(FDv2ChangeSetType.Full, changesetAction.Changeset.Type);
+            Assert.Single(changesetAction.Changeset.Changes);
+            Assert.Equal("f3", changesetAction.Changeset.Changes[0].Key);
+        }
+
+        /// <summary>
+        /// Tests that Reset can be called multiple times safely.
+        /// </summary>
+        [Fact]
+        public void Reset_CanBeCalledMultipleTimes()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            // Reset on fresh handler
+            handler.Reset();
+
+            // Set up state
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+
+            // Reset again
+            handler.Reset();
+
+            // Reset yet again
+            handler.Reset();
+
+            // Should still work normally
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.None, "p1", 1, "up-to-date"));
+            var action = handler.HandleEvent(CreateServerIntentEvent(IntentCode.None, "p1", 1, "up-to-date"));
+
+            Assert.IsType<FDv2ActionChangeset>(action);
+            var changesetAction = (FDv2ActionChangeset)action;
+            Assert.Equal(FDv2ChangeSetType.None, changesetAction.Changeset.Type);
+        }
+
+        /// <summary>
+        /// Tests that Reset after a completed transfer works correctly.
+        /// Simulates connection reset after successful data transfer.
+        /// </summary>
+        [Fact]
+        public void Reset_AfterCompletedTransfer_WorksCorrectly()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            // Complete a full transfer
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+            var action1 = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:1)", 1));
+
+            Assert.IsType<FDv2ActionChangeset>(action1);
+
+            // Reset (simulating connection reset)
+            handler.Reset();
+
+            // Start new transfer after reset
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p2", 2, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f2", 2));
+            var action2 = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p2:2)", 2));
+
+            var changesetAction = (FDv2ActionChangeset)action2;
+            Assert.Equal(FDv2ChangeSetType.Full, changesetAction.Changeset.Type);
+            Assert.Single(changesetAction.Changeset.Changes);
+            Assert.Equal("f2", changesetAction.Changeset.Changes[0].Key);
+        }
+
+        /// <summary>
+        /// Tests that Reset after receiving an error properly clears state.
+        /// </summary>
+        [Fact]
+        public void Reset_AfterError_ClearsState()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+
+            // Receive error
+            var errorAction = handler.HandleEvent(CreateErrorEvent("p1", "Something went wrong"));
+            Assert.IsType<FDv2ActionError>(errorAction);
+
+            // Reset after error
+            handler.Reset();
+
+            // Verify state is Inactive by attempting payload-transferred without intent
+            var transferredEvt = CreatePayloadTransferredEvent("(p:p1:1)", 1);
+            var action = handler.HandleEvent(transferredEvt);
+
+            Assert.IsType<FDv2ActionInternalError>(action);
+            var internalError = (FDv2ActionInternalError)action;
+            Assert.Equal(FDv2ProtocolErrorType.ProtocolError, internalError.ErrorType);
+        }
+
+        /// <summary>
+        /// Tests that Reset properly handles the case where mixed put and delete operations were accumulated.
+        /// </summary>
+        [Fact]
+        public void Reset_WithMixedOperations_ClearsAllChanges()
+        {
+            var handler = new FDv2ProtocolHandler();
+
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferChanges, "p1", 1, "stale"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f1", 1));
+            handler.HandleEvent(CreateDeleteObjectEvent("flag", "f2", 1));
+            handler.HandleEvent(CreatePutObjectEvent("segment", "s1", 1));
+            handler.HandleEvent(CreateDeleteObjectEvent("segment", "s2", 1));
+
+            // Reset
+            handler.Reset();
+
+            // New transfer should not include any of the previous changes
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p2", 2, "missing"));
+            handler.HandleEvent(CreatePutObjectEvent("flag", "f-new", 2));
+            var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p2:2)", 2));
+
+            var changesetAction = (FDv2ActionChangeset)action;
+            Assert.Single(changesetAction.Changeset.Changes);
+            Assert.Equal("f-new", changesetAction.Changeset.Changes[0].Key);
+        }
+
+        #endregion
     }
 }

@@ -43,7 +43,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             Assert.Single(serverIntent.Payloads);
             Assert.Equal("payload-123", serverIntent.Payloads[0].Id);
             Assert.Equal(42, serverIntent.Payloads[0].Target);
-            Assert.Equal("xfer-full", serverIntent.Payloads[0].IntentCode);
+            Assert.Equal(IntentCode.TransferFull, serverIntent.Payloads[0].IntentCode);
             Assert.Equal("payload-missing", serverIntent.Payloads[0].Reason);
 
             // Reserialize and verify
@@ -51,7 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             var deserialized2 = JsonSerializer.Deserialize<ServerIntent>(reserialized, GetJsonOptions());
             Assert.Equal("payload-123", deserialized2.Payloads[0].Id);
             Assert.Equal(42, deserialized2.Payloads[0].Target);
-            Assert.Equal("xfer-full", deserialized2.Payloads[0].IntentCode);
+            Assert.Equal(IntentCode.TransferFull, deserialized2.Payloads[0].IntentCode);
             Assert.Equal("payload-missing", deserialized2.Payloads[0].Reason);
         }
 
@@ -80,9 +80,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             Assert.NotNull(serverIntent);
             Assert.Equal(2, serverIntent.Payloads.Count);
             Assert.Equal("payload-1", serverIntent.Payloads[0].Id);
-            Assert.Equal("xfer-changes", serverIntent.Payloads[0].IntentCode);
+            Assert.Equal(IntentCode.TransferChanges, serverIntent.Payloads[0].IntentCode);
             Assert.Equal("payload-2", serverIntent.Payloads[1].Id);
-            Assert.Equal("none", serverIntent.Payloads[1].IntentCode);
+            Assert.Equal(IntentCode.None, serverIntent.Payloads[1].IntentCode);
         }
 
         [Fact]
@@ -114,10 +114,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             Assert.Equal(10, putObject.Version);
             Assert.Equal("flag", putObject.Kind);
             Assert.Equal("test-flag", putObject.Key);
-            Assert.Equal(JsonValueKind.Object, putObject.Object.ValueKind);
+            Assert.NotNull(putObject.Object);
 
-            // Deserialize the flag from the Object element
-            var flag = JsonSerializer.Deserialize<FeatureFlag>(putObject.Object.GetRawText(), GetJsonOptions());
+            // Deserialize the flag from the Object string
+            var flag = JsonSerializer.Deserialize<FeatureFlag>(putObject.Object, GetJsonOptions());
             Assert.Equal("test-flag", flag.Key);
             Assert.Equal(5, flag.Version);
             Assert.True(flag.On);
@@ -138,9 +138,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 .Build();
 
             var flagJson = JsonSerializer.Serialize(flag, GetJsonOptions());
-            var flagElement = JsonDocument.Parse(flagJson).RootElement;
 
-            var putObject = new PutObject(15, "flag", "my-flag", flagElement);
+            var putObject = new PutObject(15, "flag", "my-flag", flagJson);
 
             var serialized = JsonSerializer.Serialize(putObject, GetJsonOptions());
             var deserialized = JsonSerializer.Deserialize<PutObject>(serialized, GetJsonOptions());
@@ -150,7 +149,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             Assert.Equal("my-flag", deserialized.Key);
 
             var deserializedFlag =
-                JsonSerializer.Deserialize<FeatureFlag>(deserialized.Object.GetRawText(), GetJsonOptions());
+                JsonSerializer.Deserialize<FeatureFlag>(deserialized.Object, GetJsonOptions());
             Assert.Equal("my-flag", deserializedFlag.Key);
             Assert.Equal(3, deserializedFlag.Version);
             Assert.True(deserializedFlag.On);
@@ -186,8 +185,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             Assert.Equal("segment", putObject.Kind);
             Assert.Equal("test-segment", putObject.Key);
 
-            // Deserialize the segment from the Object element
-            var segment = JsonSerializer.Deserialize<Segment>(putObject.Object.GetRawText(), GetJsonOptions());
+            // Deserialize the segment from the Object string
+            var segment = JsonSerializer.Deserialize<Segment>(putObject.Object, GetJsonOptions());
             Assert.Equal("test-segment", segment.Key);
             Assert.Equal(7, segment.Version);
             Assert.Equal(2, segment.Included.Count);
@@ -205,9 +204,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 .Build();
 
             var segmentJson = JsonSerializer.Serialize(segment, GetJsonOptions());
-            var segmentElement = JsonDocument.Parse(segmentJson).RootElement;
 
-            var putObject = new PutObject(25, "segment", "my-segment", segmentElement);
+            var putObject = new PutObject(25, "segment", "my-segment", segmentJson);
 
             var serialized = JsonSerializer.Serialize(putObject, GetJsonOptions());
             var deserialized = JsonSerializer.Deserialize<PutObject>(serialized, GetJsonOptions());
@@ -217,7 +215,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             Assert.Equal("my-segment", deserialized.Key);
 
             var deserializedSegment =
-                JsonSerializer.Deserialize<Segment>(deserialized.Object.GetRawText(), GetJsonOptions());
+                JsonSerializer.Deserialize<Segment>(deserialized.Object, GetJsonOptions());
             Assert.Equal("my-segment", deserializedSegment.Key);
             Assert.Equal(5, deserializedSegment.Version);
             Assert.Equal(2, deserializedSegment.Included.Count);
@@ -343,7 +341,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 }
             }";
 
-            var pollEvent = JsonSerializer.Deserialize<FDv2PollEvent>(json, GetJsonOptions());
+            var pollEvent = JsonSerializer.Deserialize<FDv2Event>(json, GetJsonOptions());
 
             Assert.NotNull(pollEvent);
             Assert.Equal("server-intent", pollEvent.EventType);
@@ -381,7 +379,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 }
             }";
 
-            var pollEvent = JsonSerializer.Deserialize<FDv2PollEvent>(json, GetJsonOptions());
+            var pollEvent = JsonSerializer.Deserialize<FDv2Event>(json, GetJsonOptions());
 
             Assert.NotNull(pollEvent);
             Assert.Equal("put-object", pollEvent.EventType);
@@ -392,7 +390,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             Assert.Equal("flag", putObject.Kind);
             Assert.Equal("event-flag", putObject.Key);
 
-            var flag = JsonSerializer.Deserialize<FeatureFlag>(putObject.Object.GetRawText(), GetJsonOptions());
+            var flag = JsonSerializer.Deserialize<FeatureFlag>(putObject.Object, GetJsonOptions());
             Assert.Equal("event-flag", flag.Key);
             Assert.False(flag.On);
             Assert.Equal(3, flag.Variations.Count());
@@ -410,7 +408,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 }
             }";
 
-            var pollEvent = JsonSerializer.Deserialize<FDv2PollEvent>(json, GetJsonOptions());
+            var pollEvent = JsonSerializer.Deserialize<FDv2Event>(json, GetJsonOptions());
 
             Assert.Equal("delete-object", pollEvent.EventType);
 
@@ -431,7 +429,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 }
             }";
 
-            var pollEvent = JsonSerializer.Deserialize<FDv2PollEvent>(json, GetJsonOptions());
+            var pollEvent = JsonSerializer.Deserialize<FDv2Event>(json, GetJsonOptions());
 
             Assert.Equal("payload-transferred", pollEvent.EventType);
 
@@ -643,7 +641,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 }
             }";
             Assert.ThrowsAny<JsonException>(() =>
-                JsonSerializer.Deserialize<FDv2PollEvent>(json, GetJsonOptions()));
+                JsonSerializer.Deserialize<FDv2Event>(json, GetJsonOptions()));
         }
 
         [Fact]
@@ -653,7 +651,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 ""event"": ""payload-transferred""
             }";
             Assert.ThrowsAny<JsonException>(() =>
-                JsonSerializer.Deserialize<FDv2PollEvent>(json, GetJsonOptions()));
+                JsonSerializer.Deserialize<FDv2Event>(json, GetJsonOptions()));
         }
 
         [Fact]
@@ -665,31 +663,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         [Fact]
         public void ServerIntentPayload_ThrowsArgumentNullExceptionWhenIdIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new ServerIntentPayload(null, 42, "xfer-full", "reason"));
-        }
-
-        [Fact]
-        public void ServerIntentPayload_ThrowsArgumentNullExceptionWhenIntentCodeIsNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => new ServerIntentPayload("id-123", 42, null, "reason"));
+            Assert.Throws<ArgumentNullException>(() =>
+                new ServerIntentPayload(null, 42, IntentCode.TransferFull, "reason"));
         }
 
         [Fact]
         public void ServerIntentPayload_ThrowsArgumentNullExceptionWhenReasonIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new ServerIntentPayload("id-123", 42, "xfer-full", null));
+            Assert.Throws<ArgumentNullException>(() =>
+                new ServerIntentPayload("id-123", 42, IntentCode.TransferFull, null));
         }
 
         [Fact]
         public void PutObject_ThrowsArgumentNullExceptionWhenKindIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new PutObject(1, null, "key", default));
+            Assert.Throws<ArgumentNullException>(() => new PutObject(1, null, "key", "{}"));
         }
 
         [Fact]
         public void PutObject_ThrowsArgumentNullExceptionWhenKeyIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new PutObject(1, "flag", null, default));
+            Assert.Throws<ArgumentNullException>(() => new PutObject(1, "flag", null, "{}"));
         }
 
         [Fact]
@@ -795,11 +789,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 Assert.Equal(JsonValueKind.Array, eventsArray.ValueKind);
                 Assert.Equal(5, eventsArray.GetArrayLength());
 
-                var eventsList = new System.Collections.Generic.List<FDv2PollEvent>();
+                var eventsList = new System.Collections.Generic.List<FDv2Event>();
                 foreach (var eventElement in eventsArray.EnumerateArray())
                 {
                     var pollEvent =
-                        JsonSerializer.Deserialize<FDv2PollEvent>(eventElement.GetRawText(), GetJsonOptions());
+                        eventElement.Deserialize<FDv2Event>(GetJsonOptions());
                     eventsList.Add(pollEvent);
                 }
 
@@ -814,7 +808,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 var putFlag = eventsList[1].AsPutObject();
                 Assert.Equal("flag", putFlag.Kind);
                 Assert.Equal("flag-one", putFlag.Key);
-                var flag = JsonSerializer.Deserialize<FeatureFlag>(putFlag.Object.GetRawText(), GetJsonOptions());
+                var flag = JsonSerializer.Deserialize<FeatureFlag>(putFlag.Object, GetJsonOptions());
                 Assert.Equal("flag-one", flag.Key);
                 Assert.True(flag.On);
 
@@ -823,7 +817,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 var putSegment = eventsList[2].AsPutObject();
                 Assert.Equal("segment", putSegment.Kind);
                 Assert.Equal("segment-one", putSegment.Key);
-                var segment = JsonSerializer.Deserialize<Segment>(putSegment.Object.GetRawText(), GetJsonOptions());
+                var segment = JsonSerializer.Deserialize<Segment>(putSegment.Object, GetJsonOptions());
                 Assert.Equal("segment-one", segment.Key);
                 Assert.Equal(2, segment.Included.Count);
 

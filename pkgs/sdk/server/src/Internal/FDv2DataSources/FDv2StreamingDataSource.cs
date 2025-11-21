@@ -79,7 +79,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _dataSourceUpdates.DataStoreStatusProvider.StatusChanged += OnDataStoreStatusChanged;
             }
 
-            // The query parameters will be handles by the event source request
+            // The query parameters will be handled by the event source request
             // modifier. The modifier is called during initial connection and reconnections.
             var streamUri = baseUri.AddPath(StandardEndpoints.FDv2StreamingRequestPath);
             _es = esc(streamUri, context.Http);

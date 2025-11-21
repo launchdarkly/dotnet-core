@@ -11,17 +11,24 @@ using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
+// Unused events on mock for interface.
+#pragma warning disable 67
+
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
     public class FDv2StreamingDataSourceTest : BaseTest
     {
         private static readonly TimeSpan BriefReconnectDelay = TimeSpan.FromMilliseconds(10);
-        private readonly CapturingDataSourceUpdatesWithHeaders _updateSink = new CapturingDataSourceUpdatesWithHeaders();
+
+        private readonly CapturingDataSourceUpdatesWithHeaders
+            _updateSink = new CapturingDataSourceUpdatesWithHeaders();
+
         private readonly MockEventSource _mockEventSource = new MockEventSource();
         private readonly Mock<IDiagnosticStore> _mockDiagnosticStore = new Mock<IDiagnosticStore>();
-        private FDv2Selector _currentSelector = FDv2Selector.Empty;
 
-        public FDv2StreamingDataSourceTest(ITestOutputHelper testOutput) : base(testOutput) { }
+        public FDv2StreamingDataSourceTest(ITestOutputHelper testOutput) : base(testOutput)
+        {
+        }
 
         private FDv2StreamingDataSource MakeDataSource(
             Uri baseUri = null,
@@ -34,53 +41,50 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             var context = BasicContext.WithDiagnosticStore(_mockDiagnosticStore.Object);
 
-            var esc = eventSourceCreator;
-            if (esc == null)
-            {
-                esc = (uri, config) => _mockEventSource;
-            }
+            var esc = eventSourceCreator ?? ((uri, config) => _mockEventSource);
 
             return new FDv2StreamingDataSource(
                 context,
                 _updateSink,
                 baseUri,
                 BriefReconnectDelay,
-                () => _currentSelector,
+                () => FDv2Selector.Empty,
                 esc
             );
         }
 
-        private MessageReceivedEventArgs CreateMessageEvent(string eventType, string jsonData)
+        private static MessageReceivedEventArgs CreateMessageEvent(string eventType, string jsonData)
         {
             return new MessageReceivedEventArgs(new MessageEvent(eventType, jsonData, null));
         }
 
-        private string CreateServerIntentJson(string intentCode, string payloadId = "test-payload", int target = 1)
+        private static string CreateServerIntentJson(string intentCode, string payloadId, int target)
         {
-            return $@"{{""payloads"":[{{""id"":""{payloadId}"",""target"":{target},""intentCode"":""{intentCode}"",""reason"":""test reason""}}]}}";
+            return
+                $@"{{""payloads"":[{{""id"":""{payloadId}"",""target"":{target},""intentCode"":""{intentCode}"",""reason"":""test reason""}}]}}";
         }
 
-        private string CreatePutObjectJson(string kind, string key, int version, string objectJson = "{}")
+        private static string CreatePutObjectJson(string kind, string key, int version, string objectJson = "{}")
         {
             return $@"{{""version"":{version},""kind"":""{kind}"",""key"":""{key}"",""object"":{objectJson}}}";
         }
 
-        private string CreateDeleteObjectJson(string kind, string key, int version)
+        private static string CreateDeleteObjectJson(string kind, string key, int version)
         {
             return $@"{{""version"":{version},""kind"":""{kind}"",""key"":""{key}""}}";
         }
 
-        private string CreatePayloadTransferredJson(string state, int version)
+        private static string CreatePayloadTransferredJson(string state, int version)
         {
             return $@"{{""state"":""{state}"",""version"":{version}}}";
         }
 
-        private string CreateErrorJson(string id, string reason)
+        private static string CreateErrorJson(string id, string reason)
         {
             return $@"{{""payloadId"":""{id}"",""reason"":""{reason}""}}";
         }
 
-        private string CreateGoodbyeJson(string reason)
+        private static string CreateGoodbyeJson(string reason)
         {
             return $@"{{""reason"":""{reason}""}}";
         }
@@ -106,7 +110,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
-                    CreateServerIntentJson("none")));
+                    CreateServerIntentJson("none", "test-payload", 1)));
 
                 var result = await startTask;
                 Assert.True(result);
@@ -125,15 +129,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-full", "p1", 355)));
 
-                var flag1Json = @"{""key"":""should-crash"",""on"":true,""version"":81}";
+                const string flag1Json = @"{""key"":""should-crash"",""on"":true,""version"":81}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "should-crash", 81, flag1Json)));
 
-                var flag2Json = @"{""key"":""verbose-response"",""on"":true,""version"":334}";
+                const string flag2Json = @"{""key"":""verbose-response"",""on"":true,""version"":334}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "verbose-response", 334, flag2Json)));
 
-                var segmentJson = @"{""key"":""always-gift-card"",""version"":334}";
+                const string segmentJson = @"{""key"":""always-gift-card"",""version"":334}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("segment", "always-gift-card", 334, segmentJson)));
 
@@ -213,7 +217,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-changes", "p1", 1)));
 
-                var flagJson = @"{""key"":""new-flag"",""on"":true,""version"":10}";
+                const string flagJson = @"{""key"":""new-flag"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "new-flag", 10, flagJson)));
 
@@ -268,14 +272,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-changes", "p1", 1)));
 
-                var flag1Json = @"{""key"":""flag1"",""on"":true,""version"":15}";
+                const string flag1Json = @"{""key"":""flag1"",""on"":true,""version"":15}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag1", 15, flag1Json)));
 
                 _mockEventSource.TriggerMessage(CreateMessageEvent("delete-object",
                     CreateDeleteObjectJson("flag", "flag2", 16)));
 
-                var segmentJson = @"{""key"":""segment1"",""version"":7}";
+                const string segmentJson = @"{""key"":""segment1"",""version"":7}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("segment", "segment1", 7, segmentJson)));
 
@@ -295,8 +299,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 Assert.Contains(upserts, u => u.Key == "flag1" && u.Kind == DataModel.Features && u.Item.Item != null);
                 Assert.Contains(upserts, u => u.Key == "flag2" && u.Kind == DataModel.Features && u.Item.Item == null);
-                Assert.Contains(upserts, u => u.Key == "segment1" && u.Kind == DataModel.Segments && u.Item.Item != null);
-                Assert.Contains(upserts, u => u.Key == "segment2" && u.Kind == DataModel.Segments && u.Item.Item == null);
+                Assert.Contains(upserts,
+                    u => u.Key == "segment1" && u.Kind == DataModel.Segments && u.Item.Item != null);
+                Assert.Contains(upserts,
+                    u => u.Key == "segment2" && u.Kind == DataModel.Segments && u.Item.Item == null);
             }
         }
 
@@ -316,7 +322,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 await startTask;
                 _updateSink.Inits.ExpectValue();
 
-                var flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
+                const string flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag1", 10, flagJson)));
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
@@ -348,7 +354,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-full", "p1", 1)));
 
-                var flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
+                const string flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag1", 10, flagJson)));
 
@@ -459,7 +465,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-changes", "p1", 1)));
 
-                var flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
+                const string flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag1", 10, flagJson)));
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
@@ -489,6 +495,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.StoreError, status.LastError.Value.Kind);
             }
         }
@@ -504,7 +511,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
-                    CreateServerIntentJson("none")));
+                    CreateServerIntentJson("none", "test-payload", 1)));
 
                 _updateSink.MockDataStoreStatusProvider.FireStatusChanged(
                     new DataStoreStatus { Available = false, RefreshNeeded = false });
@@ -527,7 +534,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
-                    CreateServerIntentJson("none")));
+                    CreateServerIntentJson("none", "test-payload", 1)));
 
                 _updateSink.MockDataStoreStatusProvider.FireStatusChanged(
                     new DataStoreStatus { Available = false, RefreshNeeded = false });
@@ -550,6 +557,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
                 Assert.Equal(503, status.LastError.Value.StatusCode);
 
@@ -569,6 +577,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
                 Assert.Equal(403, status.LastError.Value.StatusCode);
 
@@ -592,6 +601,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.NetworkError, status.LastError.Value.Kind);
 
                 AssertLogMessageRegex(true, LogLevel.Warn, ".*EventSource error.*");
@@ -609,7 +619,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-full", "p1", 1)));
 
-                var flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
+                const string flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag1", 10, flagJson)));
 
@@ -629,7 +639,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public void StreamInitDiagnosticRecordedSuccessOnOpen()
         {
             var receivedFailed = new EventSink<bool>();
-            _mockDiagnosticStore.Setup(m => m.AddStreamInit(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
+            _mockDiagnosticStore
+                .Setup(m => m.AddStreamInit(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
                 .Callback((DateTime timestamp, TimeSpan duration, bool failed) => receivedFailed.Enqueue(failed));
 
             using (var dataSource = MakeDataSource())
@@ -645,7 +656,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public void StreamInitDiagnosticRecordedFailureOnHttpError()
         {
             var receivedFailed = new EventSink<bool>();
-            _mockDiagnosticStore.Setup(m => m.AddStreamInit(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
+            _mockDiagnosticStore
+                .Setup(m => m.AddStreamInit(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
                 .Callback((DateTime timestamp, TimeSpan duration, bool failed) => receivedFailed.Enqueue(failed));
 
             using (var dataSource = MakeDataSource())
@@ -702,7 +714,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-changes", "p1", 1)));
 
-                var flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
+                const string flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag1", 10, flagJson)));
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
@@ -754,7 +766,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-changes", "p1", 2)));
-                var flag2Json = @"{""key"":""flag2"",""on"":false,""version"":11}";
+                const string flag2Json = @"{""key"":""flag2"",""on"":false,""version"":11}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag2", 11, flag2Json)));
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
@@ -779,11 +791,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
                     CreateServerIntentJson("xfer-changes", "p1", 1)));
 
-                var flag1Json = @"{""key"":""flag1"",""on"":true,""version"":10}";
+                const string flag1Json = @"{""key"":""flag1"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag1", 10, flag1Json)));
 
-                var flag2Json = @"{""key"":""flag2"",""on"":false,""version"":11}";
+                const string flag2Json = @"{""key"":""flag2"",""on"":false,""version"":11}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
                     CreatePutObjectJson("flag", "flag2", 11, flag2Json)));
 
@@ -795,6 +807,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.StoreError, status.LastError.Value.Kind);
             }
         }
@@ -840,11 +853,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             public void TriggerError(Exception exception)
             {
                 Error?.Invoke(this, new ExceptionEventArgs(exception));
-            }
-
-            public void TriggerClosed()
-            {
-                Closed?.Invoke(this, new StateChangedEventArgs(ReadyState.Closed));
             }
         }
     }

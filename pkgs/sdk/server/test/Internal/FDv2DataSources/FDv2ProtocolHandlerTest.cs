@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Immutable;
-using System.Text;
 using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
 using LaunchDarkly.Sdk.Server.Internal.Model;
@@ -23,8 +21,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private static FDv2Event CreatePutObjectEvent(string kind, string key, int version, string jsonStr = "{}")
         {
-            var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonStr));
-            var putObj = new PutObject(version, kind, key, JsonElement.ParseValue(ref reader));
+            var putObj = new PutObject(version, kind, key, JsonSerializer.Deserialize<JsonElement>(jsonStr));
             var json = JsonSerializer.Serialize(putObj, GetJsonOptions());
             var data = JsonDocument.Parse(json).RootElement;
             return new FDv2Event(FDv2EventTypes.PutObject, data);

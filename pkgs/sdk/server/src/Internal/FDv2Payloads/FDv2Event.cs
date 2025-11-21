@@ -52,12 +52,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             JsonData = jsonData;
         }
 
-        public FDv2Event(string eventType, string jsonString)
-        {
-            EventType = eventType;
-            JsonData = JsonSerializer.Deserialize<JsonElement>(jsonString);
-        }
-
         public static bool TryDeserializeFromJsonString(string eventType, string jsonString, out FDv2Event evt, out string error)
         {
             try

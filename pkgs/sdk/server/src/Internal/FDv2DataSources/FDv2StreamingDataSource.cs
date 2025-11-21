@@ -35,6 +35,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private DateTime _esStarted;
         private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
         private readonly FDv2ProtocolHandler _protocolHandler = new FDv2ProtocolHandler();
+        private readonly object _protocolLock = new object();
 
         private readonly IDiagnosticStore _diagnosticStore;
         private readonly IDataSourceUpdates _dataSourceUpdates;
@@ -197,9 +198,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             var data = e.Message.Data != null ? JsonDocument.Parse(e.Message.Data) : null;
             var evt = new FDv2Event(e.Message.Name, data?.RootElement);
-            var res = _protocolHandler.HandleEvent(evt);
-            
-            switch (res)
+            IFDv2ProtocolAction action;
+            lock (_protocolLock)
+            {
+                action = _protocolHandler.HandleEvent(evt);
+            }
+
+            switch (action)
             {
                 case FDv2ActionChangeset changeAction:
                 {
@@ -320,6 +325,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private void OnOpen(object sender, StateChangedEventArgs e)
         {
+            lock (_protocolLock)
+            {
+                // Reset the protocol handler whenever the connection opens. We need to discard any partial state
+                // that may have accumulated.
+                _protocolHandler.Reset();
+            }
+
             _headers = e.Headers;
             _log.Debug("EventSource Opened");
             RecordStreamInit(false);

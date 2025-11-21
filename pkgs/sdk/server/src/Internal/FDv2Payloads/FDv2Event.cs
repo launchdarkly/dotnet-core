@@ -203,7 +203,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         private const string AttributeData = "data";
 
         internal static readonly FDv2PollEventConverter Instance = new FDv2PollEventConverter();
-        private static readonly string[] RequiredProperties = { AttributeEvent, AttributeData };
+        private static readonly string[] RequiredProperties = { AttributeEvent };
 
         public override FDv2Event Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -232,11 +232,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
 
         public override void Write(Utf8JsonWriter writer, FDv2Event value, JsonSerializerOptions options)
         {
-            if (!value.JsonData.HasValue)
-            {
-                throw new JsonException($"Failed to write {value.EventType} to event.");
-            }
-
             writer.WriteStartObject();
             if (value.EventType != null)
             {
@@ -244,7 +239,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             }
 
             writer.WritePropertyName(AttributeData);
-            value.JsonData.Value.WriteTo(writer);
+            // The event doesn't have to have data.
+            value.JsonData?.WriteTo(writer);
+
             writer.WriteEndObject();
         }
     }

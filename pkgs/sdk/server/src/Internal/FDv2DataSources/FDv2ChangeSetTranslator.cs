@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
@@ -9,12 +7,12 @@ using LaunchDarkly.Sdk.Server.Subsystems;
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
     /// <summary>
-    /// Translates FDv2 changesets into the format expected by the data store.
+    /// Translates FDv2 changesets into FDv1 format.
     /// </summary>
     internal static class FDv2ChangeSetTranslator
     {
         /// <summary>
-        /// Translates an FDv2 changeset with Full or None type into PutData for initializing the data store.
+        /// Translates an FDv2 changeset with Full or None type into PutData.
         /// </summary>
         /// <param name="changeset">The changeset to translate.</param>
         /// <param name="log">Logger for diagnostic messages.</param>
@@ -24,8 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var dataBuilder = System.Collections.Immutable.ImmutableList
                 .CreateBuilder<KeyValuePair<DataStoreTypes.DataKind,
                     DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor>>>();
-
-            // Group changes by kind (flags vs segments)
+            
             var changesByKind = changeset.Changes.GroupBy(c => c.Kind);
 
             foreach (var kindGroup in changesByKind)
@@ -63,7 +60,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         /// <summary>
-        /// Translates an FDv2 changeset with Partial type into a list of PatchData for incremental updates.
+        /// Translates an FDv2 changeset with Partial type into a list of PatchData.
         /// </summary>
         /// <param name="changeset">The changeset to translate.</param>
         /// <param name="log">Logger for diagnostic messages.</param>
@@ -84,26 +81,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 DataStoreTypes.ItemDescriptor item;
 
-                if (change.Type == FDv2ChangeType.Put)
+                switch (change.Type)
                 {
-                    if (change.Object == null)
-                    {
+                    case FDv2ChangeType.Put when change.Object == null:
                         log.Warn($"Put operation for {change.Kind}/{change.Key} missing object data, skipping");
                         continue;
-                    }
-
                     // Deserialize the object using the DataKind's deserializer
-                    item = dataKind.Deserialize(change.Object);
-                }
-                else if (change.Type == FDv2ChangeType.Delete)
-                {
-                    // For deletes, create a deleted ItemDescriptor with the version
-                    item = DataStoreTypes.ItemDescriptor.Deleted(change.Version);
-                }
-                else
-                {
-                    log.Warn($"Unknown change type for {change.Kind}/{change.Key}, skipping");
-                    continue;
+                    case FDv2ChangeType.Put:
+                        item = dataKind.Deserialize(change.Object);
+                        break;
+                    case FDv2ChangeType.Delete:
+                        // For deletes, create a deleted ItemDescriptor with the version
+                        item = DataStoreTypes.ItemDescriptor.Deleted(change.Version);
+                        break;
+                    default:
+                        log.Warn($"Unknown change type for {change.Kind}/{change.Key}, skipping");
+                        continue;
                 }
 
                 patches.Add(new StreamProcessorEvents.PatchData(dataKind, change.Key, item));
@@ -113,23 +106,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         /// <summary>
-        /// Maps an FDv2 kind string ("flag" or "segment") to the corresponding DataKind.
+        /// Maps an FDv2 object kind to the corresponding DataKind.
         /// </summary>
         /// <param name="kind">The kind string from the FDv2 change.</param>
         /// <returns>The corresponding DataKind, or null if the kind is not recognized.</returns>
         private static DataStoreTypes.DataKind GetDataKind(string kind)
         {
-            if (kind == "flag")
+            switch (kind)
             {
-                return DataModel.Features;
+                case "flag":
+                    return DataModel.Features;
+                case "segment":
+                    return DataModel.Segments;
+                default:
+                    return null;
             }
-
-            if (kind == "segment")
-            {
-                return DataModel.Segments;
-            }
-
-            return null;
         }
     }
 }

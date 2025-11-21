@@ -50,13 +50,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
         /// <param name="kind">The kind of object being PUT ("flag" or "segment").</param>
         /// <param name="key">The identifier of the object.</param>
         /// <param name="obj">The raw JSON string representing the object being PUT.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="kind"/> or <paramref name="key"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="kind"/>, <paramref name="key"/>, or <paramref name="obj"/> is null.
+        /// </exception>
         public PutObject(int version, string kind, string key, string obj)
         {
             Version = version;
             Kind = kind ?? throw new ArgumentNullException(nameof(kind));
             Key = key ?? throw new ArgumentNullException(nameof(key));
-            Object = obj;
+            Object = obj ?? throw new ArgumentNullException(nameof(obj));
         }
     }
 

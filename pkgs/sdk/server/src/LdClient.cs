@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Hooks;
@@ -312,6 +314,10 @@ namespace LaunchDarkly.Sdk.Server
             Evaluate(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
+        public ValueTask<EvaluationDetail<bool>> BoolVariationDetailAsync(string key, Context context, bool defaultValue, CancellationToken cancellationToken = default) =>
+            EvaluateAsync(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons, cancellationToken);
+
+        /// <inheritdoc/>
         public EvaluationDetail<int> IntVariationDetail(string key, Context context, int defaultValue) =>
             Evaluate(Method.IntVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Int, true, EventFactory.DefaultWithReasons);
 
@@ -450,6 +456,16 @@ namespace LaunchDarkly.Sdk.Server
                 () => EvaluationAndFlag(key, context, defaultValue, converter, checkType, eventFactory));
         }
 
+        private async ValueTask<(EvaluationDetail<T>, FeatureFlag)> EvaluateWithHooksAsync<T>(string method, string key, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
+          bool checkType, EventFactory eventFactory,CancellationToken cancellationToken = default)
+        {
+            var evalSeriesContext = new EvaluationSeriesContext(key, context, defaultValue, method);
+            return await _hookExecutor.EvaluationSeriesAsync(
+                evalSeriesContext,
+                converter,
+                () => EvaluationAndFlagAsync(key, context, defaultValue, converter, checkType, eventFactory,cancellationToken),cancellationToken).ConfigureAwait(false);
+        }
+
         private (EvaluationDetail<T>, FeatureFlag) EvaluationAndFlag<T>(string featureKey, Context context,
             LdValue defaultValue, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
@@ -548,10 +564,115 @@ namespace LaunchDarkly.Sdk.Server
             }
         }
 
+        private async ValueTask<(EvaluationDetail<T>, FeatureFlag)> EvaluationAndFlagAsync<T>(string featureKey, Context context,
+           LdValue defaultValue, LdValue.Converter<T> converter,
+           bool checkType, EventFactory eventFactory,CancellationToken cancellationToken = default)
+        {
+            T defaultValueOfType = converter.ToType(defaultValue);
+            if (!Initialized)
+            {
+                // TODO should this also be async?
+                if (_dataStore.Initialized())
+                {
+                    _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store");
+                }
+                else
+                {
+                    _evalLog.Warn("Flag evaluation before client initialized; data store unavailable, returning default value");
+                    return (new EvaluationDetail<T>(defaultValueOfType, null,
+                        EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady)), null);
+                }
+            }
+
+            if (!context.Valid)
+            {
+                _evalLog.Warn("Invalid evaluation context when evaluating flag \"{0}\" ({1}); returning default value", featureKey,
+                    context.Error);
+                return (new EvaluationDetail<T>(defaultValueOfType, null,
+                    EvaluationReason.ErrorReason(EvaluationErrorKind.UserNotSpecified)), null);
+            }
+
+            FeatureFlag featureFlag = null;
+            try
+            {
+                featureFlag = await GetFlagAsync(featureKey, cancellationToken).ConfigureAwait(false);
+                if (featureFlag == null)
+                {
+                    _evalLog.Info("Unknown feature flag \"{0}\"; returning default value",
+                        featureKey);
+                    _eventProcessor.RecordEvaluationEvent(eventFactory.NewUnknownFlagEvaluationEvent(
+                        featureKey, context, defaultValue, EvaluationErrorKind.FlagNotFound));
+                    return (new EvaluationDetail<T>(defaultValueOfType, null,
+                        EvaluationReason.ErrorReason(EvaluationErrorKind.FlagNotFound)), null);
+                }
+
+                EvaluatorTypes.EvalResult evalResult = _evaluator.Evaluate(featureFlag, context);
+                if (!IsOffline())
+                {
+                    foreach (var prereqEvent in evalResult.PrerequisiteEvals)
+                    {
+                        _eventProcessor.RecordEvaluationEvent(eventFactory.NewPrerequisiteEvaluationEvent(
+                            prereqEvent.PrerequisiteFlag, context, prereqEvent.Result, prereqEvent.FlagKey));
+                    }
+                }
+                var evalDetail = evalResult.Result;
+                EvaluationDetail<T> returnDetail;
+                if (evalDetail.VariationIndex == null)
+                {
+                    returnDetail = new EvaluationDetail<T>(defaultValueOfType, null, evalDetail.Reason);
+                    evalDetail = new EvaluationDetail<LdValue>(defaultValue, null, evalDetail.Reason);
+                }
+                else
+                {
+                    if (checkType && !defaultValue.IsNull && evalDetail.Value.Type != defaultValue.Type)
+                    {
+                        _evalLog.Error("Expected type {0} but got {1} when evaluating feature flag \"{2}\"; returning default value",
+                            defaultValue.Type,
+                            evalDetail.Value.Type,
+                            featureKey);
+
+                        _eventProcessor.RecordEvaluationEvent(eventFactory.NewDefaultValueEvaluationEvent(
+                            featureFlag, context, defaultValue, EvaluationErrorKind.WrongType));
+                        return (new EvaluationDetail<T>(defaultValueOfType, null,
+                            EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType)), featureFlag);
+                    }
+                    returnDetail = new EvaluationDetail<T>(converter.ToType(evalDetail.Value),
+                        evalDetail.VariationIndex, evalDetail.Reason);
+                }
+                _eventProcessor.RecordEvaluationEvent(eventFactory.NewEvaluationEvent(
+                    featureFlag, context, evalDetail, defaultValue));
+                return (returnDetail, featureFlag);
+            }
+            catch (Exception e)
+            {
+                LogHelpers.LogException(_evalLog,
+                    string.Format("Exception when evaluating feature flag \"{0}\"", featureKey),
+                    e);
+                var reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception);
+                if (featureFlag == null)
+                {
+                    _eventProcessor.RecordEvaluationEvent(eventFactory.NewUnknownFlagEvaluationEvent(
+                        featureKey, context, defaultValue, EvaluationErrorKind.Exception));
+                }
+                else
+                {
+                    _eventProcessor.RecordEvaluationEvent(eventFactory.NewEvaluationEvent(
+                        featureFlag, context, new EvaluationDetail<LdValue>(defaultValue, null, reason), defaultValue));
+                }
+                return (new EvaluationDetail<T>(defaultValueOfType, null, reason), null);
+            }
+        }
+
         private EvaluationDetail<T> Evaluate<T>(string method, string featureKey, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
         {
             return EvaluateWithHooks(method, featureKey, context, defaultValue, converter, checkType, eventFactory).Item1;
+        }
+
+        private async ValueTask<EvaluationDetail<T>> EvaluateAsync<T>(string method, string featureKey, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
+           bool checkType, EventFactory eventFactory,CancellationToken cancellationToken = default)
+        {
+            return (await EvaluateWithHooksAsync(method, featureKey, context, defaultValue, converter, checkType, eventFactory,cancellationToken).ConfigureAwait(false)).Item1;
         }
 
         /// <inheritdoc/>
@@ -722,6 +843,16 @@ namespace LaunchDarkly.Sdk.Server
         private FeatureFlag GetFlag(string key)
         {
             var maybeItem = _dataStore.Get(DataModel.Features, key);
+            if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
+            {
+                return f;
+            }
+            return null;
+        }
+
+        private async ValueTask<FeatureFlag> GetFlagAsync(string key, CancellationToken cancellationToken = default)
+        {
+            var maybeItem = await _dataStore.GetAsync(DataModel.Features, key,cancellationToken).ConfigureAwait(false);
             if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
             {
                 return f;

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using LaunchDarkly.Cache;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
@@ -185,6 +187,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
         }
 
+        public async ValueTask<ItemDescriptor?> GetAsync(DataKind kind, string key, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var ret = _itemCache is null ? await GetAndDeserializeItemAsync(kind, key, cancellationToken).ConfigureAwait(false) :
+                    _itemCache.Get(new CacheKey(kind, key));
+                ProcessError(null);
+                return ret;
+            }
+            catch (Exception e)
+            {
+                ProcessError(e);
+                throw;
+            }
+        }
+
         public KeyedItems<ItemDescriptor> GetAll(DataKind kind)
         {
             try
@@ -319,7 +337,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
             return Deserialize(kind, maybeSerializedItem.Value);
         }
-        
+
+        private async ValueTask<ItemDescriptor?> GetAndDeserializeItemAsync(DataKind kind, string key, CancellationToken cancellationToken = default)
+        {
+            var maybeSerializedItem = await _core.GetAsync(kind, key, cancellationToken).ConfigureAwait(false);
+            if (!maybeSerializedItem.HasValue)
+            {
+                return null;
+            }
+            return Deserialize(kind, maybeSerializedItem.Value);
+        }
+
         private ImmutableDictionary<string, ItemDescriptor> GetAllAndDeserialize(DataKind kind)
         {
             return _core.GetAll(kind).Items.ToImmutableDictionary(

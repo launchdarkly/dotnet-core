@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Internal.Hooks.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.Model;
@@ -13,6 +15,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.Hooks.Executor
     {
         public (EvaluationDetail<T>, FeatureFlag) EvaluationSeries<T>(EvaluationSeriesContext context,
             LdValue.Converter<T> converter, Func<(EvaluationDetail<T>, FeatureFlag)> evaluate) => evaluate();
+
+        public ValueTask<(EvaluationDetail<T>, FeatureFlag)> EvaluationSeriesAsync<T>(EvaluationSeriesContext context,
+            LdValue.Converter<T> converter, Func<ValueTask<(EvaluationDetail<T>, FeatureFlag)>> evaluateAsync,CancellationToken cancellationToken = default) => evaluateAsync();
 
         public void Dispose()
         {

@@ -33,7 +33,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         {
             return WaitSafely(() => _coreAsync.GetAsync(kind, key));
         }
-        
+
+        public ValueTask<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default)
+        {
+            return _coreAsync.GetAsync(kind, key,cancellationToken);
+        }
+
         public KeyedItems<SerializedItemDescriptor> GetAll(DataKind kind)
         {
             return WaitSafely(() => _coreAsync.GetAllAsync(kind));
@@ -79,6 +84,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         {
             return _taskFactory.StartNew(taskFn)
                 .Unwrap()
+                .GetAwaiter()
+                .GetResult();
+        }
+
+        private T WaitSafely<T>(Func<ValueTask<T>> taskFn)
+        {
+            return _taskFactory.StartNew(taskFn)
+                .GetAwaiter()
+                .GetResult()
                 .GetAwaiter()
                 .GetResult();
         }

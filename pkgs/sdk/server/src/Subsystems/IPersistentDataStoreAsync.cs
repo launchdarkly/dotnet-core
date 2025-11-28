@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
@@ -14,7 +15,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
     /// implementations that use a task-based asynchronous pattern.
     /// </remarks>
     public interface IPersistentDataStoreAsync : IDisposable
-    {
+    {        
         /// <summary>
         /// Equivalent to <see cref="IPersistentDataStore.Init(FullDataSet{SerializedItemDescriptor})"/>.
         /// </summary>
@@ -27,9 +28,10 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// </summary>
         /// <param name="kind">specifies which collection to use</param>
         /// <param name="key">the unique key of the item within that collection</param>
+        /// <param name="cancellationToken">optional cancellation token </param>
         /// <returns>a versioned item that contains the stored data (or placeholder for
         /// deleted data); null if the key is unknown</returns>
-        Task<SerializedItemDescriptor?> GetAsync(DataKind kind, string key);
+        ValueTask<SerializedItemDescriptor?> GetAsync(DataKind kind, string key,CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Equivalent to <see cref="IPersistentDataStore.GetAll(DataKind)"/>.

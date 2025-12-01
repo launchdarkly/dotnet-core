@@ -135,8 +135,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             Assert.Equal(2, changesetAction.Changeset.Changes.Count);
             Assert.Equal("flag-123", changesetAction.Changeset.Changes[0].Key);
             Assert.Equal("flag-abc", changesetAction.Changeset.Changes[1].Key);
-            Assert.Equal("(p:payload-123:52)", changesetAction.Changeset.FDv2Selector.State);
-            Assert.Equal(52, changesetAction.Changeset.FDv2Selector.Version);
+            Assert.Equal("(p:payload-123:52)", changesetAction.Changeset.Selector.State);
+            Assert.Equal(52, changesetAction.Changeset.Selector.Version);
         }
 
         /// <summary>
@@ -707,9 +707,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:test-payload-id:42)", 42));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.False(changeset.FDv2Selector.IsEmpty);
-            Assert.Equal("(p:test-payload-id:42)", changeset.FDv2Selector.State);
-            Assert.Equal(42, changeset.FDv2Selector.Version);
+            Assert.False(changeset.Selector.IsEmpty);
+            Assert.Equal("(p:test-payload-id:42)", changeset.Selector.State);
+            Assert.Equal(42, changeset.Selector.Version);
         }
 
         /// <summary>
@@ -723,7 +723,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreateServerIntentEvent(IntentCode.None, "p1", 1, "up-to-date"));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.True(changeset.FDv2Selector.IsEmpty);
+            Assert.True(changeset.Selector.IsEmpty);
         }
 
         #endregion

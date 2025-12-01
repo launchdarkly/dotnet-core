@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
+using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
@@ -277,7 +278,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
 
             var changeset = new FDv2ChangeSet(changeSetType, _changes.ToImmutableList(),
-                FDv2Selector.Make(payload.Version, payload.State));
+                Selector.Make(payload.Version, payload.State));
             _state = FDv2ProtocolState.Changes;
             _changes.Clear();
             return new FDv2ActionChangeset(changeset);

@@ -18,7 +18,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
     internal sealed class FDv2StreamingDataSource : IDataSource
     {
-        internal delegate FDv2Selector SelectorSource();
+        internal delegate Selector SelectorSource();
 
         internal delegate IEventSource EventSourceCreator(Uri streamUri,
             HttpConfiguration httpConfig);

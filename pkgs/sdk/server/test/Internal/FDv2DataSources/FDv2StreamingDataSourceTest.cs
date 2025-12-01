@@ -6,6 +6,7 @@ using LaunchDarkly.EventSource;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal.Events;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers;
 using Moq;
 using Xunit;
@@ -48,7 +49,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _updateSink,
                 baseUri,
                 BriefReconnectDelay,
-                () => FDv2Selector.Empty,
+                () => Selector.Empty,
                 esc
             );
         }

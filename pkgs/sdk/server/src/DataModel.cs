@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.Model;
-
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server
@@ -25,7 +24,8 @@ namespace LaunchDarkly.Sdk.Server
         /// Applications should not need to reference this object directly. It is public so that custom integrations
         /// and test code can serialize or deserialize data or inject it into a data store.
         /// </remarks>
-        public static DataKind Features = new DataKind("features", SerializeFlag, DeserializeFlag);
+        public static DataKind Features =
+            new DataKind("features", SerializeFlag, DeserializeFlag, DeserializeFlagFromJsonElement);
 
         /// <summary>
         /// The <see cref="DataKind"/> instance that describes user segment data.
@@ -34,7 +34,8 @@ namespace LaunchDarkly.Sdk.Server
         /// Applications should not need to reference this object directly. It is public so that custom integrations
         /// and test code can serialize or deserialize data or inject it into a data store.
         /// </remarks>
-        public static DataKind Segments = new DataKind("segments", SerializeSegment, DeserializeSegment);
+        public static DataKind Segments = new DataKind("segments", SerializeSegment, DeserializeSegment,
+            DeserializeSegmentFromJsonElement);
 
         /// <summary>
         /// An enumeration of all supported <see cref="DataKind"/>s.
@@ -59,8 +60,13 @@ namespace LaunchDarkly.Sdk.Server
         private static ItemDescriptor DeserializeFlag(ref Utf8JsonReader r)
         {
             var flag = FeatureFlagSerialization.Instance.Read(ref r, null, null) as FeatureFlag;
-            return flag.Deleted ? ItemDescriptor.Deleted(flag.Version) :
-                new ItemDescriptor(flag.Version, flag);
+            return flag.Deleted ? ItemDescriptor.Deleted(flag.Version) : new ItemDescriptor(flag.Version, flag);
+        }
+
+        private static ItemDescriptor DeserializeFlagFromJsonElement(JsonElement element)
+        {
+            var flag = element.Deserialize<FeatureFlag>();
+            return flag.Deleted ? ItemDescriptor.Deleted(flag.Version) : new ItemDescriptor(flag.Version, flag);
         }
 
         private static void SerializeSegment(object o, Utf8JsonWriter w) =>
@@ -69,8 +75,15 @@ namespace LaunchDarkly.Sdk.Server
         private static ItemDescriptor DeserializeSegment(ref Utf8JsonReader r)
         {
             var segment = SegmentSerialization.Instance.Read(ref r, null, null) as Segment;
-            return segment.Deleted ? ItemDescriptor.Deleted(segment.Version) :
-                new ItemDescriptor(segment.Version, segment);
+            return segment.Deleted
+                ? ItemDescriptor.Deleted(segment.Version)
+                : new ItemDescriptor(segment.Version, segment);
+        }
+
+        private static ItemDescriptor DeserializeSegmentFromJsonElement(JsonElement element)
+        {
+            var flag = element.Deserialize<Segment>();
+            return flag.Deleted ? ItemDescriptor.Deleted(flag.Version) : new ItemDescriptor(flag.Version, flag);
         }
     }
 }

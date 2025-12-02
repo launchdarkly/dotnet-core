@@ -20,6 +20,10 @@ namespace LaunchDarkly.Sdk.Server.Internal
 
         internal const string PollingRequestPath = "/sdk/latest-all";
 
+        internal const string FDv2StreamingRequestPath = "/sdk/stream";
+
+        internal const string FDv2PollingRequestPath = "/sdk/poll";
+
         internal const string AnalyticsEventsPostRequestPath = "/bulk";
         internal const string DiagnosticEventsPostRequestPath = "/diagnostic";
 

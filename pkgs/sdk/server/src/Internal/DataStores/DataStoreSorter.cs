@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal.Model;
@@ -30,6 +30,43 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 dataOut.Add(kind, new KeyedItems<ItemDescriptor>(SortCollection(kind, entry.Value.Items)));
             }
             return new FullDataSet<ItemDescriptor>(dataOut);
+        }
+        
+        /// <summary>
+        /// Sort the data in the changeset in dependency order. If there are any duplicates, then the highest version
+        /// of the duplicate item will be retained.
+        /// </summary>
+        /// <param name="inSet">the changeset to sort</param>
+        /// <returns>a sorted copy of the changeset</returns>
+        public static ChangeSet<ItemDescriptor> SortChangeset(ChangeSet<ItemDescriptor> inSet)
+        {
+            var dataOut = new SortedDictionary<DataKind, KeyedItems<ItemDescriptor>>(
+                PriorityComparer.Instance);
+
+            foreach (var kindEntry in inSet.Data)
+            {
+                var kind = kindEntry.Key;
+                var items = kindEntry.Value.Items;
+
+                // Collapse duplicates by keeping only the latest version of each item
+                var latestByKey = new Dictionary<string, ItemDescriptor>();
+                foreach (var item in items)
+                {
+                    var key = item.Key;
+                    var descriptor = item.Value;
+
+                    if (!latestByKey.TryGetValue(key, out var existing) || descriptor.Version > existing.Version)
+                    {
+                        latestByKey[key] = descriptor;
+                    }
+                }
+
+                // Sort the collapsed items
+                var sortedItems = SortCollection(kind, latestByKey);
+                dataOut.Add(kind, new KeyedItems<ItemDescriptor>(sortedItems));
+            }
+
+            return new ChangeSet<ItemDescriptor>(inSet.Type, inSet.Selector, dataOut, inSet.EnvironmentId);
         }
 
         private static IEnumerable<KeyValuePair<string, ItemDescriptor>> SortCollection(DataKind kind,

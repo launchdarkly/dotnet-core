@@ -23,7 +23,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// This component is also responsible for receiving updates to the data source status, broadcasting
     /// them to any status listeners, and tracking the length of any period of sustained failure.
     /// </remarks>
-    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdates, IDataSourceUpdatesHeaders
+    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdates, IDataSourceUpdatesHeaders, ITransactionalDataSourceUpdates
     {
         #region Private fields
 
@@ -349,5 +349,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
         #endregion
 
+        #region ITransactionalDataSourceUpdates methods
+
+        public void Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            if (_store is ITransactionalDataStore transactionalDataStore)
+            {
+                transactionalDataStore.Apply(changeSet);
+            }
+            else
+            {
+                // TODO: Legacy conversion.
+            }
+        }
+
+        #endregion
     }
 }

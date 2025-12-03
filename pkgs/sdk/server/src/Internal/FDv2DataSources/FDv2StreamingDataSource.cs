@@ -31,7 +31,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private readonly IEventSource _es;
         private readonly TaskCompletionSource<bool> _initTask = new TaskCompletionSource<bool>();
-        private IList<KeyValuePair<string, IEnumerable<string>>> _headers;
         private DateTime _esStarted;
         private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
         private readonly FDv2ProtocolHandler _protocolHandler = new FDv2ProtocolHandler();
@@ -45,6 +44,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private readonly bool _storeStatusMonitoringEnabled;
 
         private readonly SelectorSource _selectorSource;
+
+        private string _environmentId;
 
         /// <summary>
         /// When the store enters a failed state, and we don't have "data source monitoring", we want to log
@@ -129,12 +130,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             if (!(_dataSourceUpdates is ITransactionalDataSourceUpdates transactionalDataSourceUpdates))
                 throw new InvalidOperationException("Cannot apply updates to non-transactional data source");
 
-            // TODO: May consider not doing this every time.
-            var environmentId = _headers?.FirstOrDefault((item) =>
-                    item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
-                ?.FirstOrDefault();
             return transactionalDataSourceUpdates.Apply(
-                FDv2ChangeSetTranslator.ToChangeSet(changeSet, _log, environmentId));
+                FDv2ChangeSetTranslator.ToChangeSet(changeSet, _log, _environmentId));
         }
 
         private void HandleJsonError(string message)
@@ -319,7 +316,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _protocolHandler.Reset();
             }
 
-            _headers = e.Headers?.ToList();
+            _environmentId = e.Headers?.FirstOrDefault((item) =>
+                    item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
+                ?.FirstOrDefault();
             _log.Debug("EventSource Opened");
             RecordStreamInit(false);
         }

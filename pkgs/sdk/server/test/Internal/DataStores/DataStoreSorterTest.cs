@@ -130,43 +130,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             Assert.Equal(selector.State, result.Selector.State);
             Assert.Equal(environmentId, result.EnvironmentId);
         }
-
-        [Fact]
-        public void SortChangeset_RemovesDuplicatesKeepingLatestVersion()
-        {
-            var flag1V1 = new FeatureFlagBuilder("flag1").Version(1).Build();
-            var flag1V2 = new FeatureFlagBuilder("flag1").Version(2).Build();
-            var flag1V3 = new FeatureFlagBuilder("flag1").Version(3).Build();
-
-            var changeSetData = ImmutableList.Create(
-                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
-                    DataModel.Features,
-                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
-                        new KeyValuePair<string, ItemDescriptor>("flag1", new ItemDescriptor(1, flag1V1)),
-                        new KeyValuePair<string, ItemDescriptor>("flag1", new ItemDescriptor(3, flag1V3)),
-                        new KeyValuePair<string, ItemDescriptor>("flag1", new ItemDescriptor(2, flag1V2))
-                    ))
-                )
-            );
-
-            var changeSet = new ChangeSet<ItemDescriptor>(
-                ChangeSetType.Partial,
-                Selector.Make(1, "state1"),
-                changeSetData,
-                null
-            );
-
-            var result = DataStoreSorter.SortChangeset(changeSet);
-
-            var flagsData = result.Data.First(kv => kv.Key == DataModel.Features);
-            var items = flagsData.Value.Items.ToList();
-
-            Assert.Single(items);
-            Assert.Equal("flag1", items[0].Key);
-            Assert.Equal(3, items[0].Value.Version);
-            Assert.Equal(flag1V3, items[0].Value.Item);
-        }
-
+        
         [Fact]
         public void SortChangeset_SortsPrerequisiteFlagsFirst()
         {
@@ -268,56 +232,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
             Assert.Empty(result.Data);
             Assert.Equal(ChangeSetType.Full, result.Type);
-        }
-
-        [Fact]
-        public void SortChangeset_CollapsesDuplicatesAndSortsInSinglePass()
-        {
-            // Create flags with duplicates and dependencies
-            var flagCv1 = new FeatureFlagBuilder("c").Version(1).Build();
-            var flagCv2 = new FeatureFlagBuilder("c").Version(2).Build();
-            var flagB = new FeatureFlagBuilder("b").Version(1)
-                .Prerequisites(new List<Prerequisite> { new Prerequisite("c", 0) })
-                .Build();
-            var flagA = new FeatureFlagBuilder("a").Version(1)
-                .Prerequisites(new List<Prerequisite> { new Prerequisite("b", 0) })
-                .Build();
-
-            var changeSetData = ImmutableList.Create(
-                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
-                    DataModel.Features,
-                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
-                        new KeyValuePair<string, ItemDescriptor>("a", new ItemDescriptor(1, flagA)),
-                        new KeyValuePair<string, ItemDescriptor>("c", new ItemDescriptor(1, flagCv1)),
-                        new KeyValuePair<string, ItemDescriptor>("b", new ItemDescriptor(1, flagB)),
-                        new KeyValuePair<string, ItemDescriptor>("c", new ItemDescriptor(2, flagCv2)) // duplicate with higher version
-                    ))
-                )
-            );
-
-            var changeSet = new ChangeSet<ItemDescriptor>(
-                ChangeSetType.Partial,
-                Selector.Make(1, "state1"),
-                changeSetData,
-                null
-            );
-
-            var result = DataStoreSorter.SortChangeset(changeSet);
-
-            var flagsData = result.Data.First(kv => kv.Key == DataModel.Features);
-            var items = flagsData.Value.Items.ToList();
-
-            // Should only have 3 flags (duplicate c collapsed)
-            Assert.Equal(3, items.Count);
-
-            // Verify c has the higher version
-            var cItem = items.First(kv => kv.Key == "c");
-            Assert.Equal(2, cItem.Value.Version);
-
-            // Verify ordering
-            var resultKeys = items.Select(kv => kv.Key).ToList();
-            Assert.True(resultKeys.IndexOf("c") < resultKeys.IndexOf("b"), "c should come before b");
-            Assert.True(resultKeys.IndexOf("b") < resultKeys.IndexOf("a"), "b should come before a");
         }
 
         [Fact]

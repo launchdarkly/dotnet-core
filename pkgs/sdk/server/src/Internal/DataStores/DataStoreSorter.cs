@@ -43,27 +43,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             var dataOut = new SortedDictionary<DataKind, KeyedItems<ItemDescriptor>>(
                 PriorityComparer.Instance);
 
-            foreach (var kindEntry in inSet.Data)
+            foreach (var entry in inSet.Data)
             {
-                var kind = kindEntry.Key;
-                var items = kindEntry.Value.Items;
-
-                // Collapse duplicates by keeping only the latest version of each item
-                var latestByKey = new Dictionary<string, ItemDescriptor>();
-                foreach (var item in items)
-                {
-                    var key = item.Key;
-                    var descriptor = item.Value;
-
-                    if (!latestByKey.TryGetValue(key, out var existing) || descriptor.Version > existing.Version)
-                    {
-                        latestByKey[key] = descriptor;
-                    }
-                }
-
-                // Sort the collapsed items
-                var sortedItems = SortCollection(kind, latestByKey);
-                dataOut.Add(kind, new KeyedItems<ItemDescriptor>(sortedItems));
+                var kind = entry.Key;
+                dataOut.Add(kind, new KeyedItems<ItemDescriptor>(SortCollection(kind, entry.Value.Items)));
             }
 
             return new ChangeSet<ItemDescriptor>(inSet.Type, inSet.Selector, dataOut, inSet.EnvironmentId);

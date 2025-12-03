@@ -51,12 +51,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             return _inner.Upsert(kind, key, item);
         }
 
-        /// <summary>
-        /// Applies the sanitization rules and then forwards the status update to the
-        /// underlying <see cref="IDataSourceUpdates"/> instance.
-        /// </summary>
-        /// <param name="newState">the new data source state</param>
-        /// <param name="newError">the associated error information, if any</param>
         public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
         {
             var sanitized = newState;

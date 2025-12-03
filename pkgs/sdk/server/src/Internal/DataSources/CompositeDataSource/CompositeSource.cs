@@ -8,7 +8,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
     /// <summary>
     /// A composite source is a source that can dynamically switch between sources with the
-    /// help of a list of <see cref="ISourceFactory"/> instances.
+    /// help of a list of <see cref="ISourceFactory"/> instances and <see cref="IActionApplierFactory"/> instances.
+    /// The ISourceFactory instances are used to create the data sources, and the IActionApplierFactory creates the action appliers that are used
+    ///  to apply actions to the composite source as updates are received from the data sources.
     /// </summary>
     internal sealed class CompositeSource : IDataSource, ICompositeSourceActionable
     {
@@ -17,24 +19,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         // from IActionApplier logic are serialized and processed iteratively instead
         // of recursively, avoiding the risk of stack overflows.
         private readonly object _lock = new object();
-        private readonly Queue<QueuedAction> _pendingActions = new Queue<QueuedAction>();
+        private readonly Queue<Action> _pendingActions = new Queue<Action>();
         private bool _isProcessingActions;
-
-        /// <summary>
-        /// Wraps an action with the data source that was current when it was enqueued.
-        /// This allows us to ignore stale actions that were queued for a different data source.
-        /// </summary>
-        private sealed class QueuedAction
-        {
-            public readonly Action Action;
-            public readonly IDataSource DataSourceAtEnqueueTime;
-
-            public QueuedAction(Action action, IDataSource dataSourceAtEnqueueTime)
-            {
-                Action = action ?? throw new ArgumentNullException(nameof(action));
-                DataSourceAtEnqueueTime = dataSourceAtEnqueueTime;
-            }
-        }
 
         private readonly IDataSourceUpdates _sanitizedUpdateSink;
         private readonly SourcesList<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)> _sourcesList;
@@ -89,7 +75,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public bool Initialized => _currentDataSource?.Initialized ?? false;
 
         /// <summary>
-        /// Disposes of the composite data source. This should only be called once.
+        /// Disposes of the composite data source.
         /// </summary>
         public void Dispose()
         {
@@ -124,19 +110,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// the queue in a simple loop on the current thread. Any re-entrant calls from
         /// within the operations will only enqueue more work; they will not trigger
         /// another processing loop, so the call stack does not grow with the queue length.
-        /// 
-        /// The current data source is captured at enqueue time. When the action is executed,
-        /// it will only run if the current data source is still the same one.
         /// </summary>
         private void EnqueueAction(Action action)
         {
             bool shouldProcess = false;
-            IDataSource dataSourceAtEnqueueTime;
             lock (_lock)
             {
-                // Capture the current data source reference at the time of enqueueing
-                dataSourceAtEnqueueTime = _currentDataSource;
-                _pendingActions.Enqueue(new QueuedAction(action, dataSourceAtEnqueueTime));
+                _pendingActions.Enqueue(action);
                 if (!_isProcessingActions)
                 {
                     _isProcessingActions = true;
@@ -150,12 +130,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        /// <summary>
+        /// Processes the queued actions.
+        /// </summary>
         private void ProcessQueuedActions()
         {
             while (true)
             {
-                QueuedAction queuedAction;
-                bool shouldExecute;
+                Action action;
                 lock (_lock)
                 {
                     if (_pendingActions.Count == 0)
@@ -164,23 +146,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         return;
                     }
 
-                    queuedAction = _pendingActions.Dequeue();
-
-                    // Check if the data source is still the same as when the action was enqueued.
-                    // If it has changed, the action is stale and should be ignored.
-                    shouldExecute = ReferenceEquals(_currentDataSource, queuedAction.DataSourceAtEnqueueTime);
-                }
-
-                if (!shouldExecute)
-                {
-                    // Data source has changed since this action was enqueued; skip it.
-                    continue;
+                    action = _pendingActions.Dequeue();
                 }
 
                 // Execute outside of the lock so that operations can do more work,
                 // including calling back into the composite and queuing additional
                 // actions without blocking the queue.
-                queuedAction.Action();
+                action();
             }
         }
 

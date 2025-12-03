@@ -6,7 +6,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// <summary>
     /// Interface for an object that applies actions to a composite data source.
     /// </summary>
-    internal interface IActionApplier : IDataSourceUpdates, IDisposable
+    internal interface IActionApplier : IDataSourceUpdates
     {
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -423,5 +423,258 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private static Segment NextVersion(Segment segment) =>
             new SegmentBuilder(segment).Version(segment.Version + 1).Build();
+
+        private static ChangeSet<ItemDescriptor> MakeFullChangeSet(params FeatureFlag[] flags)
+        {
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>();
+            if (flags.Length > 0)
+            {
+                var flagItems = flags.ToDictionary(f => f.Key, f => DescriptorOf(f));
+                data.Add(new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(flagItems)
+                ));
+            }
+            return new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full,
+                Selector.Make(1, "state1"),
+                data,
+                null
+            );
+        }
+
+        private static ChangeSet<ItemDescriptor> MakePartialChangeSet(params FeatureFlag[] flags)
+        {
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>();
+            if (flags.Length > 0)
+            {
+                var flagItems = flags.ToDictionary(f => f.Key, f => DescriptorOf(f));
+                data.Add(new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(flagItems)
+                ));
+            }
+            return new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Partial,
+                Selector.Make(1, "state1"),
+                data,
+                null
+            );
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForNewlyAddedFlags()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventForNewlyAddedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForUpdatedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1, NextVersion(flag2)));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventForUpdatedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(NextVersion(flag2)));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForDeletedFlags()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventForDeletedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var deletedFlag = ItemDescriptor.Deleted(flag2.Version + 1);
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>
+            {
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { { flag2.Key, deletedFlag } })
+                )
+            };
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Partial, Selector.Make(1, "state1"), data, null);
+            updates.Apply(changeSet);
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForFlagsWhosePrerequisitesChanged()
+        {
+            var updates = MakeInstance();
+
+            var initialFlags = new[] {
+                flag1,
+                FlagWithPrerequisiteReference(flag2, flag1),
+                flag3,
+                FlagWithPrerequisiteReference(flag4, flag1),
+                FlagWithPrerequisiteReference(flag5, flag4),
+                flag6
+            };
+            updates.Apply(MakeFullChangeSet(initialFlags));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var updatedFlags = new[] {
+                NextVersion(flag1),
+                FlagWithPrerequisiteReference(flag2, flag1),
+                flag3,
+                FlagWithPrerequisiteReference(flag4, flag1),
+                FlagWithPrerequisiteReference(flag5, flag4),
+                flag6
+            };
+            updates.Apply(MakeFullChangeSet(updatedFlags));
+
+            ExpectFlagChangeEvents(eventSink, "flag1", "flag2", "flag4", "flag5");
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventsForFlagsWhosePrerequisitesChanged()
+        {
+            var updates = MakeInstance();
+
+            var initialFlags = new[] {
+                flag1,
+                FlagWithPrerequisiteReference(flag2, flag1),
+                flag3,
+                FlagWithPrerequisiteReference(flag4, flag1),
+                FlagWithPrerequisiteReference(flag5, flag4),
+                flag6
+            };
+            updates.Apply(MakeFullChangeSet(initialFlags));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(NextVersion(flag1)));
+
+            ExpectFlagChangeEvents(eventSink, "flag1", "flag2", "flag4", "flag5");
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForFlagsWhoseSegmentsChanged()
+        {
+            var segment1WithSegment2Ref = SegmentWithSegmentReference(segment1, segment2);
+
+            var updates = MakeInstance();
+
+            var initialData = new DataSetBuilder()
+                .Flags(flag1, FlagWithSegmentReference(flag2, segment1), FlagWithSegmentReference(flag3, segment2), FlagWithPrerequisiteReference(flag4, flag2))
+                .Segments(segment1WithSegment2Ref, segment2, segment3)
+                .Build();
+            updates.Init(initialData);
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var updatedSegment = NextVersion(segment1WithSegment2Ref);
+            var updatedData = new DataSetBuilder()
+                .Flags(flag1, FlagWithSegmentReference(flag2, segment1), FlagWithSegmentReference(flag3, segment2), FlagWithPrerequisiteReference(flag4, flag2))
+                .Segments(updatedSegment, segment2, segment3)
+                .Build();
+
+            var changeSetData = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>();
+            foreach (var kindEntry in updatedData.Data)
+            {
+                changeSetData.Add(new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    kindEntry.Key,
+                    kindEntry.Value
+                ));
+            }
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Full, Selector.Make(1, "state1"), changeSetData, null);
+            updates.Apply(changeSet);
+
+            ExpectFlagChangeEvents(eventSink, "flag2", "flag4");
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventsForFlagsWhoseSegmentsChanged()
+        {
+            var segment1WithSegment2Ref = SegmentWithSegmentReference(segment1, segment2);
+
+            var updates = MakeInstance();
+
+            var initialData = new DataSetBuilder()
+                .Flags(flag1, FlagWithSegmentReference(flag2, segment1), FlagWithSegmentReference(flag3, segment2), FlagWithPrerequisiteReference(flag4, flag2))
+                .Segments(segment1WithSegment2Ref, segment2, segment3)
+                .Build();
+            updates.Init(initialData);
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var updatedSegment = NextVersion(segment1WithSegment2Ref);
+            var segmentData = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>
+            {
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Segments,
+                    new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> {
+                        { updatedSegment.Key, DescriptorOf(updatedSegment) }
+                    })
+                )
+            };
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Partial, Selector.Make(1, "state1"), segmentData, null);
+            updates.Apply(changeSet);
+
+            ExpectFlagChangeEvents(eventSink, "flag2", "flag4");
+        }
     }
 }

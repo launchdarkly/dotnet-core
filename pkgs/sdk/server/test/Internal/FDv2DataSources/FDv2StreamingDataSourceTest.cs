@@ -12,6 +12,8 @@ using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
+using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
+
 // Unused events on mock for interface.
 #pragma warning disable 67
 
@@ -148,8 +150,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 var result = await startTask;
                 Assert.True(result);
 
-                var initData = _updateSink.Inits.ExpectValue();
-                var allData = initData.Item1.Data.SelectMany(kv => kv.Value.Items).ToList();
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+                var allData = changeSet.Data.SelectMany(kv => kv.Value.Items).ToList();
 
                 Assert.Equal(3, allData.Count);
                 Assert.Contains(allData, item => item.Key == "should-crash");
@@ -159,7 +162,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
-        public async Task FullTransferPassesResponseHeadersToDataStore()
+        public async Task FullTransferPassesEnvironmentIdFromHeaders()
         {
             using (var dataSource = MakeDataSource())
             {
@@ -179,10 +182,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 await startTask;
 
-                var initData = _updateSink.Inits.ExpectValue();
-                Assert.NotNull(initData.Item2);
-                Assert.Contains(initData.Item2, h => h.Key == "ld-region");
-                Assert.Contains(initData.Item2, h => h.Key == "x-ld-envid");
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+                Assert.Equal("64af23df214e7e135156a6d6", changeSet.EnvironmentId);
             }
         }
 
@@ -201,14 +203,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 await startTask;
 
-                var initData = _updateSink.Inits.ExpectValue();
-                var allData = initData.Item1.Data.SelectMany(kv => kv.Value.Items).ToList();
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+                var allData = changeSet.Data.SelectMany(kv => kv.Value.Items).ToList();
                 Assert.Empty(allData);
             }
         }
 
         [Fact]
-        public async Task IncrementalTransferWithPutUpsertsFlagToStore()
+        public async Task IncrementalTransferWithPutAppliesPartialChangeSet()
         {
             using (var dataSource = MakeDataSource())
             {
@@ -227,16 +230,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 await startTask;
 
-                var upsert = _updateSink.Upserts.ExpectValue();
-                Assert.Equal(DataModel.Features, upsert.Kind);
-                Assert.Equal("new-flag", upsert.Key);
-                Assert.NotNull(upsert.Item.Item);
-                Assert.Equal(10, upsert.Item.Version);
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Partial, changeSet.Type);
+                var flags = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items;
+                Assert.Single(flags);
+                Assert.Contains(flags, kv => kv.Key == "new-flag" && kv.Value.Item != null && kv.Value.Version == 10);
             }
         }
 
         [Fact]
-        public async Task IncrementalTransferWithDeleteUpsertsDeletedFlag()
+        public async Task IncrementalTransferWithDeleteAppliesPartialChangeSet()
         {
             using (var dataSource = MakeDataSource())
             {
@@ -254,11 +257,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 await startTask;
 
-                var upsert = _updateSink.Upserts.ExpectValue();
-                Assert.Equal(DataModel.Features, upsert.Kind);
-                Assert.Equal("old-flag", upsert.Key);
-                Assert.Null(upsert.Item.Item);
-                Assert.Equal(11, upsert.Item.Version);
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Partial, changeSet.Type);
+                var flags = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items;
+                Assert.Single(flags);
+                Assert.Contains(flags, kv => kv.Key == "old-flag" && kv.Value.Item == null && kv.Value.Version == 11);
             }
         }
 
@@ -290,20 +293,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
                     CreatePayloadTransferredJson("(p:p1:1)", 1)));
 
-                var upserts = new List<CapturingDataSourceUpdatesWithHeaders.UpsertParams>
-                {
-                    _updateSink.Upserts.ExpectValue(),
-                    _updateSink.Upserts.ExpectValue(),
-                    _updateSink.Upserts.ExpectValue(),
-                    _updateSink.Upserts.ExpectValue()
-                };
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Partial, changeSet.Type);
 
-                Assert.Contains(upserts, u => u.Key == "flag1" && u.Kind == DataModel.Features && u.Item.Item != null);
-                Assert.Contains(upserts, u => u.Key == "flag2" && u.Kind == DataModel.Features && u.Item.Item == null);
-                Assert.Contains(upserts,
-                    u => u.Key == "segment1" && u.Kind == DataModel.Segments && u.Item.Item != null);
-                Assert.Contains(upserts,
-                    u => u.Key == "segment2" && u.Kind == DataModel.Segments && u.Item.Item == null);
+                var flags = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items.ToList();
+                Assert.Equal(2, flags.Count);
+                Assert.True(flags.Any(kv => kv.Key == "flag1" && kv.Value.Item != null));
+                Assert.True(flags.Any(kv => kv.Key == "flag2" && kv.Value.Item == null));
+
+                var segments = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Segments).Value.Items.ToList();
+                Assert.Equal(2, segments.Count);
+                Assert.True(segments.Any(kv => kv.Key == "segment1" && kv.Value.Item != null));
+                Assert.True(segments.Any(kv => kv.Key == "segment2" && kv.Value.Item == null));
             }
         }
 
@@ -321,7 +322,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     CreatePayloadTransferredJson("(p:p1:1)", 1)));
 
                 await startTask;
-                _updateSink.Inits.ExpectValue();
+                var fullChangeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, fullChangeSet.Type);
 
                 const string flagJson = @"{""key"":""flag1"",""on"":true,""version"":10}";
                 _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
@@ -329,18 +331,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
                     CreatePayloadTransferredJson("(p:p1:2)", 2)));
 
-                var upsert1 = _updateSink.Upserts.ExpectValue();
-                Assert.Equal("flag1", upsert1.Key);
-                Assert.NotNull(upsert1.Item.Item);
+                var partialChangeSet1 = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Partial, partialChangeSet1.Type);
+                var flags1 = partialChangeSet1.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items;
+                Assert.Contains(flags1, kv => kv.Key == "flag1" && kv.Value.Item != null);
 
                 _mockEventSource.TriggerMessage(CreateMessageEvent("delete-object",
                     CreateDeleteObjectJson("flag", "flag1", 11)));
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
                     CreatePayloadTransferredJson("(p:p1:3)", 3)));
 
-                var upsert2 = _updateSink.Upserts.ExpectValue();
-                Assert.Equal("flag1", upsert2.Key);
-                Assert.Null(upsert2.Item.Item);
+                var partialChangeSet2 = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Partial, partialChangeSet2.Type);
+                var flags2 = partialChangeSet2.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items;
+                Assert.Contains(flags2, kv => kv.Key == "flag1" && kv.Value.Item == null);
             }
         }
 
@@ -363,7 +367,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     CreateErrorJson("p1", "Internal server error occurred")));
 
                 AssertLogMessage(true, LogLevel.Error, "Internal server error occurred");
-                _updateSink.Inits.ExpectNoValue();
+                _updateSink.Applies.ExpectNoValue();
             }
         }
 
@@ -392,8 +396,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("heartbeat", "{}"));
 
-                _updateSink.Inits.ExpectNoValue();
-                _updateSink.Upserts.ExpectNoValue();
+                _updateSink.Applies.ExpectNoValue();
                 _updateSink.StatusUpdates.ExpectNoValue();
             }
         }
@@ -432,10 +435,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
-        public void StoreInitFailureWithoutStatusMonitoringCausesStreamRestart()
+        public void StoreApplyFailureWithoutStatusMonitoringCausesStreamRestart()
         {
             _updateSink.MockDataStoreStatusProvider.StatusMonitoringEnabled = false;
-            _updateSink.InitsShouldFail = 1;
+            _updateSink.AppliesShouldFail = 1;
 
             using (var dataSource = MakeDataSource())
             {
@@ -453,10 +456,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
-        public void StoreUpsertFailureWithoutStatusMonitoringCausesStreamRestart()
+        public void StoreApplyFailureForPartialChangeSetCausesStreamRestart()
         {
             _updateSink.MockDataStoreStatusProvider.StatusMonitoringEnabled = false;
-            _updateSink.UpsertsShouldFail = 1;
+            _updateSink.AppliesShouldFail = 1;
 
             using (var dataSource = MakeDataSource())
             {
@@ -480,7 +483,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public void StoreFailureWithStatusMonitoringUpdatesStatusWithoutRestart()
         {
             _updateSink.MockDataStoreStatusProvider.StatusMonitoringEnabled = true;
-            _updateSink.InitsShouldFail = 1;
+            _updateSink.AppliesShouldFail = 1;
 
             using (var dataSource = MakeDataSource())
             {
@@ -631,8 +634,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
                     CreatePayloadTransferredJson("(p:p2:2)", 2)));
 
-                var initData = _updateSink.Inits.ExpectValue();
-                Assert.Empty(initData.Item1.Data.SelectMany(kv => kv.Value.Items));
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Empty(changeSet.Data.SelectMany(kv => kv.Value.Items));
             }
         }
 
@@ -705,7 +708,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public void ConsecutiveStoreFailuresLogWarningOnlyOnFirstFailure()
         {
             _updateSink.MockDataStoreStatusProvider.StatusMonitoringEnabled = false;
-            _updateSink.UpsertsShouldFail = 2;
+            _updateSink.AppliesShouldFail = 2;
 
             using (var dataSource = MakeDataSource())
             {
@@ -741,7 +744,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public void StoreSuccessAfterFailureClearsFailureFlagAndAllowsLogging()
         {
             _updateSink.MockDataStoreStatusProvider.StatusMonitoringEnabled = false;
-            _updateSink.UpsertsShouldFail = 1;
+            _updateSink.AppliesShouldFail = 1;
 
             using (var dataSource = MakeDataSource())
             {
@@ -759,9 +762,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 Assert.Equal(1, _mockEventSource.RestartCallCount);
 
-                // Consume the failed upsert from the first cycle
-                var failedUpsert = _updateSink.Upserts.ExpectValue();
-                Assert.Equal("flag1", failedUpsert.Key);
+                // The first Apply that failed
+                var failedChangeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Partial, failedChangeSet.Type);
 
                 _mockEventSource.TriggerOpen();
 
@@ -773,16 +776,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
                     CreatePayloadTransferredJson("(p:p1:2)", 2)));
 
-                var upsert = _updateSink.Upserts.ExpectValue();
-                Assert.Equal("flag2", upsert.Key);
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Partial, changeSet.Type);
+                var flags = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items;
+                Assert.Contains(flags, kv => kv.Key == "flag2");
             }
         }
 
         [Fact]
-        public void PartialTransferStopsOnFirstUpsertFailure()
+        public void PartialTransferStopsOnFirstApplyFailure()
         {
             _updateSink.MockDataStoreStatusProvider.StatusMonitoringEnabled = false;
-            _updateSink.UpsertsShouldFail = 1;
+            _updateSink.AppliesShouldFail = 1;
 
             using (var dataSource = MakeDataSource())
             {
@@ -802,9 +807,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
                     CreatePayloadTransferredJson("(p:p1:1)", 1)));
-
-                _updateSink.Upserts.ExpectValue();
-                _updateSink.Upserts.ExpectNoValue();
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Interrupted, status.State);

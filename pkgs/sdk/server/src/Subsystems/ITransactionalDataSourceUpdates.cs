@@ -25,6 +25,6 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// Apply the given change set to the store. This should be done atomically if possible.
         /// </summary>
         /// <param name="changeSet">the changeset to apply</param>
-        void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet);
+        bool Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet);
     }
 }

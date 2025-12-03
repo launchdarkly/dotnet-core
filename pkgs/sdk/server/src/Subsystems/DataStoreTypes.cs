@@ -434,7 +434,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// <summary>
             /// A list of changes.
             /// </summary>
-            public IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> Data;
+            public IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> Data { get; }
 
             internal ChangeSet(ChangeSetType type, Selector selector,
                 IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> data, string environmentId)

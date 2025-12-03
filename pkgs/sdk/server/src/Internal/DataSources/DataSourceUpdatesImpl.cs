@@ -305,6 +305,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         _dependencyTracker.UpdateDependenciesFrom(kind, itemEntry.Key, itemEntry.Value);
                     }
                 }
+
                 return null;
             }
 
@@ -377,126 +378,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             });
         }
 
-        #endregion
-
-        #region IDataSourceUpdatesHeaders methods
-
-        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData,
-            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-        {
-            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
-
-            try
-            {
-                GetOldDataIfFlagChangeListeners(out oldData);
-
-                var sortedCollections = DataStoreSorter.SortAllCollections(allData);
-
-                if (_store is IDataStoreMetadata storeMetadata)
-                {
-                    var environmentId = headers?.FirstOrDefault((item) =>
-                            item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
-                        ?.FirstOrDefault();
-                    storeMetadata.InitWithMetadata(sortedCollections, new InitMetadata(environmentId));
-                }
-                else
-                {
-                    _store.Init(sortedCollections);
-                }
-
-                _lastStoreUpdateFailed = false;
-            }
-            catch (Exception e)
-            {
-                ReportStoreFailure(e);
-                return false;
-            }
-
-            // Calling Init implies that the data source is now in a valid state.
-            UpdateStatus(DataSourceState.Valid, null);
-
-            // We must always update the dependency graph even if we don't currently have any event listeners, because if
-            // listeners are added later, we don't want to have to reread the whole data store to compute the graph
-            UpdateDependencyTrackerFromFullDataSet(allData);
-
-            // Now, if we previously queried the old data because someone is listening for flag change events, compare
-            // the versions of all items and generate events for those (and any other items that depend on them)
-            if (oldData != null)
-            {
-                SendChangeEvents(ComputeChangedItemsForFullDataSet(oldData, FullDataSetToMap(allData)));
-            }
-
-            return true;
-        }
-
-        private void GetOldDataIfFlagChangeListeners(
-            out ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData)
-        {
-            if (HasFlagChangeListeners())
-            {
-                // Query the existing data if any, so that after the update we can send events for
-                // whatever was changed
-                var oldDataBuilder = ImmutableDictionary.CreateBuilder<DataKind,
-                    ImmutableDictionary<string, ItemDescriptor>>();
-                foreach (var kind in DataModel.AllDataKinds)
-                {
-                    var items = _store.GetAll(kind);
-                    oldDataBuilder.Add(kind, items.Items.ToImmutableDictionary());
-                }
-
-                oldData = oldDataBuilder.ToImmutable();
-            }
-            else
-            {
-                oldData = null;
-            }
-        }
-
-        #endregion
-
-        #region ITransactionalDataSourceUpdates methods
-
-        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
-        {
-            GetOldDataIfFlagChangeListeners(out var oldData);
-            var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
-            if (_store is ITransactionalDataStore transactionalDataStore)
-            {
-                try
-                {
-                    transactionalDataStore.Apply(sortedChangeSet);
-                    _lastStoreUpdateFailed = false;
-                }
-                catch (Exception e)
-                {
-                    ReportStoreFailure(e);
-                    return false;
-                }
-            }
-            else
-            {
-                // Legacy update path for non-transactional stores
-                if (!ApplyToLegacyStore(sortedChangeSet))
-                {
-                    return false;
-                }
-            }
-
-            // Calling Apply implies that the data source is now in a valid state.
-            UpdateStatus(DataSourceState.Valid, null);
-
-            var changes = UpdateDependencyTrackerForChangesetAndDetermineChanges(oldData, sortedChangeSet);
-
-            // Now, if we previously queried the old data because someone is listening for flag change events, compare
-            // the versions of all items and generate events for those (and any other items that depend on them)
-            if (changes != null)
-            {
-                SendChangeEvents(changes);
-            }
-
-            return true;
-        }
-
         private bool ApplyToLegacyStore(ChangeSet<ItemDescriptor> sortedChangeSet)
         {
             switch (sortedChangeSet.Type)
@@ -562,6 +443,126 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         return false;
                     }
                 }
+            }
+
+            return true;
+        }
+
+        private void GetOldDataIfFlagChangeListeners(
+            out ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData)
+        {
+            if (HasFlagChangeListeners())
+            {
+                // Query the existing data if any, so that after the update we can send events for
+                // whatever was changed
+                var oldDataBuilder = ImmutableDictionary.CreateBuilder<DataKind,
+                    ImmutableDictionary<string, ItemDescriptor>>();
+                foreach (var kind in DataModel.AllDataKinds)
+                {
+                    var items = _store.GetAll(kind);
+                    oldDataBuilder.Add(kind, items.Items.ToImmutableDictionary());
+                }
+
+                oldData = oldDataBuilder.ToImmutable();
+            }
+            else
+            {
+                oldData = null;
+            }
+        }
+
+        #endregion
+
+        #region IDataSourceUpdatesHeaders methods
+
+        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData,
+            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
+
+            try
+            {
+                GetOldDataIfFlagChangeListeners(out oldData);
+
+                var sortedCollections = DataStoreSorter.SortAllCollections(allData);
+
+                if (_store is IDataStoreMetadata storeMetadata)
+                {
+                    var environmentId = headers?.FirstOrDefault((item) =>
+                            item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
+                        ?.FirstOrDefault();
+                    storeMetadata.InitWithMetadata(sortedCollections, new InitMetadata(environmentId));
+                }
+                else
+                {
+                    _store.Init(sortedCollections);
+                }
+
+                _lastStoreUpdateFailed = false;
+            }
+            catch (Exception e)
+            {
+                ReportStoreFailure(e);
+                return false;
+            }
+
+            // Calling Init implies that the data source is now in a valid state.
+            UpdateStatus(DataSourceState.Valid, null);
+
+            // We must always update the dependency graph even if we don't currently have any event listeners, because if
+            // listeners are added later, we don't want to have to reread the whole data store to compute the graph
+            UpdateDependencyTrackerFromFullDataSet(allData);
+
+            // Now, if we previously queried the old data because someone is listening for flag change events, compare
+            // the versions of all items and generate events for those (and any other items that depend on them)
+            if (oldData != null)
+            {
+                SendChangeEvents(ComputeChangedItemsForFullDataSet(oldData, FullDataSetToMap(allData)));
+            }
+
+            return true;
+        }
+
+        #endregion
+
+        #region ITransactionalDataSourceUpdates methods
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            GetOldDataIfFlagChangeListeners(out var oldData);
+            var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
+            if (_store is ITransactionalDataStore transactionalDataStore)
+            {
+                try
+                {
+                    transactionalDataStore.Apply(sortedChangeSet);
+                    _lastStoreUpdateFailed = false;
+                }
+                catch (Exception e)
+                {
+                    ReportStoreFailure(e);
+                    return false;
+                }
+            }
+            else
+            {
+                // Legacy update path for non-transactional stores
+                if (!ApplyToLegacyStore(sortedChangeSet))
+                {
+                    return false;
+                }
+            }
+
+            // Calling Apply implies that the data source is now in a valid state.
+            UpdateStatus(DataSourceState.Valid, null);
+
+            var changes = UpdateDependencyTrackerForChangesetAndDetermineChanges(oldData, sortedChangeSet);
+
+            // Now, if we previously queried the old data because someone is listening for flag change events, compare
+            // the versions of all items and generate events for those (and any other items that depend on them)
+            if (changes != null)
+            {
+                SendChangeEvents(changes);
             }
 
             return true;

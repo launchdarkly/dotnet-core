@@ -676,5 +676,169 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             ExpectFlagChangeEvents(eventSink, "flag2", "flag4");
         }
+
+        // Tests for legacy (non-transactional) data store path
+
+        private class LegacyDataStore : IDataStore, IDataStoreMetadata
+        {
+            private readonly Dictionary<DataKind, Dictionary<string, ItemDescriptor>> _data = new Dictionary<DataKind, Dictionary<string, ItemDescriptor>>();
+            private InitMetadata _metadata;
+
+            public bool StatusMonitoringEnabled => false;
+
+            public void Init(FullDataSet<ItemDescriptor> allData)
+            {
+                _data.Clear();
+                foreach (var kindEntry in allData.Data)
+                {
+                    var kind = kindEntry.Key;
+                    _data[kind] = new Dictionary<string, ItemDescriptor>();
+                    foreach (var itemEntry in kindEntry.Value.Items)
+                    {
+                        _data[kind][itemEntry.Key] = itemEntry.Value;
+                    }
+                }
+            }
+
+            public void InitWithMetadata(FullDataSet<ItemDescriptor> allData, InitMetadata metadata)
+            {
+                _metadata = metadata;
+                Init(allData);
+            }
+
+            public InitMetadata GetMetadata() => _metadata;
+
+            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            {
+                if (!_data.ContainsKey(kind))
+                {
+                    _data[kind] = new Dictionary<string, ItemDescriptor>();
+                }
+
+                if (_data[kind].TryGetValue(key, out var oldItem))
+                {
+                    if (oldItem.Version >= item.Version)
+                    {
+                        return false;
+                    }
+                }
+
+                _data[kind][key] = item;
+                return true;
+            }
+
+            public ItemDescriptor? Get(DataKind kind, string key)
+            {
+                if (_data.TryGetValue(kind, out var items) && items.TryGetValue(key, out var item))
+                {
+                    return item;
+                }
+                return null;
+            }
+
+            public KeyedItems<ItemDescriptor> GetAll(DataKind kind)
+            {
+                if (_data.TryGetValue(kind, out var items))
+                {
+                    return new KeyedItems<ItemDescriptor>(items);
+                }
+                return new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor>());
+            }
+
+            public bool Initialized() => _data.Count > 0;
+
+            public void Dispose() { }
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetToLegacyStoreCallsInit()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var retrievedFlag1 = legacyStore.Get(DataModel.Features, flag1.Key);
+            var retrievedFlag2 = legacyStore.Get(DataModel.Features, flag2.Key);
+
+            Assert.NotNull(retrievedFlag1);
+            Assert.NotNull(retrievedFlag2);
+            Assert.Equal(flag1.Version, retrievedFlag1.Value.Version);
+            Assert.Equal(flag2.Version, retrievedFlag2.Value.Version);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetToLegacyStoreCallsUpsert()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1));
+            updates.Apply(MakePartialChangeSet(flag2));
+
+            var retrievedFlag1 = legacyStore.Get(DataModel.Features, flag1.Key);
+            var retrievedFlag2 = legacyStore.Get(DataModel.Features, flag2.Key);
+
+            Assert.NotNull(retrievedFlag1);
+            Assert.NotNull(retrievedFlag2);
+            Assert.Equal(flag1.Version, retrievedFlag1.Value.Version);
+            Assert.Equal(flag2.Version, retrievedFlag2.Value.Version);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetToLegacyStoreSendsEvents()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetToLegacyStoreSendsEvents()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetToLegacyStoreWithEnvironmentId()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>
+            {
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { { flag1.Key, DescriptorOf(flag1) } })
+                )
+            };
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Full, Selector.Make(1, "state1"), data, "test-env-id");
+            updates.Apply(changeSet);
+
+            Assert.Equal("test-env-id", legacyStore.GetMetadata().EnvironmentId);
+        }
     }
 }

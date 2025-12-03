@@ -465,6 +465,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 try
                 {
                     transactionalDataStore.Apply(sortedChangeSet);
+                    _lastStoreUpdateFailed = false;
                 }
                 catch (Exception e)
                 {
@@ -474,10 +475,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
             else
             {
-                // TODO: Legacy conversion.
+                // Legacy update path for non-transactional stores
+                if (!ApplyToLegacyStore(sortedChangeSet))
+                {
+                    return false;
+                }
             }
 
-            // Calling Init implies that the data source is now in a valid state.
+            // Calling Apply implies that the data source is now in a valid state.
             UpdateStatus(DataSourceState.Valid, null);
 
             var changes = UpdateDependencyTrackerForChangesetAndDetermineChanges(oldData, sortedChangeSet);
@@ -487,6 +492,76 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             if (changes != null)
             {
                 SendChangeEvents(changes);
+            }
+
+            return true;
+        }
+
+        private bool ApplyToLegacyStore(ChangeSet<ItemDescriptor> sortedChangeSet)
+        {
+            switch (sortedChangeSet.Type)
+            {
+                case ChangeSetType.Full:
+                    return ApplyFullChangeSetToLegacyStore(sortedChangeSet);
+                case ChangeSetType.Partial:
+                    return ApplyPartialChangeSetToLegacyStore(sortedChangeSet);
+                case ChangeSetType.None:
+                default:
+                    return true;
+            }
+        }
+
+        private bool ApplyFullChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
+        {
+            // Convert ChangeSet to FullDataSet
+            var fullDataSet = new FullDataSet<ItemDescriptor>(changeSet.Data);
+
+            try
+            {
+                var sortedCollections = DataStoreSorter.SortAllCollections(fullDataSet);
+
+                if (_store is IDataStoreMetadata storeMetadata)
+                {
+                    storeMetadata.InitWithMetadata(sortedCollections, new InitMetadata(changeSet.EnvironmentId));
+                }
+                else
+                {
+                    _store.Init(sortedCollections);
+                }
+
+                _lastStoreUpdateFailed = false;
+            }
+            catch (Exception e)
+            {
+                ReportStoreFailure(e);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ApplyPartialChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
+        {
+            // For partial changesets, call Upsert for each item
+            foreach (var kindEntry in changeSet.Data)
+            {
+                var kind = kindEntry.Key;
+                foreach (var itemEntry in kindEntry.Value.Items)
+                {
+                    var key = itemEntry.Key;
+                    var item = itemEntry.Value;
+
+                    try
+                    {
+                        _store.Upsert(kind, key, item);
+                        _lastStoreUpdateFailed = false;
+                    }
+                    catch (Exception e)
+                    {
+                        ReportStoreFailure(e);
+                        return false;
+                    }
+                }
             }
 
             return true;

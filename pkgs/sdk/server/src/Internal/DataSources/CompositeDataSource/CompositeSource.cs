@@ -43,11 +43,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             IList<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)> factoryTuples,
             bool circular = true)
         {
-            _sanitizedUpdateSink = new DataSourceUpdatesSanitizer(updatesSink) ?? throw new ArgumentNullException(nameof(updatesSink));
+            if (updatesSink is null)
+            {
+                throw new ArgumentNullException(nameof(updatesSink));
+            }
             if (factoryTuples is null)
             {
                 throw new ArgumentNullException(nameof(factoryTuples));
             }
+
+            _sanitizedUpdateSink = new DataSourceUpdatesSanitizer(updatesSink);
 
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
@@ -93,15 +98,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _currentDataSource?.Dispose();
                 _currentDataSource = null;
 
-                // report state Off
-                _sanitizedUpdateSink.UpdateStatus(DataSourceState.Off, null);
-
                 // clear any queued actions and reset processing state
                 _pendingActions.Clear();
                 _isProcessingActions = false;
                 _sourcesList.Reset();
                 _currentEntry = default;
             }
+
+            // report state Off
+            _sanitizedUpdateSink.UpdateStatus(DataSourceState.Off, null);
         }
 
         /// <summary>
@@ -152,7 +157,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Execute outside of the lock so that operations can do more work,
                 // including calling back into the composite and queuing additional
                 // actions without blocking the queue.
-                action();
+                // If an action throws an exception, catch it and continue processing
+                // the next action to prevent one failure from stopping all processing.
+                try
+                {
+                    action();
+                }
+                catch
+                {
+                    // Continue processing remaining actions even if one fails
+                    // TODO: need to add logging, will add in next PR
+                }
             }
         }
 
@@ -170,10 +185,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 return;
             }
 
-            var actionApplier = entry.ActionApplierFactory.CreateActionApplier(this);
+            // Build the list of update sinks conditionally based on whether we have an action applier factory
+            var updateSinks = new List<IDataSourceUpdates>();
+            if (entry.ActionApplierFactory != null)
+            {
+                var actionApplier = entry.ActionApplierFactory.CreateActionApplier(this);
+                updateSinks.Add(actionApplier);
+            }
+            updateSinks.Add(_sanitizedUpdateSink);
 
             // here we make a fanout so that we can trigger actions as well as forward calls to the sanitized sink (order matters here)
-            var fanout = new FanOutDataSourceUpdates(new List<IDataSourceUpdates> { actionApplier, _sanitizedUpdateSink });
+            var fanout = new FanOutDataSourceUpdates(updateSinks);
             var disableableUpdates = _disableableTracker.WrapAndTrack(fanout);
             
             _currentEntry = entry;
@@ -207,21 +229,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                 // Start the source asynchronously and complete the task when it finishes.
                 // We do this outside the lock to avoid blocking the queue.
-                dataSourceToStart.Start().ContinueWith(task =>
+                _ = Task.Run(async () =>
                 {
-                    if (task.IsFaulted)
+                    try
                     {
-                        tcs.TrySetException(task.Exception);
+                        var result = await dataSourceToStart.Start();
+                        tcs.TrySetResult(result);
                     }
-                    else if (task.IsCanceled)
+                    catch (Exception ex)
                     {
-                        tcs.TrySetCanceled();
+                        tcs.TrySetException(ex);
                     }
-                    else
-                    {
-                        tcs.TrySetResult(task.Result);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                });
             });
 
             return tcs.Task;

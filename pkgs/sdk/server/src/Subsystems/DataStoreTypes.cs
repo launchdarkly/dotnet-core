@@ -380,5 +380,70 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// </summary>
             public string EnvironmentId { get; }
         }
+
+        /// <summary>
+        /// Enumeration that indicates if this change is a full or partial change.
+        /// <para>
+        /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+        /// It is not suitable for production usage. Do not use it. You have been warned.
+        /// </para>
+        /// </summary>
+        public enum ChangeSetType
+        {
+            /// <summary>
+            /// Represents a full store configuration which replaces all data currently in the store.
+            /// </summary>
+            Full,
+
+            /// <summary>
+            /// Represents an incremental set of changes to be applied to the existing data in the store.
+            /// </summary>
+            Partial,
+            
+            /// <summary>
+            /// Indicates that there are no store changes.
+            /// </summary>
+            None,
+        }
+
+        /// <summary>
+        /// Represents a set of changes to apply to a store.
+        /// <para>
+        /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+        /// It is not suitable for production usage. Do not use it. You have been warned.
+        /// </para>
+        /// </summary>
+        public struct ChangeSet<TItemDescriptor>
+        {
+            /// <summary>
+            /// The type of the changeset.
+            /// </summary>
+            public ChangeSetType Type { get; }
+
+            /// <summary>
+            /// The selector for this change. This selector will not be null, but it can be an empty selector.
+            /// </summary>
+            public Selector Selector { get; }
+
+            /// <summary>
+            /// The environment ID associated with the change. This may not always be available, and when it is not, the
+            /// value will be null.
+            /// </summary>
+            public string EnvironmentId { get; }
+
+            /// <summary>
+            /// A list of changes.
+            /// </summary>
+            public IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> Data { get; }
+
+            internal ChangeSet(ChangeSetType type, Selector selector,
+                IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> data, string environmentId)
+            {
+                Type = type;
+                Selector = selector;
+                Data = data;
+                EnvironmentId = environmentId;
+            }
+        }
     }
 }

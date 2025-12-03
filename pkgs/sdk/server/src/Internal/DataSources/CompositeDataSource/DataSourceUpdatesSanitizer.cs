@@ -22,6 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     internal sealed class DataSourceUpdatesSanitizer : IDataSourceUpdates
     {
         private readonly IDataSourceUpdates _inner;
+        private readonly object _lock = new object();
 
         private bool _alreadyReportedInitializing;
         private DataSourceState? _lastState;
@@ -53,35 +54,38 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
         {
-            var sanitized = newState;
-
-            // Map any future Off state to Interrupted
-            if (sanitized == DataSourceState.Off)
+            lock (_lock)
             {
-                sanitized = DataSourceState.Interrupted;
-            }
+                var sanitized = newState;
 
-            // Don't report the same combination of values twice in a row.
-            if (sanitized == _lastState && Nullable.Equals(newError, _lastError))
-            {
-                return;
-            }
+                // Map any future Off state to Interrupted
+                if (sanitized == DataSourceState.Off)
+                {
+                    sanitized = DataSourceState.Interrupted;
+                }
 
-            if (sanitized == DataSourceState.Initializing)
-            {
-                // Don't report initializing again if that has already been reported.
-                if (_alreadyReportedInitializing)
+                // Don't report the same combination of values twice in a row.
+                if (sanitized == _lastState && Nullable.Equals(newError, _lastError))
                 {
                     return;
                 }
 
-                _alreadyReportedInitializing = true;
+                if (sanitized == DataSourceState.Initializing)
+                {
+                    // Don't report initializing again if that has already been reported.
+                    if (_alreadyReportedInitializing)
+                    {
+                        return;
+                    }
+
+                    _alreadyReportedInitializing = true;
+                }
+
+                _lastState = sanitized;
+                _lastError = newError;
+
+                _inner.UpdateStatus(sanitized, newError);
             }
-
-            _lastState = sanitized;
-            _lastError = newError;
-
-            _inner.UpdateStatus(sanitized, newError);
         }
     }
 }

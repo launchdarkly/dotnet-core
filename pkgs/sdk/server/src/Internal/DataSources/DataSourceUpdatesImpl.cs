@@ -529,7 +529,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public bool Apply(ChangeSet<ItemDescriptor> changeSet)
         {
-            GetOldDataIfFlagChangeListeners(out var oldData);
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
+            // Getting the old values requires accessing the store, which can fail.
+            // If there is a failure to read the store, then we stop treating it as a failure.
+            try
+            {
+                GetOldDataIfFlagChangeListeners(out oldData);
+            }
+            catch (Exception e)
+            {
+                ReportStoreFailure(e);
+                return false;
+            }
+
             var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
             if (_store is ITransactionalDataStore transactionalDataStore)
             {

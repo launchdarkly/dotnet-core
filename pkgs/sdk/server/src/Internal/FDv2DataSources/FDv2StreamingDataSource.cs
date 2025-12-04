@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.EventSource;
 using LaunchDarkly.Logging;
@@ -38,6 +36,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private readonly IDiagnosticStore _diagnosticStore;
         private readonly IDataSourceUpdates _dataSourceUpdates;
+        private readonly ITransactionalDataSourceUpdates _transactionalDataSourceUpdates;
 
         private readonly TimeSpan _initialReconnectDelay;
         private readonly Logger _log;
@@ -67,7 +66,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _log = context.Logger.SubLogger(LogNames.FDv2DataSourceSubLog);
             _log.Debug("Created LaunchDarkly streaming data source");
 
+            if (dataSourceUpdates is ITransactionalDataSourceUpdates transactionalDataSourceUpdates)
+            {
+                _transactionalDataSourceUpdates = transactionalDataSourceUpdates;
+            }
+            else
+            {
+                throw new InvalidOperationException("dataSourceUpdates must be ITransactionalDataSourceUpdates");
+            }
+
             _dataSourceUpdates = dataSourceUpdates;
+
             _initialReconnectDelay = initialReconnectDelay;
             _diagnosticStore = context.DiagnosticStore;
             _selectorSource = selectorSource;
@@ -124,15 +133,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         public bool Initialized => _initialized.Get();
-
-        private bool HandleApply(FDv2ChangeSet changeSet)
-        {
-            if (!(_dataSourceUpdates is ITransactionalDataSourceUpdates transactionalDataSourceUpdates))
-                throw new InvalidOperationException("Cannot apply updates to non-transactional data source");
-
-            return transactionalDataSourceUpdates.Apply(
-                FDv2ChangeSetTranslator.ToChangeSet(changeSet, _log, _environmentId));
-        }
 
         private void HandleJsonError(string message)
         {
@@ -200,7 +200,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     {
                         case FDv2ChangeSetType.Full:
                         case FDv2ChangeSetType.Partial:
-                            storeError = !HandleApply(changeset);
+                            storeError = !_transactionalDataSourceUpdates.Apply(
+                                FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId));
                             break;
                         case FDv2ChangeSetType.None:
                             break;

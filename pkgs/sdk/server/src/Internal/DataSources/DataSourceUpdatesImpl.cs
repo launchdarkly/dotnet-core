@@ -529,11 +529,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public bool Apply(ChangeSet<ItemDescriptor> changeSet)
         {
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
             // Getting the old values requires accessing the store, which can fail.
             // If there is a failure to read the store, then we stop treating it as a failure.
             try
             {
-                GetOldDataIfFlagChangeListeners(out var oldData);
+                GetOldDataIfFlagChangeListeners(out oldData);
             }
             catch (Exception e)
             {

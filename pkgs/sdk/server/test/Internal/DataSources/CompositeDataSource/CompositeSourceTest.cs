@@ -283,6 +283,56 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             compositeSource.Dispose();
         }
 
+        [Fact]
+        public async Task DisposeReportsOffState()
+        {
+            // Create a capturing sink to observe all updates
+            var capturingSink = new CapturingDataSourceUpdates();
+
+            // Create a simple data source that reports initializing -> valid
+            var dataSource = new MockDataSourceWithStatusSequence(
+                new[] { DataSourceState.Initializing, DataSourceState.Valid }
+            );
+            var sourceFactory = new MockSourceFactory(() => dataSource);
+
+            // Create a simple action applier factory
+            var actionApplierFactory = new MockActionApplierFactory((actionable) =>
+            {
+                return new MockActionApplier(actionable);
+            });
+
+            // Create CompositeSource with one factory tuple
+            var factoryTuples = new List<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)>
+            {
+                (sourceFactory, actionApplierFactory)
+            };
+
+            var compositeSource = new CompositeSource(capturingSink, factoryTuples);
+
+            // Start the composite source
+            var startTask = compositeSource.Start();
+
+            // Wait for the data source to report initializing
+            WaitForStatus(capturingSink, DataSourceState.Initializing);
+
+            // Wait for valid state
+            WaitForStatus(capturingSink, DataSourceState.Valid);
+
+            // Verify that Start() completed successfully
+            var startResult = await startTask;
+            Assert.True(startResult);
+
+            // Verify that the composite source is initialized
+            Assert.True(compositeSource.Initialized);
+
+            // Dispose the composite source
+            compositeSource.Dispose();
+
+            // Verify that the final status update is Off (not Interrupted)
+            // The sanitizer should not map Off to Interrupted when the composite itself is disposed
+            WaitForStatus(capturingSink, DataSourceState.Off);
+        }
+
         private void WaitForStatus(CapturingDataSourceUpdates sink, DataSourceState state, TimeSpan? timeout = null)
         {
             var actualTimeout = timeout ?? TimeSpan.FromSeconds(5);

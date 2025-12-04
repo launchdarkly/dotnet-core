@@ -21,7 +21,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly object _lock = new object();
         private readonly Queue<Action> _pendingActions = new Queue<Action>();
         private bool _isProcessingActions;
+        private bool _disposed;
 
+        private readonly IDataSourceUpdates _originalUpdateSink;
         private readonly IDataSourceUpdates _sanitizedUpdateSink;
         private readonly SourcesList<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)> _sourcesList;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
@@ -52,6 +54,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 throw new ArgumentNullException(nameof(factoryTuples));
             }
 
+            _originalUpdateSink = updatesSink;
             _sanitizedUpdateSink = new DataSourceUpdatesSanitizer(updatesSink);
 
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
@@ -103,10 +106,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _isProcessingActions = false;
                 _sourcesList.Reset();
                 _currentEntry = default;
+                
+                _disposed = true;
             }
 
-            // report state Off
-            _sanitizedUpdateSink.UpdateStatus(DataSourceState.Off, null);
+            // report state Off directly to the original sink, bypassing the sanitizer
+            // which would map Off to Interrupted (that mapping is only for underlying sources)
+            _originalUpdateSink.UpdateStatus(DataSourceState.Off, null);
         }
 
         /// <summary>
@@ -209,6 +215,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public Task<bool> StartCurrent()
         {
+            if (_disposed)
+            {
+                return Task.FromResult(false);
+            }
+
             var tcs = new TaskCompletionSource<bool>();
             
             EnqueueAction(() =>
@@ -251,6 +262,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public void DisposeCurrent()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             EnqueueAction(() =>
             {
                 lock (_lock)
@@ -274,6 +290,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public void GoToNext()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             EnqueueAction(() =>
             {
                 lock (_lock)
@@ -300,6 +321,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public void GoToFirst()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             EnqueueAction(() =>
             {
                 lock (_lock)
@@ -327,6 +353,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public void BlacklistCurrent()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             EnqueueAction(() =>
             {
                 lock (_lock)

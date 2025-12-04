@@ -392,58 +392,41 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        private bool ApplyFullChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
+        private bool ApplyFullChangeSetToLegacyStore(ChangeSet<ItemDescriptor> unsortedChangeset)
         {
-            // Convert ChangeSet to FullDataSet
-            var fullDataSet = new FullDataSet<ItemDescriptor>(changeSet.Data);
-
-            try
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>();
+            if (unsortedChangeset.EnvironmentId != null)
             {
-                var sortedCollections = DataStoreSorter.SortAllCollections(fullDataSet);
-
-                if (_store is IDataStoreMetadata storeMetadata)
-                {
-                    storeMetadata.InitWithMetadata(sortedCollections, new InitMetadata(changeSet.EnvironmentId));
-                }
-                else
-                {
-                    _store.Init(sortedCollections);
-                }
-
-                _lastStoreUpdateFailed = false;
-            }
-            catch (Exception e)
-            {
-                ReportStoreFailure(e);
-                return false;
+                headers.Add(new KeyValuePair<string, IEnumerable<string>>(HeaderConstants.EnvironmentId,
+                    new[] { unsortedChangeset.EnvironmentId }));
             }
 
-            return true;
+            return InitWithHeaders(new FullDataSet<ItemDescriptor>(unsortedChangeset.Data), headers);
         }
 
         private bool ApplyPartialChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
         {
-            // For partial changesets, call Upsert for each item
-            foreach (var kindEntry in changeSet.Data)
+            // Sorting isn't strictly required here, as upsert behavior didn't traditionally have it,
+            // but it also doesn't hurt, and there could be cases where it results in slightly
+            // greater store consistency for persistent stores.
+            var sortedChangeset = DataStoreSorter.SortChangeset(changeSet);
+            foreach (var kindItemsPair in sortedChangeset.Data)
             {
-                var kind = kindEntry.Key;
-                foreach (var itemEntry in kindEntry.Value.Items)
+                foreach (var item in kindItemsPair.Value.Items)
                 {
-                    var key = itemEntry.Key;
-                    var item = itemEntry.Value;
-
-                    try
+                    var applySuccess = Upsert(kindItemsPair.Key, item.Key, item.Value);
+                    if (!applySuccess)
                     {
-                        _store.Upsert(kind, key, item);
-                        _lastStoreUpdateFailed = false;
-                    }
-                    catch (Exception e)
-                    {
-                        ReportStoreFailure(e);
                         return false;
                     }
                 }
             }
+            // The upsert will update the store status in the case of a store failure.
+            // The application of the upserts does not set the store initialized.
+            
+            // Considering the store will be the same for the duration of the application
+            // lifecycle we will not be applying a partial update to a store that didn't
+            // already get a full update. The non-transactional store will also not support a selector.
 
             return true;
         }
@@ -527,7 +510,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         #region ITransactionalDataSourceUpdates methods
 
-        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        private bool ApplyToTransactionalStore(ITransactionalDataStore transactionalDataStore,
+            ChangeSet<ItemDescriptor> changeSet)
         {
             ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
             // Getting the old values requires accessing the store, which can fail.
@@ -543,26 +527,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
-            if (_store is ITransactionalDataStore transactionalDataStore)
+
+            try
             {
-                try
-                {
-                    transactionalDataStore.Apply(sortedChangeSet);
-                    _lastStoreUpdateFailed = false;
-                }
-                catch (Exception e)
-                {
-                    ReportStoreFailure(e);
-                    return false;
-                }
+                transactionalDataStore.Apply(sortedChangeSet);
+                _lastStoreUpdateFailed = false;
             }
-            else
+            catch (Exception e)
             {
-                // Legacy update path for non-transactional stores
-                if (!ApplyToLegacyStore(sortedChangeSet))
-                {
-                    return false;
-                }
+                ReportStoreFailure(e);
+                return false;
             }
 
             // Calling Apply implies that the data source is now in a valid state.
@@ -578,6 +552,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             return true;
+        }
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            if (_store is ITransactionalDataStore transactionalDataStore)
+            {
+                return ApplyToTransactionalStore(transactionalDataStore, changeSet);
+            }
+
+            // Legacy update path for non-transactional stores
+            return ApplyToLegacyStore(changeSet);
         }
 
         #endregion

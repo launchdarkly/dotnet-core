@@ -298,13 +298,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var flags = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items.ToList();
                 Assert.Equal(2, flags.Count);
-                Assert.True(flags.Any(kv => kv.Key == "flag1" && kv.Value.Item != null));
-                Assert.True(flags.Any(kv => kv.Key == "flag2" && kv.Value.Item == null));
+                Assert.Contains(flags, kv => kv.Key == "flag1" && kv.Value.Item != null);
+                Assert.Contains(flags, kv => kv.Key == "flag2" && kv.Value.Item == null);
 
                 var segments = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Segments).Value.Items.ToList();
                 Assert.Equal(2, segments.Count);
-                Assert.True(segments.Any(kv => kv.Key == "segment1" && kv.Value.Item != null));
-                Assert.True(segments.Any(kv => kv.Key == "segment2" && kv.Value.Item == null));
+                Assert.Contains(segments, kv => kv.Key == "segment1" && kv.Value.Item != null);
+                Assert.Contains(segments, kv => kv.Key == "segment2" && kv.Value.Item == null);
             }
         }
 

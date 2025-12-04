@@ -44,7 +44,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private readonly SelectorSource _selectorSource;
 
-        private string _environmentId;
+        private volatile string _environmentId;
 
         /// <summary>
         /// When the store enters a failed state, and we don't have "data source monitoring", we want to log

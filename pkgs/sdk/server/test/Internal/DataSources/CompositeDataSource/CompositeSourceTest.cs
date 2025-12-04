@@ -30,34 +30,46 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             IActionApplier sharedActionApplier = null;
             ICompositeSourceActionable capturedActionable = null;
 
-            var actionApplierFactory = new MockActionApplierFactory((actionable) =>
+            ActionApplierFactory actionApplierFactory = (actionable) =>
             {
                 capturedActionable = actionable;
                 var applier = new MockActionApplier(actionable);
                 sharedActionApplier = applier;
                 return applier;
-            });
+            };
 
             // First factory: creates a data source that reports initializing -> interrupted -> off
-            var firstDataSource = new MockDataSourceWithStatusSequence(
-                new[] { DataSourceState.Initializing, DataSourceState.Interrupted, DataSourceState.Off }
-            );
-            var firstSourceFactory = new MockSourceFactory(() => firstDataSource);
+            SourceFactory firstSourceFactory = (updatesSink) =>
+            {
+                var source = new MockDataSourceWithStatusSequence(
+                    new[] { DataSourceState.Initializing, DataSourceState.Interrupted, DataSourceState.Off }
+                );
+                source.UpdateSink = updatesSink;
+                return source;
+            };
 
             // Second factory: creates a data source that reports initializing -> interrupted -> off
-            var secondDataSource = new MockDataSourceWithStatusSequence(
-                new[] { DataSourceState.Initializing, DataSourceState.Interrupted, DataSourceState.Off }
-            );
-            var secondSourceFactory = new MockSourceFactory(() => secondDataSource);
+            SourceFactory secondSourceFactory = (updatesSink) =>
+            {
+                var source = new MockDataSourceWithStatusSequence(
+                    new[] { DataSourceState.Initializing, DataSourceState.Interrupted, DataSourceState.Off }
+                );
+                source.UpdateSink = updatesSink;
+                return source;
+            };
 
             // Third factory: creates a data source that reports initializing -> valid
-            var thirdDataSource = new MockDataSourceWithStatusSequence(
-                new[] { DataSourceState.Initializing, DataSourceState.Valid }
-            );
-            var thirdSourceFactory = new MockSourceFactory(() => thirdDataSource);
+            SourceFactory thirdSourceFactory = (updatesSink) =>
+            {
+                var source = new MockDataSourceWithStatusSequence(
+                    new[] { DataSourceState.Initializing, DataSourceState.Valid }
+                );
+                source.UpdateSink = updatesSink;
+                return source;
+            };
 
             // Create CompositeSource with three factory tuples
-            var factoryTuples = new List<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
             {
                 (firstSourceFactory, actionApplierFactory),
                 (secondSourceFactory, actionApplierFactory),
@@ -99,37 +111,41 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             int secondFactoryCallCount = 0;
 
             // First factory: creates a data source that reports initializing -> interrupted -> off
-            var firstSourceFactory = new MockSourceFactory(() =>
+            SourceFactory firstSourceFactory = (updatesSink) =>
             {
                 firstFactoryCallCount++;
-                return new MockDataSourceWithStatusSequence(
+                var source = new MockDataSourceWithStatusSequence(
                     new[] { DataSourceState.Initializing, DataSourceState.Interrupted, DataSourceState.Off }
                 );
-            });
+                source.UpdateSink = updatesSink;
+                return source;
+            };
 
             // Create action applier that blacklists on Off and falls back to next factory
-            var firstActionApplierFactory = new MockActionApplierFactory((actionable) =>
+            ActionApplierFactory firstActionApplierFactory = (actionable) =>
             {
                 return new MockActionApplierWithBlacklistOnOff(actionable);
-            });
+            };
 
             // Second factory: creates a data source that reports initializing -> valid
-            var secondSourceFactory = new MockSourceFactory(() =>
+            SourceFactory secondSourceFactory = (updatesSink) =>
             {
                 secondFactoryCallCount++;
-                return new MockDataSourceWithStatusSequence(
+                var source = new MockDataSourceWithStatusSequence(
                     new[] { DataSourceState.Initializing, DataSourceState.Valid }
                 );
-            });
+                source.UpdateSink = updatesSink;
+                return source;
+            };
 
             // Second action applier factory (for the second data source)
-            var secondActionApplierFactory = new MockActionApplierFactory((actionable) =>
+            ActionApplierFactory secondActionApplierFactory = (actionable) =>
             {
                 return new MockActionApplier(actionable);
-            });
+            };
 
             // Create CompositeSource with two factory tuples
-            var factoryTuples = new List<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
             {
                 (firstSourceFactory, firstActionApplierFactory),
                 (secondSourceFactory, secondActionApplierFactory)
@@ -206,32 +222,40 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 firstDataSourceUpdatesSink?.UpdateStatus(DataSourceState.Interrupted, null);
             });
 
-            var firstSourceFactory = new MockSourceFactory(() => firstDataSource);
+            SourceFactory firstSourceFactory = (updatesSink) =>
+            {
+                firstDataSource.UpdateSink = updatesSink;
+                return firstDataSource;
+            };
 
             // Create an action applier that tracks when actions are triggered
-            var firstActionApplierFactory = new MockActionApplierFactory((actionable) =>
+            ActionApplierFactory firstActionApplierFactory = (actionable) =>
             {
                 return new MockActionApplierWithTracking(actionable, () =>
                 {
                     actionTriggered = true;
                     actionTriggerCount++;
                 });
-            });
+            };
 
             // Second factory: creates a data source that reports initializing -> valid
-            var secondDataSource = new MockDataSourceWithStatusSequence(
-                new[] { DataSourceState.Initializing, DataSourceState.Valid }
-            );
-            var secondSourceFactory = new MockSourceFactory(() => secondDataSource);
+            SourceFactory secondSourceFactory = (updatesSink) =>
+            {
+                var source = new MockDataSourceWithStatusSequence(
+                    new[] { DataSourceState.Initializing, DataSourceState.Valid }
+                );
+                source.UpdateSink = updatesSink;
+                return source;
+            };
 
             // Second action applier factory (for the second data source)
-            var secondActionApplierFactory = new MockActionApplierFactory((actionable) =>
+            ActionApplierFactory secondActionApplierFactory = (actionable) =>
             {
                 return new MockActionApplier(actionable);
-            });
+            };
 
             // Create CompositeSource with two factory tuples
-            var factoryTuples = new List<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
             {
                 (firstSourceFactory, firstActionApplierFactory),
                 (secondSourceFactory, secondActionApplierFactory)
@@ -295,45 +319,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         // Mock implementations
-
-        private class MockSourceFactory : ISourceFactory
-        {
-            private readonly Func<IDataSource> _createFn;
-
-            public MockSourceFactory(Func<IDataSource> createFn)
-            {
-                _createFn = createFn;
-            }
-
-            public IDataSource CreateSource(IDataSourceUpdates updatesSink)
-            {
-                var source = _createFn();
-                if (source is MockDataSourceWithStatusSequence mockSource)
-                {
-                    mockSource.UpdateSink = updatesSink;
-                }
-                else if (source is MockMisbehavingDataSource misbehavingSource)
-                {
-                    misbehavingSource.UpdateSink = updatesSink;
-                }
-                return source;
-            }
-        }
-
-        private class MockActionApplierFactory : IActionApplierFactory
-        {
-            private readonly Func<ICompositeSourceActionable, IActionApplier> _createFn;
-
-            public MockActionApplierFactory(Func<ICompositeSourceActionable, IActionApplier> createFn)
-            {
-                _createFn = createFn;
-            }
-
-            public IActionApplier CreateActionApplier(ICompositeSourceActionable actionable)
-            {
-                return _createFn(actionable);
-            }
-        }
 
         private class MockActionApplier : IActionApplier
         {

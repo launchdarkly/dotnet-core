@@ -8,8 +8,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
     /// <summary>
     /// A composite source is a source that can dynamically switch between sources with the
-    /// help of a list of <see cref="ISourceFactory"/> instances and <see cref="IActionApplierFactory"/> instances.
-    /// The ISourceFactory instances are used to create the data sources, and the IActionApplierFactory creates the action appliers that are used
+    /// help of a list of <see cref="SourceFactory"/> delegates and <see cref="ActionApplierFactory"/> delegates.
+    /// The SourceFactory delegates are used to create the data sources, and the ActionApplierFactory creates the action appliers that are used
     ///  to apply actions to the composite source as updates are received from the data sources.
     /// </summary>
     internal sealed class CompositeSource : IDataSource, ICompositeSourceActionable
@@ -23,13 +23,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private bool _isProcessingActions;
 
         private readonly IDataSourceUpdates _sanitizedUpdateSink;
-        private readonly SourcesList<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)> _sourcesList;
+        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> _sourcesList;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
         // Tracks the entry from the sources list that was used to create the current
         // data source instance. This allows operations such as blacklist to remove
         // the correct factory/action-applier-factory tuple from the list.
-        private (ISourceFactory Factory, IActionApplierFactory ActionApplierFactory) _currentEntry;
+        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory) _currentEntry;
         private IDataSource _currentDataSource;
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
         public CompositeSource(
             IDataSourceUpdates updatesSink,
-            IList<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)> factoryTuples,
+            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
             bool circular = true)
         {
             if (updatesSink is null)
@@ -57,7 +57,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
 
-            _sourcesList = new SourcesList<(ISourceFactory SourceFactory, IActionApplierFactory ActionApplierFactory)>(
+            _sourcesList = new SourcesList<(SourceFactory SourceFactory, ActionApplierFactory ActionApplierFactory)>(
                 circular: circular,
                 initialList: factoryTuples
             );
@@ -189,7 +189,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var updateSinks = new List<IDataSourceUpdates>();
             if (entry.ActionApplierFactory != null)
             {
-                var actionApplier = entry.ActionApplierFactory.CreateActionApplier(this);
+                var actionApplier = entry.ActionApplierFactory(this);
                 updateSinks.Add(actionApplier);
             }
             updateSinks.Add(_sanitizedUpdateSink);
@@ -199,7 +199,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var disableableUpdates = _disableableTracker.WrapAndTrack(fanout);
             
             _currentEntry = entry;
-            _currentDataSource = entry.Factory.CreateSource(disableableUpdates);
+            _currentDataSource = entry.Factory(disableableUpdates);
         }
 
         #region ICompositeSourceActionable

@@ -406,7 +406,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private bool ApplyPartialChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
         {
-            foreach (var kindItemsPair in changeSet.Data)
+            // Sorting isn't strictly required here, as upsert behavior didn't traditionally have it,
+            // but it also doesn't hurt, and there could be cases where it results in slightly
+            // greater store consistency for persistent stores.
+            var sortedChangeset = DataStoreSorter.SortChangeset(changeSet);
+            foreach (var kindItemsPair in sortedChangeset.Data)
             {
                 foreach (var item in kindItemsPair.Value.Items)
                 {
@@ -417,6 +421,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     }
                 }
             }
+            // The upsert will update the store status in the case of a store failure.
+            // The application of the upserts does not set the store initialized.
+            
+            // Considering the store will be the same for the duration of the application
+            // lifecycle we will not be applying a partial update to a store that didn't
+            // already get a full update. The non-transactional store will also not support a selector.
 
             return true;
         }

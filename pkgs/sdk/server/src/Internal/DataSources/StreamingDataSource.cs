@@ -41,6 +41,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly Logger _log;
 
         private readonly IEventSource _es;
+        /// <summary>
+        /// When the store enters a failed state, and we don't have "data source monitoring", we want to log
+        /// a message that we are restarting the event source. We don't want to log this message on multiple
+        /// sequential failures. This boolean is used to determine if the previous attempt to write also
+        /// failed, and in which case we will not log.
+        /// </summary>
         private volatile bool _lastStoreUpdateFailed = false;
         internal DateTime _esStarted; // exposed for testing
 

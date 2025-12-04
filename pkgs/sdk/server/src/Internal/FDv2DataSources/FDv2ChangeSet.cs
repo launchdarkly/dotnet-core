@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Text.Json;
+using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
@@ -41,7 +42,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
     /// <summary>
     /// Represents a single change to a data object.
     /// </summary>
-    internal sealed class FDv2Change
+    internal struct FDv2Change
     {
         /// <summary>
         /// The type of change operation.
@@ -72,7 +73,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <summary>
         /// The raw JSON string representing the object data (only present for Put operations).
         /// </summary>
-        public string Object { get; }
+        public JsonElement? Object { get; }
 
         /// <summary>
         /// Constructs a new Change.
@@ -83,7 +84,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <param name="version">The version of the change.</param>
         /// <param name="obj">The raw JSON string representing the object data (required for Put operations).</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="kind"/> or <paramref name="key"/> is null.</exception>
-        public FDv2Change(FDv2ChangeType type, string kind, string key, int version, string obj = null)
+        public FDv2Change(FDv2ChangeType type, string kind, string key, int version, JsonElement? obj = null)
         {
             Type = type;
             Kind = kind ?? throw new ArgumentNullException(nameof(kind));
@@ -114,26 +115,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <summary>
         /// The selector (version identifier) for this changeset.
         /// </summary>
-        public FDv2Selector FDv2Selector { get; }
+        public Selector Selector { get; }
 
         /// <summary>
         /// Constructs a new ChangeSet.
         /// </summary>
         /// <param name="type">The type of the changeset.</param>
         /// <param name="changes">The list of changes.</param>
-        /// <param name="fDv2Selector">The selector.</param>
+        /// <param name="selector">The selector.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="changes"/> is null.</exception>
-        public FDv2ChangeSet(FDv2ChangeSetType type, ImmutableList<FDv2Change> changes, FDv2Selector fDv2Selector)
+        public FDv2ChangeSet(FDv2ChangeSetType type, ImmutableList<FDv2Change> changes, Selector selector)
         {
             Type = type;
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));
-            FDv2Selector = fDv2Selector;
+            Selector = selector;
         }
 
         /// <summary>
         /// An empty changeset that indicates no changes are required.
         /// </summary>
         public static FDv2ChangeSet None { get; } =
-            new FDv2ChangeSet(FDv2ChangeSetType.None, ImmutableList<FDv2Change>.Empty, FDv2Selector.Empty);
+            new FDv2ChangeSet(FDv2ChangeSetType.None, ImmutableList<FDv2Change>.Empty, Selector.Empty);
     }
 }

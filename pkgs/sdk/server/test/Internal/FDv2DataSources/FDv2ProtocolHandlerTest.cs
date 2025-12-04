@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Immutable;
 using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
+using LaunchDarkly.Sdk.Server.Internal.Model;
 using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
@@ -21,7 +21,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private static FDv2Event CreatePutObjectEvent(string kind, string key, int version, string jsonStr = "{}")
         {
-            var putObj = new PutObject(version, kind, key, jsonStr);
+            var putObj = new PutObject(version, kind, key, JsonSerializer.Deserialize<JsonElement>(jsonStr));
             var json = JsonSerializer.Serialize(putObj, GetJsonOptions());
             var data = JsonDocument.Parse(json).RootElement;
             return new FDv2Event(FDv2EventTypes.PutObject, data);
@@ -135,8 +135,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             Assert.Equal(2, changesetAction.Changeset.Changes.Count);
             Assert.Equal("flag-123", changesetAction.Changeset.Changes[0].Key);
             Assert.Equal("flag-abc", changesetAction.Changeset.Changes[1].Key);
-            Assert.Equal("(p:payload-123:52)", changesetAction.Changeset.FDv2Selector.State);
-            Assert.Equal(52, changesetAction.Changeset.FDv2Selector.Version);
+            Assert.Equal("(p:payload-123:52)", changesetAction.Changeset.Selector.State);
+            Assert.Equal(52, changesetAction.Changeset.Selector.Version);
         }
 
         /// <summary>
@@ -526,8 +526,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "p1", 1, "missing"));
 
-            var flagData = @"{""key"":""test-flag"",""on"":true}";
-            var putEvt = CreatePutObjectEvent("flag", "test-flag", 42,flagData);
+            var flagData = @"{""key"":""test-flag"",""on"":true, ""version"": 314}";
+            var putEvt = CreatePutObjectEvent("flag", "test-flag", 42, flagData);
             handler.HandleEvent(putEvt);
 
             var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:p1:1)", 1));
@@ -541,9 +541,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             Assert.NotNull(changeset.Changes[0].Object);
 
             // Verify we can deserialize the stored JSON string
-            var parsedFlag = JsonDocument.Parse(changeset.Changes[0].Object);
-            Assert.Equal("test-flag", parsedFlag.RootElement.GetProperty("key").GetString());
-            Assert.True(parsedFlag.RootElement.GetProperty("on").GetBoolean());
+            var parsedFlag = changeset.Changes[0].Object.Value.Deserialize<FeatureFlag>();
+            Assert.Equal("test-flag", parsedFlag.Key);
+            Assert.Equal(314, parsedFlag.Version);
+            Assert.True(parsedFlag.On);
         }
 
         /// <summary>
@@ -706,9 +707,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreatePayloadTransferredEvent("(p:test-payload-id:42)", 42));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.False(changeset.FDv2Selector.IsEmpty);
-            Assert.Equal("(p:test-payload-id:42)", changeset.FDv2Selector.State);
-            Assert.Equal(42, changeset.FDv2Selector.Version);
+            Assert.False(changeset.Selector.IsEmpty);
+            Assert.Equal("(p:test-payload-id:42)", changeset.Selector.State);
+            Assert.Equal(42, changeset.Selector.Version);
         }
 
         /// <summary>
@@ -722,7 +723,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var action = handler.HandleEvent(CreateServerIntentEvent(IntentCode.None, "p1", 1, "up-to-date"));
 
             var changeset = ((FDv2ActionChangeset)action).Changeset;
-            Assert.True(changeset.FDv2Selector.IsEmpty);
+            Assert.True(changeset.Selector.IsEmpty);
         }
 
         #endregion

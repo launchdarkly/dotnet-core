@@ -392,54 +392,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        private bool ApplyFullChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
+        private bool ApplyFullChangeSetToLegacyStore(ChangeSet<ItemDescriptor> unsortedChangeset)
         {
-            // Convert ChangeSet to FullDataSet
-            var fullDataSet = new FullDataSet<ItemDescriptor>(changeSet.Data);
-
-            try
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>();
+            if (unsortedChangeset.EnvironmentId != null)
             {
-                var sortedCollections = DataStoreSorter.SortAllCollections(fullDataSet);
-
-                if (_store is IDataStoreMetadata storeMetadata)
-                {
-                    storeMetadata.InitWithMetadata(sortedCollections, new InitMetadata(changeSet.EnvironmentId));
-                }
-                else
-                {
-                    _store.Init(sortedCollections);
-                }
-
-                _lastStoreUpdateFailed = false;
-            }
-            catch (Exception e)
-            {
-                ReportStoreFailure(e);
-                return false;
+                headers.Add(new KeyValuePair<string, IEnumerable<string>>(HeaderConstants.EnvironmentId,
+                    new[] { unsortedChangeset.EnvironmentId }));
             }
 
-            return true;
+            return InitWithHeaders(new FullDataSet<ItemDescriptor>(unsortedChangeset.Data), headers);
         }
 
         private bool ApplyPartialChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
         {
-            // For partial changesets, call Upsert for each item
-            foreach (var kindEntry in changeSet.Data)
+            foreach (var kindItemsPair in changeSet.Data)
             {
-                var kind = kindEntry.Key;
-                foreach (var itemEntry in kindEntry.Value.Items)
+                foreach (var item in kindItemsPair.Value.Items)
                 {
-                    var key = itemEntry.Key;
-                    var item = itemEntry.Value;
-
-                    try
+                    var applySuccess = Upsert(kindItemsPair.Key, item.Key, item.Value);
+                    if (!applySuccess)
                     {
-                        _store.Upsert(kind, key, item);
-                        _lastStoreUpdateFailed = false;
-                    }
-                    catch (Exception e)
-                    {
-                        ReportStoreFailure(e);
                         return false;
                     }
                 }
@@ -527,7 +500,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         #region ITransactionalDataSourceUpdates methods
 
-        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        private bool ApplyToTransactionalStore(ITransactionalDataStore transactionalDataStore,
+            ChangeSet<ItemDescriptor> changeSet)
         {
             ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
             // Getting the old values requires accessing the store, which can fail.
@@ -543,26 +517,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
-            if (_store is ITransactionalDataStore transactionalDataStore)
+
+            try
             {
-                try
-                {
-                    transactionalDataStore.Apply(sortedChangeSet);
-                    _lastStoreUpdateFailed = false;
-                }
-                catch (Exception e)
-                {
-                    ReportStoreFailure(e);
-                    return false;
-                }
+                transactionalDataStore.Apply(sortedChangeSet);
+                _lastStoreUpdateFailed = false;
             }
-            else
+            catch (Exception e)
             {
-                // Legacy update path for non-transactional stores
-                if (!ApplyToLegacyStore(sortedChangeSet))
-                {
-                    return false;
-                }
+                ReportStoreFailure(e);
+                return false;
             }
 
             // Calling Apply implies that the data source is now in a valid state.
@@ -578,6 +542,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             return true;
+        }
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            if (_store is ITransactionalDataStore transactionalDataStore)
+            {
+                return ApplyToTransactionalStore(transactionalDataStore, changeSet);
+            }
+
+            // Legacy update path for non-transactional stores
+            return ApplyToLegacyStore(changeSet);
         }
 
         #endregion

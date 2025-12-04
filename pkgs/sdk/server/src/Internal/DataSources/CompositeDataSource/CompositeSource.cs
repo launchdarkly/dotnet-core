@@ -233,7 +233,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     try
                     {
-                        var result = await dataSourceToStart.Start();
+                        var result = await dataSourceToStart.Start().ConfigureAwait(false);
                         tcs.TrySetResult(result);
                     }
                     catch (Exception ex)

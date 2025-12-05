@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -423,5 +423,422 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private static Segment NextVersion(Segment segment) =>
             new SegmentBuilder(segment).Version(segment.Version + 1).Build();
+
+        private static ChangeSet<ItemDescriptor> MakeFullChangeSet(params FeatureFlag[] flags)
+        {
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>();
+            if (flags.Length > 0)
+            {
+                var flagItems = flags.ToDictionary(f => f.Key, f => DescriptorOf(f));
+                data.Add(new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(flagItems)
+                ));
+            }
+            return new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full,
+                Selector.Make(1, "state1"),
+                data,
+                null
+            );
+        }
+
+        private static ChangeSet<ItemDescriptor> MakePartialChangeSet(params FeatureFlag[] flags)
+        {
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>();
+            if (flags.Length > 0)
+            {
+                var flagItems = flags.ToDictionary(f => f.Key, f => DescriptorOf(f));
+                data.Add(new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(flagItems)
+                ));
+            }
+            return new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Partial,
+                Selector.Make(1, "state1"),
+                data,
+                null
+            );
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForNewlyAddedFlags()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventForNewlyAddedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForUpdatedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1, NextVersion(flag2)));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventForUpdatedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(NextVersion(flag2)));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForDeletedFlags()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventForDeletedFlag()
+        {
+            var updates = MakeInstance();
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var deletedFlag = ItemDescriptor.Deleted(flag2.Version + 1);
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>
+            {
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { { flag2.Key, deletedFlag } })
+                )
+            };
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Partial, Selector.Make(1, "state1"), data, null);
+            updates.Apply(changeSet);
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForFlagsWhosePrerequisitesChanged()
+        {
+            var updates = MakeInstance();
+
+            var initialFlags = new[] {
+                flag1,
+                FlagWithPrerequisiteReference(flag2, flag1),
+                flag3,
+                FlagWithPrerequisiteReference(flag4, flag1),
+                FlagWithPrerequisiteReference(flag5, flag4),
+                flag6
+            };
+            updates.Apply(MakeFullChangeSet(initialFlags));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var updatedFlags = new[] {
+                NextVersion(flag1),
+                FlagWithPrerequisiteReference(flag2, flag1),
+                flag3,
+                FlagWithPrerequisiteReference(flag4, flag1),
+                FlagWithPrerequisiteReference(flag5, flag4),
+                flag6
+            };
+            updates.Apply(MakeFullChangeSet(updatedFlags));
+
+            ExpectFlagChangeEvents(eventSink, "flag1", "flag2", "flag4", "flag5");
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventsForFlagsWhosePrerequisitesChanged()
+        {
+            var updates = MakeInstance();
+
+            var initialFlags = new[] {
+                flag1,
+                FlagWithPrerequisiteReference(flag2, flag1),
+                flag3,
+                FlagWithPrerequisiteReference(flag4, flag1),
+                FlagWithPrerequisiteReference(flag5, flag4),
+                flag6
+            };
+            updates.Apply(MakeFullChangeSet(initialFlags));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(NextVersion(flag1)));
+
+            ExpectFlagChangeEvents(eventSink, "flag1", "flag2", "flag4", "flag5");
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetSendsEventsForFlagsWhoseSegmentsChanged()
+        {
+            var segment1WithSegment2Ref = SegmentWithSegmentReference(segment1, segment2);
+
+            var updates = MakeInstance();
+
+            var initialData = new DataSetBuilder()
+                .Flags(flag1, FlagWithSegmentReference(flag2, segment1), FlagWithSegmentReference(flag3, segment2), FlagWithPrerequisiteReference(flag4, flag2))
+                .Segments(segment1WithSegment2Ref, segment2, segment3)
+                .Build();
+            updates.Init(initialData);
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var updatedSegment = NextVersion(segment1WithSegment2Ref);
+            var updatedData = new DataSetBuilder()
+                .Flags(flag1, FlagWithSegmentReference(flag2, segment1), FlagWithSegmentReference(flag3, segment2), FlagWithPrerequisiteReference(flag4, flag2))
+                .Segments(updatedSegment, segment2, segment3)
+                .Build();
+
+            var changeSetData = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>();
+            foreach (var kindEntry in updatedData.Data)
+            {
+                changeSetData.Add(new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    kindEntry.Key,
+                    kindEntry.Value
+                ));
+            }
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Full, Selector.Make(1, "state1"), changeSetData, null);
+            updates.Apply(changeSet);
+
+            ExpectFlagChangeEvents(eventSink, "flag2", "flag4");
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetSendsEventsForFlagsWhoseSegmentsChanged()
+        {
+            var segment1WithSegment2Ref = SegmentWithSegmentReference(segment1, segment2);
+
+            var updates = MakeInstance();
+
+            var initialData = new DataSetBuilder()
+                .Flags(flag1, FlagWithSegmentReference(flag2, segment1), FlagWithSegmentReference(flag3, segment2), FlagWithPrerequisiteReference(flag4, flag2))
+                .Segments(segment1WithSegment2Ref, segment2, segment3)
+                .Build();
+            updates.Init(initialData);
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            var updatedSegment = NextVersion(segment1WithSegment2Ref);
+            var segmentData = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>
+            {
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Segments,
+                    new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> {
+                        { updatedSegment.Key, DescriptorOf(updatedSegment) }
+                    })
+                )
+            };
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Partial, Selector.Make(1, "state1"), segmentData, null);
+            updates.Apply(changeSet);
+
+            ExpectFlagChangeEvents(eventSink, "flag2", "flag4");
+        }
+
+        // Tests for legacy (non-transactional) data store path
+
+        private class LegacyDataStore : IDataStore, IDataStoreMetadata
+        {
+            private readonly Dictionary<DataKind, Dictionary<string, ItemDescriptor>> _data = new Dictionary<DataKind, Dictionary<string, ItemDescriptor>>();
+            private InitMetadata _metadata;
+
+            public bool StatusMonitoringEnabled => false;
+
+            public void Init(FullDataSet<ItemDescriptor> allData)
+            {
+                _data.Clear();
+                foreach (var kindEntry in allData.Data)
+                {
+                    var kind = kindEntry.Key;
+                    _data[kind] = new Dictionary<string, ItemDescriptor>();
+                    foreach (var itemEntry in kindEntry.Value.Items)
+                    {
+                        _data[kind][itemEntry.Key] = itemEntry.Value;
+                    }
+                }
+            }
+
+            public void InitWithMetadata(FullDataSet<ItemDescriptor> allData, InitMetadata metadata)
+            {
+                _metadata = metadata;
+                Init(allData);
+            }
+
+            public InitMetadata GetMetadata() => _metadata;
+
+            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            {
+                if (!_data.ContainsKey(kind))
+                {
+                    _data[kind] = new Dictionary<string, ItemDescriptor>();
+                }
+
+                if (_data[kind].TryGetValue(key, out var oldItem))
+                {
+                    if (oldItem.Version >= item.Version)
+                    {
+                        return false;
+                    }
+                }
+
+                _data[kind][key] = item;
+                return true;
+            }
+
+            public ItemDescriptor? Get(DataKind kind, string key)
+            {
+                if (_data.TryGetValue(kind, out var items) && items.TryGetValue(key, out var item))
+                {
+                    return item;
+                }
+                return null;
+            }
+
+            public KeyedItems<ItemDescriptor> GetAll(DataKind kind)
+            {
+                if (_data.TryGetValue(kind, out var items))
+                {
+                    return new KeyedItems<ItemDescriptor>(items);
+                }
+                return new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor>());
+            }
+
+            public bool Initialized() => _data.Count > 0;
+
+            public void Dispose() { }
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetToLegacyStoreCallsInit()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            var retrievedFlag1 = legacyStore.Get(DataModel.Features, flag1.Key);
+            var retrievedFlag2 = legacyStore.Get(DataModel.Features, flag2.Key);
+
+            Assert.NotNull(retrievedFlag1);
+            Assert.NotNull(retrievedFlag2);
+            Assert.Equal(flag1.Version, retrievedFlag1.Value.Version);
+            Assert.Equal(flag2.Version, retrievedFlag2.Value.Version);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetToLegacyStoreCallsUpsert()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1));
+            updates.Apply(MakePartialChangeSet(flag2));
+
+            var retrievedFlag1 = legacyStore.Get(DataModel.Features, flag1.Key);
+            var retrievedFlag2 = legacyStore.Get(DataModel.Features, flag2.Key);
+
+            Assert.NotNull(retrievedFlag1);
+            Assert.NotNull(retrievedFlag2);
+            Assert.Equal(flag1.Version, retrievedFlag1.Value.Version);
+            Assert.Equal(flag2.Version, retrievedFlag2.Value.Version);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetToLegacyStoreSendsEvents()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakeFullChangeSet(flag1, flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyPartialChangeSetToLegacyStoreSendsEvents()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            updates.Apply(MakeFullChangeSet(flag1));
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+
+            updates.Apply(MakePartialChangeSet(flag2));
+
+            ExpectFlagChangeEvents(eventSink, flag2.Key);
+        }
+
+        [Fact]
+        public void ApplyFullChangeSetToLegacyStoreWithEnvironmentId()
+        {
+            var legacyStore = new LegacyDataStore();
+            dataStoreStatusProvider = new DataStoreStatusProviderImpl(legacyStore, dataStoreUpdates);
+            var updates = new DataSourceUpdatesImpl(legacyStore, dataStoreStatusProvider, BasicTaskExecutor, TestLogger, null);
+
+            var data = new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>
+            {
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { { flag1.Key, DescriptorOf(flag1) } })
+                )
+            };
+            var changeSet = new ChangeSet<ItemDescriptor>(ChangeSetType.Full, Selector.Make(1, "state1"), data, "test-env-id");
+            updates.Apply(changeSet);
+
+            Assert.Equal("test-env-id", legacyStore.GetMetadata().EnvironmentId);
+        }
     }
 }

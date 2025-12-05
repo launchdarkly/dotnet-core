@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.EventSource;
 using LaunchDarkly.Logging;
@@ -31,7 +29,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private readonly IEventSource _es;
         private readonly TaskCompletionSource<bool> _initTask = new TaskCompletionSource<bool>();
-        private IEnumerable<KeyValuePair<string, IEnumerable<string>>> _headers;
         private DateTime _esStarted;
         private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
         private readonly FDv2ProtocolHandler _protocolHandler = new FDv2ProtocolHandler();
@@ -39,12 +36,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private readonly IDiagnosticStore _diagnosticStore;
         private readonly IDataSourceUpdates _dataSourceUpdates;
+        private readonly ITransactionalDataSourceUpdates _transactionalDataSourceUpdates;
 
         private readonly TimeSpan _initialReconnectDelay;
         private readonly Logger _log;
         private readonly bool _storeStatusMonitoringEnabled;
 
         private readonly SelectorSource _selectorSource;
+
+        private volatile string _environmentId;
 
         /// <summary>
         /// When the store enters a failed state, and we don't have "data source monitoring", we want to log
@@ -66,7 +66,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _log = context.Logger.SubLogger(LogNames.FDv2DataSourceSubLog);
             _log.Debug("Created LaunchDarkly streaming data source");
 
+            if (dataSourceUpdates is ITransactionalDataSourceUpdates transactionalDataSourceUpdates)
+            {
+                _transactionalDataSourceUpdates = transactionalDataSourceUpdates;
+            }
+            else
+            {
+                throw new InvalidOperationException("dataSourceUpdates must be ITransactionalDataSourceUpdates");
+            }
+
             _dataSourceUpdates = dataSourceUpdates;
+
             _initialReconnectDelay = initialReconnectDelay;
             _diagnosticStore = context.DiagnosticStore;
             _selectorSource = selectorSource;
@@ -123,40 +133,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         public bool Initialized => _initialized.Get();
-
-        private bool HandleFullTransfer(FDv2ChangeSet changeset,
-            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-        {
-            // TODO: Check if the data source updates implementation supports the transactional store interface.
-            // If it does, then apply the data using that mechanism.
-            // Alternatively only support the transactional interface and report an error.
-            var putData = FDv2ChangeSetTranslator.TranslatePutData(changeset, _log);
-            if (_dataSourceUpdates is IDataSourceUpdatesHeaders dataSourceUpdatesHeaders)
-            {
-                return dataSourceUpdatesHeaders.InitWithHeaders(putData.Data, headers);
-            }
-
-            return _dataSourceUpdates.Init(putData.Data);
-        }
-
-        private bool HandlePartial(FDv2ChangeSet changeset)
-        {
-            // TODO: Check if the data source updates implementation supports the transactional store interface.
-            // If it does, then apply the data using that mechanism.
-            // Alternatively only support the transactional interface and report an error.
-            var patches = FDv2ChangeSetTranslator.TranslatePatchData(changeset, _log);
-            var success = true;
-            foreach (var patch in patches)
-            {
-                success = _dataSourceUpdates.Upsert(patch.Kind, patch.Key, patch.Item);
-                if (!success)
-                {
-                    break;
-                }
-            }
-
-            return success;
-        }
 
         private void HandleJsonError(string message)
         {
@@ -218,22 +194,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 case FDv2ActionChangeset changeAction:
                 {
-                    var storeError = false;
                     var changeset = changeAction.Changeset;
-                    switch (changeset.Type)
-                    {
-                        case FDv2ChangeSetType.Full:
-                            storeError = !HandleFullTransfer(changeset, _headers);
-                            break;
-                        case FDv2ChangeSetType.Partial:
-                            storeError = !HandlePartial(changeset);
-                            break;
-                        case FDv2ChangeSetType.None:
-                            break;
-                        default:
-                            _log.Error("Unhandled FDv2 Changeset Type.");
-                            break;
-                    }
+                    var storeError = !_transactionalDataSourceUpdates.Apply(
+                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId));
 
                     if (!storeError)
                     {
@@ -342,7 +305,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _protocolHandler.Reset();
             }
 
-            _headers = e.Headers;
+            _environmentId = e.Headers?.FirstOrDefault((item) =>
+                    item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
+                ?.FirstOrDefault();
             _log.Debug("EventSource Opened");
             RecordStreamInit(false);
         }

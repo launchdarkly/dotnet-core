@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
@@ -81,7 +81,7 @@ namespace LaunchDarkly.Sdk.Server
         }
     }
 
-    public class CapturingDataSourceUpdatesWithHeaders : IDataSourceUpdates, IDataSourceUpdatesHeaders
+    public class CapturingDataSourceUpdatesWithHeaders : IDataSourceUpdates, IDataSourceUpdatesHeaders, ITransactionalDataSourceUpdates
     {
         internal readonly
             EventSink<Tuple<FullDataSet<ItemDescriptor>, IEnumerable<KeyValuePair<string, IEnumerable<string>>>>>
@@ -90,6 +90,7 @@ namespace LaunchDarkly.Sdk.Server
                     IEnumerable<KeyValuePair<string, IEnumerable<string>>>>>();
 
         internal readonly EventSink<UpsertParams> Upserts = new EventSink<UpsertParams>();
+        internal readonly EventSink<ChangeSet<ItemDescriptor>> Applies = new EventSink<ChangeSet<ItemDescriptor>>();
         internal readonly EventSink<DataSourceStatus> StatusUpdates = new EventSink<DataSourceStatus>();
 
         public struct UpsertParams
@@ -104,6 +105,8 @@ namespace LaunchDarkly.Sdk.Server
         internal int InitsShouldFail = 0;
 
         internal int UpsertsShouldFail = 0;
+
+        internal int AppliesShouldFail = 0;
 
         public IDataStoreStatusProvider DataStoreStatusProvider => MockDataStoreStatusProvider;
 
@@ -128,6 +131,12 @@ namespace LaunchDarkly.Sdk.Server
                 new Tuple<FullDataSet<ItemDescriptor>, IEnumerable<KeyValuePair<string, IEnumerable<string>>>>(allData,
                     headers));
             return InitsShouldFail <= 0 || (--InitsShouldFail < 0);
+        }
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            Applies.Enqueue(changeSet);
+            return AppliesShouldFail <= 0 || (--AppliesShouldFail < 0);
         }
     }
 

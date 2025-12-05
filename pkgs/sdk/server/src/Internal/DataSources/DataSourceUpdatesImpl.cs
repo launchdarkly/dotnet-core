@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -9,7 +9,6 @@ using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
 using LaunchDarkly.Sdk.Server.Subsystems;
-
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
@@ -23,7 +22,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// This component is also responsible for receiving updates to the data source status, broadcasting
     /// them to any status listeners, and tracking the length of any period of sustained failure.
     /// </remarks>
-    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdates, IDataSourceUpdatesHeaders
+    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdates, IDataSourceUpdatesHeaders,
+        ITransactionalDataSourceUpdates
     {
         #region Private fields
 
@@ -67,7 +67,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             TaskExecutor taskExecutor,
             Logger baseLogger,
             TimeSpan? outageLoggingTimeout
-            )
+        )
         {
             _store = store;
             _dataStoreStatusProvider = dataStoreStatusProvider;
@@ -76,8 +76,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             _dependencyTracker = new DependencyTracker();
 
-            _outageTracker = outageLoggingTimeout.HasValue ?
-                new DataSourceOutageTracker(_log, outageLoggingTimeout.Value) : null;
+            _outageTracker = outageLoggingTimeout.HasValue
+                ? new DataSourceOutageTracker(_log, outageLoggingTimeout.Value)
+                : null;
 
             var initialStatus = new DataSourceStatus
             {
@@ -134,23 +135,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private static DataSourceStatus? MaybeUpdateStatus(
             DataSourceStatus oldStatus,
             StateAndError update
-            )
+        )
         {
             var newState =
                 (update.State == DataSourceState.Interrupted && oldStatus.State == DataSourceState.Initializing)
-                ? DataSourceState.Initializing  // see comment on IDataSourceUpdates.UpdateStatus
-                : update.State;
+                    ? DataSourceState.Initializing // see comment on IDataSourceUpdates.UpdateStatus
+                    : update.State;
 
             if (newState == oldStatus.State && !update.Error.HasValue)
             {
                 return null;
             }
+
             return new DataSourceStatus
-                {
-                    State = newState,
-                    StateSince = newState == oldStatus.State ? oldStatus.StateSince : DateTime.Now,
-                    LastError = update.Error ?? oldStatus.LastError
-                };
+            {
+                State = newState,
+                StateSince = newState == oldStatus.State ? oldStatus.StateSince : DateTime.Now,
+                LastError = update.Error ?? oldStatus.LastError
+            };
         }
 
         public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -183,7 +185,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var newStatus = await _status.WaitForAsync(
                 status => status.State == desiredState || status.State == DataSourceState.Off,
                 timeout
-                );
+            );
             return newStatus.HasValue && newStatus.Value.State == desiredState;
         }
 
@@ -200,6 +202,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 return;
             }
+
             var sender = this;
             foreach (var item in affectedItems)
             {
@@ -233,13 +236,98 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 builder.Add(e.Key, e.Value.Items.ToImmutableDictionary());
             }
+
             return builder.ToImmutable();
         }
 
-        private ISet<KindAndKey> ComputeChangedItemsForFullDataSet(
+        private ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> ChangeSetToMap(
+            ChangeSet<ItemDescriptor> changeSet)
+        {
+            var builder = ImmutableDictionary.CreateBuilder<DataKind, ImmutableDictionary<string, ItemDescriptor>>();
+            foreach (var kindEntry in changeSet.Data)
+            {
+                builder.Add(kindEntry.Key, kindEntry.Value.Items.ToImmutableDictionary());
+            }
+
+            return builder.ToImmutable();
+        }
+
+        private ISet<KindAndKey> UpdateDependencyTrackerForChangesetAndDetermineChanges(
             ImmutableDictionary<DataKind, ImmutableDictionary<String, ItemDescriptor>> oldDataMap,
-            ImmutableDictionary<DataKind, ImmutableDictionary<String, ItemDescriptor>> newDataMap
-            )
+            ChangeSet<ItemDescriptor> changeSet)
+        {
+            switch (changeSet.Type)
+            {
+                case ChangeSetType.Full:
+                    return HandleFullChangeset(oldDataMap, changeSet);
+                case ChangeSetType.Partial:
+                    return HandlePartialChangeset(oldDataMap, changeSet);
+                case ChangeSetType.None:
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        private ISet<KindAndKey> HandleFullChangeset(
+            ImmutableDictionary<DataKind, ImmutableDictionary<String, ItemDescriptor>> oldDataMap,
+            ChangeSet<ItemDescriptor> changeSet)
+        {
+            _dependencyTracker.Clear();
+            foreach (var kindEntry in changeSet.Data)
+            {
+                var kind = kindEntry.Key;
+                foreach (var itemEntry in kindEntry.Value.Items)
+                {
+                    var key = itemEntry.Key;
+                    _dependencyTracker.UpdateDependenciesFrom(kind, key, itemEntry.Value);
+                }
+            }
+
+            if (oldDataMap == null) return null;
+
+            var newDataMap = ChangeSetToMap(changeSet);
+            return ComputeChangedItemsForFullDataSet(oldDataMap, newDataMap);
+        }
+
+        private ISet<KindAndKey> HandlePartialChangeset(
+            ImmutableDictionary<DataKind, ImmutableDictionary<String, ItemDescriptor>> oldDataMap,
+            ChangeSet<ItemDescriptor> changeSet)
+        {
+            if (oldDataMap == null)
+            {
+                // Update dependencies but don't track changes when no listeners
+                foreach (var kindEntry in changeSet.Data)
+                {
+                    var kind = kindEntry.Key;
+                    foreach (var itemEntry in kindEntry.Value.Items)
+                    {
+                        _dependencyTracker.UpdateDependenciesFrom(kind, itemEntry.Key, itemEntry.Value);
+                    }
+                }
+
+                return null;
+            }
+
+            var affectedItems = new HashSet<KindAndKey>();
+            foreach (var kindEntry in changeSet.Data)
+            {
+                var kind = kindEntry.Key;
+                foreach (var itemEntry in kindEntry.Value.Items)
+                {
+                    var key = itemEntry.Key;
+                    _dependencyTracker.UpdateDependenciesFrom(kind, key, itemEntry.Value);
+                    _dependencyTracker.AddAffectedItems(affectedItems, new KindAndKey(kind, key));
+                }
+            }
+
+            return affectedItems;
+        }
+
+        private ISet<KindAndKey> ComputeChangedItemsForFullDataSet(
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldDataMap,
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> newDataMap
+        )
         {
             ISet<KindAndKey> affectedItems = new HashSet<KindAndKey>();
             var emptyDict = ImmutableDictionary.Create<string, ItemDescriptor>();
@@ -256,6 +344,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     {
                         continue; // shouldn't be possible due to how we computed allKeys
                     }
+
                     if (!hasOldItem || !hasNewItem || (oldItem.Version < newItem.Version))
                     {
                         _dependencyTracker.AddAffectedItems(affectedItems, new KindAndKey(kind, key));
@@ -266,6 +355,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     // version numbers are different, the higher one is the more recent version).
                 }
             }
+
             return affectedItems;
         }
 
@@ -273,10 +363,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (!_lastStoreUpdateFailed)
             {
-                _log.Warn("Unexpected data store error when trying to store an update received from the data source: {0}",
+                _log.Warn(
+                    "Unexpected data store error when trying to store an update received from the data source: {0}",
                     LogValues.ExceptionSummary(e));
                 _lastStoreUpdateFailed = true;
             }
+
             _log.Debug(LogValues.ExceptionTrace(e));
             UpdateStatus(DataSourceState.Interrupted, new DataSourceStatus.ErrorInfo
             {
@@ -286,28 +378,94 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             });
         }
 
+        private bool ApplyToLegacyStore(ChangeSet<ItemDescriptor> sortedChangeSet)
+        {
+            switch (sortedChangeSet.Type)
+            {
+                case ChangeSetType.Full:
+                    return ApplyFullChangeSetToLegacyStore(sortedChangeSet);
+                case ChangeSetType.Partial:
+                    return ApplyPartialChangeSetToLegacyStore(sortedChangeSet);
+                case ChangeSetType.None:
+                default:
+                    return true;
+            }
+        }
+
+        private bool ApplyFullChangeSetToLegacyStore(ChangeSet<ItemDescriptor> unsortedChangeset)
+        {
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>();
+            if (unsortedChangeset.EnvironmentId != null)
+            {
+                headers.Add(new KeyValuePair<string, IEnumerable<string>>(HeaderConstants.EnvironmentId,
+                    new[] { unsortedChangeset.EnvironmentId }));
+            }
+
+            return InitWithHeaders(new FullDataSet<ItemDescriptor>(unsortedChangeset.Data), headers);
+        }
+
+        private bool ApplyPartialChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)
+        {
+            // Sorting isn't strictly required here, as upsert behavior didn't traditionally have it,
+            // but it also doesn't hurt, and there could be cases where it results in slightly
+            // greater store consistency for persistent stores.
+            var sortedChangeset = DataStoreSorter.SortChangeset(changeSet);
+            foreach (var kindItemsPair in sortedChangeset.Data)
+            {
+                foreach (var item in kindItemsPair.Value.Items)
+                {
+                    var applySuccess = Upsert(kindItemsPair.Key, item.Key, item.Value);
+                    if (!applySuccess)
+                    {
+                        return false;
+                    }
+                }
+            }
+            // The upsert will update the store status in the case of a store failure.
+            // The application of the upserts does not set the store initialized.
+            
+            // Considering the store will be the same for the duration of the application
+            // lifecycle we will not be applying a partial update to a store that didn't
+            // already get a full update. The non-transactional store will also not support a selector.
+
+            return true;
+        }
+
+        private void GetOldDataIfFlagChangeListeners(
+            out ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData)
+        {
+            if (HasFlagChangeListeners())
+            {
+                // Query the existing data if any, so that after the update we can send events for
+                // whatever was changed
+                var oldDataBuilder = ImmutableDictionary.CreateBuilder<DataKind,
+                    ImmutableDictionary<string, ItemDescriptor>>();
+                foreach (var kind in DataModel.AllDataKinds)
+                {
+                    var items = _store.GetAll(kind);
+                    oldDataBuilder.Add(kind, items.Items.ToImmutableDictionary());
+                }
+
+                oldData = oldDataBuilder.ToImmutable();
+            }
+            else
+            {
+                oldData = null;
+            }
+        }
+
         #endregion
 
-       #region IDataSourceUpdatesHeaders methods
-        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        #region IDataSourceUpdatesHeaders methods
+
+        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData,
+            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
         {
-            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData = null;
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
 
             try
             {
-                if (HasFlagChangeListeners())
-                {
-                    // Query the existing data if any, so that after the update we can send events for
-                    // whatever was changed
-                    var oldDataBuilder = ImmutableDictionary.CreateBuilder<DataKind,
-                        ImmutableDictionary<string, ItemDescriptor>>();
-                    foreach (var kind in DataModel.AllDataKinds)
-                    {
-                        var items = _store.GetAll(kind);
-                        oldDataBuilder.Add(kind, items.Items.ToImmutableDictionary());
-                    }
-                    oldData = oldDataBuilder.ToImmutable();
-                }
+                GetOldDataIfFlagChangeListeners(out oldData);
 
                 var sortedCollections = DataStoreSorter.SortAllCollections(allData);
 
@@ -347,7 +505,66 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             return true;
         }
+
         #endregion
 
+        #region ITransactionalDataSourceUpdates methods
+
+        private bool ApplyToTransactionalStore(ITransactionalDataStore transactionalDataStore,
+            ChangeSet<ItemDescriptor> changeSet)
+        {
+            ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldData;
+            // Getting the old values requires accessing the store, which can fail.
+            // If there is a failure to read the store, then we stop treating it as a failure.
+            try
+            {
+                GetOldDataIfFlagChangeListeners(out oldData);
+            }
+            catch (Exception e)
+            {
+                ReportStoreFailure(e);
+                return false;
+            }
+
+            var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
+
+            try
+            {
+                transactionalDataStore.Apply(sortedChangeSet);
+                _lastStoreUpdateFailed = false;
+            }
+            catch (Exception e)
+            {
+                ReportStoreFailure(e);
+                return false;
+            }
+
+            // Calling Apply implies that the data source is now in a valid state.
+            UpdateStatus(DataSourceState.Valid, null);
+
+            var changes = UpdateDependencyTrackerForChangesetAndDetermineChanges(oldData, sortedChangeSet);
+
+            // Now, if we previously queried the old data because someone is listening for flag change events, compare
+            // the versions of all items and generate events for those (and any other items that depend on them)
+            if (changes != null)
+            {
+                SendChangeEvents(changes);
+            }
+
+            return true;
+        }
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            if (_store is ITransactionalDataStore transactionalDataStore)
+            {
+                return ApplyToTransactionalStore(transactionalDataStore, changeSet);
+            }
+
+            // Legacy update path for non-transactional stores
+            return ApplyToLegacyStore(changeSet);
+        }
+
+        #endregion
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -9,7 +8,6 @@ using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Internal.Http;
 using LaunchDarkly.Sdk.Server.Interfaces;
-using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
@@ -28,10 +26,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private readonly FDv2ProtocolHandler _protocolHandler = new FDv2ProtocolHandler();
         private readonly object _protocolLock = new object();
         private readonly SelectorSource _selectorSource;
-        private readonly bool _storeStatusMonitoringEnabled;
-        private readonly AtomicBoolean _lastStoreUpdateFailed = new AtomicBoolean(false);
 
-        private CancellationTokenSource _canceller;
+        private CancellationTokenSource _canceler;
         private string _environmentId;
 
         internal FDv2PollingDataSource(
@@ -50,12 +46,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _initTask = new TaskCompletionSource<bool>();
             _log = context.Logger.SubLogger(LogNames.FDv2DataSourceSubLog);
 
-            _storeStatusMonitoringEnabled = _dataSourceUpdates.DataStoreStatusProvider.StatusMonitoringEnabled;
-            if (_storeStatusMonitoringEnabled)
-            {
-                _dataSourceUpdates.DataStoreStatusProvider.StatusChanged += OnDataStoreStatusChanged;
-            }
-
             _log.Debug("Created LaunchDarkly FDv2 polling data source");
         }
 
@@ -65,13 +55,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             lock (this)
             {
-                if (_canceller == null)
-                {
-                    _log.Info("Starting LaunchDarkly FDv2 polling with interval: {0} milliseconds",
-                        _pollInterval.TotalMilliseconds);
-                    _canceller = _taskExecutor.StartRepeatingTask(TimeSpan.Zero,
-                        _pollInterval, () => UpdateTaskAsync());
-                }
+                // If we have a canceler, then the source has already been started.
+                if (_canceler != null) return _initTask.Task;
+
+                _log.Info("Starting LaunchDarkly FDv2 polling with interval: {0} milliseconds",
+                    _pollInterval.TotalMilliseconds);
+                _canceler = _taskExecutor.StartRepeatingTask(TimeSpan.Zero,
+                    _pollInterval, UpdateTaskAsync);
             }
 
             return _initTask.Task;
@@ -85,20 +75,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 var selector = _selectorSource();
                 var response = await _requestor.PollingRequestAsync(selector);
 
-                if (response.Headers != null)
+                if (response == null)
                 {
-                    _environmentId = response.Headers.FirstOrDefault(item =>
+                    _log.Debug("Polling response not modified, skipping processing");
+                    return;
+                }
+
+                if (response.Value.Headers != null)
+                {
+                    _environmentId = response.Value.Headers.FirstOrDefault(item =>
                             item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
                         ?.FirstOrDefault();
                 }
 
-                ProcessPollingResponse(response);
-
-                if (!_initialized.GetAndSet(true))
-                {
-                    _initTask.SetResult(true);
-                    _log.Info("First polling request successful");
-                }
+                ProcessPollingResponse(response.Value);
             }
             catch (UnsuccessfulResponseException ex)
             {
@@ -121,6 +111,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     {
                         // the task was already set - nothing more to do
                     }
+
                     ((IDisposable)this).Dispose();
                 }
             }
@@ -136,7 +127,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
             catch (Exception ex)
             {
-                Exception realEx = (ex is AggregateException ae) ? ae.Flatten() : ex;
+                var realEx = (ex is AggregateException ae) ? ae.Flatten() : ex;
                 _log.Warn("Polling for feature flag updates failed: {0}", LogValues.ExceptionSummary(ex));
                 _log.Debug(LogValues.ExceptionTrace(ex));
                 _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted,
@@ -160,27 +151,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private void ProcessProtocolAction(IFDv2ProtocolAction action)
         {
-            switch (action.Action)
+            switch (action)
             {
-                case FDv2ProtocolActionType.Changeset:
-                    var changeSetAction = action as FDv2ActionChangeset;
-                    ProcessChangeSet(changeSetAction.Changeset);
+                case FDv2ActionChangeset changesetAction:
+                    ProcessChangeSet(changesetAction.Changeset);
                     break;
-                case FDv2ProtocolActionType.Error:
-                    var errorAction = action as FDv2ActionError;
+                case FDv2ActionError errorAction:
                     _log.Error("FDv2 error event: {0} - {1}", errorAction.Id, errorAction.Reason);
                     break;
-                case FDv2ProtocolActionType.Goodbye:
-                    var goodbyeAction = action as FDv2ActionGoodbye;
+                case FDv2ActionGoodbye goodbyeAction:
                     _log.Info("FDv2 server disconnecting: {0}", goodbyeAction.Reason);
                     break;
-                case FDv2ProtocolActionType.InternalError:
-                    var internalErrorAction = action as FDv2ActionInternalError;
+                case FDv2ActionInternalError internalErrorAction:
                     _log.Error("FDv2 protocol error ({0}): {1}", internalErrorAction.ErrorType,
                         internalErrorAction.Message);
                     break;
-                case FDv2ProtocolActionType.None:
+                case FDv2ActionNone _:
                     // No action needed
+                    break;
+                default:
+                    // Represents an implementation error. Actions expanded without the handling
+                    // being expanded.
+                    _log.Error("Unhandled FDv2 Protocol Action.");
                     break;
             }
         }
@@ -192,40 +184,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             var dataStoreChangeSet = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, _log, _environmentId);
 
-            if (!transactionalDataSourceUpdates.Apply(dataStoreChangeSet))
-            {
-                if (!_storeStatusMonitoringEnabled)
-                {
-                    if (_lastStoreUpdateFailed.GetAndSet(true) == false)
-                    {
-                        _log.Warn("Failed to apply changeset to data store. Will retry on next poll.");
-                    }
-                }
-            }
-            else
-            {
-                _lastStoreUpdateFailed.GetAndSet(false);
-            }
-        }
-
-        private void OnDataStoreStatusChanged(object sender, DataStoreStatus status)
-        {
-            if (status.Available)
-            {
-                _log.Warn("Data store is available again");
-            }
-
-            if (_initialized.Get())
-            {
-                var newState = status.Available ? DataSourceState.Valid : DataSourceState.Interrupted;
-                var newError = status.Available ? (DataSourceStatus.ErrorInfo?)null :
-                    new DataSourceStatus.ErrorInfo
-                    {
-                        Kind = DataSourceStatus.ErrorKind.StoreError,
-                        Time = DateTime.Now
-                    };
-                _dataSourceUpdates.UpdateStatus(newState, newError);
-            }
+            // If the update fails, then we wait until the next poll and try again.
+            // This is different from a streaming data source, which will need to re-start to get an initial
+            // payload.
+            if (!transactionalDataSourceUpdates.Apply(dataStoreChangeSet)) return;
+            
+            // Only mark as initialized after successfully applying a changeset
+            if (_initialized.GetAndSet(true)) return;
+            _initTask.SetResult(true);
+            _log.Info("First polling request successful");
         }
 
         void IDisposable.Dispose()
@@ -236,16 +203,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                _canceller?.Cancel();
-                _requestor.Dispose();
+            if (!disposing) return;
 
-                if (_storeStatusMonitoringEnabled)
-                {
-                    _dataSourceUpdates.DataStoreStatusProvider.StatusChanged -= OnDataStoreStatusChanged;
-                }
-            }
+            Shutdown();
+        }
+
+        private void Shutdown()
+        {
+            _canceler?.Cancel();
+            _requestor.Dispose();
         }
     }
 }

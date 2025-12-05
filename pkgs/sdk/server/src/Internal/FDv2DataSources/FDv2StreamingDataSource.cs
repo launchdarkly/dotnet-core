@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.EventSource;
 using LaunchDarkly.Logging;
@@ -194,21 +196,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 case FDv2ActionChangeset changeAction:
                 {
-                    var storeError = false;
                     var changeset = changeAction.Changeset;
-                    switch (changeset.Type)
-                    {
-                        case FDv2ChangeSetType.Full:
-                        case FDv2ChangeSetType.Partial:
-                            storeError = !_transactionalDataSourceUpdates.Apply(
-                                FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId));
-                            break;
-                        case FDv2ChangeSetType.None:
-                            break;
-                        default:
-                            _log.Error("Unhandled FDv2 Changeset Type.");
-                            break;
-                    }
+                    var storeError = !_transactionalDataSourceUpdates.Apply(
+                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId));
 
                     if (!storeError)
                     {

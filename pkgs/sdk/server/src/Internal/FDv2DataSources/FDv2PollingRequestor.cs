@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +28,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private readonly TimeSpan _connectTimeout;
         private readonly Logger _log;
         private readonly JsonSerializerOptions _jsonOptions;
+        private readonly Dictionary<Uri, EntityTagHeaderValue> _etags = new Dictionary<Uri, EntityTagHeaderValue>();
 
         internal FDv2PollingRequestor(LdClientContext context, Uri baseUri)
         {
@@ -48,7 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _jsonOptions.Converters.Add(SegmentSerialization.Instance);
         }
 
-        public async Task<FDv2PollingResponse> PollingRequestAsync(Selector selector)
+        public async Task<FDv2PollingResponse?> PollingRequestAsync(Selector selector)
         {
             var uri = _baseUri.AddPath(StandardEndpoints.FDv2PollingRequestPath);
 
@@ -60,6 +63,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 query.Add($"{VersionQueryParam}={selector.Version}");
             }
+
             if (!string.IsNullOrEmpty(selector.State))
             {
                 query.Add($"{StateQueryParam}={Uri.EscapeDataString(selector.State)}");
@@ -75,7 +79,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _log.Debug("Making FDv2 polling request to {0}", requestUri);
 
             var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+            // This method adds the headers to the request, versus adding headers to the properties. Resharper
+            // analysis incorrectly thinks it is an impure function.
             _httpProperties.AddHeaders(request);
+
+            lock (_etags)
+            {
+                if (_etags.TryGetValue(requestUri, out var etag))
+                {
+                    request.Headers.IfNoneMatch.Add(etag);
+                }
+            }
 
             using (var cts = new CancellationTokenSource(_connectTimeout))
             {
@@ -83,9 +98,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 {
                     using (var response = await _httpClient.SendAsync(request, cts.Token).ConfigureAwait(false))
                     {
+                        if (response.StatusCode == HttpStatusCode.NotModified)
+                        {
+                            _log.Debug("FDv2 polling request returned 304: not modified");
+                            return null;
+                        }
+
                         if (!response.IsSuccessStatusCode)
                         {
                             throw new UnsuccessfulResponseException((int)response.StatusCode);
+                        }
+
+                        lock (_etags)
+                        {
+                            if (response.Headers.ETag != null)
+                            {
+                                _etags[requestUri] = response.Headers.ETag;
+                            }
+                            else
+                            {
+                                _etags.Remove(requestUri);
+                            }
                         }
 
                         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -98,7 +131,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             var root = doc.RootElement;
                             if (!root.TryGetProperty(EventsPropertyName, out var eventsArray))
                             {
-                                throw new JsonException($"FDv2 polling response missing '{EventsPropertyName}' property");
+                                throw new JsonException(
+                                    $"FDv2 polling response missing '{EventsPropertyName}' property");
                             }
 
                             var events = new List<FDv2Event>();
@@ -120,12 +154,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 {
                     if (tce.CancellationToken == cts.Token)
                     {
-                        // Indicates the task was cancelled by something other than a request timeout
+                        // Indicates the task was canceled by something other than a request timeout.
                         throw;
                     }
-                    // Otherwise this was a request timeout
+
                     throw new TimeoutException("FDv2 polling request with URL: " + requestUri.AbsoluteUri +
-                                                " timed out after: " + _connectTimeout);
+                                               " timed out after: " + _connectTimeout);
                 }
             }
         }

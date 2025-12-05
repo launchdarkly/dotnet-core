@@ -38,7 +38,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// Makes a polling request to the FDv2 endpoint.
         /// </summary>
         /// <param name="selector">The current selector state for the request.</param>
-        /// <returns>The polling response containing events and headers.</returns>
-        Task<FDv2PollingResponse> PollingRequestAsync(Subsystems.Selector selector);
+        /// <returns>The polling response containing events and headers, or null if the data has not been modified (304 response).</returns>
+        Task<FDv2PollingResponse?> PollingRequestAsync(Subsystems.Selector selector);
     }
 }

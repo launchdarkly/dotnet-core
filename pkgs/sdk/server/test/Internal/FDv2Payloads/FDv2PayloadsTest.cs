@@ -836,5 +836,121 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
                 Assert.Equal(200, transferred.Version);
             }
         }
+
+        [Fact]
+        public void DeserializeEventsArray_ThrowsWhenEventsPropertyMissing()
+        {
+            const string json = @"{}";
+            var ex = Assert.Throws<JsonException>(() =>
+                FDv2Event.DeserializeEventsArray(json, GetJsonOptions()));
+            Assert.Contains("missing 'events' property", ex.Message);
+        }
+
+        [Fact]
+        public void DeserializeEventsArray_ThrowsWhenEventIsNull()
+        {
+            const string json = @"{
+                ""events"": [
+                    {
+                        ""event"": ""server-intent"",
+                        ""data"": {
+                            ""payloads"": [{
+                                ""id"": ""payload-1"",
+                                ""target"": 100,
+                                ""intentCode"": ""xfer-full"",
+                                ""reason"": ""payload-missing""
+                            }]
+                        }
+                    },
+                    null,
+                    {
+                        ""event"": ""heartbeat"",
+                        ""data"": {}
+                    }
+                ]
+            }";
+
+            var ex = Assert.Throws<JsonException>(() =>
+                FDv2Event.DeserializeEventsArray(json, GetJsonOptions()));
+            Assert.Contains("null event at index 1", ex.Message);
+        }
+
+        [Fact]
+        public void DeserializeEventsArray_CanDeserializeEmptyArray()
+        {
+            const string json = @"{
+                ""events"": []
+            }";
+
+            var events = FDv2Event.DeserializeEventsArray(json, GetJsonOptions());
+            Assert.NotNull(events);
+            Assert.Empty(events);
+        }
+
+        [Fact]
+        public void DeserializeEventsArray_CanDeserializeValidEventsArray()
+        {
+            const string json = @"{
+                ""events"": [
+                    {
+                        ""event"": ""server-intent"",
+                        ""data"": {
+                            ""payloads"": [{
+                                ""id"": ""payload-1"",
+                                ""target"": 100,
+                                ""intentCode"": ""xfer-full"",
+                                ""reason"": ""payload-missing""
+                            }]
+                        }
+                    },
+                    {
+                        ""event"": ""put-object"",
+                        ""data"": {
+                            ""version"": 150,
+                            ""kind"": ""flag"",
+                            ""key"": ""test-flag"",
+                            ""object"": {
+                                ""key"": ""test-flag"",
+                                ""version"": 1,
+                                ""on"": true,
+                                ""fallthrough"": { ""variation"": 0 },
+                                ""offVariation"": 1,
+                                ""variations"": [true, false],
+                                ""salt"": ""test-salt"",
+                                ""trackEvents"": false,
+                                ""trackEventsFallthrough"": false,
+                                ""debugEventsUntilDate"": null,
+                                ""clientSide"": false,
+                                ""deleted"": false
+                            }
+                        }
+                    },
+                    {
+                        ""event"": ""payload-transferred"",
+                        ""data"": {
+                            ""state"": ""(p:payload-1:100)"",
+                            ""version"": 100
+                        }
+                    }
+                ]
+            }";
+
+            var events = FDv2Event.DeserializeEventsArray(json, GetJsonOptions());
+
+            Assert.NotNull(events);
+            Assert.Equal(3, events.Count);
+
+            Assert.Equal("server-intent", events[0].EventType);
+            var serverIntent = events[0].AsServerIntent();
+            Assert.Equal("payload-1", serverIntent.Payloads[0].Id);
+
+            Assert.Equal("put-object", events[1].EventType);
+            var putObject = events[1].AsPutObject();
+            Assert.Equal("test-flag", putObject.Key);
+
+            Assert.Equal("payload-transferred", events[2].EventType);
+            var transferred = events[2].AsPayloadTransferred();
+            Assert.Equal(100, transferred.Version);
+        }
     }
 }

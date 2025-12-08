@@ -18,7 +18,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
     internal sealed class FDv2PollingRequestor : IFDv2PollingRequestor
     {
-        private const string EventsPropertyName = "events";
         private const string VersionQueryParam = "version";
         private const string StateQueryParam = "state";
 
@@ -126,28 +125,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         _log.Debug("Received FDv2 polling response");
 
                         // Parse the response which contains an "events" array
-                        using (var doc = JsonDocument.Parse(content))
-                        {
-                            var root = doc.RootElement;
-                            if (!root.TryGetProperty(EventsPropertyName, out var eventsArray))
-                            {
-                                throw new JsonException(
-                                    $"FDv2 polling response missing '{EventsPropertyName}' property");
-                            }
+                        var events = FDv2Event.DeserializeEventsArray(content, _jsonOptions);
 
-                            var events = new List<FDv2Event>();
-                            foreach (var eventElement in eventsArray.EnumerateArray())
-                            {
-                                var evt = eventElement.Deserialize<FDv2Event>(_jsonOptions);
-                                events.Add(evt);
-                            }
+                        var headers = response.Headers
+                            .Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Key, h.Value))
+                            .ToList();
 
-                            var headers = response.Headers
-                                .Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Key, h.Value))
-                                .ToList();
-
-                            return new FDv2PollingResponse(events, headers);
-                        }
+                        return new FDv2PollingResponse(events, headers);
                     }
                 }
                 catch (TaskCanceledException tce)

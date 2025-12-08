@@ -483,5 +483,7 @@ namespace LaunchDarkly.Sdk.Server
         /// </remarks>
         /// <returns>a configuration builder</returns>
         public static WrapperInfoBuilder WrapperInfo() => new WrapperInfoBuilder();
+
+        internal static DataSystemModes DataSystem() => new DataSystemModes();
     }
 }

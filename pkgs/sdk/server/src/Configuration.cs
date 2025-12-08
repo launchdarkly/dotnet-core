@@ -116,6 +116,16 @@ namespace LaunchDarkly.Sdk.Server
         /// Contains methods for configuring the SDK's 'plugins' to extend or customize SDK behavior.
         /// </summary>
         public PluginConfigurationBuilder Plugins { get; }
+        
+        /// <summary>
+        /// Contains the data system configuration.
+        /// <para>
+        /// This property is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+        /// It is not suitable for production usage. Do not use it. You have been warned.
+        /// </para>
+        /// </summary>
+        /// TODO: SDK-1678: Internal until ready for use.
+        internal DataSystemBuilder DataSystem { get; }
 
         #endregion
 
@@ -195,6 +205,7 @@ namespace LaunchDarkly.Sdk.Server
             WrapperInfo = builder._wrapperInfo;
             Hooks = builder._hooks;
             Plugins = builder._plugins;
+            DataSystem = builder._dataSystem;
         }
 
         #endregion

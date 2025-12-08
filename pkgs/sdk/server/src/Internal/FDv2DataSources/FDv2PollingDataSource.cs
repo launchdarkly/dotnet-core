@@ -77,7 +77,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 if (response == null)
                 {
-                    _log.Debug("Polling response not modified, skipping processing");
+                    // This means we got a cached response (304), so we are valid.
+                    // We could have previously been interrupted, so we need to return to valid even
+                    // if there are no changes.
+                    _dataSourceUpdates.UpdateStatus(DataSourceState.Valid, null);
                     return;
                 }
 

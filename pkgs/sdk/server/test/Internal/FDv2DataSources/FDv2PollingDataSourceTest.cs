@@ -610,5 +610,123 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.Equal(ChangeSetType.Full, changeSet.Type);
             }
         }
+
+        [Fact]
+        public async Task NotModifiedResponseUpdatesStatusToValid()
+        {
+            var callCount = 0;
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        // First poll: return data to initialize
+                        const string flagJson = @"{
+                            ""key"": ""test-flag"",
+                            ""on"": true,
+                            ""version"": 1,
+                            ""variations"": [""a""],
+                            ""fallthrough"": {""variation"": 0},
+                            ""salt"": ""salt"",
+                            ""trackEvents"": false,
+                            ""trackEventsFallthrough"": false,
+                            ""deleted"": false,
+                            ""clientSide"": false
+                        }";
+
+                        return CreatePollingResponse(
+                            CreateServerIntentEvent("xfer-full", "p1", 1),
+                            CreatePutObjectEvent("flag", "test-flag", 1, flagJson),
+                            CreatePayloadTransferredEvent("(p:p1:1)", 1)
+                        );
+                    }
+                    else
+                    {
+                        // Second poll: return null (304 Not Modified)
+                        return null;
+                    }
+                });
+
+            using (var dataSource = MakeDataSource())
+            {
+                await dataSource.Start();
+                Assert.True(dataSource.Initialized);
+
+                // First poll should apply data and update status
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+                // Wait for second poll to happen (304 response)
+                // This should update status to Valid
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Valid, status.State);
+                Assert.Null(status.LastError);
+            }
+        }
+
+        [Fact]
+        public async Task NotModifiedResponseRecoverStatusFromInterruptedToValid()
+        {
+            var callCount = 0;
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        // First poll: return data to initialize
+                        const string flagJson = @"{
+                            ""key"": ""test-flag"",
+                            ""on"": true,
+                            ""version"": 1,
+                            ""variations"": [""a""],
+                            ""fallthrough"": {""variation"": 0},
+                            ""salt"": ""salt"",
+                            ""trackEvents"": false,
+                            ""trackEventsFallthrough"": false,
+                            ""deleted"": false,
+                            ""clientSide"": false
+                        }";
+
+                        return CreatePollingResponse(
+                            CreateServerIntentEvent("xfer-full", "p1", 1),
+                            CreatePutObjectEvent("flag", "test-flag", 1, flagJson),
+                            CreatePayloadTransferredEvent("(p:p1:1)", 1)
+                        );
+                    }
+                    else if (callCount == 2)
+                    {
+                        // Second poll: throw recoverable error
+                        throw new UnsuccessfulResponseException(503);
+                    }
+                    else
+                    {
+                        // Third poll: return null (304 Not Modified) - should recover to Valid
+                        return null;
+                    }
+                });
+
+            using (var dataSource = MakeDataSource())
+            {
+                await dataSource.Start();
+                Assert.True(dataSource.Initialized);
+
+                // First poll should apply data
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+                // Second poll should set status to Interrupted
+                var interruptedStatus = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Interrupted, interruptedStatus.State);
+                Assert.NotNull(interruptedStatus.LastError);
+                Assert.Equal(503, interruptedStatus.LastError.Value.StatusCode);
+
+                // Third poll returns 304, should recover status to Valid
+                var validStatus = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Valid, validStatus.State);
+                Assert.Null(validStatus.LastError);
+            }
+        }
     }
 }

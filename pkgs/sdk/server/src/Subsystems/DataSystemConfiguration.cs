@@ -5,21 +5,29 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
 {
     /// <summary>
     /// Configuration for the SDK's data acquisition and storage strategy.
+    /// <para>
+    /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+    /// It is not suitable for production usage. Do not use it. You have been warned.
+    /// </para>
     /// </summary>
-    public sealed class DataSystemConfiguration
+    internal sealed class DataSystemConfiguration
     {
+        // TODO: SDK-1678: Internal until ready for use.
+
         /// <summary>
         /// Defines the base service URIs used by SDK components.
         /// </summary>
         public ServiceEndpoints ServiceEndpoints { get; }
         
-        // TODO: Do we want a different type for initializers/synchronizes?
-        // We could probably decompose polling into a one-shot and then use that in a synchronizer.
-        // public IReadOnlyList<IInitializer> Initializers { get; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public IReadOnlyList<IDataSource> Initializers { get; }
         
-        // TODO: Currently streaming/polling are implemented as a data source, but we could
-        // easily put the required methods into new interface.
-        // public IReadonlyList<ISynchronizer> Synchronizers { get; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public IReadOnlyList<IDataSource> Synchronizers { get; }
         
         /// <summary>
         /// The configured persistent store. This is optional, and if no persistent store is configured, it will be

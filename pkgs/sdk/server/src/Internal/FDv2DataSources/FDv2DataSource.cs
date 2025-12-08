@@ -28,7 +28,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Here we make a combined composite source, with the initializer source first which switches or falls back to the 
             // synchronizer source when the initializer succeeds or when the initializer source reports Off (all initializers failed)
             ActionApplierFactory blacklistWhenSuccessOrOff = (actionable) => new ActionApplierBlacklistWhenSuccessOrOff(actionable);
-            ActionApplierFactory fallbackOnlyApplierFactory = (actionable) => new ActionApplierFallbackOnly(actionable);
+            ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory = (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
             
             var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
@@ -38,7 +38,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     var initializersFactoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
                     for (int i = 0; i < initializers.Count; i++)
                     {
-                        initializersFactoryTuples.Add((initializers[i], fallbackOnlyApplierFactory));
+                        initializersFactoryTuples.Add((initializers[i], fastFallbackApplierFactory));
                     }
                     return new CompositeSource(sink, initializersFactoryTuples, circular: false);
                 }, blacklistWhenSuccessOrOff),
@@ -62,11 +62,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <summary>
         /// Action applier for initializers that handles falling back to the next initializer when Interrupted and Off states is seen.
         /// </summary>
-        private class ActionApplierFallbackOnly : IActionApplier
+        private class ActionApplierFastFallback : IActionApplier
         {
             private readonly ICompositeSourceActionable _actionable;
 
-            public ActionApplierFallbackOnly(ICompositeSourceActionable actionable)
+            public ActionApplierFastFallback(ICompositeSourceActionable actionable)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
             }
@@ -89,7 +89,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
                 // when an initializer has an issue, fall back
-                if (newState == DataSourceState.Interrupted || newState == DataSourceState.Off)
+                if (newState == DataSourceState.Interrupted || newState == DataSourceState.Off || newError != null)
                 {
                     _actionable.DisposeCurrent();
                     _actionable.GoToNext();

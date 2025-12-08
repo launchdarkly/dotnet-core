@@ -87,6 +87,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public void Dispose()
         {
+            InternalDispose();
+        }
+
+        private void InternalDispose(DataSourceStatus.ErrorInfo? error = null)
+        {
             // When disposing the whole composite, we bypass the action queue and tear
             // down the current data source immediately while still honoring the same
             // state transitions under the shared lock. Any queued actions become no-ops
@@ -104,15 +109,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // clear any queued actions and reset processing state
                 _pendingActions.Clear();
                 _isProcessingActions = false;
-                _sourcesList.Reset();
                 _currentEntry = default;
-                
                 _disposed = true;
             }
 
             // report state Off directly to the original sink, bypassing the sanitizer
             // which would map Off to Interrupted (that mapping is only for underlying sources)
-            _originalUpdateSink.UpdateStatus(DataSourceState.Off, null);
+            _originalUpdateSink.UpdateStatus(DataSourceState.Off, error);
         }
 
         /// <summary>
@@ -177,9 +180,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        // This method must only be called while holding _lock.
         private void TryFindNextUnderLock()
         {
-            // This method must only be called while holding _lock.
             if (_currentDataSource != null)
             {
                 return;
@@ -188,6 +191,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var entry = _sourcesList.Next();
             if (entry.Factory == null)
             {
+                // Failed to find a next source, report error and shut down the composite source
+                var errorInfo = new DataSourceStatus.ErrorInfo
+                {
+                    Kind = DataSourceStatus.ErrorKind.Unknown,
+                    Message = "CompositeDataSource has exhausted all available sources.",
+                    Time = DateTime.Now
+                };
+                InternalDispose(errorInfo);
                 return;
             }
 

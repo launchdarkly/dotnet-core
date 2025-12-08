@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk.Server.Internal.FDv2DataSources;
@@ -52,14 +53,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             JsonData = jsonData;
         }
 
-        public static bool TryDeserializeFromJsonString(string eventType, string jsonString, out FDv2Event evt, out string error)
+        public static bool TryDeserializeFromJsonString(string eventType, string jsonString, out FDv2Event evt,
+            out string error)
         {
             try
             {
                 evt = new FDv2Event(eventType, JsonSerializer.Deserialize<JsonElement>(jsonString));
                 error = null;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 evt = null;
                 error = e.Message;
@@ -67,6 +69,70 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Deserializes an FDv2 polling response containing an "events" array from a JSON string.
+        /// </summary>
+        /// <param name="jsonString">The JSON string containing the polling response.</param>
+        /// <param name="jsonOptions">The JSON serialization options to use for deserializing events.</param>
+        /// <returns>A list of deserialized FDv2Event objects.</returns>
+        /// <exception cref="JsonException">
+        /// Thrown when:
+        /// - The JSON is malformed
+        /// - The "events" property is missing
+        /// - The array contains a null event
+        /// - An event cannot be deserialized
+        /// </exception>
+        public static List<FDv2Event> DeserializeEventsArray(string jsonString, JsonSerializerOptions jsonOptions)
+        {
+            const string eventsPropertyName = "events";
+
+            try
+            {
+                using (var doc = JsonDocument.Parse(jsonString))
+                {
+                    var root = doc.RootElement;
+                    if (!root.TryGetProperty(eventsPropertyName, out var eventsArray))
+                    {
+                        throw new JsonException($"FDv2 polling response missing '{eventsPropertyName}' property");
+                    }
+
+                    var events = new List<FDv2Event>();
+                    var index = 0;
+
+                    foreach (var eventElement in eventsArray.EnumerateArray())
+                    {
+                        if (eventElement.ValueKind == JsonValueKind.Null)
+                        {
+                            throw new JsonException($"FDv2 polling response contains null event at index {index}");
+                        }
+
+                        var evt = eventElement.Deserialize<FDv2Event>(jsonOptions);
+
+                        if (evt == null)
+                        {
+                            throw new JsonException(
+                                $"Failed to deserialize FDv2 event at index {index}: deserialization returned null");
+                        }
+
+                        events.Add(evt);
+                        index++;
+                    }
+
+                    return events;
+                }
+            }
+            catch (JsonException)
+            {
+                // Re-throw JsonExceptions as-is
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Wrap any other exception in a JsonException
+                throw new JsonException("Failed to parse FDv2 polling response", ex);
+            }
         }
 
         /// <summary>

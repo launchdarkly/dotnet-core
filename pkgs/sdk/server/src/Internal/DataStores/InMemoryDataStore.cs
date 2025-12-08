@@ -1,6 +1,7 @@
-﻿using System.Collections.Immutable;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using LaunchDarkly.Sdk.Server.Subsystems;
-
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataStores
@@ -12,16 +13,42 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
     /// Application code cannot see this implementation class and uses
     /// <see cref="Components.InMemoryDataStore"/> instead.
     /// </remarks>
-    internal class InMemoryDataStore : IDataStore, IDataStoreMetadata
+    internal class InMemoryDataStore : IDataStore, IDataStoreMetadata, ITransactionalDataStore
     {
         private readonly object WriterLock = new object();
+
         private volatile ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> Items =
             ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>>.Empty;
+
         private volatile bool _initialized = false;
 
         private volatile InitMetadata _metadata;
 
-        internal InMemoryDataStore() { }
+        private readonly object _selectorLock = new object();
+        private Selector _selector;
+
+        public Selector Selector
+        {
+            get
+            {
+                lock (_selectorLock)
+                {
+                    return _selector;
+                }
+            }
+            private set
+            {
+                lock (_selectorLock)
+                {
+                    _selector = value;
+                }
+            }
+        }
+
+        internal InMemoryDataStore()
+        {
+            Selector = Selector.Empty;
+        }
 
         public bool StatusMonitoringEnabled => false;
 
@@ -36,10 +63,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             {
                 return null;
             }
+
             if (!itemsOfKind.TryGetValue(key, out var item))
             {
                 return null;
             }
+
             return item;
         }
 
@@ -49,6 +78,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             {
                 return new KeyedItems<ItemDescriptor>(itemsOfKind);
             }
+
             return KeyedItems<ItemDescriptor>.Empty();
         }
 
@@ -60,13 +90,34 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 {
                     itemsOfKind = ImmutableDictionary<string, ItemDescriptor>.Empty;
                 }
+
                 if (!itemsOfKind.TryGetValue(key, out var old) || old.Version < item.Version)
                 {
                     var newItemsOfKind = itemsOfKind.SetItem(key, item);
                     Items = Items.SetItem(kind, newItemsOfKind);
                     return true;
                 }
+
                 return false;
+            }
+        }
+
+        public void Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            switch (changeSet.Type)
+            {
+                case ChangeSetType.Full:
+                    ApplyFullPayload(changeSet.Data, new InitMetadata(changeSet.EnvironmentId), changeSet.Selector);
+                    break;
+                case ChangeSetType.Partial:
+                    ApplyPartialData(changeSet.Data, changeSet.Selector);
+                    break;
+                case ChangeSetType.None:
+                    break;
+                default:
+                    // This represents an implementation error. The ChangeSetType was extended, but handling was not
+                    // added.
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -75,18 +126,60 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             return _initialized;
         }
 
-        public void Dispose() { }
+        public void Dispose()
+        {
+        }
 
         public void InitWithMetadata(FullDataSet<ItemDescriptor> data, InitMetadata metadata)
         {
-            var itemsBuilder = ImmutableDictionary.CreateBuilder<DataKind, ImmutableDictionary<string, ItemDescriptor>>();
+            ApplyFullPayload(data.Data, metadata, Selector.Empty);
+        }
 
-            foreach (var kindEntry in data.Data)
+        private void ApplyPartialData(IEnumerable<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>> data,
+            Selector selector)
+        {
+            lock (WriterLock)
+            {
+                // Build the complete updated dictionary before assigning to Items for transactional update
+                var itemsBuilder = Items.ToBuilder();
+
+                foreach (var kindItemsPair in data)
+                {
+                    var kind = kindItemsPair.Key;
+                    var kindBuilder = ImmutableDictionary.CreateBuilder<string, ItemDescriptor>();
+
+                    if (!Items.TryGetValue(kind, out var itemsOfKind))
+                    {
+                        itemsOfKind = ImmutableDictionary<string, ItemDescriptor>.Empty;
+                    }
+
+                    kindBuilder.AddRange(itemsOfKind);
+
+                    foreach (var keyValuePair in kindItemsPair.Value.Items)
+                    {
+                        kindBuilder[keyValuePair.Key] = keyValuePair.Value;
+                    }
+
+                    itemsBuilder[kind] = kindBuilder.ToImmutable();
+                }
+
+                Items = itemsBuilder.ToImmutable();
+                Selector = selector;
+            }
+        }
+
+        private void ApplyFullPayload(IEnumerable<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>> data,
+            InitMetadata metadata, Selector selector)
+        {
+            var itemsBuilder =
+                ImmutableDictionary.CreateBuilder<DataKind, ImmutableDictionary<string, ItemDescriptor>>();
+
+            foreach (var kindEntry in data)
             {
                 var kindItemsBuilder = ImmutableDictionary.CreateBuilder<string, ItemDescriptor>();
                 foreach (var e1 in kindEntry.Value.Items)
                 {
-                    kindItemsBuilder.Add(e1.Key, e1.Value);
+                    kindItemsBuilder[e1.Key] = e1.Value;
                 }
 
                 itemsBuilder.Add(kindEntry.Key, kindItemsBuilder.ToImmutable());
@@ -99,6 +192,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 Items = newItems;
                 _metadata = metadata;
                 _initialized = true;
+                Selector = selector;
             }
         }
 

@@ -26,13 +26,17 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         public sealed class DataKind
         {
             internal delegate void SerializerToJsonWriter(object item, Utf8JsonWriter writer);
+
             internal delegate ItemDescriptor DeserializerFromJsonReader(ref Utf8JsonReader reader);
+
+            internal delegate ItemDescriptor DeserializerFromJsonElement(JsonElement jsonElement);
 
             private readonly string _name;
             private readonly Func<ItemDescriptor, string> _serializer;
             private readonly Func<string, ItemDescriptor> _deserializer;
             private readonly SerializerToJsonWriter _internalSerializer;
             private readonly DeserializerFromJsonReader _internalDeserializer;
+            private readonly DeserializerFromJsonElement _internalDeserializerJsonElement;
 
             /// <summary>
             /// A case-sensitive alphabetic string that uniquely identifies this data kind.
@@ -82,6 +86,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 {
                     throw new ArgumentException("SDK tried to serialize a non-built-in data kind");
                 }
+
                 _internalSerializer(item.Item, writer);
             }
 
@@ -91,7 +96,18 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 {
                     throw new ArgumentException("SDK tried to deserialize a non-built-in data kind");
                 }
+
                 return _internalDeserializer(ref reader);
+            }
+
+            internal ItemDescriptor DeserializeFromJsonElement(JsonElement element)
+            {
+                if (_internalDeserializerJsonElement is null)
+                {
+                    throw new ArgumentException("SDK tried to deserialize a non-built-in data kind");
+                }
+
+                return _internalDeserializerJsonElement(element);
             }
 
             /// <summary>
@@ -119,11 +135,13 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             internal DataKind(
                 string name,
                 SerializerToJsonWriter internalSerializer,
-                DeserializerFromJsonReader internalDeserializer)
+                DeserializerFromJsonReader internalDeserializer,
+                DeserializerFromJsonElement internalDeserializerJsonElement)
             {
                 _name = name;
                 _internalSerializer = internalSerializer;
                 _internalDeserializer = internalDeserializer;
+                _internalDeserializerJsonElement = internalDeserializerJsonElement;
                 _serializer = item =>
                 {
                     var stream = new MemoryStream();
@@ -139,6 +157,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                     {
                         internalSerializer(item.Item, w);
                     }
+
                     w.Flush();
                     return Encoding.UTF8.GetString(stream.ToArray());
                 };
@@ -265,7 +284,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
 
             /// <inheritdoc/>
             public override string ToString() => "SerializedItemDescriptor(" + Version + ","
-                + Deleted + "," + SerializedItem + ")";
+                                                 + Deleted + "," + SerializedItem + ")";
         }
 
         /// <summary>
@@ -296,7 +315,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             public FullDataSet(IEnumerable<KeyValuePair<DataKind, KeyedItems<TDescriptor>>> data)
             {
                 _data = data ??
-                    Enumerable.Empty<KeyValuePair<DataKind, KeyedItems<TDescriptor>>>();
+                        Enumerable.Empty<KeyValuePair<DataKind, KeyedItems<TDescriptor>>>();
             }
 
             /// <summary>
@@ -332,7 +351,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             public KeyedItems(IEnumerable<KeyValuePair<string, TDescriptor>> items)
             {
                 _items = items ??
-                    Enumerable.Empty<KeyValuePair<string, TDescriptor>>();
+                         Enumerable.Empty<KeyValuePair<string, TDescriptor>>();
             }
 
             /// <summary>
@@ -347,7 +366,10 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// </summary>
         public sealed class InitMetadata
         {
-            internal InitMetadata() {}
+            internal InitMetadata()
+            {
+            }
+
             internal InitMetadata(string environmentId)
             {
                 EnvironmentId = environmentId;
@@ -357,6 +379,71 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// The environment ID for the associated payload or null if the environment ID is not available.
             /// </summary>
             public string EnvironmentId { get; }
+        }
+
+        /// <summary>
+        /// Enumeration that indicates if this change is a full or partial change.
+        /// <para>
+        /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+        /// It is not suitable for production usage. Do not use it. You have been warned.
+        /// </para>
+        /// </summary>
+        public enum ChangeSetType
+        {
+            /// <summary>
+            /// Represents a full store configuration which replaces all data currently in the store.
+            /// </summary>
+            Full,
+
+            /// <summary>
+            /// Represents an incremental set of changes to be applied to the existing data in the store.
+            /// </summary>
+            Partial,
+            
+            /// <summary>
+            /// Indicates that there are no store changes.
+            /// </summary>
+            None,
+        }
+
+        /// <summary>
+        /// Represents a set of changes to apply to a store.
+        /// <para>
+        /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+        /// It is not suitable for production usage. Do not use it. You have been warned.
+        /// </para>
+        /// </summary>
+        public struct ChangeSet<TItemDescriptor>
+        {
+            /// <summary>
+            /// The type of the changeset.
+            /// </summary>
+            public ChangeSetType Type { get; }
+
+            /// <summary>
+            /// The selector for this change. This selector will not be null, but it can be an empty selector.
+            /// </summary>
+            public Selector Selector { get; }
+
+            /// <summary>
+            /// The environment ID associated with the change. This may not always be available, and when it is not, the
+            /// value will be null.
+            /// </summary>
+            public string EnvironmentId { get; }
+
+            /// <summary>
+            /// A list of changes.
+            /// </summary>
+            public IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> Data { get; }
+
+            internal ChangeSet(ChangeSetType type, Selector selector,
+                IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> data, string environmentId)
+            {
+                Type = type;
+                Selector = selector;
+                Data = data;
+                EnvironmentId = environmentId;
+            }
         }
     }
 }

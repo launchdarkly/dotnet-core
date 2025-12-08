@@ -18,22 +18,26 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// Defines the base service URIs used by SDK components.
         /// </summary>
         public ServiceEndpoints ServiceEndpoints { get; }
-        
+
         /// <summary>
         /// 
         /// </summary>
         public IReadOnlyList<IDataSource> Initializers { get; }
-        
+
         /// <summary>
         /// 
         /// </summary>
         public IReadOnlyList<IDataSource> Synchronizers { get; }
-        
+
         /// <summary>
         /// The configured persistent store. This is optional, and if no persistent store is configured, it will be
         /// null.
         /// </summary>
-        public IDataStore PersistentStore { get;  }
-        
+        public IDataStore PersistentStore { get; }
+
+        internal DataSystemConfiguration(ServiceEndpoints serviceEndpoints, IReadOnlyList<IDataSource> initializers,
+            IReadOnlyList<IDataSource> synchronizers, IDataStore persistentStore)
+        {
+        }
     }
 }

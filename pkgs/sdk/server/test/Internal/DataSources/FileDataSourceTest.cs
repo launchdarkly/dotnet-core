@@ -270,59 +270,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     file1.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    // Use ExpectPredicate instead of ExpectValue to handle potential race conditions
-                    // where the file watcher may trigger multiple reload events. This ensures we wait
-                    // for the correct final state rather than an intermediate state.
-                    AssertHelpers.ExpectPredicate(_updateSink.Inits, actual =>
-                        {
-                            var segments = actual.Data.First(item => item.Key == DataModel.Segments);
-                            var features = actual.Data.First(item => item.Key == DataModel.Features);
-
-                            // Should have no features
-                            if (!features.Value.Items.IsNullOrEmpty())
-                            {
-                                return false;
-                            }
-
-                            var segmentItems = segments.Value.Items.ToList();
-
-                            // Should have exactly one segment
-                            if (segmentItems.Count != 1)
-                            {
-                                return false;
-                            }
-
-                            var segmentDescriptor = segmentItems[0];
-                            if (segmentDescriptor.Key != "seg1")
-                            {
-                                return false;
-                            }
-
-                            // Version should be 2 (incremented from initial load)
-                            if (segmentDescriptor.Value.Version < 2)
-                            {
-                                return false;
-                            }
-
-                            if (!(segmentDescriptor.Value.Item is Segment segment))
-                            {
-                                return false;
-                            }
-
-                            if (segment.Deleted)
-                            {
-                                return false;
-                            }
-
-                            if (segment.Included.Count != 1)
-                            {
-                                return false;
-                            }
-
-                            return segment.Included[0] == "user1";
-                        },
-                        "Did not receive expected update from the file data source with segment-only data.",
+                    // Use ExpectJsonValue to handle potential race conditions where the file watcher
+                    // may trigger multiple reload events. This keeps checking events until one matches
+                    // the expected JSON or the timeout expires.
+                    var newData = AssertHelpers.ExpectJsonValue(
+                        _updateSink.Inits,
+                        DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)),
+                        DataSetAsJson,
                         TimeSpan.FromSeconds(30));
+
+                    AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)), DataSetAsJson(newData));
                 }
             }
         }
@@ -341,61 +298,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     file.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    // Use ExpectPredicate instead of ExpectValue to handle potential race conditions
-                    // where the file watcher may trigger multiple reload events. This ensures we wait
-                    // for the correct final state rather than an intermediate state.
+                    // Use ExpectJsonValue to handle potential race conditions where the file watcher
+                    // may trigger multiple reload events. This keeps checking events until one matches
+                    // the expected JSON or the timeout expires.
                     // Note that the expected version is 2 because we increment the version on each
                     // *attempt* to load the files, not on each successful load.
-                    AssertHelpers.ExpectPredicate(_updateSink.Inits, actual =>
-                        {
-                            var segments = actual.Data.First(item => item.Key == DataModel.Segments);
-                            var features = actual.Data.First(item => item.Key == DataModel.Features);
-
-                            // Should have no features
-                            if (!features.Value.Items.IsNullOrEmpty())
-                            {
-                                return false;
-                            }
-
-                            var segmentItems = segments.Value.Items.ToList();
-
-                            // Should have exactly one segment
-                            if (segmentItems.Count != 1)
-                            {
-                                return false;
-                            }
-
-                            var segmentDescriptor = segmentItems[0];
-                            if (segmentDescriptor.Key != "seg1")
-                            {
-                                return false;
-                            }
-
-                            // Version should be 2 (incremented from initial load attempt)
-                            if (segmentDescriptor.Value.Version < 2)
-                            {
-                                return false;
-                            }
-
-                            if (!(segmentDescriptor.Value.Item is Segment segment))
-                            {
-                                return false;
-                            }
-
-                            if (segment.Deleted)
-                            {
-                                return false;
-                            }
-
-                            if (segment.Included.Count != 1)
-                            {
-                                return false;
-                            }
-
-                            return segment.Included[0] == "user1";
-                        },
-                        "Did not receive expected update from the file data source with segment-only data.",
+                    var newData = AssertHelpers.ExpectJsonValue(
+                        _updateSink.Inits,
+                        DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)),
+                        DataSetAsJson,
                         TimeSpan.FromSeconds(30));
+
+                    AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)), DataSetAsJson(newData));
                 }
             }
         }

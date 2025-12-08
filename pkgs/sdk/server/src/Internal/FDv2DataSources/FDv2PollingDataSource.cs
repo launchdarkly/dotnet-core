@@ -152,6 +152,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
         }
 
+        private void HandleJsonError(string message)
+        {
+            _log.Error("LaunchDarkly polling request received invalid data: {0}", message);
+
+            var errorInfo = new DataSourceStatus.ErrorInfo
+            {
+                Kind = DataSourceStatus.ErrorKind.InvalidData,
+                Message = message,
+                Time = DateTime.Now
+            };
+            _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+        }
+
         private void ProcessProtocolAction(IFDv2ProtocolAction action)
         {
             switch (action)
@@ -168,6 +181,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 case FDv2ActionInternalError internalErrorAction:
                     _log.Error("FDv2 protocol error ({0}): {1}", internalErrorAction.ErrorType,
                         internalErrorAction.Message);
+                    // Handle JsonError by updating status to Interrupted with InvalidData error kind
+                    if (internalErrorAction.ErrorType == FDv2ProtocolErrorType.JsonError)
+                    {
+                        HandleJsonError(internalErrorAction.Message);
+                    }
                     break;
                 case FDv2ActionNone _:
                     // No action needed

@@ -728,5 +728,94 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.Null(validStatus.LastError);
             }
         }
+
+        [Fact]
+        public async Task JsonErrorInEventUpdatesStatusToInterrupted()
+        {
+            // Create an event with malformed JSON data that will trigger a JsonError
+            var badDataEvent = new FDv2Event(FDv2EventTypes.ServerIntent,
+                JsonDocument.Parse(@"{""invalid"":""data""}").RootElement);
+
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(CreatePollingResponse(badDataEvent));
+
+            using (var dataSource = MakeDataSource())
+            {
+                _ = dataSource.Start();
+
+                // Wait for poll to happen and process the malformed event
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+
+                // Should update status to Interrupted with InvalidData error kind
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, status.LastError.Value.Kind);
+                Assert.Contains("Failed to deserialize", status.LastError.Value.Message);
+
+                // Data source should not be initialized due to the error
+                Assert.False(dataSource.Initialized);
+            }
+        }
+
+        [Fact]
+        public async Task JsonErrorInEventHasInvalidDataErrorKind()
+        {
+            var callCount = 0;
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        // First poll: return valid data to initialize
+                        const string flagJson = @"{
+                            ""key"": ""test-flag"",
+                            ""on"": true,
+                            ""version"": 1,
+                            ""variations"": [""a""],
+                            ""fallthrough"": {""variation"": 0},
+                            ""salt"": ""salt"",
+                            ""trackEvents"": false,
+                            ""trackEventsFallthrough"": false,
+                            ""deleted"": false,
+                            ""clientSide"": false
+                        }";
+
+                        return CreatePollingResponse(
+                            CreateServerIntentEvent("xfer-full", "p1", 1),
+                            CreatePutObjectEvent("flag", "test-flag", 1, flagJson),
+                            CreatePayloadTransferredEvent("(p:p1:1)", 1)
+                        );
+                    }
+                    else
+                    {
+                        // Second poll: return response with malformed event
+                        var badEvent = new FDv2Event(FDv2EventTypes.PutObject,
+                            JsonDocument.Parse(@"{""missing"":""required fields""}").RootElement);
+                        return CreatePollingResponse(badEvent);
+                    }
+                });
+
+            using (var dataSource = MakeDataSource())
+            {
+                await dataSource.Start();
+                Assert.True(dataSource.Initialized);
+
+                // First poll should initialize successfully
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+                // Second poll should set status to Interrupted with InvalidData error
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, status.LastError.Value.Kind);
+                Assert.Contains("Failed to deserialize", status.LastError.Value.Message);
+
+                // Data source should remain initialized
+                Assert.True(dataSource.Initialized);
+            }
+        }
     }
 }

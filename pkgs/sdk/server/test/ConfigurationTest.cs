@@ -143,10 +143,10 @@ namespace LaunchDarkly.Sdk.Server
         public void CanAddArbitraryHooks()
         {
             var config = Configuration.Builder("").Hooks(
-                Components.Hooks()
-                    .Add(new Hook("foo"))
-                    .Add(new Hook("bar")))
-                    .Build();
+                    Components.Hooks()
+                        .Add(new Hook("foo"))
+                        .Add(new Hook("bar")))
+                .Build();
 
             var hooks = config.Hooks.Build();
             Assert.Equal(2, hooks.Hooks.Count());
@@ -156,7 +156,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanAddArbitraryHooksFromEnumerable()
         {
             var config = Configuration.Builder("").Hooks(
-                    Components.Hooks(new []{new Hook("foo"), new Hook("bar")}))
+                    Components.Hooks(new[] { new Hook("foo"), new Hook("bar") }))
                 .Build();
 
             var hooks = config.Hooks.Build();
@@ -167,7 +167,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanConfigureDefaultDataSystem()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Default()).Build();
+                .DataSystem(Components.DataSystem().Default()).Build();
 
             var dataSystemConfig = config.DataSystem.Build();
             Assert.Equal(1, dataSystemConfig.Initializers.Count);
@@ -183,7 +183,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanConfigureStreamingDataSystem()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Streaming()).Build();
+                .DataSystem(Components.DataSystem().Streaming()).Build();
 
             var dataSystemConfig = config.DataSystem.Build();
             Assert.Empty(dataSystemConfig.Initializers);
@@ -197,7 +197,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanConfigurePollingDataSystem()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Polling()).Build();
+                .DataSystem(Components.DataSystem().Polling()).Build();
 
             var dataSystemConfig = config.DataSystem.Build();
             Assert.Empty(dataSystemConfig.Initializers);
@@ -210,9 +210,10 @@ namespace LaunchDarkly.Sdk.Server
         [Fact]
         public void CanConfigureDaemonDataSystem()
         {
-            var mockStore = Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
+            var mockStore =
+                Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Daemon(mockStore)).Build();
+                .DataSystem(Components.DataSystem().Daemon(mockStore)).Build();
 
             var dataSystemConfig = config.DataSystem.Build();
             Assert.Empty(dataSystemConfig.Initializers);
@@ -225,9 +226,10 @@ namespace LaunchDarkly.Sdk.Server
         [Fact]
         public void CanConfigurePersistentStoreDataSystem()
         {
-            var mockStore = Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
+            var mockStore =
+                Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.PersistentStore(mockStore)).Build();
+                .DataSystem(Components.DataSystem().PersistentStore(mockStore)).Build();
 
             var dataSystemConfig = config.DataSystem.Build();
             Assert.Equal(1, dataSystemConfig.Initializers.Count);
@@ -243,10 +245,11 @@ namespace LaunchDarkly.Sdk.Server
         [Fact]
         public void CanConfigureCustomDataSystemWithAllOptions()
         {
-            var mockStore = Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
+            var mockStore =
+                Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
 
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()
+                .DataSystem(Components.DataSystem().Custom()
                     .Initializers(DataSystemComponents.Polling())
                     .Synchronizers(DataSystemComponents.Streaming(), DataSystemComponents.Polling())
                     .FDv1FallbackSynchronizer(DataSystemComponents.FDv1Polling())
@@ -276,7 +279,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanReplaceInitializersInCustomDataSystem()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()
+                .DataSystem(Components.DataSystem().Custom()
                     .Initializers(DataSystemComponents.Polling())
                     .ReplaceInitializers(DataSystemComponents.Streaming())
                 ).Build();
@@ -290,7 +293,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanReplaceSynchronizersInCustomDataSystem()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()
+                .DataSystem(Components.DataSystem().Custom()
                     .Synchronizers(DataSystemComponents.Polling())
                     .ReplaceSynchronizers(DataSystemComponents.Streaming())
                 ).Build();
@@ -304,7 +307,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanAddMultipleInitializersToCustomDataSystem()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()
+                .DataSystem(Components.DataSystem().Custom()
                     .Initializers(DataSystemComponents.Polling())
                     .Initializers(DataSystemComponents.Streaming())
                 ).Build();
@@ -319,7 +322,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanAddMultipleSynchronizersToCustomDataSystem()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()
+                .DataSystem(Components.DataSystem().Custom()
                     .Synchronizers(DataSystemComponents.Polling())
                     .Synchronizers(DataSystemComponents.Streaming())
                     .Synchronizers(DataSystemComponents.FDv1Polling())
@@ -336,7 +339,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CustomDataSystemWithNoConfigurationHasEmptyLists()
         {
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()).Build();
+                .DataSystem(Components.DataSystem().Custom()).Build();
 
             var dataSystemConfig = config.DataSystem.Build();
             Assert.Empty(dataSystemConfig.Initializers);
@@ -348,9 +351,10 @@ namespace LaunchDarkly.Sdk.Server
         [Fact]
         public void CanConfigureDaemonDataSystemWithReadOnlyMode()
         {
-            var mockStore = Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
+            var mockStore =
+                Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()
+                .DataSystem(Components.DataSystem().Custom()
                     .PersistentStore(mockStore, DataSystemConfiguration.DataStoreMode.ReadOnly)
                 ).Build();
 
@@ -364,9 +368,10 @@ namespace LaunchDarkly.Sdk.Server
         [Fact]
         public void CanConfigureCustomDataSystemWithReadWritePersistentStore()
         {
-            var mockStore = Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
+            var mockStore =
+                Components.PersistentDataStore(new MockPersistentStore().AsSingletonFactory<IPersistentDataStore>());
             var config = Configuration.Builder("")
-                .DataSystem(DataSystemModes.Custom()
+                .DataSystem(Components.DataSystem().Custom()
                     .PersistentStore(mockStore, DataSystemConfiguration.DataStoreMode.ReadWrite)
                     .Synchronizers(DataSystemComponents.Streaming())
                 ).Build();
@@ -380,13 +385,22 @@ namespace LaunchDarkly.Sdk.Server
         // Simple mock persistent data store for testing
         private class MockPersistentStore : IPersistentDataStore
         {
-            public void Init(FullDataSet<SerializedItemDescriptor> allData) { }
+            public void Init(FullDataSet<SerializedItemDescriptor> allData)
+            {
+            }
+
             public SerializedItemDescriptor? Get(DataKind kind, string key) => null;
-            public KeyedItems<SerializedItemDescriptor> GetAll(DataKind kind) => new KeyedItems<SerializedItemDescriptor>(null);
+
+            public KeyedItems<SerializedItemDescriptor> GetAll(DataKind kind) =>
+                new KeyedItems<SerializedItemDescriptor>(null);
+
             public bool Upsert(DataKind kind, string key, SerializedItemDescriptor item) => true;
             public bool Initialized() => true;
             public bool IsStoreAvailable() => true;
-            public void Dispose() { }
+
+            public void Dispose()
+            {
+            }
         }
     }
 }

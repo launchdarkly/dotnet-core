@@ -1,4 +1,5 @@
 using System;
+using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal;
 using LaunchDarkly.Sdk.Server.Internal.FDv2DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
@@ -15,7 +16,13 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// </summary>
     /// <example>
     /// <code>
-    /// TODO: Write.
+    /// var config = Configuration.Builder("my-sdk-key")
+    ///     .DataSystem(Components.DataSystem().Custom()
+    ///         .Initializers(DataSystemComponents.Polling())
+    ///         // DataSystemComponents.Streaming returns an instance to this builder.
+    ///         .Synchronizers(DataSystemComponents.Streaming()
+    ///             .InitialReconnectDelay(TimeSpan.FromSeconds(5)), DataSystemComponents.Polling())
+    ///         .FDv1FallbackSynchronizer(DataSystemComponents.FDv1Polling()));
     /// </code>
     /// </example>
     internal sealed class FDv2StreamingDataSourceBuilder : IComponentConfigurer<IDataSource>, IDiagnosticDescription
@@ -28,6 +35,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public static readonly TimeSpan DefaultInitialReconnectDelay = TimeSpan.FromSeconds(1);
 
         private TimeSpan _initialReconnectDelay = DefaultInitialReconnectDelay;
+
+        private ServiceEndpoints _serviceEndpointsOverride;
 
         /// <summary>
         /// Sets the initial reconnect delay for the streaming connection.
@@ -50,11 +59,25 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             return this;
         }
 
+        /// <summary>
+        /// Sets overrides for the service endpoints. In typical usage, the data source will use the commonly defined
+        /// service endpoints, but for cases where they need to be controlled at the source level, this method can
+        /// be used. This data source will only use the endpoints applicable to it.
+        /// </summary>
+        /// <param name="serviceEndpointsOverride">the service endpoints to override the base endpoints</param>
+        /// <returns>the builder</returns>
+        public FDv2StreamingDataSourceBuilder ServiceEndpointsOverride(ServiceEndpointsBuilder serviceEndpointsOverride)
+        {
+            _serviceEndpointsOverride = serviceEndpointsOverride.Build();
+            return this;
+        }
+
         /// <inheritdoc/>
         public IDataSource Build(LdClientContext context)
         {
+            var endpoints = _serviceEndpointsOverride ?? context.ServiceEndpoints;
             var configuredBaseUri = StandardEndpoints.SelectBaseUri(
-                context.ServiceEndpoints, e => e.StreamingBaseUri, "Streaming",
+                endpoints, e => e.StreamingBaseUri, "Streaming",
                 context.Logger);
             return new FDv2StreamingDataSource(
                 context,

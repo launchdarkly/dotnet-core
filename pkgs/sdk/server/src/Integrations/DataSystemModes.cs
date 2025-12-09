@@ -9,11 +9,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// It is not suitable for production usage. Do not use it. You have been warned.
     /// </para>
     /// </summary>
-    /// <remarks>
-    /// Non-static class to allow being returned from <see cref="Components"/>.
-    /// </remarks>
     internal sealed class DataSystemModes
     {
+        // This implementation is non-static to allow for easy usage with "Components".
+        // Where we can return an instance of this object, and the user can chain into their desired configuration.
         // TODO: SDK-1678: Internal until ready for use.
 
         /// <summary>
@@ -25,8 +24,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// automatically fall back to polling the global CDN for updates.
         /// </para>
         /// </summary>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Default());
+        /// </code>
+        /// </example>
+        /// </remarks>
         /// <returns>a builder containing our default configuration</returns>
-        public static DataSystemBuilder Default()
+        public DataSystemBuilder Default()
         {
             return Custom()
                 .Initializers(DataSystemComponents.Polling())
@@ -45,8 +52,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// This configuration will not automatically fall back to polling, but it can be instructed by LaunchDarkly
         /// to fall back to polling in certain situations.
         /// </remarks>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Streaming());
+        /// </code>
+        /// </example>
+        /// </remarks>
         /// <returns>a builder containing a primarily streaming configuration</returns>
-        public static DataSystemBuilder Streaming()
+        public DataSystemBuilder Streaming()
         {
             return Custom()
                 .Synchronizers(DataSystemComponents.Streaming())
@@ -60,8 +75,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// required for certain network configurations.
         /// </para>
         /// </summary>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Polling());
+        /// </code>
+        /// </example>
+        /// </remarks>
         /// <returns>a builder containing a polling-only configuration</returns>
-        public static DataSystemBuilder Polling()
+        public DataSystemBuilder Polling()
         {
             return Custom()
                 .Synchronizers(DataSystemComponents.Polling())
@@ -73,8 +96,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// or other SDKs. The SDK will not connect to LaunchDarkly. In this mode, the SDK never writes to the data
         /// store.
         /// </summary>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Daemon());
+        /// </code>
+        /// </example>
+        /// </remarks>
         /// <returns>a builder which is configured for daemon mode</returns>
-        public static DataSystemBuilder Daemon(IComponentConfigurer<IDataStore> persistentStore)
+        public DataSystemBuilder Daemon(IComponentConfigurer<IDataStore> persistentStore)
         {
             return Custom()
                 .PersistentStore(persistentStore,
@@ -87,8 +118,17 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// Once fresh data is available, the SDK will no longer read from the persistent store, although it will keep
         /// it up to date.
         /// </summary>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().
+        ///     PersistentStore(Components.PersistentDataStore(SomeDatabaseName.DataStore()))););
+        /// </code>
+        /// </example>
+        /// </remarks>
         /// <returns>a builder which is configured for persistent store mode</returns>
-        public static DataSystemBuilder PersistentStore(IComponentConfigurer<IDataStore> persistentStore)
+        public DataSystemBuilder PersistentStore(IComponentConfigurer<IDataStore> persistentStore)
         {
             return Default()
                 .PersistentStore(persistentStore, DataSystemConfiguration.DataStoreMode.ReadWrite);
@@ -97,10 +137,21 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// <summary>
         /// Custom returns a builder suitable for creating a custom data acquisition strategy. You may configure
         /// how the SDK uses a Persistent Store, how the SDK obtains an initial set of data, and how the SDK keeps data
-        /// up-to-date.
+        /// up to date.
         /// </summary>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Custom()
+        ///     .Initializers(DataSystemComponents.Polling())
+        ///     .Synchronizers(DataSystemComponents.Streaming(), DataSystemComponents.Polling())
+        ///     .FDv1FallbackSynchronizer(DataSystemComponents.FDv1Polling());
+        /// </code>
+        /// </example>
+        /// </remarks>
         /// <returns>a builder without any base configuration</returns>
-        public static DataSystemBuilder Custom()
+        public DataSystemBuilder Custom()
         {
             return new DataSystemBuilder();
         }

@@ -18,7 +18,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// Get a builder for a polling data source.
         /// </summary>
         /// <returns>the polling data source builder</returns>
-        public static IComponentConfigurer<IDataSource> Polling()
+        public static FDv2PollingDataSourceBuilder Polling()
         {
             return new FDv2PollingDataSourceBuilder();
         }
@@ -27,7 +27,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// Get a builder for a streaming data source.
         /// </summary>
         /// <returns>the streaming data source builder</returns>
-        public static IComponentConfigurer<IDataSource> Streaming()
+        public static FDv2StreamingDataSourceBuilder Streaming()
         {
             return new FDv2StreamingDataSourceBuilder();
         }
@@ -39,7 +39,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </remarks>
         /// </summary>
         /// <returns>the FDv1 compatible polling data source.</returns>
-        public static IComponentConfigurer<IDataSource> FDv1Polling()
+        public static PollingDataSourceBuilder FDv1Polling()
         {
             return new PollingDataSourceBuilder();
         }

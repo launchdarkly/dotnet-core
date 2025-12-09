@@ -340,6 +340,7 @@ namespace LaunchDarkly.Sdk.Server
             SetSdkKeyIfValid(sdkKey);
             return this;
         }
+
         /// <summary>
         /// Sets the SDK's service URIs, using a configuration builder obtained from
         /// <see cref="Components.ServiceEndpoints"/>.
@@ -409,6 +410,14 @@ namespace LaunchDarkly.Sdk.Server
         /// It is not suitable for production usage. Do not use it. You have been warned.
         /// </para>
         /// </summary>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Default());
+        /// </code>
+        /// </example>
+        /// </remarks>
         /// <param name="dataSystemBuilder">the data system builder</param>
         /// <returns>the same builder</returns>
         /// TODO: SDK-1678: Internal until ready for use.

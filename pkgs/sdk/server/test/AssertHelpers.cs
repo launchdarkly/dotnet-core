@@ -85,12 +85,12 @@ namespace LaunchDarkly.Sdk.Server
         /// by continuing to check events until one matches or the timeout expires.
         /// </summary>
         /// <param name="sink">the sink to check events from</param>
-        /// <param name="expectedJson">the expected JSON string</param>
+        /// <param name="expectedJson">the expected JSON value</param>
         /// <param name="actualJsonFunc">function to convert the received value to JSON for comparison</param>
         /// <param name="timeout">the overall timeout</param>
         /// <typeparam name="T">the type of the sink</typeparam>
         /// <returns>the value that matched the expected JSON</returns>
-        public static T ExpectJsonValue<T>(EventSink<T> sink, string expectedJson, Func<T, string> actualJsonFunc,
+        public static T ExpectJsonValue<T>(EventSink<T> sink, JsonTestValue expectedJson, Func<T, JsonTestValue> actualJsonFunc,
             TimeSpan timeout)
         {
             var deadline = DateTime.UtcNow + timeout;

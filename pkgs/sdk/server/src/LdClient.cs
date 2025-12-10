@@ -206,7 +206,7 @@ namespace LaunchDarkly.Sdk.Server
 
             var initTask = _dataSystem.Start();
 
-            if (_dataSystem.Store.Initialized())
+            if (_dataSystem.Initialized())
             {
                 _log.Info(InitWaitTimeInfo, _configuration.StartWaitTime.TotalMilliseconds);
                 if (_configuration.StartWaitTime >= ExcessiveInitWaitTime)

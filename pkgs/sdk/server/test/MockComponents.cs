@@ -10,6 +10,7 @@ using LaunchDarkly.TestHelpers;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes;
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
+using System.Collections.Immutable;
 
 namespace LaunchDarkly.Sdk.Server
 {
@@ -50,6 +51,9 @@ namespace LaunchDarkly.Sdk.Server
         internal readonly EventSink<UpsertParams> Upserts = new EventSink<UpsertParams>();
         internal readonly EventSink<DataSourceStatus> StatusUpdates = new EventSink<DataSourceStatus>();
 
+        // Thread-safe list to record all status updates for position-based access
+        private readonly ConcurrentQueue<DataSourceStatus> _allStatusUpdates = new ConcurrentQueue<DataSourceStatus>();
+
         public struct UpsertParams
         {
             public DataKind Kind;
@@ -71,13 +75,61 @@ namespace LaunchDarkly.Sdk.Server
             return InitsShouldFail <= 0 || (--InitsShouldFail < 0);
         }
 
-        public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError) =>
-            StatusUpdates.Enqueue(new DataSourceStatus() { State = newState, LastError = newError });
+        public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+        {
+            var status = new DataSourceStatus() { State = newState, LastError = newError };
+            StatusUpdates.Enqueue(status);
+            _allStatusUpdates.Enqueue(status);
+        }
 
         public bool Upsert(DataKind kind, string key, ItemDescriptor item)
         {
             Upserts.Enqueue(new UpsertParams { Kind = kind, Key = key, Item = item });
             return UpsertsShouldFail <= 0 || (--UpsertsShouldFail < 0);
+        }
+
+        /// <summary>
+        /// Gets all status updates that have been recorded, in order.
+        /// </summary>
+        public ImmutableList<DataSourceStatus> GetAllStatusUpdates()
+        {
+            return _allStatusUpdates.ToArray().ToImmutableList();
+        }
+
+        /// <summary>
+        /// Gets the status update at the specified index (0-based).
+        /// </summary>
+        /// <param name="index">The index of the status update to retrieve</param>
+        /// <returns>The status update at the specified index, or null if the index is out of range</returns>
+        public DataSourceStatus? GetStatusUpdateAt(int index)
+        {
+            var updates = GetAllStatusUpdates();
+            if (index >= 0 && index < updates.Count)
+            {
+                return updates[index];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Waits for the specified number of status updates to be recorded, then returns them.
+        /// </summary>
+        /// <param name="count">The number of status updates to wait for</param>
+        /// <param name="timeout">The maximum time to wait</param>
+        /// <returns>The list of status updates</returns>
+        public ImmutableList<DataSourceStatus> WaitForStatusUpdates(int count, TimeSpan timeout)
+        {
+            var startTime = DateTimeOffset.Now;
+            while (DateTimeOffset.Now - startTime < timeout)
+            {
+                var updates = GetAllStatusUpdates();
+                if (updates.Count >= count)
+                {
+                    return updates;
+                }
+                System.Threading.Thread.Sleep(10);
+            }
+            return GetAllStatusUpdates();
         }
     }
 

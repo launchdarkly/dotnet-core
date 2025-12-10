@@ -169,6 +169,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.True(underTest.Remove("1"));
             Assert.Null(underTest.Next());
         }
+
+        [Fact]
+        public void NonCircularListReturnsNullAfterConsumingAllElements()
+        {
+            var underTest = new SourcesList<string>(false, new[] { "1", "2", "3" });
+
+            // Consume all elements
+            Assert.Equal("1", underTest.Next());
+            Assert.Equal("2", underTest.Next());
+            Assert.Equal("3", underTest.Next());
+
+            // After consuming all elements, Next() should return null
+            Assert.Null(underTest.Next());
+            Assert.Null(underTest.Next());
+        }
     }
 }
 

@@ -361,6 +361,128 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             WaitForStatus(capturingSink, DataSourceState.Off);
         }
 
+        [Fact]
+        public async Task AllThreeSourcesFailReportsOffWithExhaustedMessage()
+        {
+            // Create a capturing sink to observe all updates
+            var capturingSink = new CapturingDataSourceUpdates();
+
+            // Create action applier factory that blacklists on Off and falls back to next factory
+            ActionApplierFactory actionApplierFactory = (actionable) =>
+            {
+                return new MockActionApplierWithBlacklistOnOff(actionable);
+            };
+
+            // Create first source factory: reports initializing -> off
+            SourceFactory firstSourceFactory = (updatesSink) =>
+            {
+                var source = new MockDataSourceWithStatusSequence(
+                    new[] { DataSourceState.Initializing, DataSourceState.Off }
+                );
+                source.UpdateSink = updatesSink;
+                return source;
+            };
+
+            // Create second source factory: reports initializing -> off
+            SourceFactory secondSourceFactory = (updatesSink) =>
+            {
+                var source = new MockDataSourceWithStatusSequence(
+                    new[] { DataSourceState.Initializing, DataSourceState.Off }
+                );
+                source.UpdateSink = updatesSink;
+                return source;
+            };
+
+            // Create third source factory: reports initializing -> off
+            SourceFactory thirdSourceFactory = (updatesSink) =>
+            {
+                var source = new MockDataSourceWithStatusSequence(
+                    new[] { DataSourceState.Initializing, DataSourceState.Off }
+                );
+                source.UpdateSink = updatesSink;
+                return source;
+            };
+
+            // Create CompositeSource with three factory tuples
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
+            {
+                (firstSourceFactory, actionApplierFactory),
+                (secondSourceFactory, actionApplierFactory),
+                (thirdSourceFactory, actionApplierFactory)
+            };
+
+            var compositeSource = new CompositeSource(capturingSink, factoryTuples);
+
+            // Start the composite source
+            var startTask = compositeSource.Start();
+
+            // Wait for Initializing status (from first source)
+            WaitForStatus(capturingSink, DataSourceState.Initializing);
+
+            // Wait for Interrupted status (from first source failure)
+            // Additional Interrupted statuses from subsequent source failures may be suppressed by the status sanitizer
+            WaitForStatus(capturingSink, DataSourceState.Interrupted);
+
+            // Wait for Off status (from composite source exhaustion) and verify the error message
+            // After all three sources have failed, the composite should report Off with the exhaustion message
+            var actualTimeout = TimeSpan.FromSeconds(5);
+            ExpectPredicate(
+                capturingSink.StatusUpdates,
+                status => status.State == DataSourceState.Off && 
+                         status.LastError.HasValue && 
+                         status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
+                "Did not receive Off status with expected error message within timeout",
+                actualTimeout
+            );
+
+            // Verify that the first Start() call completed successfully
+            var startResult = await startTask;
+            Assert.True(startResult);
+
+            // Verify that a second call to Start() fails after all sources are exhausted
+            var secondStartResult = await compositeSource.Start();
+            Assert.False(secondStartResult);
+
+            compositeSource.Dispose();
+        }
+
+        [Fact]
+        public async Task NoSourcesProvidedReportsOffWithExhaustedMessage()
+        {
+            // Create a capturing sink to observe all updates
+            var capturingSink = new CapturingDataSourceUpdates();
+
+            // Create CompositeSource with empty factory tuples list
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+
+            var compositeSource = new CompositeSource(capturingSink, factoryTuples);
+
+            // Start the composite source
+            var startTask = compositeSource.Start();
+
+            // Wait for Off status (from composite source exhaustion) and verify the error message
+            // Since there are no sources, the composite should immediately report Off with the exhaustion message
+            var actualTimeout = TimeSpan.FromSeconds(5);
+            ExpectPredicate(
+                capturingSink.StatusUpdates,
+                status => status.State == DataSourceState.Off && 
+                         status.LastError.HasValue && 
+                         status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
+                "Did not receive Off status with expected error message within timeout",
+                actualTimeout
+            );
+
+            // Verify that Start() completed but returned false (no sources available)
+            var startResult = await startTask;
+            Assert.False(startResult, "Start() should return false when there are no sources");
+
+            // Verify that a second call to Start() also fails
+            var secondStartResult = await compositeSource.Start();
+            Assert.False(secondStartResult);
+
+            compositeSource.Dispose();
+        }
+
         private void WaitForStatus(CapturingDataSourceUpdates sink, DataSourceState state, TimeSpan? timeout = null)
         {
             var actualTimeout = timeout ?? TimeSpan.FromSeconds(5);

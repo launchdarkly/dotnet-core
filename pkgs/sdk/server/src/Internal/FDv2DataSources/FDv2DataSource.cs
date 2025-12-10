@@ -31,27 +31,42 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory = (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
             
-            var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
+            var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+            
+            // Only create the initializers composite if initializers are provided
+            if (initializers != null && initializers.Count > 0)
             {
-                // Create the initializersCompositeSource with action logic unique to initializers
-                ((sink) => {
-                    var initializersFactoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
-                    for (int i = 0; i < initializers.Count; i++)
-                    {
-                        initializersFactoryTuples.Add((initializers[i], fastFallbackApplierFactory));
-                    }
-                    return new CompositeSource(sink, initializersFactoryTuples, circular: false);
-                }, blacklistWhenSuccessOrOff),
-                // Create synchronizersCompositeSource with action logic unique to synchronizers
-                ((sink) => {
-                    var synchronizersFactoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
-                    for (int i = 0; i < synchronizers.Count; i++)
-                    {
-                        synchronizersFactoryTuples.Add((synchronizers[i], timedFallbackAndRecoveryApplierFactory));
-                    }
-                    return new CompositeSource(sink, synchronizersFactoryTuples);
-                }, null) // // TODO: add fallback to FDv1 logic, null for the moment as once we're on the synchronizers, we stay there
-            };
+                underlyingComposites.Add((
+                    // Create the initializersCompositeSource with action logic unique to initializers
+                    (sink) => {
+                        var initializersFactoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                        for (int i = 0; i < initializers.Count; i++)
+                        {
+                            initializersFactoryTuples.Add((initializers[i], fastFallbackApplierFactory));
+                        }
+                        return new CompositeSource(sink, initializersFactoryTuples, circular: false);
+                    }, 
+                    blacklistWhenSuccessOrOff
+                ));
+            }
+            
+            // Only create the synchronizers composite if synchronizers are provided
+            if (synchronizers != null && synchronizers.Count > 0)
+            {
+                underlyingComposites.Add((
+                    // Create synchronizersCompositeSource with action logic unique to synchronizers
+                    (sink) => {
+                        var synchronizersFactoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                        for (int i = 0; i < synchronizers.Count; i++)
+                        {
+                            synchronizersFactoryTuples.Add((synchronizers[i], timedFallbackAndRecoveryApplierFactory));
+                        }
+                        return new CompositeSource(sink, synchronizersFactoryTuples);
+                    }, 
+                    null // TODO: add fallback to FDv1 logic, null for the moment as once we're on the synchronizers, we stay there
+                ));
+            }
+            
             var combinedCompositeSource = new CompositeSource(updatesSink, underlyingComposites, circular: false);
 
             // TODO: add fallback to FDv1 logic

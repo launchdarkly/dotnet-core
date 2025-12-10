@@ -120,10 +120,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         /// <summary>
         /// Enqueue a state-changing operation to be executed under the shared lock.
-        /// If no other operation is currently running, this will synchronously process
-        /// the queue in a simple loop on the current thread. Any re-entrant calls from
-        /// within the operations will only enqueue more work; they will not trigger
-        /// another processing loop, so the call stack does not grow with the queue length.
+        /// If no other operation is currently running, this will asynchronously process
+        /// the queue on a background thread. Any re-entrant calls from within the operations
+        /// will only enqueue more work; they will not trigger another processing loop, so
+        /// the call stack does not grow with the queue length. Processing actions on a
+        /// background thread prevents blocking the calling thread and allows operations like
+        /// disposal to proceed even when actions are continuously being enqueued.
         /// </summary>
         private void EnqueueAction(Action action)
         {
@@ -140,12 +142,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             if (shouldProcess)
             {
-                ProcessQueuedActions();
+                // Process actions on a background thread to prevent blocking the caller
+                // and allow Start() to return even when actions are continuously enqueued
+                _ = Task.Run(() => ProcessQueuedActions());
             }
         }
 
         /// <summary>
-        /// Processes the queued actions.
+        /// Processes the queued actions on a background thread.
         /// </summary>
         private void ProcessQueuedActions()
         {
@@ -154,7 +158,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 Action action;
                 lock (_lock)
                 {
-                    if (_pendingActions.Count == 0)
+                    // Check if disposed to allow disposal to interrupt action processing
+                    if (_disposed || _pendingActions.Count == 0)
                     {
                         _isProcessingActions = false;
                         return;

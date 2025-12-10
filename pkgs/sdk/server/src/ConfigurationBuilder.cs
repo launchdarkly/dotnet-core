@@ -32,8 +32,7 @@ namespace LaunchDarkly.Sdk.Server
 
         internal static readonly TimeSpan DefaultStartWaitTime = TimeSpan.FromSeconds(10);
 
-        // Let's try to keep these properties and methods alphabetical so they're easy to find. Note that they
-        // are internal rather than private so that they can be read by the Configuration constructor.
+        // Note that these are internal rather than private so that they can be read by the Configuration constructor.
         internal IComponentConfigurer<BigSegmentsConfiguration> _bigSegments = null;
         internal IComponentConfigurer<IDataSource> _dataSource = null;
         internal IComponentConfigurer<IDataStore> _dataStore = null;
@@ -49,6 +48,7 @@ namespace LaunchDarkly.Sdk.Server
         internal TimeSpan _startWaitTime = DefaultStartWaitTime;
         internal ApplicationInfoBuilder _applicationInfo;
         internal WrapperInfoBuilder _wrapperInfo;
+        internal DataSystemBuilder _dataSystem;
 
         #endregion
 
@@ -87,6 +87,7 @@ namespace LaunchDarkly.Sdk.Server
             _serviceEndpointsBuilder = new ServiceEndpointsBuilder(copyFrom.ServiceEndpoints);
             _startWaitTime = copyFrom.StartWaitTime;
             _applicationInfo = copyFrom.ApplicationInfo;
+            _dataSystem = copyFrom.DataSystem;
         }
 
         #endregion
@@ -339,6 +340,7 @@ namespace LaunchDarkly.Sdk.Server
             SetSdkKeyIfValid(sdkKey);
             return this;
         }
+
         /// <summary>
         /// Sets the SDK's service URIs, using a configuration builder obtained from
         /// <see cref="Components.ServiceEndpoints"/>.
@@ -398,6 +400,30 @@ namespace LaunchDarkly.Sdk.Server
         public ConfigurationBuilder WrapperInfo(WrapperInfoBuilder wrapperInfo)
         {
             _wrapperInfo = wrapperInfo;
+            return this;
+        }
+
+        /// <summary>
+        /// Configure the data system.
+        /// <para>
+        /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+        /// It is not suitable for production usage. Do not use it. You have been warned.
+        /// </para>
+        /// </summary>
+        /// <remarks>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Default());
+        /// </code>
+        /// </example>
+        /// </remarks>
+        /// <param name="dataSystemBuilder">the data system builder</param>
+        /// <returns>the same builder</returns>
+        /// TODO: SDK-1678: Internal until ready for use.
+        internal ConfigurationBuilder DataSystem(DataSystemBuilder dataSystemBuilder)
+        {
+            _dataSystem = dataSystemBuilder;
             return this;
         }
 

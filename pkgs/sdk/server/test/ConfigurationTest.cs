@@ -143,10 +143,10 @@ namespace LaunchDarkly.Sdk.Server
         public void CanAddArbitraryHooks()
         {
             var config = Configuration.Builder("").Hooks(
-                    Components.Hooks()
-                        .Add(new Hook("foo"))
-                        .Add(new Hook("bar")))
-                .Build();
+                Components.Hooks()
+                    .Add(new Hook("foo"))
+                    .Add(new Hook("bar")))
+                    .Build();
 
             var hooks = config.Hooks.Build();
             Assert.Equal(2, hooks.Hooks.Count());
@@ -156,7 +156,7 @@ namespace LaunchDarkly.Sdk.Server
         public void CanAddArbitraryHooksFromEnumerable()
         {
             var config = Configuration.Builder("").Hooks(
-                    Components.Hooks(new[] { new Hook("foo"), new Hook("bar") }))
+                    Components.Hooks(new[]{ new Hook("foo"), new Hook("bar")}))
                 .Build();
 
             var hooks = config.Hooks.Build();

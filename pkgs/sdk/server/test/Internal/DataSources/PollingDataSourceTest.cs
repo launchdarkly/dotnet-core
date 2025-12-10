@@ -96,9 +96,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     // the http server as it isn't implemented in this package.
                     Assert.NotEmpty(receivedData.Item2);
 
-                    Assert.True(dataSource.Initialized);
+                    // Wait for initialization to complete before checking Initialized flag
+                    // to avoid race condition where data is received but flag not yet set
+                    bool completed = initTask.Wait(TimeSpan.FromSeconds(1));
+                    Assert.True(completed);
 
-                    Assert.True(initTask.IsCompleted);
+                    Assert.True(dataSource.Initialized);
                     Assert.False(initTask.IsFaulted);
                 }
             }

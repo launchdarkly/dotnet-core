@@ -98,7 +98,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                             _log.Debug("Get all flags returned 304: not modified");
                             return null;
                         }
-                        //We ensure the status code after checking for 304, because 304 isn't considered success
+
                         if (!response.IsSuccessStatusCode)
                         {
                             throw new UnsuccessfulResponseException((int)response.StatusCode);

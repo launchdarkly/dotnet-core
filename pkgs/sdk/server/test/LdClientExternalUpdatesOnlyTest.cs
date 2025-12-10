@@ -1,6 +1,8 @@
 ﻿using LaunchDarkly.Sdk.Server.Internal;
+using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.Events;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit;
@@ -20,7 +22,8 @@ namespace LaunchDarkly.Sdk.Server
                 .Build();
             using (var client = new LdClient(config))
             {
-                Assert.IsType<ComponentsImpl.NullDataSource>(client._dataSource);
+                Assert.NotNull(client._dataSystem as FDv1DataSystem);
+                Assert.IsType<ComponentsImpl.NullDataSource>((client._dataSystem as FDv1DataSystem).Testing.DataSource);
             }
         }
 

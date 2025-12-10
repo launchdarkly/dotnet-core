@@ -80,9 +80,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             var configuredBaseUri = StandardEndpoints.SelectBaseUri(
                 endpoints, e => e.PollingBaseUri, "Polling",
                 context.Logger);
-
-            context.Logger.Warn(
-                "You should only disable the streaming API if instructed to do so by LaunchDarkly support");
+            
             var requestor = new FDv2PollingRequestor(context, configuredBaseUri);
             return new FDv2PollingDataSource(
                 context,
@@ -97,7 +95,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public LdValue DescribeConfiguration(LdClientContext context) =>
             LdValue.BuildObject()
                 .WithPollingProperties(
-                    StandardEndpoints.IsCustomUri(context.ServiceEndpoints, e => e.StreamingBaseUri),
+                    StandardEndpoints.IsCustomUri(_serviceEndpointsOverride ?? context.ServiceEndpoints, e => e.StreamingBaseUri),
                     _pollInterval
                 )
                 .Add("usingRelayDaemon", false) // this property is specific to the server-side SDK

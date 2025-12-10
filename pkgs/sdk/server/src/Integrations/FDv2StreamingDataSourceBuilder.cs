@@ -92,7 +92,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public LdValue DescribeConfiguration(LdClientContext context) =>
             LdValue.BuildObject()
                 .WithStreamingProperties(
-                    StandardEndpoints.IsCustomUri(context.ServiceEndpoints, e => e.StreamingBaseUri),
+                    StandardEndpoints.IsCustomUri(_serviceEndpointsOverride ?? context.ServiceEndpoints, e => e.StreamingBaseUri),
                     false,
                     _initialReconnectDelay
                 )

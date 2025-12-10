@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Integrations
@@ -101,8 +102,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             // This function should remain internal.
 
             return new DataSystemConfiguration(
-                _initializers,
-                _synchronizers,
+                _initializers.ToImmutableList(),
+                _synchronizers.ToImmutableList(),
                 _fdV1FallbackSynchronizer,
                 _persistentStore,
                 _persistentDataStoreMode);

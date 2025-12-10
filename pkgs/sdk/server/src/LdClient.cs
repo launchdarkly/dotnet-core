@@ -42,10 +42,8 @@ namespace LaunchDarkly.Sdk.Server
 
         private readonly TimeSpan ExcessiveInitWaitTime = TimeSpan.FromSeconds(60);
         private const String InitWaitTimeInfo = "Waiting up to {0} milliseconds for LaunchDarkly client to start.";
-
         private const String ExcessiveInitWaitTimeWarning =
             "LaunchDarkly client created with StartWaitTime of {0} milliseconds.  We recommend a timeout of less than {1} milliseconds.";
-
         private const String DidNotInitializeTimelyWarning = "Client did not initialize within {0} milliseconds.";
 
         #endregion
@@ -128,8 +126,7 @@ namespace LaunchDarkly.Sdk.Server
         {
             _configuration = config;
 
-            var logConfig =
-                (_configuration.Logging ?? Components.Logging()).Build(new LdClientContext(_configuration.SdkKey));
+            var logConfig = (_configuration.Logging ?? Components.Logging()).Build(new LdClientContext(_configuration.SdkKey));
 
             _log = logConfig.LogAdapter.Logger(logConfig.BaseLoggerName ?? LogNames.DefaultBase);
             _log.Info("Starting LaunchDarkly client {0}",
@@ -156,40 +153,38 @@ namespace LaunchDarkly.Sdk.Server
                 taskExecutor,
                 _configuration.ApplicationInfo?.Build() ?? new ApplicationInfo(),
                 _configuration.WrapperInfo?.Build()
-            );
+                );
 
             var httpConfig = (_configuration.Http ?? Components.HttpConfiguration()).Build(clientContext);
             clientContext = clientContext.WithHttp(httpConfig);
 
-            var diagnosticStore = _configuration.DiagnosticOptOut
-                ? null
-                : new ServerDiagnosticStore(_configuration, clientContext);
+            var diagnosticStore = _configuration.DiagnosticOptOut ? null :
+                new ServerDiagnosticStore(_configuration, clientContext);
             clientContext = clientContext.WithDiagnosticStore(diagnosticStore);
 
             _dataSystem = FDv1DataSystem.Create(_log, _configuration, clientContext, logConfig);
 
             var bigSegmentsConfig = (_configuration.BigSegments ?? Components.BigSegments(null))
                 .Build(clientContext);
-            _bigSegmentStoreWrapper = bigSegmentsConfig.Store is null
-                ? null
-                : new BigSegmentStoreWrapper(
+            _bigSegmentStoreWrapper = bigSegmentsConfig.Store is null ? null :
+                new BigSegmentStoreWrapper(
                     bigSegmentsConfig,
                     taskExecutor,
                     _log.SubLogger(LogNames.BigSegmentsSubLog)
-                );
+                    );
             _bigSegmentStoreStatusProvider = new BigSegmentStoreStatusProviderImpl(_bigSegmentStoreWrapper);
 
             _evaluator = new Evaluator(
                 GetFlag,
                 GetSegment,
-                _bigSegmentStoreWrapper == null
-                    ? (Func<string, BigSegmentsInternalTypes.BigSegmentsQueryResult>)null
-                    : _bigSegmentStoreWrapper.GetMembership,
+                _bigSegmentStoreWrapper == null ? (Func<string, BigSegmentsInternalTypes.BigSegmentsQueryResult>)null :
+                    _bigSegmentStoreWrapper.GetMembership,
                 _log
-            );
+                );
 
             var eventProcessorFactory =
-                _configuration.Offline ? Components.NoEvents : (_configuration.Events ?? Components.SendEvents());
+                _configuration.Offline ? Components.NoEvents :
+                (_configuration.Events ?? Components.SendEvents());
             _eventProcessor = eventProcessorFactory.Build(clientContext);
 
             _flagTracker = new FlagTrackerImpl(_dataSystem.FlagChanged,
@@ -203,8 +198,8 @@ namespace LaunchDarkly.Sdk.Server
             var pluginConfig = (_configuration.Plugins ?? Components.Plugins()).Build();
             EnvironmentMetadata environmentMetadata = CreateEnvironmentMetadata(clientContext);
             allHooks.AddRange(this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log));
-            _hookExecutor = allHooks.Any()
-                ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
+            _hookExecutor = allHooks.Any() ?
+                (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), allHooks)
                 : new NoopExecutor();
 
             this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
@@ -216,8 +211,7 @@ namespace LaunchDarkly.Sdk.Server
                 _log.Info(InitWaitTimeInfo, _configuration.StartWaitTime.TotalMilliseconds);
                 if (_configuration.StartWaitTime >= ExcessiveInitWaitTime)
                 {
-                    _log.Warn(ExcessiveInitWaitTimeWarning, _configuration.StartWaitTime.TotalMilliseconds,
-                        ExcessiveInitWaitTime.TotalMilliseconds);
+                    _log.Warn(ExcessiveInitWaitTimeWarning, _configuration.StartWaitTime.TotalMilliseconds, ExcessiveInitWaitTime.TotalMilliseconds);
                 }
             }
 
@@ -275,70 +269,58 @@ namespace LaunchDarkly.Sdk.Server
 
         /// <inheritdoc/>
         public bool BoolVariation(string key, Context context, bool defaultValue = false) =>
-            Evaluate(Method.BoolVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true,
-                EventFactory.Default).Value;
+            Evaluate(Method.BoolVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.Default).Value;
 
         /// <inheritdoc/>
         public int IntVariation(string key, Context context, int defaultValue) =>
-            Evaluate(Method.IntVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Int, true,
-                EventFactory.Default).Value;
+            Evaluate(Method.IntVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Int, true, EventFactory.Default).Value;
 
         /// <inheritdoc/>
         public float FloatVariation(string key, Context context, float defaultValue) =>
-            Evaluate(Method.FloatVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Float, true,
-                EventFactory.Default).Value;
+            Evaluate(Method.FloatVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Float, true, EventFactory.Default).Value;
 
         /// <inheritdoc/>
         public double DoubleVariation(string key, Context context, double defaultValue) =>
-            Evaluate(Method.DoubleVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Double, true,
-                EventFactory.Default).Value;
+            Evaluate(Method.DoubleVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.Double, true, EventFactory.Default).Value;
 
         /// <inheritdoc/>
         public string StringVariation(string key, Context context, string defaultValue) =>
-            Evaluate(Method.StringVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.String, true,
-                EventFactory.Default).Value;
+            Evaluate(Method.StringVariation, key, context, LdValue.Of(defaultValue), LdValue.Convert.String, true, EventFactory.Default).Value;
 
         /// <inheritdoc/>
         public LdValue JsonVariation(string key, Context context, LdValue defaultValue) =>
-            Evaluate(Method.JsonVariation, key, context, defaultValue, LdValue.Convert.Json, false,
-                EventFactory.Default).Value;
+            Evaluate(Method.JsonVariation, key, context, defaultValue, LdValue.Convert.Json, false, EventFactory.Default).Value;
 
         /// <inheritdoc/>
         public EvaluationDetail<bool> BoolVariationDetail(string key, Context context, bool defaultValue) =>
-            Evaluate(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true,
-                EventFactory.DefaultWithReasons);
+            Evaluate(Method.BoolVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Bool, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
         public EvaluationDetail<int> IntVariationDetail(string key, Context context, int defaultValue) =>
-            Evaluate(Method.IntVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Int, true,
-                EventFactory.DefaultWithReasons);
+            Evaluate(Method.IntVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Int, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
         public EvaluationDetail<float> FloatVariationDetail(string key, Context context, float defaultValue) =>
-            Evaluate(Method.FloatVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Float, true,
-                EventFactory.DefaultWithReasons);
+            Evaluate(Method.FloatVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Float, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
         public EvaluationDetail<double> DoubleVariationDetail(string key, Context context, double defaultValue) =>
-            Evaluate(Method.DoubleVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Double, true,
-                EventFactory.DefaultWithReasons);
+            Evaluate(Method.DoubleVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.Double, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
         public EvaluationDetail<string> StringVariationDetail(string key, Context context, string defaultValue) =>
-            Evaluate(Method.StringVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.String, true,
-                EventFactory.DefaultWithReasons);
+            Evaluate(Method.StringVariationDetail, key, context, LdValue.Of(defaultValue), LdValue.Convert.String, true, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
         public EvaluationDetail<LdValue> JsonVariationDetail(string key, Context context, LdValue defaultValue) =>
-            Evaluate(Method.JsonVariationDetail, key, context, defaultValue, LdValue.Convert.Json, false,
-                EventFactory.DefaultWithReasons);
+            Evaluate(Method.JsonVariationDetail, key, context, defaultValue, LdValue.Convert.Json, false, EventFactory.DefaultWithReasons);
 
         /// <inheritdoc/>
         public MigrationVariation MigrationVariation(string key, Context context, MigrationStage defaultStage)
         {
-            var (detail, flag) = EvaluateWithHooks(Method.MigrationVariation, key, context,
-                LdValue.Of(defaultStage.ToDataModelString()),
-                LdValue.Convert.String, true, EventFactory.Default);
+
+            var (detail, flag) = EvaluateWithHooks(Method.MigrationVariation, key, context, LdValue.Of(defaultStage.ToDataModelString()),
+                              LdValue.Convert.String, true, EventFactory.Default);
 
             var nullableStage = MigrationStageExtensions.FromDataModelString(detail.Value);
             var stage = nullableStage ?? defaultStage;
@@ -358,7 +340,7 @@ namespace LaunchDarkly.Sdk.Server
                 flag?.Migration?.CheckRatio ?? 1,
                 _log,
                 detail
-            ));
+                ));
         }
 
         /// <inheritdoc/>
@@ -374,21 +356,17 @@ namespace LaunchDarkly.Sdk.Server
             {
                 if (_dataSystem.Store.Initialized())
                 {
-                    _evalLog.Warn(
-                        "AllFlagsState() called before client initialized; using last known values from data store");
+                    _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store");
                 }
                 else
                 {
-                    _evalLog.Warn(
-                        "AllFlagsState() called before client initialized; data store unavailable, returning empty state");
+                    _evalLog.Warn("AllFlagsState() called before client initialized; data store unavailable, returning empty state");
                     return new FeatureFlagsState(false);
                 }
             }
-
             if (!context.Valid)
             {
-                _evalLog.Warn("AllFlagsState() called with invalid context ({0}); returning empty state",
-                    context.Error);
+                _evalLog.Warn("AllFlagsState() called with invalid context ({0}); returning empty state", context.Error);
                 return new FeatureFlagsState(false);
             }
 
@@ -405,25 +383,23 @@ namespace LaunchDarkly.Sdk.Server
                 LogHelpers.LogException(_log, "Exception while retrieving flags for AllFlagsState", e);
                 return new FeatureFlagsState(false);
             }
-
             foreach (var pair in flags.Items)
             {
                 if (pair.Value.Item is null || !(pair.Value.Item is FeatureFlag flag))
                 {
                     continue;
                 }
-
                 if (clientSideOnly && !flag.ClientSide)
                 {
                     continue;
                 }
-
                 try
                 {
                     EvaluatorTypes.EvalResult result = _evaluator.Evaluate(flag, context);
                     bool inExperiment = EventFactory.IsExperiment(flag, result.Result.Reason);
 
-                    var directPrerequisites = result.PrerequisiteEvals.Where(e => e.FlagKey == flag.Key)
+                    var directPrerequisites = result.PrerequisiteEvals.Where(
+                        e => e.FlagKey == flag.Key)
                         .Select(p => p.PrerequisiteFlag.Key).ToList();
 
                     builder.AddFlag(
@@ -443,16 +419,13 @@ namespace LaunchDarkly.Sdk.Server
                         string.Format("Exception caught for feature flag \"{0}\" when evaluating all flags", flag.Key),
                         e);
                     EvaluationReason reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception);
-                    builder.AddFlag(flag.Key, new EvaluationDetail<LdValue>(LdValue.Null, null, reason),
-                        new List<string>());
+                    builder.AddFlag(flag.Key, new EvaluationDetail<LdValue>(LdValue.Null, null, reason), new List<string>());
                 }
             }
-
             return builder.Build();
         }
 
-        private (EvaluationDetail<T>, FeatureFlag) EvaluateWithHooks<T>(string method, string key, Context context,
-            LdValue defaultValue, LdValue.Converter<T> converter,
+        private (EvaluationDetail<T>, FeatureFlag) EvaluateWithHooks<T>(string method, string key, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
         {
             var evalSeriesContext = new EvaluationSeriesContext(key, context, defaultValue, method, GetEnvironmentId());
@@ -475,8 +448,7 @@ namespace LaunchDarkly.Sdk.Server
                 }
                 else
                 {
-                    _evalLog.Warn(
-                        "Flag evaluation before client initialized; data store unavailable, returning default value");
+                    _evalLog.Warn("Flag evaluation before client initialized; data store unavailable, returning default value");
                     return (new EvaluationDetail<T>(defaultValueOfType, null,
                         EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady)), null);
                 }
@@ -484,8 +456,7 @@ namespace LaunchDarkly.Sdk.Server
 
             if (!context.Valid)
             {
-                _evalLog.Warn("Invalid evaluation context when evaluating flag \"{0}\" ({1}); returning default value",
-                    featureKey,
+                _evalLog.Warn("Invalid evaluation context when evaluating flag \"{0}\" ({1}); returning default value", featureKey,
                     context.Error);
                 return (new EvaluationDetail<T>(defaultValueOfType, null,
                     EvaluationReason.ErrorReason(EvaluationErrorKind.UserNotSpecified)), null);
@@ -514,7 +485,6 @@ namespace LaunchDarkly.Sdk.Server
                             prereqEvent.PrerequisiteFlag, context, prereqEvent.Result, prereqEvent.FlagKey));
                     }
                 }
-
                 var evalDetail = evalResult.Result;
                 EvaluationDetail<T> returnDetail;
                 if (evalDetail.VariationIndex == null)
@@ -526,8 +496,7 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     if (checkType && !defaultValue.IsNull && evalDetail.Value.Type != defaultValue.Type)
                     {
-                        _evalLog.Error(
-                            "Expected type {0} but got {1} when evaluating feature flag \"{2}\"; returning default value",
+                        _evalLog.Error("Expected type {0} but got {1} when evaluating feature flag \"{2}\"; returning default value",
                             defaultValue.Type,
                             evalDetail.Value.Type,
                             featureKey);
@@ -537,11 +506,9 @@ namespace LaunchDarkly.Sdk.Server
                         return (new EvaluationDetail<T>(defaultValueOfType, null,
                             EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType)), featureFlag);
                     }
-
                     returnDetail = new EvaluationDetail<T>(converter.ToType(evalDetail.Value),
                         evalDetail.VariationIndex, evalDetail.Reason);
                 }
-
                 _eventProcessor.RecordEvaluationEvent(eventFactory.NewEvaluationEvent(
                     featureFlag, context, evalDetail, defaultValue));
                 return (returnDetail, featureFlag);
@@ -562,17 +529,14 @@ namespace LaunchDarkly.Sdk.Server
                     _eventProcessor.RecordEvaluationEvent(eventFactory.NewEvaluationEvent(
                         featureFlag, context, new EvaluationDetail<LdValue>(defaultValue, null, reason), defaultValue));
                 }
-
                 return (new EvaluationDetail<T>(defaultValueOfType, null, reason), null);
             }
         }
 
-        private EvaluationDetail<T> Evaluate<T>(string method, string featureKey, Context context, LdValue defaultValue,
-            LdValue.Converter<T> converter,
+        private EvaluationDetail<T> Evaluate<T>(string method, string featureKey, Context context, LdValue defaultValue, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
         {
-            return EvaluateWithHooks(method, featureKey, context, defaultValue, converter, checkType, eventFactory)
-                .Item1;
+            return EvaluateWithHooks(method, featureKey, context, defaultValue, converter, checkType, eventFactory).Item1;
         }
 
         /// <inheritdoc/>
@@ -582,7 +546,6 @@ namespace LaunchDarkly.Sdk.Server
             {
                 return null;
             }
-
             System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding();
             byte[] keyBytes = encoding.GetBytes(_configuration.SdkKey);
 
@@ -620,7 +583,6 @@ namespace LaunchDarkly.Sdk.Server
                 _log.Warn("Track called with invalid context ({0})", context.Error);
                 return;
             }
-
             _eventProcessor.RecordCustomEvent(new EventProcessorTypes.CustomEvent
             {
                 Timestamp = UnixMillisecondTime.Now,
@@ -639,7 +601,6 @@ namespace LaunchDarkly.Sdk.Server
                 _log.Warn("Identify called with invalid context ({0})", context.Error);
                 return;
             }
-
             _eventProcessor.RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
             {
                 Timestamp = UnixMillisecondTime.Now,
@@ -714,8 +675,7 @@ namespace LaunchDarkly.Sdk.Server
                 applicationInfo.ApplicationVersion
             );
 
-            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, CredentialType.SdkKey,
-                applicationMetadata);
+            return new EnvironmentMetadata(sdkMetadata, _configuration.SdkKey, CredentialType.SdkKey, applicationMetadata);
         }
 
         private void Dispose(bool disposing)
@@ -749,7 +709,6 @@ namespace LaunchDarkly.Sdk.Server
             {
                 return f;
             }
-
             return null;
         }
 
@@ -760,7 +719,6 @@ namespace LaunchDarkly.Sdk.Server
             {
                 return s;
             }
-
             return null;
         }
 

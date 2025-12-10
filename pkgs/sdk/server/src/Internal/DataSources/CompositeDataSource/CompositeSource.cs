@@ -8,8 +8,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
     /// <summary>
     /// A composite source is a source that can dynamically switch between sources with the
-    /// help of a list of <see cref="ISourceFactory"/> instances and <see cref="IActionApplierFactory"/> instances.
-    /// The ISourceFactory instances are used to create the data sources, and the IActionApplierFactory creates the action appliers that are used
+    /// help of a list of <see cref="SourceFactory"/> delegates and <see cref="ActionApplierFactory"/> delegates.
+    /// The SourceFactory delegates are used to create the data sources, and the ActionApplierFactory creates the action appliers that are used
     ///  to apply actions to the composite source as updates are received from the data sources.
     /// </summary>
     internal sealed class CompositeSource : IDataSource, ICompositeSourceActionable
@@ -25,13 +25,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private readonly IDataSourceUpdates _originalUpdateSink;
         private readonly IDataSourceUpdates _sanitizedUpdateSink;
-        private readonly SourcesList<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)> _sourcesList;
+        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> _sourcesList;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
         // Tracks the entry from the sources list that was used to create the current
         // data source instance. This allows operations such as blacklist to remove
         // the correct factory/action-applier-factory tuple from the list.
-        private (ISourceFactory Factory, IActionApplierFactory ActionApplierFactory) _currentEntry;
+        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory) _currentEntry;
         private IDataSource _currentDataSource;
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
         public CompositeSource(
             IDataSourceUpdates updatesSink,
-            IList<(ISourceFactory Factory, IActionApplierFactory ActionApplierFactory)> factoryTuples,
+            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
             bool circular = true)
         {
             if (updatesSink is null)
@@ -60,7 +60,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
 
-            _sourcesList = new SourcesList<(ISourceFactory SourceFactory, IActionApplierFactory ActionApplierFactory)>(
+            _sourcesList = new SourcesList<(SourceFactory SourceFactory, ActionApplierFactory ActionApplierFactory)>(
                 circular: circular,
                 initialList: factoryTuples
             );
@@ -87,6 +87,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public void Dispose()
         {
+            InternalDispose();
+        }
+
+        private void InternalDispose(DataSourceStatus.ErrorInfo? error = null)
+        {
             // When disposing the whole composite, we bypass the action queue and tear
             // down the current data source immediately while still honoring the same
             // state transitions under the shared lock. Any queued actions become no-ops
@@ -104,23 +109,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // clear any queued actions and reset processing state
                 _pendingActions.Clear();
                 _isProcessingActions = false;
-                _sourcesList.Reset();
                 _currentEntry = default;
-                
                 _disposed = true;
             }
 
             // report state Off directly to the original sink, bypassing the sanitizer
             // which would map Off to Interrupted (that mapping is only for underlying sources)
-            _originalUpdateSink.UpdateStatus(DataSourceState.Off, null);
+            _originalUpdateSink.UpdateStatus(DataSourceState.Off, error);
         }
 
         /// <summary>
         /// Enqueue a state-changing operation to be executed under the shared lock.
-        /// If no other operation is currently running, this will synchronously process
-        /// the queue in a simple loop on the current thread. Any re-entrant calls from
-        /// within the operations will only enqueue more work; they will not trigger
-        /// another processing loop, so the call stack does not grow with the queue length.
+        /// If no other operation is currently running, this will asynchronously process
+        /// the queue on a background thread. Any re-entrant calls from within the operations
+        /// will only enqueue more work; they will not trigger another processing loop, so
+        /// the call stack does not grow with the queue length. Processing actions on a
+        /// background thread prevents blocking the calling thread and allows operations like
+        /// disposal to proceed even when actions are continuously being enqueued.
         /// </summary>
         private void EnqueueAction(Action action)
         {
@@ -137,12 +142,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             if (shouldProcess)
             {
-                ProcessQueuedActions();
+                // Process actions on a background thread to prevent blocking the caller
+                // and allow Start() to return even when actions are continuously enqueued
+                _ = Task.Run(() => ProcessQueuedActions());
             }
         }
 
         /// <summary>
-        /// Processes the queued actions.
+        /// Processes the queued actions on a background thread.
         /// </summary>
         private void ProcessQueuedActions()
         {
@@ -151,7 +158,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 Action action;
                 lock (_lock)
                 {
-                    if (_pendingActions.Count == 0)
+                    // Check if disposed to allow disposal to interrupt action processing
+                    if (_disposed || _pendingActions.Count == 0)
                     {
                         _isProcessingActions = false;
                         return;
@@ -177,9 +185,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        // This method must only be called while holding _lock.
         private void TryFindNextUnderLock()
         {
-            // This method must only be called while holding _lock.
             if (_currentDataSource != null)
             {
                 return;
@@ -188,6 +196,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var entry = _sourcesList.Next();
             if (entry.Factory == null)
             {
+                // Failed to find a next source, report error and shut down the composite source
+                var errorInfo = new DataSourceStatus.ErrorInfo
+                {
+                    Kind = DataSourceStatus.ErrorKind.Unknown,
+                    Message = "CompositeDataSource has exhausted all available sources.",
+                    Time = DateTime.Now
+                };
+                InternalDispose(errorInfo);
                 return;
             }
 
@@ -195,7 +211,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var updateSinks = new List<IDataSourceUpdates>();
             if (entry.ActionApplierFactory != null)
             {
-                var actionApplier = entry.ActionApplierFactory.CreateActionApplier(this);
+                var actionApplier = entry.ActionApplierFactory(this);
                 updateSinks.Add(actionApplier);
             }
             updateSinks.Add(_sanitizedUpdateSink);
@@ -205,7 +221,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var disableableUpdates = _disableableTracker.WrapAndTrack(fanout);
             
             _currentEntry = entry;
-            _currentDataSource = entry.Factory.CreateSource(disableableUpdates);
+            _currentDataSource = entry.Factory(disableableUpdates);
         }
 
         #region ICompositeSourceActionable

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
@@ -7,12 +8,16 @@ using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 {
-    internal class FDv1DataSystem : IDataSystem
+    internal class FDv1DataSystem : IDataSystem, IDisposable
 
     {
         private readonly IDataSource _dataSource;
+        private readonly IDataStore _dataStore;
+        private readonly DataSourceUpdatesImpl _dataSourceUpdates;
+        private bool _disposed = false;
 
         #region Testing access to the internal components
+
         internal class TestingAccess
         {
             internal IDataSource DataSource { get; }
@@ -22,9 +27,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 DataSource = dataSource;
             }
         }
-        
+
         public TestingAccess Testing { get; }
-        
+
         #endregion
 
         #region IDataSystem implementation
@@ -57,6 +62,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             Store = new ReadonlyStoreFacade(store);
             FlagChanged = new FlagChangedFacade(dataSourceUpdates);
             _dataSource = dataSource;
+            _dataStore = store;
+            _dataSourceUpdates = dataSourceUpdates;
             Testing = new TestingAccess(dataSource);
         }
 
@@ -88,6 +95,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 dataSourceUpdates,
                 dataSource
             );
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+            if (disposing)
+            {
+                _dataSource.Dispose();
+                _dataStore.Dispose();
+                _dataSourceUpdates.Dispose();
+            }
+
+            _disposed = true;
         }
     }
 }

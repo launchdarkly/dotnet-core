@@ -67,9 +67,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </summary>
         /// <param name="serviceEndpointsOverride">the service endpoints to override the base endpoints</param>
         /// <returns>the builder</returns>
-        public FDv2PollingDataSourceBuilder ServiceEndpointsOverride(ServiceEndpoints serviceEndpointsOverride)
+        public FDv2PollingDataSourceBuilder ServiceEndpointsOverride(ServiceEndpointsBuilder serviceEndpointsOverride)
         {
-            _serviceEndpointsOverride = serviceEndpointsOverride;
+            _serviceEndpointsOverride = serviceEndpointsOverride.Build();
             return this;
         }
 

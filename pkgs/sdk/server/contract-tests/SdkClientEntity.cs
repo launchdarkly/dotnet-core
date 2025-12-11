@@ -7,7 +7,9 @@ using LaunchDarkly.Sdk;
 using LaunchDarkly.Sdk.Json;
 using LaunchDarkly.Sdk.Server;
 using LaunchDarkly.Sdk.Server.Hooks;
+using LaunchDarkly.Sdk.Server.Integrations;
 using LaunchDarkly.Sdk.Server.Migrations;
+using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace TestService
 {
@@ -372,7 +374,196 @@ namespace TestService
                 builder.Hooks(Components.Hooks(hooks));
             }
 
+            if (sdkParams.DataSystem != null)
+            {
+                var dataSystemBuilder = Components.DataSystem().Custom();
+
+                // TODO: re-enable this code in the future and determine which dependencies on persistent stores need to be added to contract test build process
+                // Configure persistent store if provided
+                // if (sdkParams.DataSystem.Store?.PersistentDataStore != null)
+                // {
+                //     var storeConfig = sdkParams.DataSystem.Store.PersistentDataStore;
+                //     var storeType = storeConfig.Store.Type.ToLower();
+                //     IComponentConfigurer<IDataStore> persistentStore = null;
+
+                //     PersistentDataStoreBuilder persistentStoreBuilder = null;
+
+                //     switch (storeType)
+                //     {
+                //         case "redis":
+                //             var redisBuilder = Redis.DataStore();
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.DSN))
+                //             {
+                //                 redisBuilder.Uri(storeConfig.Store.DSN);
+                //             }
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
+                //             {
+                //                 redisBuilder.Prefix(storeConfig.Store.Prefix);
+                //             }
+                //             persistentStoreBuilder = Components.PersistentDataStore(redisBuilder);
+                //             break;
+
+                //         case "dynamodb":
+                //             // For DynamoDB, DSN is the table name
+                //             var dynamoBuilder = DynamoDB.DataStore(storeConfig.Store.DSN ?? "sdk-contract-tests");
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
+                //             {
+                //                 dynamoBuilder.Prefix(storeConfig.Store.Prefix);
+                //             }
+                //             // DynamoDB uses IPersistentDataStoreAsync, so use the async overload
+                //             persistentStoreBuilder = Components.PersistentDataStore(dynamoBuilder);
+                //             break;
+
+                //         case "consul":
+                //             var consulBuilder = Consul.DataStore();
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.DSN))
+                //             {
+                //                 consulBuilder.Address(storeConfig.Store.DSN);
+                //             }
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
+                //             {
+                //                 consulBuilder.Prefix(storeConfig.Store.Prefix);
+                //             }
+                //             persistentStoreBuilder = Components.PersistentDataStore(consulBuilder);
+                //             break;
+                //     }
+
+                //     if (persistentStoreBuilder != null)
+                //     {
+                //         // Configure cache
+                //         var cacheMode = storeConfig.Cache?.Mode?.ToLower();
+                //         if (cacheMode == "off")
+                //         {
+                //             persistentStoreBuilder.NoCaching();
+                //         }
+                //         else if (cacheMode == "ttl" && storeConfig.Cache.TTL.HasValue)
+                //         {
+                //             persistentStoreBuilder.CacheTime(TimeSpan.FromSeconds(storeConfig.Cache.TTL.Value));
+                //         }
+                //         else if (cacheMode == "infinite")
+                //         {
+                //             persistentStoreBuilder.CacheForever();
+                //         }
+
+                //         // Determine store mode
+                //         var storeMode = sdkParams.DataSystem.StoreMode == 0
+                //             ? DataSystemConfiguration.DataStoreMode.ReadOnly 
+                //             : DataSystemConfiguration.DataStoreMode.ReadWrite;
+
+                //         dataSystemBuilder.PersistentStore(persistentStoreBuilder, storeMode);
+                //     }
+                // }
+
+                // Configure initializers
+                if (sdkParams.DataSystem.Initializers != null && sdkParams.DataSystem.Initializers.Length > 0)
+                {
+                    var initializers = new List<IComponentConfigurer<IDataSource>>();
+                    foreach (var initializer in sdkParams.DataSystem.Initializers)
+                    {
+                        if (initializer.Polling != null)
+                        {
+                            var pollingBuilder = DataSystemComponents.Polling();
+                            if (initializer.Polling.BaseUri != null)
+                            {
+                                endpoints.Polling(initializer.Polling.BaseUri);
+                            }
+                            if (initializer.Polling.PollIntervalMs.HasValue)
+                            {
+                                pollingBuilder.PollInterval(TimeSpan.FromMilliseconds(initializer.Polling.PollIntervalMs.Value));
+                            }
+                            if (!string.IsNullOrEmpty(sdkParams.DataSystem.PayloadFilter))
+                            {
+                                // PayloadFilter is not yet supported in FDv2 builders, so we skip it for now
+                                // TODO: Add PayloadFilter support when available
+                            }
+                            initializers.Add(pollingBuilder);
+                        }
+                    }
+                    if (initializers.Count > 0)
+                    {
+                        dataSystemBuilder.Initializers(initializers.ToArray());
+                    }
+                }
+
+                // Configure synchronizers
+                if (sdkParams.DataSystem.Synchronizers != null)
+                {
+                    var synchronizers = new List<IComponentConfigurer<IDataSource>>();
+
+                    // Primary synchronizer
+                    if (sdkParams.DataSystem.Synchronizers.Primary != null)
+                    {
+                        var primary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Primary, endpoints, sdkParams.DataSystem.PayloadFilter);
+                        if (primary != null)
+                        {
+                            synchronizers.Add(primary);
+                        }
+                    }
+
+                    // Secondary synchronizer (optional)
+                    if (sdkParams.DataSystem.Synchronizers.Secondary != null)
+                    {
+                        var secondary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Secondary, endpoints, sdkParams.DataSystem.PayloadFilter);
+                        if (secondary != null)
+                        {
+                            synchronizers.Add(secondary);
+                        }
+                    }
+
+                    if (synchronizers.Count > 0)
+                    {
+                        dataSystemBuilder.Synchronizers(synchronizers.ToArray());
+                    }
+                }
+
+                builder.DataSystem(dataSystemBuilder);
+            }
+
             return builder.Build();
+        }
+
+        private static IComponentConfigurer<IDataSource> CreateSynchronizer(
+            SdkConfigSynchronizerParams synchronizer,
+            ServiceEndpointsBuilder endpoints,
+            string payloadFilter)
+        {
+            if (synchronizer.Polling != null)
+            {
+                var pollingBuilder = DataSystemComponents.Polling();
+                if (synchronizer.Polling.BaseUri != null)
+                {
+                    endpoints.Polling(synchronizer.Polling.BaseUri);
+                }
+                if (synchronizer.Polling.PollIntervalMs.HasValue)
+                {
+                    pollingBuilder.PollInterval(TimeSpan.FromMilliseconds(synchronizer.Polling.PollIntervalMs.Value));
+                }
+                if (!string.IsNullOrEmpty(payloadFilter))
+                {
+                    // PayloadFilter is not yet supported in FDv2 builders, so we skip it for now
+                    // TODO: Add PayloadFilter support when available
+                }
+                return pollingBuilder;
+            }
+            else if (synchronizer.Streaming != null)
+            {
+                var streamingBuilder = DataSystemComponents.Streaming();
+                if (synchronizer.Streaming.BaseUri != null)
+                {
+                    endpoints.Streaming(synchronizer.Streaming.BaseUri);
+                }
+                if (synchronizer.Streaming.InitialRetryDelayMs.HasValue)
+                {
+                    streamingBuilder.InitialReconnectDelay(TimeSpan.FromMilliseconds(synchronizer.Streaming.InitialRetryDelayMs.Value));
+                }
+                if (!string.IsNullOrEmpty(payloadFilter))
+                {
+                    // PayloadFilter is not yet supported in FDv2 builders, so we skip it for now
+                    // TODO: Add PayloadFilter support when available
+                }
+                return streamingBuilder;
+            }
+            return null;
         }
 
         private MigrationVariationResponse DoMigrationVariation(MigrationVariationParams migrationVariation)

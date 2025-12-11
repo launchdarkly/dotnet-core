@@ -52,6 +52,12 @@ runs:
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}'
         token: ${{ inputs.token }}
 
+    - name: Setup Go
+      if: inputs.run_fdv2_tests == 'true'
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
     - name: Clone and run contract tests from feat/fdv2 branch
       if: inputs.run_fdv2_tests == 'true'
       shell: bash

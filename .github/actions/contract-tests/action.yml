@@ -59,6 +59,7 @@ runs:
         go-version: '1.21'
 
     - name: Launch Contract Tests FDv2 Flavor
+      if: inputs.run_fdv2_tests == 'true'
       id: launch-contract-tests-fdv2
       shell: bash
       run: dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown

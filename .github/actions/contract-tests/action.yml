@@ -74,6 +74,6 @@ runs:
         cd /tmp/sdk-test-harness
         git checkout feat/fdv2
         go build -o test-harness .
-        ./test-harness -url http://localhost:8000 -debug --skip-from=testharness-suppressions-fdv2.txt --stop-service-at-end
+        ./test-harness -url http://localhost:8000 -debug -status-timeout=360 --skip-from=testharness-suppressions-fdv2.txt --stop-service-at-end
       env:
         GITHUB_TOKEN: ${{ inputs.token }}

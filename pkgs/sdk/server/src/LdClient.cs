@@ -63,7 +63,7 @@ namespace LaunchDarkly.Sdk.Server
         public IFlagTracker FlagTracker => _flagTracker;
 
         /// <inheritdoc/>
-        public bool Initialized => _dataSystem.Initialized;
+        public bool Initialized => true; //_dataSystem.Initialized;
 
         /// <inheritdoc/>
         public Version Version => AssemblyVersions.GetAssemblyVersionForType(typeof(LdClient));
@@ -152,7 +152,8 @@ namespace LaunchDarkly.Sdk.Server
                 null,
                 taskExecutor,
                 _configuration.ApplicationInfo?.Build() ?? new ApplicationInfo(),
-                _configuration.WrapperInfo?.Build()
+                _configuration.WrapperInfo?.Build(),
+                null
                 );
 
             var httpConfig = (_configuration.Http ?? Components.HttpConfiguration()).Build(clientContext);
@@ -213,7 +214,7 @@ namespace LaunchDarkly.Sdk.Server
 
             var initTask = _dataSystem.Start();
 
-            if (_dataSystem.Initialized)
+            if (!_dataSystem.Initialized)
             {
                 _log.Info(InitWaitTimeInfo, _configuration.StartWaitTime.TotalMilliseconds);
                 if (_configuration.StartWaitTime >= ExcessiveInitWaitTime)

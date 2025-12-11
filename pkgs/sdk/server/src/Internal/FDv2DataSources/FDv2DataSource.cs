@@ -147,6 +147,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public bool Init(FullDataSet<ItemDescriptor> allData)
             {
+                lock (_lock)
+                {
+                    CancelPendingFallbackTask();
+                }
+
                 // this layer doesn't react to init
                 return true;
             }
@@ -240,6 +245,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)
             {
+                lock (_lock)
+                {
+                    CancelPendingFallbackTask();
+                }
+
                 // this layer doesn't react to upserts
                 return true;
             }
@@ -269,6 +279,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             private bool SuccessTransition()
             {
+                // TODO: Selector logic, early exit?
                 _actionable.BlacklistCurrent();
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();

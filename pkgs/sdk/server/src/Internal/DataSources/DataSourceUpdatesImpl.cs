@@ -410,6 +410,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // but it also doesn't hurt, and there could be cases where it results in slightly
             // greater store consistency for persistent stores.
             var sortedChangeset = DataStoreSorter.SortChangeset(changeSet);
+            
             foreach (var kindItemsPair in sortedChangeset.Data)
             {
                 foreach (var item in kindItemsPair.Value.Items)
@@ -525,7 +526,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 ReportStoreFailure(e);
                 return false;
             }
-
+            
             var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
 
             try

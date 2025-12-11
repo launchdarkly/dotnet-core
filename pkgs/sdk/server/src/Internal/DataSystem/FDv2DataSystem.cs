@@ -12,9 +12,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 {
     internal class FDv2DataSystem : IDataSystem
     {
-        private WriteThroughStore _store;
-        private IDataSource _dataSource;
-        private DataSourceUpdatesImpl _dataSourceUpdates;
+        private readonly WriteThroughStore _store;
+        private readonly IDataSource _dataSource;
+        private readonly DataSourceUpdatesImpl _dataSourceUpdates;
         private bool _disposed;
 
         #region IDataSystem implementation
@@ -32,21 +32,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         #endregion
 
         private FDv2DataSystem(
-            IDataStore memoryStore,
-            IDataStore persistentStore,
+            WriteThroughStore store,
             IDataSource dataSource,
             IDataSourceStatusProvider dataSourceStatusProvider,
             IDataStoreStatusProvider dataStoreStatusProvider,
             DataSourceUpdatesImpl dataStoreUpdates
         )
         {
-            _store = new WriteThroughStore(memoryStore, persistentStore);
+            _store = store;
             _dataSource = dataSource;
             DataStoreStatusProvider = dataStoreStatusProvider;
             DataSourceStatusProvider = dataSourceStatusProvider;
             FlagChanged = new FlagChangedFacade(dataStoreUpdates);
             _dataSourceUpdates = dataStoreUpdates;
-            Store = new ReadonlyStoreFacade(memoryStore);
+            Store = new ReadonlyStoreFacade(store);
         }
 
         public static FDv2DataSystem Create(Logger logger, Configuration configuration, LdClientContext clientContext,
@@ -59,18 +58,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
             var persistentStore =
                 dataSystemConfiguration.PersistentStore?.Build(clientContext.WithDataStoreUpdates(dataStoreUpdates));
-            var monitoredStore = persistentStore ?? memoryStore;
+            
+            var writeThroughStore = new WriteThroughStore(memoryStore, persistentStore);
 
             // TODO: When a persistent store is available we monitor it, is this a consistent choice.
             // TODO: Update the responses data store monitoring?
-            var dataStoreStatusProvider = new DataStoreStatusProviderImpl(monitoredStore, dataStoreUpdates);
-            var dataSourceUpdates = new DataSourceUpdatesImpl(monitoredStore, dataStoreStatusProvider,
+            var dataStoreStatusProvider = new DataStoreStatusProviderImpl(writeThroughStore, dataStoreUpdates);
+            var dataSourceUpdates = new DataSourceUpdatesImpl(writeThroughStore, dataStoreStatusProvider,
                 clientContext.TaskExecutor, logger, logConfig.LogDataSourceOutageAsErrorAfter);
 
+
+
+            var contextWithSelectorSource =
+                clientContext.WithSelectorSource(new SelectorSourceFacade(writeThroughStore));
             var compositeDataSource = FDv2DataSource.CreateFDv2DataSource(
                 dataSourceUpdates,
-                dataSystemConfiguration.Initializers.Select(FactoryWithContext(clientContext)).ToList(),
-                dataSystemConfiguration.Synchronizers.Select(FactoryWithContext(clientContext)).ToList(),
+                dataSystemConfiguration.Initializers.Select(FactoryWithContext(contextWithSelectorSource)).ToList(),
+                dataSystemConfiguration.Synchronizers.Select(FactoryWithContext(contextWithSelectorSource)).ToList(),
                 new List<SourceFactory>
                 {
                     FactoryWithContext(clientContext)(dataSystemConfiguration.FDv1FallbackSynchronizer)
@@ -79,7 +83,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
             var dataSourceStatusProvider = new DataSourceStatusProviderImpl(dataSourceUpdates);
 
-            return new FDv2DataSystem(memoryStore, persistentStore, compositeDataSource, dataSourceStatusProvider,
+            return new FDv2DataSystem(writeThroughStore, compositeDataSource, dataSourceStatusProvider,
                 dataStoreStatusProvider, dataSourceUpdates);
         }
 

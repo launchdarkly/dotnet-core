@@ -19,7 +19,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// <item><description>Does not report the same combination of state and error twice in a row.</description></item>
     /// </list>
     /// </remarks>
-    internal sealed class DataSourceUpdatesSanitizer : IDataSourceUpdates
+    internal sealed class DataSourceUpdatesSanitizer : IDataSourceUpdates, ITransactionalDataSourceUpdates
     {
         private readonly IDataSourceUpdates _inner;
         private readonly object _lock = new object();
@@ -86,6 +86,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                 _inner.UpdateStatus(sanitized, newError);
             }
+        }
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            return ((ITransactionalDataSourceUpdates)_inner).Apply(changeSet);
         }
     }
 }

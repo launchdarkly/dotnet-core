@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
-
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
@@ -27,46 +26,54 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             // Here we make a combined composite source, with the initializer source first which switches or falls back to the 
             // synchronizer source when the initializer succeeds or when the initializer source reports Off (all initializers failed)
-            ActionApplierFactory blacklistWhenSuccessOrOff = (actionable) => new ActionApplierBlacklistWhenSuccessOrOff(actionable);
+            ActionApplierFactory blacklistWhenSuccessOrOff =
+                (actionable) => new ActionApplierBlacklistWhenSuccessOrOff(actionable);
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
-            ActionApplierFactory timedFallbackAndRecoveryApplierFactory = (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
-            
+            ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
+                (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
+
             var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
-            
+
             // Only create the initializers composite if initializers are provided
             if (initializers != null && initializers.Count > 0)
             {
                 underlyingComposites.Add((
                     // Create the initializersCompositeSource with action logic unique to initializers
-                    (sink) => {
-                        var initializersFactoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                    (sink) =>
+                    {
+                        var initializersFactoryTuples =
+                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
                         for (int i = 0; i < initializers.Count; i++)
                         {
                             initializersFactoryTuples.Add((initializers[i], fastFallbackApplierFactory));
                         }
+
                         return new CompositeSource(sink, initializersFactoryTuples, circular: false);
-                    }, 
+                    },
                     blacklistWhenSuccessOrOff
                 ));
             }
-            
+
             // Only create the synchronizers composite if synchronizers are provided
             if (synchronizers != null && synchronizers.Count > 0)
             {
                 underlyingComposites.Add((
                     // Create synchronizersCompositeSource with action logic unique to synchronizers
-                    (sink) => {
-                        var synchronizersFactoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                    (sink) =>
+                    {
+                        var synchronizersFactoryTuples =
+                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
                         for (int i = 0; i < synchronizers.Count; i++)
                         {
                             synchronizersFactoryTuples.Add((synchronizers[i], timedFallbackAndRecoveryApplierFactory));
                         }
+
                         return new CompositeSource(sink, synchronizersFactoryTuples);
-                    }, 
+                    },
                     null // TODO: add fallback to FDv1 logic, null for the moment as once we're on the synchronizers, we stay there
                 ));
             }
-            
+
             var combinedCompositeSource = new CompositeSource(updatesSink, underlyingComposites, circular: false);
 
             // TODO: add fallback to FDv1 logic
@@ -110,6 +117,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _actionable.GoToNext();
                     _actionable.StartCurrent();
                 }
+            }
+
+            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                // this layer doesn't react to apply
+                return true;
             }
         }
 
@@ -175,7 +188,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                             try
                             {
                                 await Task.Delay(InterruptedFallbackTimeout, cancellationToken);
-                                
+
                                 // If we reach here, the task wasn't cancelled during the delay
                                 // But we need to check again inside the lock to handle race conditions
                                 lock (_lock)
@@ -186,12 +199,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                                     {
                                         return;
                                     }
-                                    
+
                                     // Clean up
                                     _interruptedFallbackCanceller?.Dispose();
                                     _interruptedFallbackCanceller = null;
                                     _interruptedFallbackTask = null;
-                                    
+
                                     // Do the fallback: dispose current, go to next, start current
                                     _actionable.DisposeCurrent();
                                     _actionable.GoToNext();
@@ -221,7 +234,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _interruptedFallbackCanceller.Dispose();
                     _interruptedFallbackCanceller = null;
                 }
+
                 _interruptedFallbackTask = null;
+            }
+
+            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                // this layer doesn't react to upserts
+                return true;
             }
         }
 
@@ -244,6 +264,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool Init(FullDataSet<ItemDescriptor> allData)
             {
                 // When init occurs, blacklist current, dispose current, go to next, and start current
+                return SuccessTransition();
+            }
+
+            private bool SuccessTransition()
+            {
                 _actionable.BlacklistCurrent();
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
@@ -268,7 +293,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _actionable.StartCurrent();
                 }
             }
+
+            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                return SuccessTransition();
+            }
         }
     }
 }
-

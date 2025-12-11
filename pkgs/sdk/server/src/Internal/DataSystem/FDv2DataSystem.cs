@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
@@ -14,7 +15,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         private WriteThroughStore _store;
         private IDataSource _dataSource;
         private DataSourceUpdatesImpl _dataSourceUpdates;
-        private bool _disposed = false;
+        private bool _disposed;
 
         #region IDataSystem implementation
 
@@ -66,13 +67,33 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             var dataSourceUpdates = new DataSourceUpdatesImpl(monitoredStore, dataStoreStatusProvider,
                 clientContext.TaskExecutor, logger, logConfig.LogDataSourceOutageAsErrorAfter);
 
-            var compositeDataSource = new CompositeSource(dataSourceUpdates,
-                new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> { });
+            var compositeDataSource = FDv2DataSource.CreateFDv2DataSource(
+                dataSourceUpdates,
+                dataSystemConfiguration.Initializers.Select(FactoryWithContext(clientContext)).ToList(),
+                dataSystemConfiguration.Synchronizers.Select(FactoryWithContext(clientContext)).ToList(),
+                new List<SourceFactory>
+                {
+                    FactoryWithContext(clientContext)(dataSystemConfiguration.FDv1FallbackSynchronizer)
+                }
+            );
 
             var dataSourceStatusProvider = new DataSourceStatusProviderImpl(dataSourceUpdates);
 
             return new FDv2DataSystem(memoryStore, persistentStore, compositeDataSource, dataSourceStatusProvider,
                 dataStoreStatusProvider, dataSourceUpdates);
+        }
+
+        private static Func<IComponentConfigurer<IDataSource>, SourceFactory> FactoryWithContext(
+            LdClientContext clientContext)
+        {
+            return (dataSourceFactory) => ToSourceFactory(dataSourceFactory, clientContext);
+        }
+
+        private static SourceFactory ToSourceFactory(IComponentConfigurer<IDataSource> dataSourceFactory,
+            LdClientContext clientContext)
+        {
+            // TODO: WithSelectorSource
+            return (sink) => dataSourceFactory.Build(clientContext.WithDataSourceUpdates(sink));
         }
 
         public void Dispose()

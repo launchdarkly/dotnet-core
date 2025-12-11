@@ -63,7 +63,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// A proxy for <see cref="IDataSourceUpdates"/> that can be disabled. When disabled,
         /// all calls to the proxy will be ignored.
         /// </summary>
-        private sealed class DisableableIDataSourceUpdates : IDataSourceUpdates, IDataSourceUpdatesHeaders
+        private sealed class DisableableIDataSourceUpdates : IDataSourceUpdates, IDataSourceUpdatesHeaders, ITransactionalDataSourceUpdates
         {
             private readonly IDataSourceUpdates _updatesSink;
             private volatile bool _disabled;
@@ -131,6 +131,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
 
                 return _updatesSink.Init(allData);
+            }
+
+            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                return !IsDisabled && ((ITransactionalDataSourceUpdates)_updatesSink).Apply(changeSet);
             }
         }
     }

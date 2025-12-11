@@ -18,7 +18,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// instances return <c>true</c>.
     /// </para>
     /// </remarks>
-    internal sealed class FanOutDataSourceUpdates : IDataSourceUpdates
+    internal sealed class FanOutDataSourceUpdates : IDataSourceUpdates, ITransactionalDataSourceUpdates
     {
         private readonly IReadOnlyList<IDataSourceUpdates> _targets;
 
@@ -85,6 +85,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 t.UpdateStatus(newState, newError);
             }
+        }
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            var allSucceeded = true;
+
+            foreach (var t in _targets)
+            {
+                if (!((ITransactionalDataSourceUpdates)t).Apply(changeSet))
+                {
+                    allSucceeded = false;
+                }
+            }
+
+            return allSucceeded;
         }
     }
 }

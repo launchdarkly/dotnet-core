@@ -465,7 +465,8 @@ namespace TestService
                             var pollingBuilder = DataSystemComponents.Polling();
                             if (initializer.Polling.BaseUri != null)
                             {
-                                endpoints.Polling(initializer.Polling.BaseUri);
+                                var endpointOverride = Components.ServiceEndpoints().Polling(initializer.Polling.BaseUri);
+                                pollingBuilder.ServiceEndpointsOverride(endpointOverride);
                             }
                             if (initializer.Polling.PollIntervalMs.HasValue)
                             {
@@ -493,7 +494,7 @@ namespace TestService
                     // Primary synchronizer
                     if (sdkParams.DataSystem.Synchronizers.Primary != null)
                     {
-                        var primary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Primary, endpoints, sdkParams.DataSystem.PayloadFilter);
+                        var primary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Primary, sdkParams.DataSystem.PayloadFilter);
                         if (primary != null)
                         {
                             synchronizers.Add(primary);
@@ -503,7 +504,7 @@ namespace TestService
                     // Secondary synchronizer (optional)
                     if (sdkParams.DataSystem.Synchronizers.Secondary != null)
                     {
-                        var secondary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Secondary, endpoints, sdkParams.DataSystem.PayloadFilter);
+                        var secondary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Secondary, sdkParams.DataSystem.PayloadFilter);
                         if (secondary != null)
                         {
                             synchronizers.Add(secondary);
@@ -524,7 +525,6 @@ namespace TestService
 
         private static IComponentConfigurer<IDataSource> CreateSynchronizer(
             SdkConfigSynchronizerParams synchronizer,
-            ServiceEndpointsBuilder endpoints,
             string payloadFilter)
         {
             if (synchronizer.Polling != null)
@@ -532,7 +532,8 @@ namespace TestService
                 var pollingBuilder = DataSystemComponents.Polling();
                 if (synchronizer.Polling.BaseUri != null)
                 {
-                    endpoints.Polling(synchronizer.Polling.BaseUri);
+                    var endpointOverride = Components.ServiceEndpoints().Polling(synchronizer.Polling.BaseUri);
+                    pollingBuilder.ServiceEndpointsOverride(endpointOverride);
                 }
                 if (synchronizer.Polling.PollIntervalMs.HasValue)
                 {
@@ -550,7 +551,8 @@ namespace TestService
                 var streamingBuilder = DataSystemComponents.Streaming();
                 if (synchronizer.Streaming.BaseUri != null)
                 {
-                    endpoints.Streaming(synchronizer.Streaming.BaseUri);
+                    var endpointOverride = Components.ServiceEndpoints().Streaming(synchronizer.Streaming.BaseUri);
+                    streamingBuilder.ServiceEndpointsOverride(endpointOverride);
                 }
                 if (synchronizer.Streaming.InitialRetryDelayMs.HasValue)
                 {

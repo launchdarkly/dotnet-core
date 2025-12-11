@@ -9,8 +9,7 @@ using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal;
 using LaunchDarkly.Sdk.Integrations.Plugins;
 using LaunchDarkly.Sdk.Server.Internal.BigSegments;
-using LaunchDarkly.Sdk.Server.Internal.DataSources;
-using LaunchDarkly.Sdk.Server.Internal.DataStores;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.Evaluation;
 using LaunchDarkly.Sdk.Server.Internal.Events;
 using LaunchDarkly.Sdk.Server.Internal.Hooks.Executor;
@@ -18,7 +17,6 @@ using LaunchDarkly.Sdk.Server.Internal.Hooks.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Migrations;
 using LaunchDarkly.Sdk.Server.Subsystems;
-
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server
@@ -35,15 +33,12 @@ namespace LaunchDarkly.Sdk.Server
         private readonly BigSegmentStoreWrapper _bigSegmentStoreWrapper;
         private readonly Configuration _configuration;
         internal readonly IEventProcessor _eventProcessor;
-        private readonly IDataStore _dataStore;
-        internal readonly IDataSource _dataSource;
-        private readonly DataSourceStatusProviderImpl _dataSourceStatusProvider;
-        private readonly DataStoreStatusProviderImpl _dataStoreStatusProvider;
         private readonly IFlagTracker _flagTracker;
         internal readonly Evaluator _evaluator;
         private readonly Logger _log;
         private readonly Logger _evalLog;
         private readonly IHookExecutor _hookExecutor;
+        internal readonly IDataSystem _dataSystem;
 
         private readonly TimeSpan ExcessiveInitWaitTime = TimeSpan.FromSeconds(60);
         private const String InitWaitTimeInfo = "Waiting up to {0} milliseconds for LaunchDarkly client to start.";
@@ -59,16 +54,16 @@ namespace LaunchDarkly.Sdk.Server
         public IBigSegmentStoreStatusProvider BigSegmentStoreStatusProvider => _bigSegmentStoreStatusProvider;
 
         /// <inheritdoc/>
-        public IDataSourceStatusProvider DataSourceStatusProvider => _dataSourceStatusProvider;
+        public IDataSourceStatusProvider DataSourceStatusProvider => _dataSystem.DataSourceStatusProvider;
 
         /// <inheritdoc/>
-        public IDataStoreStatusProvider DataStoreStatusProvider => _dataStoreStatusProvider;
+        public IDataStoreStatusProvider DataStoreStatusProvider => _dataSystem.DataStoreStatusProvider;
 
         /// <inheritdoc/>
         public IFlagTracker FlagTracker => _flagTracker;
 
         /// <inheritdoc/>
-        public bool Initialized => _dataSource.Initialized;
+        public bool Initialized => _dataSystem.Initialized;
 
         /// <inheritdoc/>
         public Version Version => AssemblyVersions.GetAssemblyVersionForType(typeof(LdClient));
@@ -167,11 +162,7 @@ namespace LaunchDarkly.Sdk.Server
                 new ServerDiagnosticStore(_configuration, clientContext);
             clientContext = clientContext.WithDiagnosticStore(diagnosticStore);
 
-            var dataStoreUpdates = new DataStoreUpdatesImpl(taskExecutor, _log.SubLogger(LogNames.DataStoreSubLog));
-
-            _dataStore = (_configuration.DataStore ?? Components.InMemoryDataStore)
-                .Build(clientContext.WithDataStoreUpdates(dataStoreUpdates));
-            _dataStoreStatusProvider = new DataStoreStatusProviderImpl(_dataStore, dataStoreUpdates);
+            _dataSystem = FDv1DataSystem.Create(_log, _configuration, clientContext, logConfig);
 
             var bigSegmentsConfig = (_configuration.BigSegments ?? Components.BigSegments(null))
                 .Build(clientContext);
@@ -196,14 +187,7 @@ namespace LaunchDarkly.Sdk.Server
                 (_configuration.Events ?? Components.SendEvents());
             _eventProcessor = eventProcessorFactory.Build(clientContext);
 
-            var dataSourceUpdates = new DataSourceUpdatesImpl(_dataStore, _dataStoreStatusProvider,
-                taskExecutor, _log, logConfig.LogDataSourceOutageAsErrorAfter);
-            IComponentConfigurer<IDataSource> dataSourceFactory =
-                _configuration.Offline ? Components.ExternalUpdatesOnly :
-                (_configuration.DataSource ?? Components.StreamingDataSource());
-            _dataSource = dataSourceFactory.Build(clientContext.WithDataSourceUpdates(dataSourceUpdates));
-            _dataSourceStatusProvider = new DataSourceStatusProviderImpl(dataSourceUpdates);
-            _flagTracker = new FlagTrackerImpl(dataSourceUpdates,
+            _flagTracker = new FlagTrackerImpl(_dataSystem.FlagChanged,
                 (string key, Context context) => JsonVariation(key, context, LdValue.Null));
 
             var allHooks = new List<Hook>();
@@ -220,9 +204,9 @@ namespace LaunchDarkly.Sdk.Server
 
             this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
-            var initTask = _dataSource.Start();
+            var initTask = _dataSystem.Start();
 
-            if (!(_dataSource is ComponentsImpl.NullDataSource))
+            if (!_dataSystem.Initialized)
             {
                 _log.Info(InitWaitTimeInfo, _configuration.StartWaitTime.TotalMilliseconds);
                 if (_configuration.StartWaitTime >= ExcessiveInitWaitTime)
@@ -367,9 +351,10 @@ namespace LaunchDarkly.Sdk.Server
                 _evalLog.Warn("AllFlagsState() called when client is in offline mode; returning empty state");
                 return new FeatureFlagsState(false);
             }
+
             if (!Initialized)
             {
-                if (_dataStore.Initialized())
+                if (_dataSystem.Store.Initialized())
                 {
                     _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store");
                 }
@@ -391,7 +376,7 @@ namespace LaunchDarkly.Sdk.Server
             KeyedItems<ItemDescriptor> flags;
             try
             {
-                flags = _dataStore.GetAll(DataModel.Features);
+                flags = _dataSystem.Store.GetAll(DataModel.Features);
             }
             catch (Exception e)
             {
@@ -457,7 +442,7 @@ namespace LaunchDarkly.Sdk.Server
             T defaultValueOfType = converter.ToType(defaultValue);
             if (!Initialized)
             {
-                if (_dataStore.Initialized())
+                if (_dataSystem.Store.Initialized())
                 {
                     _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store");
                 }
@@ -700,8 +685,10 @@ namespace LaunchDarkly.Sdk.Server
                 _log.Info("Closing LaunchDarkly client");
                 _hookExecutor.Dispose();
                 _eventProcessor.Dispose();
-                _dataStore.Dispose();
-                _dataSource.Dispose();
+                if (_dataSystem is IDisposable disposableDataSystem)
+                {
+                    disposableDataSystem.Dispose();
+                }
                 _bigSegmentStoreWrapper?.Dispose();
             }
         }
@@ -712,16 +699,12 @@ namespace LaunchDarkly.Sdk.Server
         /// <returns>The environment ID, or null if one is not available</returns>
         private string GetEnvironmentId()
         {
-            if (_dataStore is IDataStoreMetadata dataStoreMetadata)
-            {
-                return dataStoreMetadata.GetMetadata()?.EnvironmentId;
-            }
-            return null;
+            return _dataSystem.Store.GetMetadata()?.EnvironmentId;
         }
 
         private FeatureFlag GetFlag(string key)
         {
-            var maybeItem = _dataStore.Get(DataModel.Features, key);
+            var maybeItem = _dataSystem.Store.Get(DataModel.Features, key);
             if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is FeatureFlag f)
             {
                 return f;
@@ -731,7 +714,7 @@ namespace LaunchDarkly.Sdk.Server
 
         private Segment GetSegment(string key)
         {
-            var maybeItem = _dataStore.Get(DataModel.Segments, key);
+            var maybeItem = _dataSystem.Store.Get(DataModel.Segments, key);
             if (maybeItem.HasValue && maybeItem.Value.Item != null && maybeItem.Value.Item is Segment s)
             {
                 return s;

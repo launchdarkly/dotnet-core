@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -38,11 +39,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 if (_targets.Count == 0)
                 {
-                    throw new InvalidOperationException("FanOutDataSourceUpdates has no target IDataSourceUpdates instances.");
+                    throw new InvalidOperationException(
+                        "FanOutDataSourceUpdates has no target IDataSourceUpdates instances.");
                 }
 
                 // Use the first target's status provider as the representative provider.
-                return _targets[0].DataStoreStatusProvider;
+                // TODO: This is a temporary change.
+                return _targets.FirstOrDefault(t => t.DataStoreStatusProvider != null)?.DataStoreStatusProvider;
             }
         }
 

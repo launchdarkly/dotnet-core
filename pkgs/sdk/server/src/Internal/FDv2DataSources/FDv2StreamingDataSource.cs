@@ -85,11 +85,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             // The event source creator is primarily provided for testing.
             var esc = eventSourceCreator ?? CreateEventSource;
 
-            // _storeStatusMonitoringEnabled = _dataSourceUpdates.DataStoreStatusProvider.StatusMonitoringEnabled;
-            // if (_storeStatusMonitoringEnabled)
-            // {
-            //     _dataSourceUpdates.DataStoreStatusProvider.StatusChanged += OnDataStoreStatusChanged;
-            // }
+            _storeStatusMonitoringEnabled = _dataSourceUpdates.DataStoreStatusProvider.StatusMonitoringEnabled;
+            if (_storeStatusMonitoringEnabled)
+            {
+                _dataSourceUpdates.DataStoreStatusProvider.StatusChanged += OnDataStoreStatusChanged;
+            }
 
             // The query parameters will be handled by the event source request
             // modifier. The modifier is called during initial connection and reconnections.

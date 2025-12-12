@@ -1,17 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
-using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
-using LaunchDarkly.TestHelpers;
 using Xunit;
 using Xunit.Abstractions;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
-using static LaunchDarkly.Sdk.Server.AssertHelpers;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
@@ -72,8 +68,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(secondInitializerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            secondInitializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
 
 
@@ -100,8 +101,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(synchronizerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            synchronizerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -159,14 +165,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // TODO: uncomment this check once Initialized is implemented
             // Assert.True(dataSource.Initialized);
 
-            // Verify that init was called twice: once for second initializer, once for synchronizer
-            // Verify the first init call was with second initializer dummy data
-            var firstInit = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(secondInitializerDummyData, firstInit);
+            // Verify that Apply was called twice: once for second initializer, once for synchronizer
+            // Verify the first Apply call was with second initializer dummy data
+            var firstChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, firstChangeSet.Type);
 
-            // Verify the second init call was with synchronizer dummy data
-            var secondInit = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(synchronizerDummyData, secondInit);
+            // Verify the second Apply call was with synchronizer dummy data
+            var secondChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, secondChangeSet.Type);
 
             dataSource.Dispose();
         }
@@ -199,8 +205,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(firstInitializerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            firstInitializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -222,7 +233,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         await Task.Delay(10);
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
-                        updatesSink.Init(secondInitializerDummyData);
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            secondInitializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -264,12 +280,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that the second initializer factory was never invoked
             Assert.False(secondInitializerFactoryInvoked, "Second initializer factory should not have been invoked");
 
-            // Verify that init was called only once with first initializer dummy data
-            var firstInit = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(firstInitializerDummyData, firstInit);
+            // Verify that Apply was called only once with first initializer dummy data
+            var firstChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, firstChangeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -345,8 +361,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(synchronizerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            synchronizerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -409,12 +430,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // TODO: uncomment this check once Initialized is implemented
             // Assert.True(dataSource.Initialized);
 
-            // Verify that init was called once with synchronizer dummy data
-            var init = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(synchronizerDummyData, init);
+            // Verify that Apply was called once with synchronizer dummy data
+            var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, changeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -583,8 +604,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(synchronizerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            synchronizerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -626,12 +652,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that the synchronizer factory was invoked
             Assert.True(synchronizerFactoryInvoked, "Synchronizer factory should have been invoked");
 
-            // Verify that init was called once with synchronizer dummy data
-            var init = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(synchronizerDummyData, init);
+            // Verify that Apply was called once with synchronizer dummy data
+            var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, changeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -664,8 +690,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         // Report Valid
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
 
-                        // Call init with dummy data
-                        updatesSink.Init(initializerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            initializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -707,12 +738,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that the initializer factory was invoked
             Assert.True(initializerFactoryInvoked, "Initializer factory should have been invoked");
 
-            // Verify that init was called once with initializer dummy data
-            var init = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(initializerDummyData, init);
+            // Verify that Apply was called once with initializer dummy data
+            var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, changeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -754,8 +785,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.True(statusUpdates[0].LastError.HasValue, "Expected error message in Off status");
             Assert.Equal("CompositeDataSource has exhausted all available sources.", statusUpdates[0].LastError.Value.Message);
 
-            // Verify that init was never called
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that Apply was never called
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }

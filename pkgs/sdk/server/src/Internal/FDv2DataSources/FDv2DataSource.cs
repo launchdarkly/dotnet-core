@@ -77,7 +77,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <summary>
         /// Action applier for initializers that handles falling back to the next initializer when Interrupted and Off states is seen.
         /// </summary>
-        private class ActionApplierFastFallback : IActionApplier
+        private class ActionApplierFastFallback : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
 
@@ -86,19 +86,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
             }
 
-            // TODO: need to fix default
-            public IDataStoreStatusProvider DataStoreStatusProvider => default;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
+            public void Init(FullDataSet<ItemDescriptor> allData)
             {
                 // this layer doesn't react to init
-                return true;
             }
 
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            public void Upsert(DataKind kind, string key, ItemDescriptor item)
             {
                 // this layer doesn't react to upserts
-                return true;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -116,7 +111,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <summary>
         /// Action applier for synchronizers that handles falling back to the next synchronizer when Interrupted and Off states is seen.
         /// </summary>
-        private class ActionApplierTimedFallbackAndRecovery : IActionApplier
+        private class ActionApplierTimedFallbackAndRecovery : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly object _lock = new object();
@@ -129,19 +124,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
             }
 
-            // TODO: need to fix default
-            public IDataStoreStatusProvider DataStoreStatusProvider => default;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
+            public void Init(FullDataSet<ItemDescriptor> allData)
             {
                 // this layer doesn't react to init
-                return true;
             }
 
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            public void Upsert(DataKind kind, string key, ItemDescriptor item)
             {
                 // this layer doesn't react to upserts
-                return true;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -229,7 +219,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// Action applier that blacklists the current datasource when init occurs or when Off status is seen,
         /// then disposes the current datasource, goes to the next datasource, and starts it.
         /// </summary>
-        private class ActionApplierBlacklistWhenSuccessOrOff : IActionApplier
+        private class ActionApplierBlacklistWhenSuccessOrOff : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
 
@@ -238,23 +228,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
             }
 
-            // TODO: need to fix default
-            public IDataStoreStatusProvider DataStoreStatusProvider => default;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
+            public void Init(FullDataSet<ItemDescriptor> allData)
             {
                 // When init occurs, blacklist current, dispose current, go to next, and start current
                 _actionable.BlacklistCurrent();
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();
-                return true;
             }
 
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            public void Upsert(DataKind kind, string key, ItemDescriptor item)
             {
                 // this layer doesn't react to upserts
-                return true;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)

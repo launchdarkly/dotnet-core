@@ -27,7 +27,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var capturingSink = new CapturingDataSourceUpdates();
 
             // Create action applier that responds to interrupted state
-            IActionApplier sharedActionApplier = null;
+            IDataSourceObserver sharedActionApplier = null;
             ICompositeSourceActionable capturedActionable = null;
 
             ActionApplierFactory actionApplierFactory = (actionable) =>
@@ -496,7 +496,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         // Mock implementations
 
-        private class MockActionApplier : IActionApplier
+        private class MockActionApplier : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly CapturingDataSourceUpdates _capturingUpdates;
@@ -507,16 +507,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _capturingUpdates = new CapturingDataSourceUpdates();
             }
 
-            public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
+            public void Init(FullDataSet<ItemDescriptor> allData)
             {
-                return _capturingUpdates.Init(allData);
+                _capturingUpdates.Init(allData);
             }
 
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            public void Upsert(DataKind kind, string key, ItemDescriptor item)
             {
-                return _capturingUpdates.Upsert(kind, key, item);
+                _capturingUpdates.Upsert(kind, key, item);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -539,7 +537,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        private class MockActionApplierWithBlacklistOnOff : IActionApplier
+        private class MockActionApplierWithBlacklistOnOff : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly CapturingDataSourceUpdates _capturingUpdates;
@@ -550,16 +548,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _capturingUpdates = new CapturingDataSourceUpdates();
             }
 
-            public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
+            public void Init(FullDataSet<ItemDescriptor> allData)
             {
-                return _capturingUpdates.Init(allData);
+                _capturingUpdates.Init(allData);
             }
 
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            public void Upsert(DataKind kind, string key, ItemDescriptor item)
             {
-                return _capturingUpdates.Upsert(kind, key, item);
+                _capturingUpdates.Upsert(kind, key, item);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -632,7 +628,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        private class MockActionApplierWithTracking : IActionApplier
+        private class MockActionApplierWithTracking : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly CapturingDataSourceUpdates _capturingUpdates;
@@ -645,16 +641,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _onActionTriggered = onActionTriggered;
             }
 
-            public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
+            public void Init(FullDataSet<ItemDescriptor> allData)
             {
-                return _capturingUpdates.Init(allData);
+                _capturingUpdates.Init(allData);
             }
 
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
+            public void Upsert(DataKind kind, string key, ItemDescriptor item)
             {
-                return _capturingUpdates.Upsert(kind, key, item);
+                _capturingUpdates.Upsert(kind, key, item);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)

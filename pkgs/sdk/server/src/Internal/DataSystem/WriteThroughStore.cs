@@ -1,3 +1,4 @@
+using System;
 using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -38,6 +39,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             if (!_disposed)
             {
                 _memoryStore.Dispose();
+                _persistentStore?.Dispose();
+                _disposed = true;
             }
         }
 
@@ -62,14 +65,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         public bool Upsert(DataStoreTypes.DataKind kind, string key, DataStoreTypes.ItemDescriptor item)
         {
-            var memoryResult = _memoryStore.Upsert(kind, key, item);
+            var result = _memoryStore.Upsert(kind, key, item);
             if (_hasPersistence)
             {
-                return _persistentStore.Upsert(kind, key, item);
+                result &= _persistentStore.Upsert(kind, key, item);
             }
-
-            MaybeSwitchStore();
-            return memoryResult;
+            
+            // We aren't going to switch from persistence on an update.
+            // Currently, an upsert should not ever be the first operation on a store.
+            // If selector support for persistent stores was added, then they would use the apply path.
+            return result;
         }
 
         public bool Initialized()

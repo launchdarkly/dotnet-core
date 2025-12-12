@@ -24,7 +24,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task CanFallbackOnInterrupted()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create action applier that responds to interrupted state
             IActionApplier sharedActionApplier = null;
@@ -104,7 +104,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task BlacklistsDataSourceFactoryAfterOffState()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Track how many times each factory is called
             int firstFactoryCallCount = 0;
@@ -205,7 +205,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task DisabledDataSourceCannotTriggerActions()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Track whether actions were triggered
             bool actionTriggered = false;
@@ -311,7 +311,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task DisposeReportsOffState()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create a simple data source factory that reports initializing -> valid
             SourceFactory sourceFactory = (updatesSink) =>
@@ -365,7 +365,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task AllThreeSourcesFailReportsOffWithExhaustedMessage()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create action applier factory that blacklists on Off and falls back to next factory
             ActionApplierFactory actionApplierFactory = (actionable) =>
@@ -450,7 +450,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task NoSourcesProvidedReportsOffWithExhaustedMessage()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create CompositeSource with empty factory tuples list
             var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
@@ -483,7 +483,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             compositeSource.Dispose();
         }
 
-        private void WaitForStatus(CapturingDataSourceUpdates sink, DataSourceState state, TimeSpan? timeout = null)
+        private void WaitForStatus(CapturingDataSourceUpdatesWithHeaders sink, DataSourceState state, TimeSpan? timeout = null)
         {
             var actualTimeout = timeout ?? TimeSpan.FromSeconds(5);
             ExpectPredicate(
@@ -542,6 +542,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 return _capturingUpdates.Apply(changeSet);
             }
+
+            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+            {
+                return _capturingUpdates.InitWithHeaders(allData, headers);
+            }
         }
 
         private class MockActionApplierWithBlacklistOnOff : IActionApplier
@@ -590,6 +595,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 return _capturingUpdates.Apply(changeSet);
+            }
+
+            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+            {
+                return _capturingUpdates.InitWithHeaders(allData, headers);
             }
         }
 
@@ -690,6 +700,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 return _capturingUpdates.Apply(changeSet);
+            }
+
+            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+            {
+                return _capturingUpdates.InitWithHeaders(allData, headers);
             }
         }
 

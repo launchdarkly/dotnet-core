@@ -25,7 +25,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task FirstInitializerFailsSecondInitializerSucceedsSwitchesToSynchronizer()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for initializers and synchronizer
             var firstInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
@@ -175,7 +175,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task FirstInitializerSucceedsSecondInitializerNotInvoked()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for initializers
             var firstInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
@@ -278,7 +278,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task AllInitializersFailSwitchesToSynchronizers()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for synchronizer
             var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
@@ -425,7 +425,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             TestLogger.Info("Test starting");
 
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Track the update sinks for each initializer
             IDataSourceUpdates firstInitializerUpdateSink = null;
@@ -558,7 +558,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task NoInitializersOneSynchronizerIsWellBehaved()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for synchronizer
             var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
@@ -640,7 +640,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task OneInitializerNoSynchronizerIsWellBehaved()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for initializer
             var initializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
@@ -721,7 +721,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task NoInitializersAndNoSynchronizersIsWellBehaved()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create FDv2DataSource with no initializers, no synchronizers, and empty fdv1Synchronizers
             var initializers = new List<SourceFactory>();
@@ -764,7 +764,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task CanDisposeWhenSynchronizersFallingBackUnthrottled()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create error info to trigger immediate fallback
             var errorInfo = new DataSourceStatus.ErrorInfo

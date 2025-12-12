@@ -121,6 +121,7 @@ namespace LaunchDarkly.Sdk.Server
                 null,
                 BasicTaskExecutor,
                 config.ApplicationInfo?.Build() ?? new ApplicationInfo(),
+                null,
                 null
                 );
 

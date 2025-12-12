@@ -152,7 +152,8 @@ namespace LaunchDarkly.Sdk.Server
                 null,
                 taskExecutor,
                 _configuration.ApplicationInfo?.Build() ?? new ApplicationInfo(),
-                _configuration.WrapperInfo?.Build()
+                _configuration.WrapperInfo?.Build(),
+                null
                 );
 
             var httpConfig = (_configuration.Http ?? Components.HttpConfiguration()).Build(clientContext);
@@ -162,7 +163,14 @@ namespace LaunchDarkly.Sdk.Server
                 new ServerDiagnosticStore(_configuration, clientContext);
             clientContext = clientContext.WithDiagnosticStore(diagnosticStore);
 
-            _dataSystem = FDv1DataSystem.Create(_log, _configuration, clientContext, logConfig);
+            if (_configuration.DataSystem != null)
+            {
+                _dataSystem = FDv2DataSystem.Create(_log, _configuration, clientContext, logConfig);
+            }
+            else
+            {
+                _dataSystem = FDv1DataSystem.Create(_log, _configuration, clientContext, logConfig);
+            }
 
             var bigSegmentsConfig = (_configuration.BigSegments ?? Components.BigSegments(null))
                 .Build(clientContext);

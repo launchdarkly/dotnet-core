@@ -87,7 +87,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 context.DataSourceUpdates,
                 requestor,
                 _pollInterval,
-                () => Selector.Empty // TODO: Implement
+                () => context.SelectorSource?.Selector ?? Selector.Empty
             );
         }
 

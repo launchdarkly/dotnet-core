@@ -8,8 +8,8 @@ using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
     /// <summary>
-    /// An <see cref="IDataSourceUpdates"/> implementation that decorates an underlying
-    /// <see cref="IDataSourceUpdates"/> and sanitizes status updates.
+    /// An <see cref="IDataSourceUpdatesV2"/> implementation that decorates an underlying
+    /// <see cref="IDataSourceUpdatesV2"/> and sanitizes status updates.
     /// </summary>
     /// <remarks>
     /// This wrapper ensures the following:
@@ -19,9 +19,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// <item><description>Does not report the same combination of state and error twice in a row.</description></item>
     /// </list>
     /// </remarks>
-    internal sealed class DataSourceUpdatesSanitizer : IDataSourceUpdates
+    internal sealed class DataSourceUpdatesSanitizer : IDataSourceUpdatesV2
     {
-        private readonly IDataSourceUpdates _inner;
+        private readonly IDataSourceUpdatesV2 _inner;
         private readonly object _lock = new object();
 
         private bool _alreadyReportedInitializing;
@@ -32,7 +32,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// Creates a new <see cref="DataSourceUpdatesSanitizer"/>.
         /// </summary>
         /// <param name="inner">the underlying updates sink to delegate to</param>
-        public DataSourceUpdatesSanitizer(IDataSourceUpdates inner)
+        public DataSourceUpdatesSanitizer(IDataSourceUpdatesV2 inner)
         {
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         }
@@ -41,17 +41,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// The underlying <see cref="IDataStoreStatusProvider"/> from the decorated sink.
         /// </summary>
         public IDataStoreStatusProvider DataStoreStatusProvider => _inner.DataStoreStatusProvider;
-
-        public bool Init(FullDataSet<ItemDescriptor> allData)
-        {
-            return _inner.Init(allData);
-        }
-
-        public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-        {
-            return _inner.Upsert(kind, key, item);
-        }
-
+        
         public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
         {
             lock (_lock)
@@ -86,6 +76,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                 _inner.UpdateStatus(sanitized, newError);
             }
+        }
+
+        public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+        {
+            return _inner.Apply(changeSet);
         }
     }
 }

@@ -31,6 +31,7 @@ namespace TestService
         public SdkConfigBigSegmentsParams BigSegments { get; set; }
         public SdkTagParams Tags { get; set; }
         public SdkHookParams Hooks { get; set; }
+        public SdkConfigDataSystemParams DataSystem { get; set; }
     }
 
     public class SdkTagParams
@@ -86,6 +87,126 @@ namespace TestService
         public long? StatusPollIntervalMs { get; set; }
         public int? UserCacheSize { get; set; }
         public long? UserCacheTimeMs { get; set; }
+    }
+
+    /// <summary>
+    /// Constants for store mode values.
+    /// </summary>
+    public static class StoreMode
+    {
+        /// <summary>
+        /// Read-only mode - the data system will only read from the persistent store.
+        /// </summary>
+        public const int Read = 0;
+
+        /// <summary>
+        /// Read-write mode - the data system can read from, and write to, the persistent store.
+        /// </summary>
+        public const int ReadWrite = 1;
+    }
+
+    /// <summary>
+    /// Constants for persistent store type values.
+    /// </summary>
+    public static class PersistentStoreType
+    {
+        /// <summary>
+        /// Redis persistent store type.
+        /// </summary>
+        public const string Redis = "redis";
+
+        /// <summary>
+        /// DynamoDB persistent store type.
+        /// </summary>
+        public const string DynamoDB = "dynamodb";
+
+        /// <summary>
+        /// Consul persistent store type.
+        /// </summary>
+        public const string Consul = "consul";
+    }
+
+    /// <summary>
+    /// Constants for persistent cache mode values.
+    /// </summary>
+    public static class PersistentCacheMode
+    {
+        /// <summary>
+        /// Cache disabled mode.
+        /// </summary>
+        public const string Off = "off";
+
+        /// <summary>
+        /// Time-to-live cache mode with a specified TTL.
+        /// </summary>
+        public const string TTL = "ttl";
+
+        /// <summary>
+        /// Infinite cache mode - cache forever.
+        /// </summary>
+        public const string Infinite = "infinite";
+    }
+
+    public class SdkConfigDataSystemParams
+    {
+        public SdkConfigDataStoreParams Store { get; set; }
+        public int? StoreMode { get; set; }
+        public SdkConfigDataInitializerParams[] Initializers { get; set; }
+        public SdkConfigSynchronizersParams Synchronizers { get; set; }
+        public string PayloadFilter { get; set; }
+    }
+
+    public class SdkConfigDataStoreParams
+    {
+        public SdkConfigPersistentDataStoreParams PersistentDataStore { get; set; }
+    }
+
+    public class SdkConfigPersistentDataStoreParams
+    {
+        public SdkConfigPersistentStoreParams Store { get; set; }
+        public SdkConfigPersistentCacheParams Cache { get; set; }
+    }
+
+    public class SdkConfigPersistentStoreParams
+    {
+        public string Type { get; set; }
+        public string Prefix { get; set; }
+        public string DSN { get; set; }
+    }
+
+    public class SdkConfigPersistentCacheParams
+    {
+        public string Mode { get; set; }
+        public int? TTL { get; set; }
+    }
+
+    public class SdkConfigDataInitializerParams
+    {
+        public SdkConfigPollingParams Polling { get; set; }
+    }
+
+    public class SdkConfigSynchronizersParams
+    {
+        public SdkConfigSynchronizerParams Primary { get; set; }
+        public SdkConfigSynchronizerParams Secondary { get; set; }
+    }
+
+    public class SdkConfigSynchronizerParams
+    {
+        public SdkConfigStreamingParams Streaming { get; set; }
+        public SdkConfigPollingParams Polling { get; set; }
+    }
+
+    public class SdkConfigPollingParams
+    {
+        public Uri BaseUri { get; set; }
+        public long? PollIntervalMs { get; set; }
+    }
+
+    public class SdkConfigStreamingParams
+    {
+        public Uri BaseUri { get; set; }
+        public long? InitialRetryDelayMs { get; set; }
     }
 
     public class CommandParams

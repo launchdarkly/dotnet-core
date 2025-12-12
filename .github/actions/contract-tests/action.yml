@@ -11,6 +11,10 @@ inputs:
     description: 'Github token, used for contract tests'
     required: false
     default: ''
+  run_fdv2_tests:
+    description: 'Whether to run contract tests from the feat/fdv2 branch'
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -47,3 +51,29 @@ runs:
         test_service_port: 8000
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}'
         token: ${{ inputs.token }}
+
+    - name: Setup Go
+      if: inputs.run_fdv2_tests == 'true'
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Launch Contract Tests FDv2 Flavor
+      if: inputs.run_fdv2_tests == 'true'
+      id: launch-contract-tests-fdv2
+      shell: bash
+      run: dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
+
+    - name: Clone and run contract tests from feat/fdv2 branch
+      if: inputs.run_fdv2_tests == 'true'
+      shell: bash
+      run: |
+        mkdir -p /tmp/sdk-test-harness
+        git clone https://github.com/launchdarkly/sdk-test-harness.git /tmp/sdk-test-harness
+        cp $(dirname ./${{ inputs.service_project_file }})/test-supressions-fdv2.txt /tmp/sdk-test-harness/testharness-suppressions-fdv2.txt
+        cd /tmp/sdk-test-harness
+        git checkout feat/fdv2
+        go build -o test-harness .
+        ./test-harness -url http://localhost:8000 -debug -status-timeout=360 --skip-from=testharness-suppressions-fdv2.txt --stop-service-at-end
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}

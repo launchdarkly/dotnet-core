@@ -96,7 +96,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             LdClientContext clientContext)
         {
             return (sink) =>
-                dataSourceFactory.Build(clientContext.WithDataSourceUpdates(new DataSourceUpdatesV2Adapter(sink)));
+                dataSourceFactory.Build(clientContext.WithDataSourceUpdates(new DataSourceUpdatesV2ToV1Adapter(sink)));
         }
 
         public void Dispose()

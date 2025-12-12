@@ -10,7 +10,7 @@ using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 {
-    internal class FDv2DataSystem : IDataSystem
+    internal class FDv2DataSystem : IDataSystem, IDisposable
     {
         private readonly WriteThroughStore _store;
         private readonly IDataSource _dataSource;

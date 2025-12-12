@@ -16,6 +16,9 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LaunchDarkly.ServerSdk.Tests")]
 [assembly: InternalsVisibleTo("dotnet-server-test-app")]
 
+// Allow contract tests to see internal classes
+[assembly: InternalsVisibleTo("ContractTestService")]
+
 // Allow mock/proxy objects in unit tests to access internal classes
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 #endif

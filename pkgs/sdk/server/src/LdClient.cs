@@ -63,7 +63,7 @@ namespace LaunchDarkly.Sdk.Server
         public IFlagTracker FlagTracker => _flagTracker;
 
         /// <inheritdoc/>
-        public bool Initialized => true; //_dataSystem.Initialized;
+        public bool Initialized => _dataSystem.Initialized;
 
         /// <inheritdoc/>
         public Version Version => AssemblyVersions.GetAssemblyVersionForType(typeof(LdClient));

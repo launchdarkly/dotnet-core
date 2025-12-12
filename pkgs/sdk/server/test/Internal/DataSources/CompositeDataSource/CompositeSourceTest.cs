@@ -499,12 +499,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private class MockActionApplier : IActionApplier
         {
             private readonly ICompositeSourceActionable _actionable;
-            private readonly CapturingDataSourceUpdates _capturingUpdates;
+            private readonly CapturingDataSourceUpdatesWithHeaders _capturingUpdates;
 
             public MockActionApplier(ICompositeSourceActionable actionable)
             {
                 _actionable = actionable;
-                _capturingUpdates = new CapturingDataSourceUpdates();
+                _capturingUpdates = new CapturingDataSourceUpdatesWithHeaders();
             }
 
             public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
@@ -537,17 +537,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 // Nothing to dispose
             }
+
+            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                return _capturingUpdates.Apply(changeSet);
+            }
         }
 
         private class MockActionApplierWithBlacklistOnOff : IActionApplier
         {
             private readonly ICompositeSourceActionable _actionable;
-            private readonly CapturingDataSourceUpdates _capturingUpdates;
+            private readonly CapturingDataSourceUpdatesWithHeaders _capturingUpdates;
 
             public MockActionApplierWithBlacklistOnOff(ICompositeSourceActionable actionable)
             {
                 _actionable = actionable;
-                _capturingUpdates = new CapturingDataSourceUpdates();
+                _capturingUpdates = new CapturingDataSourceUpdatesWithHeaders();
             }
 
             public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
@@ -580,6 +585,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public void Dispose()
             {
                 // Nothing to dispose
+            }
+
+            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                return _capturingUpdates.Apply(changeSet);
             }
         }
 
@@ -635,13 +645,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private class MockActionApplierWithTracking : IActionApplier
         {
             private readonly ICompositeSourceActionable _actionable;
-            private readonly CapturingDataSourceUpdates _capturingUpdates;
+            private readonly CapturingDataSourceUpdatesWithHeaders _capturingUpdates;
             private readonly Action _onActionTriggered;
 
             public MockActionApplierWithTracking(ICompositeSourceActionable actionable, Action onActionTriggered)
             {
                 _actionable = actionable;
-                _capturingUpdates = new CapturingDataSourceUpdates();
+                _capturingUpdates = new CapturingDataSourceUpdatesWithHeaders();
                 _onActionTriggered = onActionTriggered;
             }
 
@@ -675,6 +685,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public void Dispose()
             {
                 // Nothing to dispose
+            }
+
+            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                return _capturingUpdates.Apply(changeSet);
             }
         }
 

@@ -96,7 +96,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         private static SourceFactory ToSourceFactory(IComponentConfigurer<IDataSource> dataSourceFactory,
             LdClientContext clientContext)
         {
-            // TODO: WithSelectorSource
             return (sink) => dataSourceFactory.Build(clientContext.WithDataSourceUpdates(sink));
         }
 

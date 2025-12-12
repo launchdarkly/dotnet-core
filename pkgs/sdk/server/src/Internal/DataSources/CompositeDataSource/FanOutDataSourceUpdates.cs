@@ -18,15 +18,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// instances return <c>true</c>.
     /// </para>
     /// </remarks>
-    internal sealed class FanOutDataSourceUpdates : IDataSourceUpdates, ITransactionalDataSourceUpdates
+    internal sealed class FanOutDataSourceUpdates : IDataSourceUpdatesV2
     {
-        private readonly IReadOnlyList<IDataSourceUpdates> _targets;
+        private readonly IReadOnlyList<IDataSourceUpdatesV2> _targets;
 
         /// <summary>
         /// Creates a new <see cref="FanOutDataSourceUpdates"/> instance.
         /// </summary>
         /// <param name="targets">The collection of updates sinks to fan out to.</param>
-        public FanOutDataSourceUpdates(IReadOnlyList<IDataSourceUpdates> targets)
+        public FanOutDataSourceUpdates(IReadOnlyList<IDataSourceUpdatesV2> targets)
         {
             _targets = targets ?? throw new ArgumentNullException(nameof(targets));
         }
@@ -48,18 +48,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         /// <inheritdoc/>
         public bool Init(FullDataSet<ItemDescriptor> allData)
-        {
-            var allSucceeded = true;
-
-            foreach (var t in _targets)
-            {
-                if (!t.Init(allData))
-                {
-                    allSucceeded = false;
-                }
-            }
-
-            return allSucceeded;
+        { 
+            return InitWithHeaders(allData, Array.Empty<KeyValuePair<string, IEnumerable<string>>>());
         }
 
         /// <inheritdoc/>
@@ -94,6 +84,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             foreach (var t in _targets)
             {
                 if (!((ITransactionalDataSourceUpdates)t).Apply(changeSet))
+                {
+                    allSucceeded = false;
+                }
+            }
+
+            return allSucceeded;
+        }
+
+        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            var allSucceeded = true;
+
+            foreach (var t in _targets)
+            {
+                if (!t.InitWithHeaders(allData, headers))
                 {
                     allSucceeded = false;
                 }

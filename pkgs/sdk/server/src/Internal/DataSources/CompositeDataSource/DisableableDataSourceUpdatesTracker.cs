@@ -21,11 +21,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         /// <summary>
-        /// Wraps the provided <see cref="IDataSourceUpdates"/> in a new instance that can be disabled by
+        /// Wraps the provided <see cref="IDataSourceUpdatesV2"/> in a new instance that can be disabled by
         /// calling <see cref="DisablePreviouslyTracked"/>.
         /// </summary>
         /// <returns>a new proxy instance</returns>
-        public IDataSourceUpdates WrapAndTrack(IDataSourceUpdates dsUpdates)
+        public IDataSourceUpdatesV2 WrapAndTrack(IDataSourceUpdatesV2 dsUpdates)
         {
             var dis = new DisableableIDataSourceUpdates(dsUpdates);
             lock (_lock)
@@ -60,15 +60,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         /// <summary>
-        /// A proxy for <see cref="IDataSourceUpdates"/> that can be disabled. When disabled,
+        /// A proxy for <see cref="IDataSourceUpdatesV2"/> that can be disabled. When disabled,
         /// all calls to the proxy will be ignored.
         /// </summary>
-        private sealed class DisableableIDataSourceUpdates : IDataSourceUpdates, IDataSourceUpdatesHeaders, ITransactionalDataSourceUpdates
+        private sealed class DisableableIDataSourceUpdates : IDataSourceUpdatesV2
         {
-            private readonly IDataSourceUpdates _updatesSink;
+            private readonly IDataSourceUpdatesV2 _updatesSink;
             private volatile bool _disabled;
 
-            public DisableableIDataSourceUpdates(IDataSourceUpdates updatesSink)
+            public DisableableIDataSourceUpdates(IDataSourceUpdatesV2 updatesSink)
             {
                 _updatesSink = updatesSink ?? throw new ArgumentNullException(nameof(updatesSink));
             }
@@ -124,18 +124,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     return false;
                 }
-
-                if (_updatesSink is IDataSourceUpdatesHeaders headersSink)
-                {
-                    return headersSink.InitWithHeaders(allData, headers);
-                }
-
-                return _updatesSink.Init(allData);
+    
+                return _updatesSink.InitWithHeaders(allData, headers);
             }
 
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                return !IsDisabled && ((ITransactionalDataSourceUpdates)_updatesSink).Apply(changeSet);
+                return !IsDisabled && _updatesSink.Apply(changeSet);
             }
         }
     }

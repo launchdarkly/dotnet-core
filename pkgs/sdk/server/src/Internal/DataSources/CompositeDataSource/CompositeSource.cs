@@ -23,8 +23,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private bool _isProcessingActions;
         private bool _disposed;
 
-        private readonly IDataSourceUpdates _originalUpdateSink;
-        private readonly IDataSourceUpdates _sanitizedUpdateSink;
+        private readonly IDataSourceUpdatesV2 _originalUpdateSink;
+        private readonly IDataSourceUpdatesV2 _sanitizedUpdateSink;
         private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> _sourcesList;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
@@ -41,7 +41,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="factoryTuples">the ordered list of source factories and their associated action applier factories</param>
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
         public CompositeSource(
-            IDataSourceUpdates updatesSink,
+            IDataSourceUpdatesV2 updatesSink,
             IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
             bool circular = true)
         {
@@ -208,7 +208,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             // Build the list of update sinks conditionally based on whether we have an action applier factory
-            var updateSinks = new List<IDataSourceUpdates>();
+            var updateSinks = new List<IDataSourceUpdatesV2>();
             if (entry.ActionApplierFactory != null)
             {
                 var actionApplier = entry.ActionApplierFactory(this);

@@ -19,7 +19,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="fdv1Synchronizers">List of data source factories used for FDv1 synchronization</param>
         /// <returns>a new data source instance</returns>
         public static IDataSource CreateFDv2DataSource(
-            IDataSourceUpdates updatesSink,
+            IDataSourceUpdatesV2 updatesSink,
             IList<SourceFactory> initializers,
             IList<SourceFactory> synchronizers,
             IList<SourceFactory> fdv1Synchronizers)
@@ -99,7 +99,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool Init(FullDataSet<ItemDescriptor> allData)
             {
                 // this layer doesn't react to init
-                return true;
+                return true; 
             }
 
             public bool Upsert(DataKind kind, string key, ItemDescriptor item)
@@ -120,6 +120,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                // this layer doesn't react to apply
+                return true;
+            }
+
+            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
             {
                 // this layer doesn't react to apply
                 return true;
@@ -147,13 +153,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public bool Init(FullDataSet<ItemDescriptor> allData)
             {
-                lock (_lock)
-                {
-                    CancelPendingFallbackTask();
-                }
-
-                // this layer doesn't react to init
-                return true;
+                return HandleSuccessCriteria();
             }
 
             public bool Upsert(DataKind kind, string key, ItemDescriptor item)
@@ -245,6 +245,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)
             {
+                return HandleSuccessCriteria();
+            }
+
+            private bool HandleSuccessCriteria()
+            {
                 lock (_lock)
                 {
                     CancelPendingFallbackTask();
@@ -252,6 +257,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                 // this layer doesn't react to upserts
                 return true;
+            }
+
+            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+            {
+                return HandleSuccessCriteria();
             }
         }
 
@@ -273,7 +283,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public bool Init(FullDataSet<ItemDescriptor> allData)
             {
-                // When init occurs, blacklist current, dispose current, go to next, and start current
                 return SuccessTransition();
             }
 
@@ -307,6 +316,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)
             {
+                return SuccessTransition();
+            }
+
+            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+            {
+                // When init occurs, blacklist current, dispose current, go to next, and start current
                 return SuccessTransition();
             }
         }

@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
-using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
-using LaunchDarkly.TestHelpers;
 using Xunit;
 using Xunit.Abstractions;
-
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 using static LaunchDarkly.Sdk.Server.AssertHelpers;
 
@@ -27,7 +23,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create action applier that responds to interrupted state
-            IActionApplier sharedActionApplier = null;
+            IDataSourceObserver sharedActionApplier = null;
             ICompositeSourceActionable capturedActionable = null;
 
             ActionApplierFactory actionApplierFactory = (actionable) =>
@@ -212,7 +208,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             int actionTriggerCount = 0;
 
             // Store the UpdateSink for the first data source so we can use it after it's disabled
-            IDataSourceUpdates firstDataSourceUpdatesSink = null;
+            IDataSourceUpdatesV2 firstDataSourceUpdatesSink = null;
 
             // Create a mock data source that can be controlled to make updates after being replaced
             var firstDataSource = new MockMisbehavingDataSource(() =>
@@ -324,10 +320,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Create a simple action applier factory
-            ActionApplierFactory actionApplierFactory = (actionable) =>
-            {
-                return new MockActionApplier(actionable);
-            };
+            ActionApplierFactory actionApplierFactory = (actionable) => { return new MockActionApplier(actionable); };
 
             // Create CompositeSource with one factory tuple
             var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
@@ -428,9 +421,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var actualTimeout = TimeSpan.FromSeconds(5);
             ExpectPredicate(
                 capturingSink.StatusUpdates,
-                status => status.State == DataSourceState.Off && 
-                         status.LastError.HasValue && 
-                         status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
+                status => status.State == DataSourceState.Off &&
+                          status.LastError.HasValue &&
+                          status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
                 "Did not receive Off status with expected error message within timeout",
                 actualTimeout
             );
@@ -465,9 +458,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var actualTimeout = TimeSpan.FromSeconds(5);
             ExpectPredicate(
                 capturingSink.StatusUpdates,
-                status => status.State == DataSourceState.Off && 
-                         status.LastError.HasValue && 
-                         status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
+                status => status.State == DataSourceState.Off &&
+                          status.LastError.HasValue &&
+                          status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
                 "Did not receive Off status with expected error message within timeout",
                 actualTimeout
             );
@@ -483,7 +476,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             compositeSource.Dispose();
         }
 
-        private void WaitForStatus(CapturingDataSourceUpdatesWithHeaders sink, DataSourceState state, TimeSpan? timeout = null)
+        private void WaitForStatus(CapturingDataSourceUpdatesWithHeaders sink, DataSourceState state,
+            TimeSpan? timeout = null)
         {
             var actualTimeout = timeout ?? TimeSpan.FromSeconds(5);
             ExpectPredicate(
@@ -496,7 +490,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         // Mock implementations
 
-        private class MockActionApplier : IActionApplier
+        private class MockActionApplier : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly CapturingDataSourceUpdatesWithHeaders _capturingUpdates;
@@ -505,18 +499,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 _actionable = actionable;
                 _capturingUpdates = new CapturingDataSourceUpdatesWithHeaders();
-            }
-
-            public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
-            {
-                return _capturingUpdates.Init(allData);
-            }
-
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-            {
-                return _capturingUpdates.Upsert(kind, key, item);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -538,18 +520,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Nothing to dispose
             }
 
-            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                return _capturingUpdates.Apply(changeSet);
+                _capturingUpdates.Apply(changeSet);
             }
 
-            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData,
+                IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
             {
                 return _capturingUpdates.InitWithHeaders(allData, headers);
             }
         }
 
-        private class MockActionApplierWithBlacklistOnOff : IActionApplier
+        private class MockActionApplierWithBlacklistOnOff : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly CapturingDataSourceUpdatesWithHeaders _capturingUpdates;
@@ -558,18 +541,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 _actionable = actionable;
                 _capturingUpdates = new CapturingDataSourceUpdatesWithHeaders();
-            }
-
-            public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
-            {
-                return _capturingUpdates.Init(allData);
-            }
-
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-            {
-                return _capturingUpdates.Upsert(kind, key, item);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -592,14 +563,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Nothing to dispose
             }
 
-            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                return _capturingUpdates.Apply(changeSet);
-            }
-
-            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-            {
-                return _capturingUpdates.InitWithHeaders(allData, headers);
+                _capturingUpdates.Apply(changeSet);
             }
         }
 
@@ -608,7 +574,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             private readonly Queue<DataSourceState> _statusSequence;
             private readonly TaskCompletionSource<bool> _startCompletionSource;
             private bool _initialized;
-            internal IDataSourceUpdates UpdateSink { get; set; }
+            internal IDataSourceUpdatesV2 UpdateSink { get; set; }
 
             public MockDataSourceWithStatusSequence(DataSourceState[] statusSequence)
             {
@@ -627,13 +593,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     while (_statusSequence.Count > 0)
                     {
                         var state = _statusSequence.Dequeue();
-                        
+
                         // If we reached Valid, mark as initialized before reporting the status
                         if (state == DataSourceState.Valid)
                         {
                             _initialized = true;
                         }
-                        
+
                         UpdateSink?.UpdateStatus(state, null);
 
                         // Small delay to allow status updates to be processed
@@ -652,7 +618,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        private class MockActionApplierWithTracking : IActionApplier
+        private class MockActionApplierWithTracking : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly CapturingDataSourceUpdatesWithHeaders _capturingUpdates;
@@ -663,18 +629,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _actionable = actionable;
                 _capturingUpdates = new CapturingDataSourceUpdatesWithHeaders();
                 _onActionTriggered = onActionTriggered;
-            }
-
-            public IDataStoreStatusProvider DataStoreStatusProvider => _capturingUpdates.DataStoreStatusProvider;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
-            {
-                return _capturingUpdates.Init(allData);
-            }
-
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-            {
-                return _capturingUpdates.Upsert(kind, key, item);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -697,21 +651,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Nothing to dispose
             }
 
-            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                return _capturingUpdates.Apply(changeSet);
-            }
-
-            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-            {
-                return _capturingUpdates.InitWithHeaders(allData, headers);
+                _capturingUpdates.Apply(changeSet);
             }
         }
 
         private class MockMisbehavingDataSource : IDataSource
         {
             private readonly Action _triggerUpdate;
-            internal IDataSourceUpdates UpdateSink { get; set; }
+            internal IDataSourceUpdatesV2 UpdateSink { get; set; }
 
             public MockMisbehavingDataSource(Action triggerUpdate)
             {
@@ -721,10 +670,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public Task<bool> Start()
             {
                 // Report initializing immediately
-                _ = Task.Run(async () =>
-                {
-                    UpdateSink?.UpdateStatus(DataSourceState.Initializing, null);
-                });
+                _ = Task.Run(async () => { UpdateSink?.UpdateStatus(DataSourceState.Initializing, null); });
 
                 return Task.FromResult(true);
             }
@@ -743,4 +689,3 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
     }
 }
-

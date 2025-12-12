@@ -48,7 +48,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                             initializersFactoryTuples.Add((initializers[i], fastFallbackApplierFactory));
                         }
 
-                        return new CompositeSource(sink, initializersFactoryTuples, circular: false);
+                        // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
+                        return new CompositeSource(sink as IDataSourceUpdatesV2, initializersFactoryTuples, circular: false);
                     },
                     blacklistWhenSuccessOrOff
                 ));
@@ -68,7 +69,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                             synchronizersFactoryTuples.Add((synchronizers[i], timedFallbackAndRecoveryApplierFactory));
                         }
 
-                        return new CompositeSource(sink, synchronizersFactoryTuples);
+                        return new CompositeSource(sink as IDataSourceUpdatesV2, synchronizersFactoryTuples);
                     },
                     null // TODO: add fallback to FDv1 logic, null for the moment as once we're on the synchronizers, we stay there
                 ));
@@ -84,28 +85,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <summary>
         /// Action applier for initializers that handles falling back to the next initializer when Interrupted and Off states is seen.
         /// </summary>
-        private class ActionApplierFastFallback : IActionApplier
+        private class ActionApplierFastFallback : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
 
             public ActionApplierFastFallback(ICompositeSourceActionable actionable)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
-            }
-
-            // TODO: need to fix default
-            public IDataStoreStatusProvider DataStoreStatusProvider => default;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
-            {
-                // this layer doesn't react to init
-                return true; 
-            }
-
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-            {
-                // this layer doesn't react to upserts
-                return true;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -119,23 +105,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
             }
 
-            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                // this layer doesn't react to apply
-                return true;
-            }
-
-            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-            {
-                // this layer doesn't react to apply
-                return true;
             }
         }
 
         /// <summary>
         /// Action applier for synchronizers that handles falling back to the next synchronizer when Interrupted and Off states is seen.
         /// </summary>
-        private class ActionApplierTimedFallbackAndRecovery : IActionApplier
+        private class ActionApplierTimedFallbackAndRecovery : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly object _lock = new object();
@@ -146,20 +124,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
-            }
-
-            // TODO: need to fix default
-            public IDataStoreStatusProvider DataStoreStatusProvider => default;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
-            {
-                return HandleSuccessCriteria();
-            }
-
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-            {
-                // this layer doesn't react to upserts
-                return true;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -243,25 +207,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _interruptedFallbackTask = null;
             }
 
-            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
-            {
-                return HandleSuccessCriteria();
-            }
-
-            private bool HandleSuccessCriteria()
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 lock (_lock)
                 {
                     CancelPendingFallbackTask();
                 }
-
-                // this layer doesn't react to upserts
-                return true;
-            }
-
-            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-            {
-                return HandleSuccessCriteria();
             }
         }
 
@@ -269,37 +220,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// Action applier that blacklists the current datasource when init occurs or when Off status is seen,
         /// then disposes the current datasource, goes to the next datasource, and starts it.
         /// </summary>
-        private class ActionApplierBlacklistWhenSuccessOrOff : IActionApplier
+        private class ActionApplierBlacklistWhenSuccessOrOff : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
 
             public ActionApplierBlacklistWhenSuccessOrOff(ICompositeSourceActionable actionable)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
-            }
-
-            // TODO: need to fix default
-            public IDataStoreStatusProvider DataStoreStatusProvider => default;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
-            {
-                return SuccessTransition();
-            }
-
-            private bool SuccessTransition()
-            {
-                // TODO: Selector logic, early exit?
-                _actionable.BlacklistCurrent();
-                _actionable.DisposeCurrent();
-                _actionable.GoToNext();
-                _actionable.StartCurrent();
-                return true;
-            }
-
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-            {
-                // this layer doesn't react to upserts
-                return true;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -314,15 +241,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
             }
 
-            public bool Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                return SuccessTransition();
-            }
-
-            public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-            {
-                // When init occurs, blacklist current, dispose current, go to next, and start current
-                return SuccessTransition();
+                // TODO: Selector logic, early exit?
+                _actionable.BlacklistCurrent();
+                _actionable.DisposeCurrent();
+                _actionable.GoToNext();
+                _actionable.StartCurrent();
             }
         }
     }

@@ -29,7 +29,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track the update sink for the first initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory firstInitializerFactory = (updatesSink) =>
@@ -51,7 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the second initializer so we can call init
-            IDataSourceUpdates secondInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 secondInitializerUpdateSink = null;
 
             // Create second initializer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory secondInitializerFactory = (updatesSink) =>
@@ -84,7 +84,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the synchronizer so we can call init
-            IDataSourceUpdates synchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
 
             // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory synchronizerFactory = (updatesSink) =>
@@ -188,7 +188,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var secondInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track the update sink for the first initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory firstInitializerFactory = (updatesSink) =>
@@ -300,7 +300,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track the update sink for the first initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory firstInitializerFactory = (updatesSink) =>
@@ -322,7 +322,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the second initializer
-            IDataSourceUpdates secondInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 secondInitializerUpdateSink = null;
 
             // Create second initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory secondInitializerFactory = (updatesSink) =>
@@ -344,7 +344,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the synchronizer so we can call init
-            IDataSourceUpdates synchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
 
             // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory synchronizerFactory = (updatesSink) =>
@@ -449,9 +449,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Track the update sinks for each initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
-            IDataSourceUpdates secondInitializerUpdateSink = null;
-            IDataSourceUpdates thirdInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 secondInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 thirdInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory firstInitializerFactory = (updatesSink) =>
@@ -586,7 +586,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             // Track whether the synchronizer factory was invoked
             bool synchronizerFactoryInvoked = false;
-            IDataSourceUpdates synchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
 
             // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory synchronizerFactory = (updatesSink) =>
@@ -673,7 +673,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             // Track whether the initializer factory was invoked
             bool initializerFactoryInvoked = false;
-            IDataSourceUpdates initializerUpdateSink = null;
+            IDataSourceUpdatesV2 initializerUpdateSink = null;
 
             // Create initializer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory initializerFactory = (updatesSink) =>
@@ -806,7 +806,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the first synchronizer
-            IDataSourceUpdates firstSynchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 firstSynchronizerUpdateSink = null;
 
             // Create first synchronizer factory: immediately reports Off with error (triggers immediate fallback)
             SourceFactory firstSynchronizerFactory = (updatesSink) =>
@@ -823,7 +823,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the second synchronizer
-            IDataSourceUpdates secondSynchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 secondSynchronizerUpdateSink = null;
 
             // Create second synchronizer factory: immediately reports Off with error (triggers immediate fallback)
             SourceFactory secondSynchronizerFactory = (updatesSink) =>

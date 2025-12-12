@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
+using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
+
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
     /// <summary>
@@ -16,7 +18,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     {
         // All mutable state and the internal action queue are protected by this lock.
         // We also use a small, non-recursive action queue so that any re-entrant calls
-        // from IActionApplier logic are serialized and processed iteratively instead
+        // from action applier logic is serialized and processed iteratively instead
         // of recursively, avoiding the risk of stack overflows.
         private readonly object _lock = new object();
         private readonly Queue<Action> _pendingActions = new Queue<Action>();
@@ -206,19 +208,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 InternalDispose(errorInfo);
                 return;
             }
-
-            // Build the list of update sinks conditionally based on whether we have an action applier factory
-            var updateSinks = new List<IDataSourceUpdatesV2>();
+            
+            IReadOnlyList<IDataSourceObserver> observers;
+            // Conditionally add the action applier if we have one
             if (entry.ActionApplierFactory != null)
             {
+                var observersList = new List<IDataSourceObserver>();
                 var actionApplier = entry.ActionApplierFactory(this);
-                updateSinks.Add(actionApplier);
+                observersList.Add(actionApplier);
+                observers = observersList;
             }
-            updateSinks.Add(_sanitizedUpdateSink);
+            else
+            {
+                observers = Array.Empty<IDataSourceObserver>();
+            }
 
-            // here we make a fanout so that we can trigger actions as well as forward calls to the sanitized sink (order matters here)
-            var fanout = new FanOutDataSourceUpdates(updateSinks);
-            var disableableUpdates = _disableableTracker.WrapAndTrack(fanout);
+            // here we wrap the sink in observability so that we can trigger actions, the sanitized sink is
+            // invoked before the observers to ensure actions don't trigger before data can propagate
+            var observableUpdates = new ObservableDataSourceUpdates(_sanitizedUpdateSink, observers);
+            var disableableUpdates = _disableableTracker.WrapAndTrack(observableUpdates);
             
             _currentEntry = entry;
             _currentDataSource = entry.Factory(disableableUpdates);
@@ -395,5 +403,3 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         #endregion
     }
 }
-
-

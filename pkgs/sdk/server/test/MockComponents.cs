@@ -133,7 +133,7 @@ namespace LaunchDarkly.Sdk.Server
         }
     }
 
-    public class CapturingDataSourceUpdatesWithHeaders : IDataSourceUpdatesV2
+    public class CapturingDataSourceUpdatesWithHeaders : IDataSourceUpdatesV2, IDataSourceUpdates, IDataSourceUpdatesHeaders
     {
         internal readonly
             EventSink<Tuple<FullDataSet<ItemDescriptor>, IEnumerable<KeyValuePair<string, IEnumerable<string>>>>>

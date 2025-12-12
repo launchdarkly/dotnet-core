@@ -22,7 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// This component is also responsible for receiving updates to the data source status, broadcasting
     /// them to any status listeners, and tracking the length of any period of sustained failure.
     /// </remarks>
-    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdatesV2
+    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdatesV2, IDataSourceUpdatesHeaders, IDataSourceUpdates
     {
         #region Private fields
 

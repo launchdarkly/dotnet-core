@@ -41,17 +41,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// The underlying <see cref="IDataStoreStatusProvider"/> from the decorated sink.
         /// </summary>
         public IDataStoreStatusProvider DataStoreStatusProvider => _inner.DataStoreStatusProvider;
-
-        public bool Init(FullDataSet<ItemDescriptor> allData)
-        {
-            return _inner.Init(allData);
-        }
-
-        public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-        {
-            return _inner.Upsert(kind, key, item);
-        }
-
+        
         public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
         {
             lock (_lock)
@@ -91,11 +81,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public bool Apply(ChangeSet<ItemDescriptor> changeSet)
         {
             return _inner.Apply(changeSet);
-        }
-
-        public bool InitWithHeaders(FullDataSet<ItemDescriptor> allData, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-        {
-            return _inner.InitWithHeaders(allData, headers);
         }
     }
 }

@@ -84,27 +84,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             private bool IsDisabled => _disabled;
 
             public IDataStoreStatusProvider DataStoreStatusProvider => _updatesSink.DataStoreStatusProvider;
-
-            public bool Init(FullDataSet<ItemDescriptor> allData)
-            {
-                if (IsDisabled)
-                {
-                    return false;
-                }
-
-                return _updatesSink.Init(allData);
-            }
-
-            public bool Upsert(DataKind kind, string key, ItemDescriptor item)
-            {
-                if (IsDisabled)
-                {
-                    return false;
-                }
-
-                return _updatesSink.Upsert(kind, key, item);
-            }
-
+            
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
                 if (IsDisabled)
@@ -113,19 +93,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
 
                 _updatesSink.UpdateStatus(newState, newError);
-            }
-
-            public bool InitWithHeaders(
-                FullDataSet<ItemDescriptor> allData,
-                IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers
-                )
-            {
-                if (IsDisabled)
-                {
-                    return false;
-                }
-    
-                return _updatesSink.InitWithHeaders(allData, headers);
             }
 
             public bool Apply(ChangeSet<ItemDescriptor> changeSet)

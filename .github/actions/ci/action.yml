@@ -75,7 +75,7 @@ runs:
       shell: bash
       run: |
         dotnet restore ${{ inputs.test_project_file }}
-        dotnet test -v=${{ inputs.test_verbosity }} --framework=${{ inputs.target_test_framework }} ${{ inputs.test_project_file }}
+        dotnet test --blame-hang-timeout=60s -v=${{ inputs.test_verbosity }} --framework=${{ inputs.target_test_framework }} ${{ inputs.test_project_file }}
 
     - name: Remove global.json
       shell: bash

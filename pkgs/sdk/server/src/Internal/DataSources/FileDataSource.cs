@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -23,10 +23,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly FileDataTypes.IFileReader _fileReader;
         private readonly bool _skipMissingPaths;
         private readonly Logger _logger;
-        private readonly object _loadLock = new object();
         private volatile bool _started;
         private volatile bool _loadedValidData;
         private volatile int _lastVersion;
+        private object _updateLock = new object();
 
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
             List<string> paths, bool autoUpdate, Func<string, object> alternateParser, bool skipMissingPaths,
@@ -89,7 +89,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private void LoadAll()
         {
-            lock (_loadLock)
+            lock (_updateLock)
             {
                 var version = Interlocked.Increment(ref _lastVersion);
                 var flags = new Dictionary<string, ItemDescriptor>();
@@ -113,6 +113,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         return;
                     }
                 }
+
                 var allData = new FullDataSet<ItemDescriptor>(
                     ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()
                         .SetItem(DataModel.Features, new KeyedItems<ItemDescriptor>(flags))
@@ -187,15 +188,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly ISet<string> _filePaths;
         private readonly Action _reload;
         private readonly List<FileSystemWatcher> _watchers;
-        private readonly Timer _debounceTimer;
-        private readonly int _debounceMillis;
-        private readonly object _timerLock = new object();
 
-        public FileWatchingReloader(List<string> paths, Action reload, int debounceMillis = 100)
+        public FileWatchingReloader(List<string> paths, Action reload)
         {
             _reload = reload;
-            _debounceMillis = debounceMillis;
-            _debounceTimer = new Timer(OnDebounceTimerElapsed, null, Timeout.Infinite, Timeout.Infinite);
 
             _filePaths = new HashSet<string>();
             var dirPaths = new HashSet<string>();
@@ -225,17 +221,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (_filePaths.Contains(path))
             {
-                lock (_timerLock)
-                {
-                    // Reset the timer to debounce multiple rapid file changes
-                    _debounceTimer.Change(_debounceMillis, Timeout.Infinite);
-                }
+                _reload();
             }
-        }
-
-        private void OnDebounceTimerElapsed(object state)
-        {
-            _reload();
         }
 
         public void Dispose()
@@ -247,7 +234,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (disposing)
             {
-                _debounceTimer?.Dispose();
                 foreach (var w in _watchers)
                 {
                     w.Dispose();

@@ -6,17 +6,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 {
     internal class WriteThroughStore : IDataStore, ITransactionalDataStore
     {
-        private IDataStore _memoryStore;
-        private ITransactionalDataStore _txMemoryStore;
-        private IDataStore _persistentStore;
+        private readonly IDataStore _memoryStore;
+        private readonly ITransactionalDataStore _txMemoryStore;
+        private readonly IDataStore _persistentStore;
         private bool _disposed = false;
 
         private readonly bool _hasPersistence;
 
-        private object _activeStoreLock = new object();
+        private readonly object _activeStoreLock = new object();
         private volatile IDataStore _activeReadStore;
 
-        private AtomicBoolean hasInitialized = new AtomicBoolean(false);
+        /// <summary>
+        /// Indicates that this store has received a payload which would result in an initialized store.
+        /// This is an independent concept of the store being initialized, as a persistent store may be initialized
+        /// before receiving such a payload.
+        /// <para>
+        /// If we are using a persistent store, and we have some data sources, then this is a marker to switch to
+        /// the in-memory store. This transition happens once, and then subsequently we only use the memory store.
+        /// </para>
+        /// </summary>
+        private readonly AtomicBoolean _hasReceivedAnInitializingPayload = new AtomicBoolean(false);
 
         public WriteThroughStore(IDataStore memoryStore, IDataStore persistentStore)
         {
@@ -36,12 +45,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         private void Dispose(bool disposing)
         {
             if (!disposing) return;
-            if (!_disposed)
-            {
-                _memoryStore.Dispose();
-                _persistentStore?.Dispose();
-                _disposed = true;
-            }
+            if (_disposed) return;
+            _memoryStore.Dispose();
+            _persistentStore?.Dispose();
+            _disposed = true;
         }
 
         public bool StatusMonitoringEnabled => _persistentStore?.StatusMonitoringEnabled ?? false;
@@ -108,7 +115,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         private void MaybeSwitchStore()
         {
-            if (hasInitialized.GetAndSet(true)) return;
+            if (_hasReceivedAnInitializingPayload.GetAndSet(true)) return;
             lock (_activeStoreLock)
             {
                 _activeReadStore = _memoryStore;

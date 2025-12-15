@@ -107,6 +107,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
+                // this layer doesn't react to apply
             }
         }
 

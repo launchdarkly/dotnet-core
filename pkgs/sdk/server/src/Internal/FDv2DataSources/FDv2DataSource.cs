@@ -49,7 +49,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         }
 
                         // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
-                        return new CompositeSource(sink as IDataSourceUpdatesV2, initializersFactoryTuples, circular: false);
+                        return new CompositeSource(sink, initializersFactoryTuples, circular: false);
                     },
                     blacklistWhenSuccessOrOff
                 ));
@@ -244,8 +244,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                // TODO: Selector logic, early exit?
-                _actionable.BlacklistCurrent();
+                // If this change has a selector, then we know we can move out of the current phase.
+                // This doesn't look at the type of the changeset (Full, Partial, None), because having
+                // a selector means that we have some payload. 
+                // From a forward development perspective this could be because we had a local stale selector which was
+                // persisted in some way, and we are getting up to date via an initializer.
+                if (!changeSet.Selector.IsEmpty)
+                {
+                    _actionable.BlacklistCurrent();
+                }
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();

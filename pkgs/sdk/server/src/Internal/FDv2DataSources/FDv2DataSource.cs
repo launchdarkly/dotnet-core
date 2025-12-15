@@ -107,7 +107,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                // this layer doesn't react to apply
+                if (!changeSet.Selector.IsEmpty)
+                {
+                    // If the selector is non-empty, then we will transition from initializers to synchronizers.
+                    // If it is empty we attempt to move to the next initializer. If there are none, that will
+                    // trigger an error, which will then initiate the transition.
+                    return;
+                }
+                _actionable.DisposeCurrent();
+                _actionable.GoToNext();
+                _actionable.StartCurrent();
             }
         }
 
@@ -249,13 +258,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // a selector means that we have some payload. 
                 // From a forward development perspective this could be because we had a local stale selector which was
                 // persisted in some way, and we are getting up to date via an initializer.
-                if (!changeSet.Selector.IsEmpty)
-                {
-                    _actionable.BlacklistCurrent();
-                    _actionable.DisposeCurrent();
-                    _actionable.GoToNext();
-                    _actionable.StartCurrent();
-                }
+                if (changeSet.Selector.IsEmpty) return;
+                _actionable.BlacklistCurrent();
+                _actionable.DisposeCurrent();
+                _actionable.GoToNext();
+                _actionable.StartCurrent();
             }
         }
     }

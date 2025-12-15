@@ -345,7 +345,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public async Task FirstInitializerSucceedsSecondInitializerNotInvoked()
+        public async Task FirstInitializerSucceedsWithSelectorSecondInitializerNotInvoked()
         {
             // Create a capturing sink to observe all updates
             var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
@@ -375,7 +375,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         // Call Apply with dummy data
                         updatesSink.Apply(new ChangeSet<ItemDescriptor>(
                             ChangeSetType.Full,
-                            Selector.Empty,
+                            Selector.Make(1, "dummy-state"),
                             firstInitializerDummyData.Data,
                             null
                         ));

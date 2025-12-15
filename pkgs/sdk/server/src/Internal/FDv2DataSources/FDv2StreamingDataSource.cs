@@ -176,6 +176,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             if (!FDv2ProtocolHandler.HandledEventTypes.Contains(e.Message.Name))
             {
+                _log.Debug("Received unknown event type {0} from LaunchDarkly streaming service", e.Message.Name);
                 // Ignore unknown message types from the protocol.
                 return;
             }

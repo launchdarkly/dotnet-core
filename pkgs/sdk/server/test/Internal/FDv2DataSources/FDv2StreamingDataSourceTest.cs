@@ -412,7 +412,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("unknown-custom-event", "{}"));
 
-                AssertLogMessageRegex(true, LogLevel.Error, ".*unknown event.*");
+                AssertLogMessageRegex(true, LogLevel.Debug, ".*unknown event.*");
             }
         }
 

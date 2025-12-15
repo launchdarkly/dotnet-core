@@ -252,10 +252,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 if (!changeSet.Selector.IsEmpty)
                 {
                     _actionable.BlacklistCurrent();
+                    _actionable.DisposeCurrent();
+                    _actionable.GoToNext();
+                    _actionable.StartCurrent();
                 }
-                _actionable.DisposeCurrent();
-                _actionable.GoToNext();
-                _actionable.StartCurrent();
             }
         }
     }

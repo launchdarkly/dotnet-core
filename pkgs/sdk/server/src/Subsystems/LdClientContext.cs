@@ -98,6 +98,12 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         internal ApplicationInfo ApplicationInfo { get; }
 
         internal WrapperInfo WrapperInfo { get; }
+        
+        /// <summary>
+        /// The configured selector source.
+        /// </summary>
+        /// TODO: SDK-1678: Internal until ready for use.
+        internal ISelectorSource SelectorSource { get; }
 
         /// <summary>
         /// Constructs a new instance with only the public properties.
@@ -126,7 +132,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 sdkKey, dataSourceUpdates, dataStoreUpdates, http, logger, offline, serviceEndpoints,
                 null,
                 new TaskExecutor("test-sender", logger ?? Logs.None.Logger("")),
-                new ApplicationInfo(), null
+                new ApplicationInfo(), null, null
             )
         {
         }
@@ -151,7 +157,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             IDiagnosticStore diagnosticStore,
             TaskExecutor taskExecutor,
             ApplicationInfo applicationInfo,
-            WrapperInfo wrapperInfo
+            WrapperInfo wrapperInfo,
+            ISelectorSource selectorSource
         )
         {
             SdkKey = sdkKey;
@@ -165,6 +172,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             TaskExecutor = taskExecutor;
             ApplicationInfo = applicationInfo;
             WrapperInfo = wrapperInfo;
+            SelectorSource = selectorSource;
         }
 
         internal LdClientContext WithDataSourceUpdates(IDataSourceUpdates newDataSourceUpdates) =>
@@ -179,7 +187,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 DiagnosticStore,
                 TaskExecutor,
                 ApplicationInfo,
-                WrapperInfo
+                WrapperInfo,
+                SelectorSource
             );
 
         internal LdClientContext WithDataStoreUpdates(IDataStoreUpdates newDataStoreUpdates) =>
@@ -194,7 +203,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 DiagnosticStore,
                 TaskExecutor,
                 ApplicationInfo,
-                WrapperInfo
+                WrapperInfo,
+                SelectorSource
             );
 
         internal LdClientContext WithDiagnosticStore(IDiagnosticStore newDiagnosticStore) =>
@@ -209,7 +219,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 newDiagnosticStore,
                 TaskExecutor,
                 ApplicationInfo,
-                WrapperInfo
+                WrapperInfo,
+                SelectorSource
             );
 
         internal LdClientContext WithHttp(HttpConfiguration newHttp) =>
@@ -224,7 +235,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 DiagnosticStore,
                 TaskExecutor,
                 ApplicationInfo,
-                WrapperInfo
+                WrapperInfo,
+                SelectorSource
             );
 
         internal LdClientContext WithLogger(Logger newLogger) =>
@@ -239,7 +251,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 DiagnosticStore,
                 TaskExecutor,
                 ApplicationInfo,
-                WrapperInfo
+                WrapperInfo,
+                SelectorSource
             );
 
         internal LdClientContext WithTaskExecutor(TaskExecutor newTaskExecutor) =>
@@ -254,7 +267,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 DiagnosticStore,
                 newTaskExecutor,
                 ApplicationInfo,
-                WrapperInfo
+                WrapperInfo,
+                SelectorSource
             );
 
         internal LdClientContext WithApplicationInfo(ApplicationInfo applicationInfo) =>
@@ -269,7 +283,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 DiagnosticStore,
                 TaskExecutor,
                 applicationInfo,
-                WrapperInfo
+                WrapperInfo,
+                SelectorSource
             );
 
         internal LdClientContext WithWrapperInfo(WrapperInfo wrapperInfo) =>
@@ -284,7 +299,24 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 DiagnosticStore,
                 TaskExecutor,
                 ApplicationInfo,
-                wrapperInfo
+                wrapperInfo,
+                SelectorSource
+            );
+        
+        internal LdClientContext WithSelectorSource(ISelectorSource selectorSource) =>
+            new LdClientContext(
+                SdkKey,
+                DataSourceUpdates,
+                DataStoreUpdates,
+                Http,
+                Logger,
+                Offline,
+                ServiceEndpoints,
+                DiagnosticStore,
+                TaskExecutor,
+                ApplicationInfo,
+                WrapperInfo,
+                selectorSource
             );
 
         private static HttpConfiguration DefaultHttpConfiguration() =>

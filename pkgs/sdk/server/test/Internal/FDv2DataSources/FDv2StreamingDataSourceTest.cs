@@ -6,6 +6,7 @@ using LaunchDarkly.EventSource;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal.Events;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers;
 using Moq;
@@ -411,7 +412,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("unknown-custom-event", "{}"));
 
-                AssertLogMessageRegex(true, LogLevel.Error, ".*unknown event.*");
+                AssertLogMessageRegex(true, LogLevel.Debug, ".*unknown event.*");
             }
         }
 

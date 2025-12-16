@@ -22,8 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// This component is also responsible for receiving updates to the data source status, broadcasting
     /// them to any status listeners, and tracking the length of any period of sustained failure.
     /// </remarks>
-    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdates, IDataSourceUpdatesHeaders,
-        ITransactionalDataSourceUpdates
+    internal sealed class DataSourceUpdatesImpl : IDataSourceUpdatesV2, IDataSourceUpdatesHeaders, IDataSourceUpdates
     {
         #region Private fields
 
@@ -410,6 +409,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // but it also doesn't hurt, and there could be cases where it results in slightly
             // greater store consistency for persistent stores.
             var sortedChangeset = DataStoreSorter.SortChangeset(changeSet);
+            
             foreach (var kindItemsPair in sortedChangeset.Data)
             {
                 foreach (var item in kindItemsPair.Value.Items)
@@ -525,7 +525,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 ReportStoreFailure(e);
                 return false;
             }
-
+            
             var sortedChangeSet = DataStoreSorter.SortChangeset(changeSet);
 
             try

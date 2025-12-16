@@ -1,4 +1,4 @@
-using System;
+ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -174,6 +174,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private void OnMessage(object sender, MessageReceivedEventArgs e)
         {
+            if (!FDv2ProtocolHandler.HandledEventTypes.Contains(e.Message.Name))
+            {
+                _log.Debug("Received unknown event type {0} from LaunchDarkly streaming service", e.Message.Name);
+                // Ignore unknown message types from the protocol.
+                return;
+            }
             var parsed = FDv2Event.TryDeserializeFromJsonString(
                 e.Message.Name,
                 e.Message.Data,

@@ -1045,6 +1045,133 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // The result may be true or false depending on implementation, but the key is that disposal works
         }
 
+        [Fact]
+        public async Task ErrorWithFDv1FallbackTriggersFallbackToFDv1Synchronizers()
+        {
+            // Create a capturing sink to observe all updates
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+
+            // Track whether the synchronizer factory was invoked
+            bool synchronizerFactoryInvoked = false;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
+
+            // Create synchronizer factory: emits Initializing, then reports Interrupted with FDv1Fallback error
+            SourceFactory synchronizerFactory = (updatesSink) =>
+            {
+                synchronizerFactoryInvoked = true;
+                synchronizerUpdateSink = updatesSink;
+                var source = new MockDataSourceWithInit(
+                    async () =>
+                    {
+                        // Emit Initializing
+                        updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        await Task.Delay(10);
+
+                        // Report Interrupted with error that has FDv1Fallback = true
+                        var errorInfo = new DataSourceStatus.ErrorInfo
+                        {
+                            Kind = DataSourceStatus.ErrorKind.ErrorResponse,
+                            StatusCode = 503,
+                            FDv1Fallback = true,
+                            Time = DateTime.Now
+                        };
+                        updatesSink.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+                        await Task.Delay(10);
+                    }
+                );
+                return source;
+            };
+
+            // Track whether the fdv1Synchronizer factory was invoked
+            bool fdv1SynchronizerFactoryInvoked = false;
+            IDataSourceUpdatesV2 fdv1SynchronizerUpdateSink = null;
+
+            // Create dummy data for fdv1Synchronizer
+            var fdv1SynchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            // Create fdv1Synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
+            SourceFactory fdv1SynchronizerFactory = (updatesSink) =>
+            {
+                fdv1SynchronizerFactoryInvoked = true;
+                fdv1SynchronizerUpdateSink = updatesSink;
+                var source = new MockDataSourceWithInit(
+                    async () =>
+                    {
+                        // Emit Initializing
+                        updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        await Task.Delay(10);
+
+                        // Report Valid
+                        updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                        await Task.Delay(10);
+
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            fdv1SynchronizerDummyData.Data,
+                            null
+                        ));
+                        await Task.Delay(10);
+                    }
+                );
+                return source;
+            };
+
+            // Create FDv2DataSource with no initializers, one synchronizer, and one fdv1Synchronizer
+            var initializers = new List<SourceFactory>();
+            var synchronizers = new List<SourceFactory> { synchronizerFactory };
+            var fdv1Synchronizers = new List<SourceFactory> { fdv1SynchronizerFactory };
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                initializers,
+                synchronizers,
+                fdv1Synchronizers
+            );
+
+            // Start the data source
+            var startTask = dataSource.Start();
+
+            // Wait for status updates - we expect:
+            // 1. Initializing (from synchronizer)
+            // 2. Interrupted (from synchronizer with FDv1Fallback error)
+            // 3. Interrupted (initializing from fdv1Synchronizer is mapped to interrupted by sanitizer after fallback)
+            // 4. Valid (from fdv1Synchronizer)
+            var statusUpdates = capturingSink.WaitForStatusUpdates(4, TimeSpan.FromSeconds(5));
+
+            // Verify that Start() completed successfully
+            var startResult = await startTask;
+            Assert.True(startResult);
+
+            // Verify status updates
+            Assert.True(statusUpdates.Count >= 4, $"Expected at least 4 status updates, got {statusUpdates.Count}");
+
+            // Position 0: Initializing (from synchronizer)
+            Assert.Equal(DataSourceState.Initializing, statusUpdates[0].State);
+
+            // Position 1: Interrupted (from synchronizer with FDv1Fallback error)
+            Assert.Equal(DataSourceState.Interrupted, statusUpdates[1].State);
+            Assert.NotNull(statusUpdates[1].LastError);
+            Assert.True(statusUpdates[1].LastError.Value.FDv1Fallback, "FDv1Fallback should be true in the error");
+
+            // Position 2: Interrupted (initializing from fdv1Synchronizer is mapped to interrupted by sanitizer after fallback)
+            Assert.Equal(DataSourceState.Interrupted, statusUpdates[2].State);
+
+            // Position 3: Valid (from fdv1Synchronizer)
+            Assert.Equal(DataSourceState.Valid, statusUpdates[3].State);
+
+            // Verify that both factories were invoked
+            Assert.True(synchronizerFactoryInvoked, "Synchronizer factory should have been invoked");
+            Assert.True(fdv1SynchronizerFactoryInvoked, "FDv1Synchronizer factory should have been invoked after fallback");
+
+            // Verify that Apply was called with fdv1Synchronizer dummy data
+            var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+            dataSource.Dispose();
+        }
+
 
         // Mock data source that executes an async action when started
         private class MockDataSourceWithInit : IDataSource

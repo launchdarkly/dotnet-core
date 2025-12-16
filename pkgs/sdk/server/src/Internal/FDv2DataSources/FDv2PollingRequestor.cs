@@ -105,7 +105,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                         if (!response.IsSuccessStatusCode)
                         {
-                            throw new UnsuccessfulResponseException((int)response.StatusCode);
+                            throw new UnsuccessfulResponseException((int)response.StatusCode, response.Headers);
                         }
 
                         lock (_etags)

@@ -571,6 +571,31 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
+        public void RecoverableHttpErrorWithFallbackHeaderSetsFDv1Fallback()
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                dataSource.Start();
+
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+                {
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" })
+                };
+                var exception = new EventSourceServiceUnsuccessfulResponseException(503, headers);
+                _mockEventSource.TriggerError(exception);
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                Assert.Equal(503, status.LastError.Value.StatusCode);
+                Assert.True(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be true when fallback header is present");
+
+                AssertLogMessageRegex(true, LogLevel.Warn, ".*will retry.*");
+            }
+        }
+
+        [Fact]
         public async Task UnrecoverableHttpErrorStopsInitializationAndShutsDown()
         {
             using (var dataSource = MakeDataSource())
@@ -591,6 +616,57 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.False(dataSource.Initialized);
 
                 AssertLogMessageRegex(true, LogLevel.Error, ".*403.*");
+            }
+        }
+
+        [Fact]
+        public async Task UnrecoverableHttpErrorWithFallbackHeaderSetsFDv1Fallback()
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+                {
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" })
+                };
+                var exception = new EventSourceServiceUnsuccessfulResponseException(401, headers);
+                _mockEventSource.TriggerError(exception);
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                Assert.Equal(401, status.LastError.Value.StatusCode);
+                Assert.True(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be true when fallback header is present");
+
+                var result = await startTask;
+                Assert.False(result);
+                Assert.False(dataSource.Initialized);
+
+                AssertLogMessageRegex(true, LogLevel.Error, ".*401.*");
+            }
+        }
+
+        [Fact]
+        public void RecoverableHttpErrorWithoutFallbackHeaderDoesNotSetFDv1Fallback()
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                dataSource.Start();
+
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>();
+                var exception = new EventSourceServiceUnsuccessfulResponseException(503, headers);
+                _mockEventSource.TriggerError(exception);
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                Assert.Equal(503, status.LastError.Value.StatusCode);
+                Assert.False(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be false when fallback header is not present");
+
+                AssertLogMessageRegex(true, LogLevel.Warn, ".*will retry.*");
             }
         }
 

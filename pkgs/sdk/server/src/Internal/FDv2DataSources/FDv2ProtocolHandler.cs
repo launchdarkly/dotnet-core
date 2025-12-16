@@ -387,6 +387,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         /// <summary>
+        /// Get a list of event types which are handled by the protocol handler.
+        /// </summary>
+        public static IReadOnlyList<string> HandledEventTypes { get; } = new List<string>
+        {
+            FDv2EventTypes.ServerIntent,
+            FDv2EventTypes.DeleteObject,
+            FDv2EventTypes.PutObject,
+            FDv2EventTypes.Error,
+            FDv2EventTypes.Goodbye,
+            FDv2EventTypes.PayloadTransferred,
+            FDv2EventTypes.HeartBeat,
+        };
+
+        /// <summary>
         /// Reset the protocol handler. This should be done whenever a connection to the source of data is reset.
         /// </summary>
         public void Reset()

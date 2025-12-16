@@ -84,7 +84,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 context.DataSourceUpdates,
                 configuredBaseUri,
                 _initialReconnectDelay,
-                () => Selector.Empty // TODO: Implement.
+                () => context.SelectorSource?.Selector ?? Selector.Empty
             );
         }
 

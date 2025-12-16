@@ -67,7 +67,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     var receivedData = _updateSink.Inits.ExpectValue();
                     AssertHelpers.DataSetsEqual(AllData, receivedData);
-
+                    
+                    initTask.Wait(TimeSpan.FromSeconds(1));
                     Assert.True(dataSource.Initialized);
 
                     Assert.True(initTask.IsCompleted);

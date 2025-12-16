@@ -26,6 +26,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private volatile bool _started;
         private volatile bool _loadedValidData;
         private volatile int _lastVersion;
+        private object _updateLock = new object();
 
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
             List<string> paths, bool autoUpdate, Func<string, object> alternateParser, bool skipMissingPaths,
@@ -88,35 +89,39 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private void LoadAll()
         {
-            var version = Interlocked.Increment(ref _lastVersion);
-            var flags = new Dictionary<string, ItemDescriptor>();
-            var segments = new Dictionary<string, ItemDescriptor>();
-            foreach (var path in _paths)
+            lock (_updateLock)
             {
-                try
+                var version = Interlocked.Increment(ref _lastVersion);
+                var flags = new Dictionary<string, ItemDescriptor>();
+                var segments = new Dictionary<string, ItemDescriptor>();
+                foreach (var path in _paths)
                 {
-                    var content = _fileReader.ReadAllText(path);
-                    _logger.Debug("file data: {0}", content);
-                    var data = _parser.Parse(content, version);
-                    _dataMerger.AddToData(data, flags, segments);
+                    try
+                    {
+                        var content = _fileReader.ReadAllText(path);
+                        _logger.Debug("file data: {0}", content);
+                        var data = _parser.Parse(content, version);
+                        _dataMerger.AddToData(data, flags, segments);
+                    }
+                    catch (FileNotFoundException) when (_skipMissingPaths)
+                    {
+                        _logger.Debug("{0}: {1}", path, "File not found");
+                    }
+                    catch (Exception e)
+                    {
+                        LogHelpers.LogException(_logger, "Failed to load " + path, e);
+                        return;
+                    }
                 }
-                catch (FileNotFoundException) when (_skipMissingPaths)
-                {
-                    _logger.Debug("{0}: {1}", path, "File not found");
-                }
-                catch (Exception e)
-                {
-                    LogHelpers.LogException(_logger, "Failed to load " + path, e);
-                    return;
-                }
+
+                var allData = new FullDataSet<ItemDescriptor>(
+                    ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()
+                        .SetItem(DataModel.Features, new KeyedItems<ItemDescriptor>(flags))
+                        .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments))
+                );
+                _dataSourceUpdates.Init(allData);
+                _loadedValidData = true;
             }
-            var allData = new FullDataSet<ItemDescriptor>(
-                ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()
-                    .SetItem(DataModel.Features, new KeyedItems<ItemDescriptor>(flags))
-                    .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments))
-            );
-            _dataSourceUpdates.Init(allData);
-            _loadedValidData = true;
         }
 
         private void TriggerReload()

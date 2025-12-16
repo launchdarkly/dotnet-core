@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
+
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
@@ -32,7 +33,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
             ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
-
             var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
 
             // Only create the initializers composite if initializers are provided

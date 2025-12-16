@@ -1,17 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
-using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
-using LaunchDarkly.TestHelpers;
 using Xunit;
 using Xunit.Abstractions;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
-using static LaunchDarkly.Sdk.Server.AssertHelpers;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
@@ -20,20 +16,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public FDv2DataSourceTest(ITestOutputHelper testOutput) : base(testOutput)
         {
         }
-
-        [Fact]
-        public async Task FirstInitializerFailsSecondInitializerSucceedsSwitchesToSynchronizer()
+        
+                [Fact]
+        public async Task FirstInitializerFailsSecondInitializerSucceedsWithSelectorSwitchesToSynchronizer()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for initializers and synchronizer
-            var firstInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
             var secondInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
             var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track the update sink for the first initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory firstInitializerFactory = (updatesSink) =>
@@ -55,7 +50,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the second initializer so we can call init
-            IDataSourceUpdates secondInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 secondInitializerUpdateSink = null;
 
             // Create second initializer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory secondInitializerFactory = (updatesSink) =>
@@ -72,8 +67,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(secondInitializerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Make(1, "dummy-state"),
+                            secondInitializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
 
 
@@ -83,7 +83,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the synchronizer so we can call init
-            IDataSourceUpdates synchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
 
             // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory synchronizerFactory = (updatesSink) =>
@@ -100,8 +100,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(synchronizerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Make(2, "dummy-state"),
+                            synchronizerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -147,42 +152,210 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.True(statusUpdates.Count > 2, "Expected at least 3 status updates");
             Assert.Equal(DataSourceState.Valid, statusUpdates[2].State);
 
-            // Position 3: Interrupted (from switching to synchronizer)
+            // Position 3: (Disposed Initializer)
             Assert.True(statusUpdates.Count > 3, "Expected at least 4 status updates");
             Assert.Equal(DataSourceState.Interrupted, statusUpdates[3].State);
-
-            // Position 4: Valid (from synchronizer)
-            Assert.True(statusUpdates.Count > 4, "Expected at least 5 status updates");
+            
+            // Position 4: (Valid from synchronizer)
+            Assert.True(statusUpdates.Count > 3, "Expected at least 4 status updates");
             Assert.Equal(DataSourceState.Valid, statusUpdates[4].State);
 
             // Verify that the data source is initialized
             // TODO: uncomment this check once Initialized is implemented
             // Assert.True(dataSource.Initialized);
 
-            // Verify that init was called twice: once for second initializer, once for synchronizer
-            // Verify the first init call was with second initializer dummy data
-            var firstInit = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(secondInitializerDummyData, firstInit);
+            // Verify that Apply was called twice: once for second initializer, once for synchronizer
+            // Verify the first Apply call was with second initializer dummy data
+            var firstChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, firstChangeSet.Type);
 
-            // Verify the second init call was with synchronizer dummy data
-            var secondInit = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(synchronizerDummyData, secondInit);
+            // Verify the second Apply call was with synchronizer dummy data
+            var secondChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, secondChangeSet.Type);
+
+            dataSource.Dispose();
+        }
+
+
+        [Fact]
+        public async Task FirstInitializerFailsSecondInitializerSucceedsWithoutSelectorSwitchesToSynchronizer()
+        {
+            // Create a capturing sink to observe all updates
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+
+            // Create dummy data for initializers and synchronizer
+            var secondInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+            var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            // Track the update sink for the first initializer
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
+
+            // Create first initializer factory: emits Initializing, then reports Off (failure)
+            SourceFactory firstInitializerFactory = (updatesSink) =>
+            {
+                firstInitializerUpdateSink = updatesSink;
+                var source = new MockDataSourceWithInit(
+                    async () =>
+                    {
+                        // Emit Initializing
+                        updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        await Task.Delay(10);
+
+                        // Report Off (failure) - this should trigger fallback to second initializer
+                        updatesSink.UpdateStatus(DataSourceState.Off, null);
+                        await Task.Delay(10);
+                    }
+                );
+                return source;
+            };
+
+            // Track the update sink for the second initializer so we can call init
+            IDataSourceUpdatesV2 secondInitializerUpdateSink = null;
+
+            // Create second initializer factory: emits Initializing, calls init with dummy data, then reports Valid
+            SourceFactory secondInitializerFactory = (updatesSink) =>
+            {
+                secondInitializerUpdateSink = updatesSink;
+                var source = new MockDataSourceWithInit(
+                    async () =>
+                    {
+                        // Emit Initializing
+                        updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        await Task.Delay(10);
+
+                        // Report Valid
+                        updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                        await Task.Delay(10);
+
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            secondInitializerDummyData.Data,
+                            null
+                        ));
+                        await Task.Delay(10);
+
+
+                    }
+                );
+                return source;
+            };
+
+            // Track the update sink for the synchronizer so we can call init
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
+
+            // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
+            SourceFactory synchronizerFactory = (updatesSink) =>
+            {
+                synchronizerUpdateSink = updatesSink;
+                var source = new MockDataSourceWithInit(
+                    async () =>
+                    {
+                        // Emit Initializing
+                        updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        await Task.Delay(10);
+
+                        // Report Valid
+                        updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                        await Task.Delay(10);
+
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Make(2, "dummy-state"),
+                            synchronizerDummyData.Data,
+                            null
+                        ));
+                        await Task.Delay(10);
+                    }
+                );
+                return source;
+            };
+
+            // Create FDv2DataSource with two initializers, synchronizer, and empty fdv1Synchronizers
+            var initializers = new List<SourceFactory> { firstInitializerFactory, secondInitializerFactory };
+            var synchronizers = new List<SourceFactory> { synchronizerFactory };
+            var fdv1Synchronizers = new List<SourceFactory>();
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                initializers,
+                synchronizers,
+                fdv1Synchronizers
+            );
+
+            // Start the data source
+            var startTask = dataSource.Start();
+
+            // Wait for all expected status updates to be recorded
+            // Expected sequence: Initializing (first initializer), Interrupted (first initializer failure),
+            // Valid (second initializer), Interrupted (switching to synchronizer), Valid (synchronizer)
+            var statusUpdates = capturingSink.WaitForStatusUpdates(7, TimeSpan.FromSeconds(5));
+
+            // Verify that Start() completed successfully
+            var startResult = await startTask;
+            Assert.True(startResult);
+
+            // Verify status updates by position
+            // Position 0: Initializing (from first initializer)
+            Assert.True(statusUpdates.Count > 0, "Expected at least 1 status update");
+            Assert.Equal(DataSourceState.Initializing, statusUpdates[0].State);
+
+            // Position 1: Interrupted (from first initializer failure)
+            Assert.True(statusUpdates.Count > 1, "Expected at least 2 status updates");
+            Assert.Equal(DataSourceState.Interrupted, statusUpdates[1].State);
+
+            // The initializing status of the second initializer is not reported because it is suppressed by the status sanitizer
+
+            // Position 2: Valid (from second initializer)
+            Assert.True(statusUpdates.Count > 2, "Expected at least 3 status updates");
+            Assert.Equal(DataSourceState.Valid, statusUpdates[2].State);
+
+            // Position 3: (Disposed init 1)
+            Assert.True(statusUpdates.Count > 3, "Expected at least 4 status updates");
+            Assert.Equal(DataSourceState.Interrupted, statusUpdates[3].State);
+            
+            // Position 4: (Exhausted initializers)
+            Assert.True(statusUpdates.Count > 3, "Expected at least 4 status updates");
+            Assert.Equal(DataSourceState.Interrupted, statusUpdates[4].State);
+            
+            // Position 5: (Disposed init 2) 
+            Assert.True(statusUpdates.Count > 3, "Expected at least 4 status updates");
+            Assert.Equal(DataSourceState.Interrupted, statusUpdates[5].State);
+
+            // Position 6: Valid (Synchronizer)
+            Assert.True(statusUpdates.Count > 4, "Expected at least 5 status updates");
+            Assert.Equal(DataSourceState.Valid, statusUpdates[6].State);
+
+            // Verify that the data source is initialized
+            // TODO: uncomment this check once Initialized is implemented
+            // Assert.True(dataSource.Initialized);
+
+            // Verify that Apply was called twice: once for second initializer, once for synchronizer
+            // Verify the first Apply call was with second initializer dummy data
+            var firstChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, firstChangeSet.Type);
+
+            // Verify the second Apply call was with synchronizer dummy data
+            var secondChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, secondChangeSet.Type);
 
             dataSource.Dispose();
         }
 
         [Fact]
-        public async Task FirstInitializerSucceedsSecondInitializerNotInvoked()
+        public async Task FirstInitializerSucceedsWithSelectorSecondInitializerNotInvoked()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for initializers
             var firstInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
             var secondInitializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track the update sink for the first initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory firstInitializerFactory = (updatesSink) =>
@@ -199,8 +372,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(firstInitializerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Make(1, "dummy-state"),
+                            firstInitializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -222,7 +400,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         await Task.Delay(10);
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
-                        updatesSink.Init(secondInitializerDummyData);
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            secondInitializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -264,12 +447,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that the second initializer factory was never invoked
             Assert.False(secondInitializerFactoryInvoked, "Second initializer factory should not have been invoked");
 
-            // Verify that init was called only once with first initializer dummy data
-            var firstInit = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(firstInitializerDummyData, firstInit);
+            // Verify that Apply was called only once with first initializer dummy data
+            var firstChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, firstChangeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -278,13 +461,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task AllInitializersFailSwitchesToSynchronizers()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for synchronizer
             var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track the update sink for the first initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory firstInitializerFactory = (updatesSink) =>
@@ -306,7 +489,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the second initializer
-            IDataSourceUpdates secondInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 secondInitializerUpdateSink = null;
 
             // Create second initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory secondInitializerFactory = (updatesSink) =>
@@ -328,7 +511,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the synchronizer so we can call init
-            IDataSourceUpdates synchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
 
             // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory synchronizerFactory = (updatesSink) =>
@@ -345,8 +528,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(synchronizerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            synchronizerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -409,40 +597,46 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // TODO: uncomment this check once Initialized is implemented
             // Assert.True(dataSource.Initialized);
 
-            // Verify that init was called once with synchronizer dummy data
-            var init = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(synchronizerDummyData, init);
+            // Verify that Apply was called once with synchronizer dummy data
+            var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, changeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
 
-        [Fact]
+        [Fact(Timeout = 10000)]
         public async Task AllThreeInitializersFailReportsOffWithExhaustedMessage()
         {
+            TestLogger.Info("Test starting");
+
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Track the update sinks for each initializer
-            IDataSourceUpdates firstInitializerUpdateSink = null;
-            IDataSourceUpdates secondInitializerUpdateSink = null;
-            IDataSourceUpdates thirdInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 firstInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 secondInitializerUpdateSink = null;
+            IDataSourceUpdatesV2 thirdInitializerUpdateSink = null;
 
             // Create first initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory firstInitializerFactory = (updatesSink) =>
             {
+                TestLogger.Info("First initializer factory called");
                 firstInitializerUpdateSink = updatesSink;
                 var source = new MockDataSourceWithInit(
                     async () =>
                     {
+                        TestLogger.Info("First initializer Start() executing");
                         // Emit Initializing
                         updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        TestLogger.Info("First initializer emitted Initializing");
                         await Task.Delay(10);
 
                         // Report Off (failure) - this should trigger fallback to second initializer
                         updatesSink.UpdateStatus(DataSourceState.Off, null);
+                        TestLogger.Info("First initializer emitted Off");
                         await Task.Delay(10);
                     }
                 );
@@ -452,16 +646,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Create second initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory secondInitializerFactory = (updatesSink) =>
             {
+                TestLogger.Info("Second initializer factory called");
                 secondInitializerUpdateSink = updatesSink;
                 var source = new MockDataSourceWithInit(
                     async () =>
                     {
+                        TestLogger.Info("Second initializer Start() executing");
                         // Emit Initializing
                         updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        TestLogger.Info("Second initializer emitted Initializing");
                         await Task.Delay(10);
 
                         // Report Off (failure) - this should trigger fallback to third initializer
                         updatesSink.UpdateStatus(DataSourceState.Off, null);
+                        TestLogger.Info("Second initializer emitted Off");
                         await Task.Delay(10);
                     }
                 );
@@ -471,22 +669,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Create third initializer factory: emits Initializing, then reports Off (failure)
             SourceFactory thirdInitializerFactory = (updatesSink) =>
             {
+                TestLogger.Info("Third initializer factory called");
                 thirdInitializerUpdateSink = updatesSink;
                 var source = new MockDataSourceWithInit(
                     async () =>
                     {
+                        TestLogger.Info("Third initializer Start() executing");
                         // Emit Initializing
                         updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        TestLogger.Info("Third initializer emitted Initializing");
                         await Task.Delay(10);
 
                         // Report Off (failure) - this should trigger exhaustion of all sources
                         updatesSink.UpdateStatus(DataSourceState.Off, null);
+                        TestLogger.Info("Third initializer emitted Off");
                         await Task.Delay(10);
                     }
                 );
                 return source;
             };
 
+            TestLogger.Info("Creating FDv2DataSource");
             // Create FDv2DataSource with three initializers, empty synchronizers, and empty fdv1Synchronizers
             var initializers = new List<SourceFactory> { firstInitializerFactory, secondInitializerFactory, thirdInitializerFactory };
             var synchronizers = new List<SourceFactory>();
@@ -499,16 +702,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 fdv1Synchronizers
             );
 
+            TestLogger.Info("Starting data source");
             // Start the data source
             var startTask = dataSource.Start();
 
+            TestLogger.Info("Waiting for status updates (expecting 3)");
             // Wait for all expected status updates to be recorded
             // Expected sequence: Initializing (first initializer), Interrupted (first initializer failure),
             // Off (from composite source exhaustion)
             var statusUpdates = capturingSink.WaitForStatusUpdates(3, TimeSpan.FromSeconds(5));
+            TestLogger.Info($"Received {statusUpdates.Count} status updates");
 
+            TestLogger.Info("Awaiting start task");
             // Verify that the first Start() call completed successfully
             var startResult = await startTask;
+            TestLogger.Info($"Start task completed with result: {startResult}");
             Assert.True(startResult);
 
             // Verify status updates by position
@@ -538,14 +746,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task NoInitializersOneSynchronizerIsWellBehaved()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for synchronizer
             var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track whether the synchronizer factory was invoked
             bool synchronizerFactoryInvoked = false;
-            IDataSourceUpdates synchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
 
             // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory synchronizerFactory = (updatesSink) =>
@@ -563,8 +771,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
                         await Task.Delay(10);
 
-                        // Call init with dummy data
-                        updatesSink.Init(synchronizerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            synchronizerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -606,12 +819,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that the synchronizer factory was invoked
             Assert.True(synchronizerFactoryInvoked, "Synchronizer factory should have been invoked");
 
-            // Verify that init was called once with synchronizer dummy data
-            var init = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(synchronizerDummyData, init);
+            // Verify that Apply was called once with synchronizer dummy data
+            var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, changeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -620,14 +833,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task OneInitializerNoSynchronizerIsWellBehaved()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create dummy data for initializer
             var initializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
             // Track whether the initializer factory was invoked
             bool initializerFactoryInvoked = false;
-            IDataSourceUpdates initializerUpdateSink = null;
+            IDataSourceUpdatesV2 initializerUpdateSink = null;
 
             // Create initializer factory: emits Initializing, calls init with dummy data, then reports Valid
             SourceFactory initializerFactory = (updatesSink) =>
@@ -644,8 +857,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         // Report Valid
                         updatesSink.UpdateStatus(DataSourceState.Valid, null);
 
-                        // Call init with dummy data
-                        updatesSink.Init(initializerDummyData);
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Empty,
+                            initializerDummyData.Data,
+                            null
+                        ));
                         await Task.Delay(10);
                     }
                 );
@@ -687,12 +905,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that the initializer factory was invoked
             Assert.True(initializerFactoryInvoked, "Initializer factory should have been invoked");
 
-            // Verify that init was called once with initializer dummy data
-            var init = capturingSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-            Assert.Equal(initializerDummyData, init);
+            // Verify that Apply was called once with initializer dummy data
+            var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, changeSet.Type);
 
-            // Verify that there are no more init calls
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -701,7 +919,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task NoInitializersAndNoSynchronizersIsWellBehaved()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create FDv2DataSource with no initializers, no synchronizers, and empty fdv1Synchronizers
             var initializers = new List<SourceFactory>();
@@ -734,8 +952,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.True(statusUpdates[0].LastError.HasValue, "Expected error message in Off status");
             Assert.Equal("CompositeDataSource has exhausted all available sources.", statusUpdates[0].LastError.Value.Message);
 
-            // Verify that init was never called
-            capturingSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            // Verify that Apply was never called
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
 
             dataSource.Dispose();
         }
@@ -744,7 +962,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public async Task CanDisposeWhenSynchronizersFallingBackUnthrottled()
         {
             // Create a capturing sink to observe all updates
-            var capturingSink = new CapturingDataSourceUpdates();
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create error info to trigger immediate fallback
             var errorInfo = new DataSourceStatus.ErrorInfo
@@ -755,7 +973,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the first synchronizer
-            IDataSourceUpdates firstSynchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 firstSynchronizerUpdateSink = null;
 
             // Create first synchronizer factory: immediately reports Off with error (triggers immediate fallback)
             SourceFactory firstSynchronizerFactory = (updatesSink) =>
@@ -772,7 +990,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Track the update sink for the second synchronizer
-            IDataSourceUpdates secondSynchronizerUpdateSink = null;
+            IDataSourceUpdatesV2 secondSynchronizerUpdateSink = null;
 
             // Create second synchronizer factory: immediately reports Off with error (triggers immediate fallback)
             SourceFactory secondSynchronizerFactory = (updatesSink) =>

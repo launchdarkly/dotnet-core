@@ -10,6 +10,7 @@
              that doesn't have the MAUI tools installed. That is currently the case in
              the release phase where we build HTML documentation. -->
 
+        <BuildFrameworks Condition="'$(BUILDFRAMEWORKS)' == '' and $([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">netstandard2.0;net8.0</BuildFrameworks>
         <BuildFrameworks Condition="'$(BUILDFRAMEWORKS)' == ''">netstandard2.0;net8.0;net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-windows</BuildFrameworks>
         <TargetFrameworks>$(BUILDFRAMEWORKS)</TargetFrameworks>
         <OutputType>Library</OutputType>

@@ -81,6 +81,12 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
             public DateTime Time { get; set; }
 
             /// <summary>
+            /// The error indicates to fall back to FDv1. (At the time of writing this, this was indicated
+            /// via the x-ld-fd-fallback header, but this may change in the future. This is just info for posterity.)
+            /// </summary>
+            public bool FDv1Fallback { get; set; }
+
+            /// <summary>
             /// Constructs an instance based on an exception.
             /// </summary>
             /// <param name="e">the exception</param>

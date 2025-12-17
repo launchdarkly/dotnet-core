@@ -275,6 +275,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 var status = respEx.StatusCode;
                 errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status);
+                
+                // Check for LD fallback header
+                if (respEx.Headers != null)
+                {
+                    errorInfo.FDv1Fallback = respEx.Headers
+                        .Where(h => string.Equals(h.Key, "x-ld-fd-fallback", StringComparison.OrdinalIgnoreCase))
+                        .SelectMany(h => h.Value)
+                        .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
+                }
+                
                 RecordStreamInit(true);
                 if (!HttpErrors.IsRecoverable(status))
                 {

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
+
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
@@ -16,7 +17,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="updatesSink">the sink that receives updates from the active source</param>
         /// <param name="initializers">List of data source factories used for initialization</param>
         /// <param name="synchronizers">List of data source factories used for synchronization</param>
-        /// <param name="fdv1Synchronizers">List of data source factories used for FDv1 synchronization</param>
+        /// <param name="fdv1Synchronizers">List of data source factories used for FDv1 synchronization if fallback to FDv1 occurs</param>
         /// <returns>a new data source instance</returns>
         public static IDataSource CreateFDv2DataSource(
             IDataSourceUpdatesV2 updatesSink,
@@ -31,7 +32,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
-
+            ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
             var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
 
             // Only create the initializers composite if initializers are provided
@@ -71,13 +72,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                         return new CompositeSource(sink as IDataSourceUpdatesV2, synchronizersFactoryTuples);
                     },
-                    null // TODO: add fallback to FDv1 logic, null for the moment as once we're on the synchronizers, we stay there
+                    // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
+                    (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0) ? fdv1FallbackApplierFactory : null
+                ));
+            }
+
+            // Add the FDv1 fallback synchronizers composite if provided
+            if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
+            {
+                underlyingComposites.Add((
+                    // Create fdv1SynchronizersCompositeSource with action logic unique to fdv1Synchronizers
+                    (sink) =>
+                    {
+                        var fdv1SynchronizersFactoryTuples =
+                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                        for (int i = 0; i < fdv1Synchronizers.Count; i++)
+                        {
+                            fdv1SynchronizersFactoryTuples.Add((fdv1Synchronizers[i], timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
+                        }
+
+                        return new CompositeSource(sink as IDataSourceUpdatesV2, fdv1SynchronizersFactoryTuples);
+                    },
+                    null // no action applier for fdv1Synchronizers as a whole
                 ));
             }
 
             var combinedCompositeSource = new CompositeSource(updatesSink, underlyingComposites, circular: false);
-
-            // TODO: add fallback to FDv1 logic
 
             return combinedCompositeSource;
         }
@@ -263,6 +283,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();
+            }
+        }
+
+        private class FDv1FallbackActionApplier : IDataSourceObserver
+        {
+            private readonly ICompositeSourceActionable _actionable;
+
+            public FDv1FallbackActionApplier(ICompositeSourceActionable actionable)
+            {
+                _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+            }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+            {
+                if (newError != null && newError.Value.FDv1Fallback)
+                {
+                    _actionable.BlacklistCurrent(); // blacklist the synchronizers altogether
+                    _actionable.DisposeCurrent(); // dispose the synchronizers
+                    _actionable.GoToNext(); // go to the FDv1 fallback synchronizer
+                    _actionable.StartCurrent(); // start the FDv1 fallback synchronizer
+                }
+            }
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                // this FDv1 fallback action applier doesn't care about apply, it only looks for the FDv1Fallback flag in the errors
             }
         }
     }

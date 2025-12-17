@@ -21,7 +21,7 @@ namespace LaunchDarkly.Sdk.Client.Subsystems
         Task<bool> Start();
 
         /// <summary>
-        /// Checks whether the data source has finished initializing.
+    /// Checks whether the data source has finished initializing.
         /// </summary>
         /// <remarks>
         /// This is true if it has received at least one full set of feature flag data from LaunchDarkly,

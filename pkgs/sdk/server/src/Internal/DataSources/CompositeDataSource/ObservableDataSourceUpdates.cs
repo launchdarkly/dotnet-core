@@ -22,16 +22,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     {
         private readonly IDataSourceUpdatesV2 _primary;
         private readonly IReadOnlyList<IDataSourceObserver> _secondaries;
+        private readonly bool _isLast;
 
         /// <summary>
         /// Creates a new <see cref="ObservableDataSourceUpdates"/> instance.
         /// </summary>
         /// <param name="primary">The primary updates sink to forward to.</param>
         /// <param name="secondaries">The collection of observers to forward to.</param>
-        public ObservableDataSourceUpdates(IDataSourceUpdatesV2 primary, IReadOnlyList<IDataSourceObserver> secondaries)
+        /// <param name="isLast">It is the last data source in the composite</param>
+        public ObservableDataSourceUpdates(IDataSourceUpdatesV2 primary, IReadOnlyList<IDataSourceObserver> secondaries, bool isLast = false)
         {
             _primary = primary ?? throw new ArgumentNullException(nameof(primary));
             _secondaries = secondaries ?? throw new ArgumentNullException(nameof(secondaries));
+            _isLast = isLast;
         }
 
         /// <inheritdoc/>
@@ -64,7 +67,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Then invoke on the secondaries
             foreach (var secondary in _secondaries)
             {
-                secondary.Apply(changeSet);
+                secondary.Apply(changeSet, _isLast);
             }
 
             return primarySucceeded;

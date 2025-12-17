@@ -907,5 +907,64 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 }
             }
         }
+
+        [Fact]
+        public void RecoverableHttpErrorWithFallbackHeaderFalseDoesNotSetFDv1Fallback()
+        {
+            // Create an HttpResponseMessage with the fallback header set to false
+            using (var response = new HttpResponseMessage((HttpStatusCode)503))
+            {
+                response.Headers.Add("x-ld-fd-fallback", "false");
+                var exception = new UnsuccessfulResponseException(503, response.Headers);
+
+                _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                    .ThrowsAsync(exception);
+
+                using (var dataSource = MakeDataSource())
+                {
+                    _ = dataSource.Start();
+
+                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    Assert.Equal(DataSourceState.Interrupted, status.State);
+                    Assert.NotNull(status.LastError);
+                    Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                    Assert.Equal(503, status.LastError.Value.StatusCode);
+                    Assert.False(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be false when fallback header value is false");
+
+                    Assert.False(dataSource.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task UnrecoverableHttpErrorWithFallbackHeaderFalseDoesNotSetFDv1Fallback()
+        {
+            // Create an HttpResponseMessage with the fallback header set to false
+            using (var response = new HttpResponseMessage((HttpStatusCode)401))
+            {
+                response.Headers.Add("x-ld-fd-fallback", "false");
+                var exception = new UnsuccessfulResponseException(401, response.Headers);
+
+                _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                    .ThrowsAsync(exception);
+
+                using (var dataSource = MakeDataSource())
+                {
+                    var startTask = dataSource.Start();
+
+                    var result = await startTask;
+                    Assert.True(result); // Init task completes even on error
+
+                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    Assert.Equal(DataSourceState.Off, status.State);
+                    Assert.NotNull(status.LastError);
+                    Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                    Assert.Equal(401, status.LastError.Value.StatusCode);
+                    Assert.False(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be false when fallback header value is false");
+
+                    Assert.False(dataSource.Initialized);
+                }
+            }
+        }
     }
 }

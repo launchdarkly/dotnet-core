@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
-namespace LaunchDarkly.Sdk.Server.Internal.DataSources
+namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
-    internal static class FDv2DataSource
+    using FactoryList = List<CompositeSource.Factories>;
+
+
+    internal static partial class FDv2DataSource
     {
         /// <summary>
         /// Creates a new FDv2 data source.
@@ -32,81 +36,91 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
 
-            ActionApplierFactory initializedApplierFactory = (actionable) => new ActionApplierInitialized(actionable);
             ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
 
-            var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+            var initializationTracker = new InitializationTracker(Any(initializers, synchronizers, fdv1Synchronizers));
+            var initializationObserver =
+                new InitializationObserver(initializationTracker, DataSourceCategory.Initializers);
+            var synchronizationObserver =
+                new InitializationObserver(initializationTracker, DataSourceCategory.Synchronizers);
+
+            var underlyingComposites = new FactoryList();
 
             // Only create the initializers composite if initializers are provided
             if (initializers != null && initializers.Count > 0)
             {
-                underlyingComposites.Add((
+                underlyingComposites.Add(new CompositeSource.Factories(
                     // Create the initializersCompositeSource with action logic unique to initializers
                     (sink) =>
                     {
-                        var initializersFactoryTuples =
-                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                        var initializerFactory = new FactoryList();
                         for (int i = 0; i < initializers.Count; i++)
                         {
-                            initializersFactoryTuples.Add((initializers[i], fastFallbackApplierFactory));
+                            initializerFactory.Add(new CompositeSource.Factories(initializers[i],
+                                fastFallbackApplierFactory));
                         }
 
                         // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
-                        return new CompositeSource(sink, initializersFactoryTuples, circular: false);
+                        return new CompositeSource(sink, initializerFactory, circular: false);
                     },
-                    blacklistWhenSuccessOrOff
+                    (actionable) => new CompositeObserver(
+                        blacklistWhenSuccessOrOff(actionable), initializationObserver)
                 ));
             }
 
             // Only create the synchronizers composite if synchronizers are provided
             if (synchronizers != null && synchronizers.Count > 0)
             {
-                underlyingComposites.Add((
+                underlyingComposites.Add(new CompositeSource.Factories(
                     // Create synchronizersCompositeSource with action logic unique to synchronizers
                     (sink) =>
                     {
                         var synchronizersFactoryTuples =
-                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                            new FactoryList();
                         for (int i = 0; i < synchronizers.Count; i++)
                         {
-                            synchronizersFactoryTuples.Add((synchronizers[i], timedFallbackAndRecoveryApplierFactory));
+                            synchronizersFactoryTuples.Add(new CompositeSource.Factories(synchronizers[i],
+                                timedFallbackAndRecoveryApplierFactory));
                         }
 
                         return new CompositeSource(sink, synchronizersFactoryTuples);
                     },
-                    fdv1FallbackApplierFactory
+                    (actionable) =>
+                    {
+                        // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
+                        if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
+                        {
+                            return new CompositeObserver(fdv1FallbackApplierFactory(actionable),
+                                synchronizationObserver);
+                        }
+
+                        return synchronizationObserver;
+                    }
                 ));
             }
 
             // Add the FDv1 fallback synchronizers composite if provided
             if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
             {
-                underlyingComposites.Add((
+                underlyingComposites.Add(new CompositeSource.Factories(
                     // Create fdv1SynchronizersCompositeSource with action logic unique to fdv1Synchronizers
                     (sink) =>
                     {
                         var fdv1SynchronizersFactoryTuples =
-                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                            new FactoryList();
                         for (int i = 0; i < fdv1Synchronizers.Count; i++)
                         {
-                            fdv1SynchronizersFactoryTuples.Add((fdv1Synchronizers[i],
+                            fdv1SynchronizersFactoryTuples.Add(new CompositeSource.Factories(fdv1Synchronizers[i],
                                 timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
                         }
 
                         return new CompositeSource(sink, fdv1SynchronizersFactoryTuples);
-                    },
-                    null // no action applier for fdv1Synchronizers as a whole
+                    }, (applier) => synchronizationObserver
                 ));
             }
 
-            var initializerComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
-            initializerComposites.Add((
-                (sink) => { return new CompositeSource(sink, underlyingComposites, circular: false); },
-                initializedApplierFactory));
-            
-            var initializingCompositeSource = new CompositeSource(updatesSink, initializerComposites, circular: false);
-
-            return initializingCompositeSource;
+            return new CompletingDataSource(new CompositeSource(updatesSink, underlyingComposites, circular: false),
+                initializationTracker);
         }
 
         /// <summary>
@@ -132,7 +146,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
             {
                 if (!changeSet.Selector.IsEmpty)
                 {
@@ -245,7 +259,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _interruptedFallbackTask = null;
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
             {
                 lock (_lock)
                 {
@@ -279,7 +293,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
             {
                 // If this change has a selector, then we know we can move out of the current phase.
                 // This doesn't look at the type of the changeset (Full, Partial, None), because having
@@ -291,28 +305,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();
-            }
-        }
-
-        private class ActionApplierInitialized : IDataSourceObserver
-        {
-            private readonly ICompositeSourceActionable _actionable;
-
-            public ActionApplierInitialized(ICompositeSourceActionable actionable)
-            {
-                _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
-            }
-
-            public void Apply(ChangeSet<ItemDescriptor> changeSet)
-            {
-                if (changeSet.Selector.IsEmpty) return;
-                _actionable.MarkInitialized(true);
-            }
-
-            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
-            {
-                if (newState != DataSourceState.Off) return;
-                _actionable.MarkInitialized(false);
             }
         }
 
@@ -336,10 +328,116 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
             {
                 // this FDv1 fallback action applier doesn't care about apply, it only looks for the FDv1Fallback flag in the errors
             }
+        }
+
+
+        public enum DataSourceCategory
+        {
+            Initializers,
+            Synchronizers,
+        }
+
+        /// <summary>
+        /// Ingests observations from several composite data sources and combines the observed state into an
+        /// initialization state.
+        /// <para>
+        /// This tracker uses a strategy where it attempts to get the best possible data. We prioritize getting data
+        /// that includes a selector over data which does not. If no data with a selector is available, but data
+        /// without a selector is available, and we have exhausted all initializers, then we will consider ourselves
+        /// initialized.
+        /// </para>
+        /// <para>
+        /// In the case where there isn't any potential to get data to initialize, for instance, no initializers and
+        /// no synchronizers, then we assume we are initialized. (offline or daemon mode).
+        /// </para>
+        /// </summary>
+        private class InitializationTracker
+        {
+            private readonly TaskCompletionSource<bool> _taskCompletionSource = new TaskCompletionSource<bool>();
+            private bool _anyData;
+            private bool _initializersExhausted;
+
+            public InitializationTracker(bool hasDataSources)
+            {
+                if (hasDataSources) return;
+                _taskCompletionSource.TrySetResult(true);
+            }
+
+            public Task<bool> Task => _taskCompletionSource.Task;
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted, DataSourceCategory category)
+            {
+                _anyData = true;
+                if (category == DataSourceCategory.Initializers && exhausted)
+                {
+                    _initializersExhausted = true;
+                }
+
+                // Any time we receive a selector that will transition us to initialized.
+                // If we exhaust the initializers, and we received any data, then we consider ourselves initialized.
+                // Either from the initializers, or from a synchronizer after the initializers.
+                if (!changeSet.Selector.IsEmpty || _initializersExhausted)
+                {
+                    _taskCompletionSource
+                        .TrySetResult(true); // if the selector is non-empty, we have successfully initialized
+                }
+            }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError,
+                DataSourceCategory category)
+            {
+                if (category != DataSourceCategory.Initializers || newState != DataSourceState.Off) return;
+
+                // If we exhaust the initializers, and we had previously received some data, then
+                // we consider ourselves initialized.
+                if (_anyData)
+                {
+                    _taskCompletionSource.TrySetResult(true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Observes signals from underlying composites to determine if the data source is initialized.
+        /// </summary>
+        private class InitializationObserver : IDataSourceObserver
+        {
+            private readonly InitializationTracker _initializationTracker;
+            private readonly DataSourceCategory _category;
+
+            public InitializationObserver(InitializationTracker initializationTracker, DataSourceCategory category)
+            {
+                _initializationTracker = initializationTracker ??
+                                         throw new ArgumentNullException(nameof(initializationTracker));
+                _category = category;
+            }
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            {
+                _initializationTracker.Apply(changeSet, exhausted, _category);
+            }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+            {
+                _initializationTracker.UpdateStatus(newState, newError, _category);
+            }
+        }
+
+        private static bool Any<T>(params IList<T>[] items)
+        {
+            foreach (var item in items)
+            {
+                if (item != null && item.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

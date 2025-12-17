@@ -5,10 +5,9 @@ using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
-using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
-
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
+    
     /// <summary>
     /// A composite source is a source that can dynamically switch between sources with the
     /// help of a list of <see cref="SourceFactory"/> delegates and <see cref="ActionApplierFactory"/> delegates.
@@ -31,14 +30,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private readonly IDataSourceUpdatesV2 _originalUpdateSink;
         private readonly IDataSourceUpdatesV2 _sanitizedUpdateSink;
-        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> _sourcesList;
+        private readonly Factories<Factories> _factories;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
         // Tracks the entry from the sources list that was used to create the current
         // data source instance. This allows operations such as blacklist to remove
         // the correct factory/action-applier-factory tuple from the list.
-        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory) _currentEntry;
+        private Factories _currentEntry;
         private IDataSource _currentDataSource;
+
+        public class Factories
+        {
+            public SourceFactory Factory;
+            public ActionApplierFactory ActionApplierFactory;
+
+            public Factories(SourceFactory factory, ActionApplierFactory actionApplierFactory)
+            {
+                Factory = factory;
+                ActionApplierFactory = actionApplierFactory;
+            }
+        }
+        
 
         /// <summary>
         /// Creates a new <see cref="CompositeSource"/>.
@@ -48,7 +60,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
         public CompositeSource(
             IDataSourceUpdatesV2 updatesSink,
-            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
+            List<Factories> factoryTuples,
             bool circular = true)
         {
             if (updatesSink is null)
@@ -66,7 +78,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
 
-            _sourcesList = new SourcesList<(SourceFactory SourceFactory, ActionApplierFactory ActionApplierFactory)>(
+            _factories = new Factories<Factories>(
                 circular: circular,
                 initialList: factoryTuples
             );
@@ -200,7 +212,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 return;
             }
 
-            var entry = _sourcesList.Next();
+            var entry = _factories.Next();
+            var isLast = (_factories.Length - 1) == _factories.Pos;
             if (entry.Factory == null)
             {
                 // Failed to find a next source, report error and shut down the composite source
@@ -230,7 +243,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             // here we wrap the sink in observability so that we can trigger actions, the sanitized sink is
             // invoked before the observers to ensure actions don't trigger before data can propagate
-            var observableUpdates = new ObservableDataSourceUpdates(_sanitizedUpdateSink, observers);
+            var observableUpdates = new ObservableDataSourceUpdates(_sanitizedUpdateSink, observers, isLast);
             var disableableUpdates = _disableableTracker.WrapAndTrack(observableUpdates);
             
             _currentEntry = entry;
@@ -368,7 +381,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     // spoof interrupted (if the underlying source reported interrupted, sanitizer will not report it again)
                     _sanitizedUpdateSink.UpdateStatus(DataSourceState.Interrupted, null);
 
-                    _sourcesList.Reset();
+                    _factories.Reset();
                     TryFindNextUnderLock();
 
                     // if there are no sources, there's nothing more to do
@@ -399,7 +412,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     // remove the factory tuple for our current entry
                     // note: blacklisting does not tear down the current data source, it just prevents it from being used again
-                    _sourcesList.Remove(_currentEntry);
+                    _factories.Remove(_currentEntry);
                     _currentEntry = default;
                 }
             });

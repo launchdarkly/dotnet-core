@@ -8,18 +8,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// and removing them on the fly.
     /// </summary>
     /// <typeparam name="T">the element type</typeparam>
-    internal sealed class SourcesList<T>
+    internal sealed class Factories<T>
     {
         private List<T> _list;
         private readonly bool _circular;
         private int _pos;
 
         /// <summary>
-        /// Creates a new <see cref="SourcesList{T}"/>.
+        /// Creates a new <see cref="Factories{T}"/>.
         /// </summary>
         /// <param name="circular">whether to loop off the end of the list back to the start</param>
         /// <param name="initialList">optional initial contents</param>
-        public SourcesList(bool circular, IEnumerable<T> initialList = null)
+        public Factories(bool circular, IEnumerable<T> initialList = null)
         {
             _list = initialList == null ? new List<T>() : new List<T>(initialList);
             _circular = circular;

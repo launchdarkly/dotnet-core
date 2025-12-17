@@ -3,7 +3,7 @@ using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
-    public class FactoriesTest
+    public class SourceFactoryTest
     {
         [Fact]
         public void ReplaceIsWellBehaved()

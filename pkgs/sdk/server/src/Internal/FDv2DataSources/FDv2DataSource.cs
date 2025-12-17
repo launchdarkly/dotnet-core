@@ -9,7 +9,7 @@ using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
-    using FactoryList = List<CompositeSource.Factories>;
+    using FactoryList = List<CompositeSource.SourceFactory>;
 
 
     internal static partial class FDv2DataSource
@@ -49,14 +49,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             // Only create the initializers composite if initializers are provided
             if (initializers != null && initializers.Count > 0)
             {
-                underlyingComposites.Add(new CompositeSource.Factories(
+                underlyingComposites.Add(new CompositeSource.SourceFactory(
                     // Create the initializersCompositeSource with action logic unique to initializers
                     (sink) =>
                     {
                         var initializerFactory = new FactoryList();
                         for (int i = 0; i < initializers.Count; i++)
                         {
-                            initializerFactory.Add(new CompositeSource.Factories(initializers[i],
+                            initializerFactory.Add(new CompositeSource.SourceFactory(initializers[i],
                                 fastFallbackApplierFactory));
                         }
 
@@ -71,7 +71,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             // Only create the synchronizers composite if synchronizers are provided
             if (synchronizers != null && synchronizers.Count > 0)
             {
-                underlyingComposites.Add(new CompositeSource.Factories(
+                underlyingComposites.Add(new CompositeSource.SourceFactory(
                     // Create synchronizersCompositeSource with action logic unique to synchronizers
                     (sink) =>
                     {
@@ -79,7 +79,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             new FactoryList();
                         for (int i = 0; i < synchronizers.Count; i++)
                         {
-                            synchronizersFactoryTuples.Add(new CompositeSource.Factories(synchronizers[i],
+                            synchronizersFactoryTuples.Add(new CompositeSource.SourceFactory(synchronizers[i],
                                 timedFallbackAndRecoveryApplierFactory));
                         }
 
@@ -102,7 +102,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             // Add the FDv1 fallback synchronizers composite if provided
             if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
             {
-                underlyingComposites.Add(new CompositeSource.Factories(
+                underlyingComposites.Add(new CompositeSource.SourceFactory(
                     // Create fdv1SynchronizersCompositeSource with action logic unique to fdv1Synchronizers
                     (sink) =>
                     {
@@ -110,7 +110,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             new FactoryList();
                         for (int i = 0; i < fdv1Synchronizers.Count; i++)
                         {
-                            fdv1SynchronizersFactoryTuples.Add(new CompositeSource.Factories(fdv1Synchronizers[i],
+                            fdv1SynchronizersFactoryTuples.Add(new CompositeSource.SourceFactory(fdv1Synchronizers[i],
                                 timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
                         }
 

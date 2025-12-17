@@ -279,7 +279,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 // Check for LD fallback header
                 if (respEx.Headers != null)
                 {
-                    errorInfo.FDv1Fallback = respEx.Headers.Any(h => string.Equals(h.Key, "x-ld-fd-fallback", StringComparison.OrdinalIgnoreCase));
+                    errorInfo.FDv1Fallback = respEx.Headers
+                        .Where(h => string.Equals(h.Key, "x-ld-fd-fallback", StringComparison.OrdinalIgnoreCase))
+                        .SelectMany(h => h.Value)
+                        .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
                 }
                 
                 RecordStreamInit(true);

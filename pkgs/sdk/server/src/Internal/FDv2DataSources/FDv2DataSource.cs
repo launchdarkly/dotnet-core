@@ -72,7 +72,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                         return new CompositeSource(sink as IDataSourceUpdatesV2, synchronizersFactoryTuples);
                     },
-                    fdv1FallbackApplierFactory
+                    // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
+                    (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0) ? fdv1FallbackApplierFactory : null
                 ));
             }
 

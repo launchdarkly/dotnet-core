@@ -354,36 +354,155 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// In the case where there isn't any potential to get data to initialize, for instance, no initializers and
         /// no synchronizers, then we assume we are initialized. (offline or daemon mode).
         /// </para>
+        /// <para>
+        /// State Machine:
+        /// <code>
+        /// </code>
+        /// ┌───────────────────────┐              ┌────────────────────────────────────────┐
+        /// │                       │              │                                        │
+        /// │         NoData        ├DataReceived─►│                  Data                  │
+        /// │                       │              │                                        │
+        /// └───────────┬───────────┘              └────────────────────┬───────────────────┘
+        ///             │                                               │                    
+        ///             │                            InitializersExhausted/SelectorReceived  
+        ///     SelectorReceived                                        ▼                      
+        ///             │                          ┌────────────────────────────────────────┐
+        ///             │                          │                                        │
+        ///             ├─────────────────────────►│              Initialized               │
+        ///   InitializersExhausted                │                                        │
+        ///             │                          └────────────────────────────────────────┘
+        ///             │                                               ▲                    
+        ///             │                                 DataReceived/SelectorReceived      
+        ///             │                                               │                    
+        ///             │                          ┌────────────────────┴───────────────────┐
+        ///             │                          │                                        │
+        ///             └─────────────────────────►│         InitializersExhausted          │
+        ///                                        │                                        │
+        ///                                        └────────────────────────────────────────┘
+        /// </para>
         /// </summary>
         private class InitializationTracker
         {
             private readonly TaskCompletionSource<bool> _taskCompletionSource = new TaskCompletionSource<bool>();
-            private bool _anyData;
-            private bool _initializersExhausted;
+            private State _state = State.NoData;
+
+            private enum State
+            {
+                /// <summary>
+                /// The tracker has not received any data.
+                /// </summary>
+                NoData,
+
+                /// <summary>
+                /// The tracker has received any data.
+                /// </summary>
+                Data,
+
+                /// <summary>
+                /// The tracker has been informed that initializers are exhausted.
+                /// </summary>
+                InitializersExhausted,
+
+                /// <summary>
+                /// The tracker is initialized and is no longer processing updates.
+                /// </summary>
+                Initialized
+            }
+
+            private enum Action
+            {
+                /// <summary>
+                /// We have received some data.
+                /// </summary>
+                DataReceived,
+
+                /// <summary>
+                /// We have received signals that indicate initializers are exhausted.
+                /// </summary>
+                InitializersExhausted,
+
+                /// <summary>
+                /// We have received a selector.
+                /// </summary>
+                SelectorReceived
+            }
 
             public InitializationTracker(bool hasDataSources)
             {
                 if (hasDataSources) return;
+                // If we have no data sources, then we are immediately initialized.
+                _state = State.Initialized;
                 _taskCompletionSource.TrySetResult(true);
             }
 
             public Task<bool> Task => _taskCompletionSource.Task;
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted, DataSourceCategory category)
+            private void DetermineState(Action action)
             {
-                _anyData = true;
-                if (category == DataSourceCategory.Initializers && exhausted)
+                switch (_state)
                 {
-                    _initializersExhausted = true;
+                    case State.Initialized:
+                        break;
+                    case State.NoData:
+                        switch (action)
+                        {
+                            case Action.DataReceived:
+                                _state = State.Data;
+                                break;
+                            case Action.InitializersExhausted:
+                                _state = State.InitializersExhausted;
+                                break;
+                            case Action.SelectorReceived:
+                                _state = State.Initialized;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
+                        }
+
+                        break;
+                    case State.Data:
+                        switch (action)
+                        {
+                            case Action.DataReceived:
+                                break;
+                            case Action.InitializersExhausted:
+                            case Action.SelectorReceived:
+                                _state = State.Initialized;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
+                        }
+
+                        break;
+                    case State.InitializersExhausted:
+                        switch (action)
+                        {
+                            case Action.InitializersExhausted:
+                                break;
+                            case Action.DataReceived:
+                            case Action.SelectorReceived:
+                                _state = State.Initialized;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
+                        }
+
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
-                // Any time we receive a selector that will transition us to initialized.
-                // If we exhaust the initializers, and we received any data, then we consider ourselves initialized.
-                // Either from the initializers, or from a synchronizer after the initializers.
-                if (!changeSet.Selector.IsEmpty || _initializersExhausted)
+                if (_state == State.Initialized) _taskCompletionSource.TrySetResult(true);
+            }
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted, DataSourceCategory category)
+            {
+                if (!changeSet.Selector.IsEmpty) DetermineState(Action.SelectorReceived);
+
+                DetermineState(Action.DataReceived);
+                if (category == DataSourceCategory.Initializers && exhausted)
                 {
-                    _taskCompletionSource
-                        .TrySetResult(true); // if the selector is non-empty, we have successfully initialized
+                    DetermineState(Action.InitializersExhausted);
                 }
             }
 
@@ -392,17 +511,39 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 if (category != DataSourceCategory.Initializers || newState != DataSourceState.Off) return;
 
-                // If we exhaust the initializers, and we had previously received some data, then
-                // we consider ourselves initialized.
-                if (_anyData)
-                {
-                    _taskCompletionSource.TrySetResult(true);
-                }
+                DetermineState(Action.InitializersExhausted);
             }
         }
 
         /// <summary>
         /// Observes signals from underlying composites to determine if the data source is initialized.
+        /// <para>
+        /// Architecture:
+        /// <code>
+        ///                     ┌─────────────────────────┐
+        ///                     │  InitializationTracker  │
+        ///                     │  (tracks init state)    │
+        ///                     └───────────┬─────────────┘
+        ///                                 │
+        ///                 ┌───────────────┴───────────────┐
+        ///                 │                               │
+        ///                 ▼                               ▼
+        ///      ┌──────────────────────┐          ┌──────────────────────┐
+        ///      │InitializationObserver│          │InitializationObserver│
+        ///      │   (Initializers)     │          │  (Synchronizers)     │
+        ///      └──────────┬───────────┘          └──────────┬───────────┘
+        ///                 │                                 │
+        ///           observes                          observes
+        ///                 │                                 │
+        ///                 ▼                      ┌──────────┴──────────┐
+        ///        ┌────────────────┐              │                     │
+        ///        │ Initializers   │              ▼                     ▼
+        ///        │  Composite     │    ┌────────────────┐  ┌────────────────┐
+        ///        └────────────────┘    │ Synchronizers  │  │ FDv1 Fallback  │
+        ///                              │   Composite    │  │   Composite    │
+        ///                              └────────────────┘  └────────────────┘
+        /// </code>
+        /// </para>
         /// </summary>
         private class InitializationObserver : IDataSourceObserver
         {

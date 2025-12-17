@@ -31,6 +31,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
+            
+            ActionApplierFactory initializedApplierFactory = (actionable) => new ActionApplierInitialized(actionable);
 
             var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
 
@@ -75,11 +77,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 ));
             }
 
-            var combinedCompositeSource = new CompositeSource(updatesSink, underlyingComposites, circular: false);
+            // var combinedCompositeSource = new CompositeSource(updatesSink, underlyingComposites, circular: false);
+            
+            var initializerComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+            initializerComposites.Add(((sink) =>
+            {
+                return new CompositeSource(sink, underlyingComposites, circular: false);
+            }, initializedApplierFactory));;
+            var initializingCompositeSource = new CompositeSource(updatesSink, initializerComposites, circular: false);
 
             // TODO: add fallback to FDv1 logic
 
-            return combinedCompositeSource;
+            return initializingCompositeSource;
         }
 
         /// <summary>
@@ -263,6 +272,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();
+            }
+        }
+        
+        private class ActionApplierInitialized: IDataSourceObserver
+        {
+            private readonly ICompositeSourceActionable _actionable;
+
+            public ActionApplierInitialized(ICompositeSourceActionable actionable)
+            {
+                _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+            }
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                if (changeSet.Selector.IsEmpty) return;
+                _actionable.MarkInitialized(true);
+            }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+            {
+                if (newState != DataSourceState.Off) return;
+                _actionable.MarkInitialized(false);
             }
         }
     }

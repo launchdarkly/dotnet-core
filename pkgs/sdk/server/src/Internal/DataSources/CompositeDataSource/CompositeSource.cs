@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -24,6 +25,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly Queue<Action> _pendingActions = new Queue<Action>();
         private bool _isProcessingActions;
         private bool _disposed;
+        
+        private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
+        private readonly TaskCompletionSource<bool> _initializedTask = new TaskCompletionSource<bool>();
 
         private readonly IDataSourceUpdatesV2 _originalUpdateSink;
         private readonly IDataSourceUpdatesV2 _sanitizedUpdateSink;
@@ -76,13 +80,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </returns>
         public Task<bool> Start()
         {
-            return StartCurrent();
+            _ = StartCurrent();
+            return _initializedTask.Task;
         }
 
         /// <summary>
         /// Returns whether the current underlying data source has finished initializing.
         /// </summary>
-        public bool Initialized => _currentDataSource?.Initialized ?? false;
+        public bool Initialized => _initialized.Get();
 
         /// <summary>
         /// Disposes of the composite data source.
@@ -398,6 +403,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _currentEntry = default;
                 }
             });
+        }
+
+        public void MarkInitialized(bool status)
+        {
+            if (!_initialized.GetAndSet(true))
+            {
+                _initializedTask.TrySetResult(status);
+            }
         }
 
         #endregion

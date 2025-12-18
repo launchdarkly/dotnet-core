@@ -26,8 +26,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         /// </para>
         /// </summary>
         private readonly AtomicBoolean _hasReceivedAnInitializingPayload = new AtomicBoolean(false);
+        
+        private readonly DataSystemConfiguration.DataStoreMode _persistenceMode;
 
-        public WriteThroughStore(IDataStore memoryStore, IDataStore persistentStore)
+        public WriteThroughStore(IDataStore memoryStore, IDataStore persistentStore, DataSystemConfiguration.DataStoreMode persistenceMode)
         {
             _memoryStore = memoryStore;
             _txMemoryStore = (ITransactionalDataStore)_memoryStore;
@@ -35,6 +37,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             _hasPersistence = persistentStore != null;
             // During initializations read will happen from the persistent store.
             _activeReadStore = _hasPersistence ? _persistentStore : _memoryStore;
+            _persistenceMode = persistenceMode;
         }
 
         public void Dispose()
@@ -56,7 +59,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         public void Init(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData)
         {
             _memoryStore.Init(allData);
-            _persistentStore?.Init(allData);
+            if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
+            {
+                _persistentStore?.Init(allData);
+            }
+
             MaybeSwitchStore();
         }
 
@@ -73,7 +80,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         public bool Upsert(DataStoreTypes.DataKind kind, string key, DataStoreTypes.ItemDescriptor item)
         {
             var result = _memoryStore.Upsert(kind, key, item);
-            if (_hasPersistence)
+            if (_hasPersistence && _persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
             {
                 result &= _persistentStore.Upsert(kind, key, item);
             }
@@ -92,23 +99,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         public void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet)
         {
             _txMemoryStore.Apply(changeSet);
+            MaybeSwitchStore();
 
-            if (_hasPersistence)
+            if (!_hasPersistence || _persistenceMode != DataSystemConfiguration.DataStoreMode.ReadWrite) return;
+
+            if (_persistentStore is ITransactionalDataStore txPersistentStore)
             {
-                if (_persistentStore is ITransactionalDataStore txPersistentStore)
+                txPersistentStore.Apply(changeSet);
+            }
+            else
+            {
+                // If an apply fails at init, that will throw on its own, but if it fails via an upsert, then
+                // we need to throw something to work with the current data source updates implementation.
+                if (!ApplyToLegacyPersistence(changeSet))
                 {
-                    txPersistentStore.Apply(changeSet);
-                }
-                else
-                {
-                    if (!ApplyToLegacyPersistence(changeSet))
-                    {
-                        // TODO: Probably throw?
-                    }
+                    // The exception type doesn't matter here, as it will be converted to data store status.
+                    throw new Exception("Failure to apply data set to persistent store.");
                 }
             }
-
-            MaybeSwitchStore();
         }
 
         public Selector Selector => _txMemoryStore.Selector;

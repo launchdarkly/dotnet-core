@@ -39,7 +39,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
 
             var initializationTracker =
-                new InitializationTracker(Any(initializers), Any(synchronizers), Any(fdv1Synchronizers));
+                new InitializationTracker(Any(initializers), Any(synchronizers));
             var initializationObserver =
                 new InitializationObserver(initializationTracker, DataSourceCategory.Initializers);
             var synchronizationObserver =
@@ -194,6 +194,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     // When a synchronizer reports it is off, fall back immediately
                     if (newState == DataSourceState.Off)
                     {
+                        _actionable.BlacklistCurrent();
                         _actionable.DisposeCurrent();
                         _actionable.GoToNext();
                         _actionable.StartCurrent();

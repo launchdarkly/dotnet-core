@@ -9,11 +9,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// It is not suitable for production usage. Do not use it. You have been warned.
     /// </para>
     /// </summary>
-    internal sealed class DataSystemModes
+    public sealed class DataSystemModes
     {
         // This implementation is non-static to allow for easy usage with "Components".
         // Where we can return an instance of this object, and the user can chain into their desired configuration.
-        // TODO: SDK-1678: Internal until ready for use.
 
         /// <summary>
         /// Configure's LaunchDarkly's recommended flag data acquisition strategy.

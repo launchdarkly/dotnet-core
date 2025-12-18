@@ -162,8 +162,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Equal(DataSourceState.Valid, statusUpdates[4].State);
 
             // Verify that the data source is initialized
-            // TODO: uncomment this check once Initialized is implemented
-            // Assert.True(dataSource.Initialized);
+            Assert.True(dataSource.Initialized);
 
             // Verify that Apply was called twice: once for second initializer, once for synchronizer
             // Verify the first Apply call was with second initializer dummy data
@@ -330,8 +329,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Equal(DataSourceState.Valid, statusUpdates[6].State);
 
             // Verify that the data source is initialized
-            // TODO: uncomment this check once Initialized is implemented
-            // Assert.True(dataSource.Initialized);
+            Assert.True(dataSource.Initialized);
 
             // Verify that Apply was called twice: once for second initializer, once for synchronizer
             // Verify the first Apply call was with second initializer dummy data
@@ -595,8 +593,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Equal(DataSourceState.Valid, statusUpdates[4].State);
 
             // Verify that the data source is initialized
-            // TODO: uncomment this check once Initialized is implemented
-            // Assert.True(dataSource.Initialized);
+            Assert.True(dataSource.Initialized);
 
             // Verify that Apply was called once with synchronizer dummy data
             var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));

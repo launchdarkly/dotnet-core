@@ -124,8 +124,7 @@ namespace LaunchDarkly.Sdk.Server
         /// It is not suitable for production usage. Do not use it. You have been warned.
         /// </para>
         /// </summary>
-        /// TODO: SDK-1678: Internal until ready for use.
-        internal DataSystemBuilder DataSystem { get; }
+        public DataSystemBuilder DataSystem { get; }
 
         #endregion
 

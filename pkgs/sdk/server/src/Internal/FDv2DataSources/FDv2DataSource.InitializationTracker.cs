@@ -93,6 +93,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     // If we have no data sources, then we are immediately initialized.
                     _state = State.Initialized;
                     _taskCompletionSource.TrySetResult(true);
+                    return;
                 }
 
                 _initializersRemain = hasInitializers;
@@ -121,7 +122,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 switch (_state)
                 {
+                    // Terminal states, ignore subsequent actions.
                     case State.Initialized:
+                    case State.Failed:
                         break;
                     case State.NoData:
                         switch (action)
@@ -145,8 +148,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 _fallbackRemain = false;
                                 HandleRemainingSources();
                                 break;
-                            default:
-                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
                         }
 
                         break;
@@ -161,8 +162,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             case Action.SelectorReceived:
                                 _state = State.Initialized;
                                 break;
-                            default:
-                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
                         }
 
                         break;
@@ -183,18 +182,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             case Action.SelectorReceived:
                                 _state = State.Initialized;
                                 break;
-                            default:
-                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
                         }
 
-
                         break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
                 }
 
-                if (_state == State.Initialized) _taskCompletionSource.TrySetResult(true);
-                if (_state == State.Failed) _taskCompletionSource.TrySetResult(false);
+                // After updating the state determine if we need to complete the task.
+                switch (_state)
+                {
+                    case State.Initialized:
+                        _taskCompletionSource.TrySetResult(true);
+                        break;
+                    case State.Failed:
+                        _taskCompletionSource.TrySetResult(false);
+                        break;
+                }
             }
 
             public void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet, bool exhausted,

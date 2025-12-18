@@ -59,12 +59,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         public void Init(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData)
         {
             _memoryStore.Init(allData);
+            MaybeSwitchStore();
+
             if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
             {
                 _persistentStore?.Init(allData);
             }
-
-            MaybeSwitchStore();
         }
 
         public DataStoreTypes.ItemDescriptor? Get(DataStoreTypes.DataKind kind, string key)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Internal.FDv2DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit;
 using Xunit.Abstractions;
@@ -941,9 +942,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Since there are no sources, the composite should report Off with the exhaustion message
             var statusUpdates = capturingSink.WaitForStatusUpdates(1, TimeSpan.FromSeconds(5));
 
-            // Verify that Start() completed but returned false (no sources available)
+            // Verify that Start() completed but returned true (no sources available)
             var startResult = await startTask;
-            Assert.False(startResult, "Start() should return false when there are no sources");
+            Assert.True(startResult, "Start() should return true when there are no sources");
 
             // Verify status updates by position
             // Position 0: Off status with exhaustion message

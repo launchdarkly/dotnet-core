@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
-    
     /// <summary>
     /// A composite source is a source that can dynamically switch between sources with the
-    /// help of a list of <see cref="DataSources.SourceFactory"/> delegates and <see cref="ActionApplierFactory"/> delegates.
+    /// help of a list of <see cref="SourceFactory"/> delegates and <see cref="ActionApplierFactory"/> delegates.
     /// The SourceFactory delegates are used to create the data sources, and the ActionApplierFactory creates the action appliers that are used
     ///  to apply actions to the composite source as updates are received from the data sources.
     /// </summary>
@@ -24,36 +22,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly Queue<Action> _pendingActions = new Queue<Action>();
         private bool _isProcessingActions;
         private bool _disposed;
-        
-        private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
-        private readonly TaskCompletionSource<bool> _initializedTask = new TaskCompletionSource<bool>();
 
         private readonly IDataSourceUpdatesV2 _originalUpdateSink;
         private readonly IDataSourceUpdatesV2 _sanitizedUpdateSink;
-        private readonly Factories<SourceFactory> _factories;
+        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> _sourcesList;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
         // Tracks the entry from the sources list that was used to create the current
         // data source instance. This allows operations such as blacklist to remove
         // the correct factory/action-applier-factory tuple from the list.
-        private SourceFactory _currentEntry;
+        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory) _currentEntry;
         private IDataSource _currentDataSource;
-
-        /// <summary>
-        /// Factories for a data source and associated action appliers.
-        /// </summary>
-        public class SourceFactory
-        {
-            public readonly DataSources.SourceFactory Factory;
-            public readonly ActionApplierFactory ActionApplierFactory;
-
-            public SourceFactory(DataSources.SourceFactory factory, ActionApplierFactory actionApplierFactory)
-            {
-                Factory = factory;
-                ActionApplierFactory = actionApplierFactory;
-            }
-        }
-        
 
         /// <summary>
         /// Creates a new <see cref="CompositeSource"/>.
@@ -63,7 +42,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
         public CompositeSource(
             IDataSourceUpdatesV2 updatesSink,
-            List<SourceFactory> factoryTuples,
+            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
             bool circular = true)
         {
             if (updatesSink is null)
@@ -81,7 +60,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
 
-            _factories = new Factories<SourceFactory>(
+            _sourcesList = new SourcesList<(SourceFactory SourceFactory, ActionApplierFactory ActionApplierFactory)>(
                 circular: circular,
                 initialList: factoryTuples
             );
@@ -95,14 +74,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </returns>
         public Task<bool> Start()
         {
-            _ = StartCurrent();
-            return _initializedTask.Task;
+            return StartCurrent();
         }
 
         /// <summary>
         /// Returns whether the current underlying data source has finished initializing.
         /// </summary>
-        public bool Initialized => _initialized.Get();
+        public bool Initialized => _currentDataSource?.Initialized ?? false;
 
         /// <summary>
         /// Disposes of the composite data source.
@@ -215,8 +193,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 return;
             }
 
-            var entry = _factories.Next();
-            var isLast = (_factories.Length - 1) == _factories.Pos;
+            var entry = _sourcesList.Next();
+            var isLast = (_sourcesList.Length - 1) == _sourcesList.Pos;
             if (entry.Factory == null)
             {
                 // Failed to find a next source, report error and shut down the composite source
@@ -384,7 +362,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     // spoof interrupted (if the underlying source reported interrupted, sanitizer will not report it again)
                     _sanitizedUpdateSink.UpdateStatus(DataSourceState.Interrupted, null);
 
-                    _factories.Reset();
+                    _sourcesList.Reset();
                     TryFindNextUnderLock();
 
                     // if there are no sources, there's nothing more to do
@@ -415,7 +393,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     // remove the factory tuple for our current entry
                     // note: blacklisting does not tear down the current data source, it just prevents it from being used again
-                    _factories.Remove(_currentEntry);
+                    _sourcesList.Remove(_currentEntry);
                     _currentEntry = default;
                 }
             });

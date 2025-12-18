@@ -3,12 +3,12 @@ using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
-    public class SourceFactoryTest
+    public class SourcesListTest
     {
         [Fact]
         public void ReplaceIsWellBehaved()
         {
-            var underTest = new Factories<string>(true, new[] { "1", "2", "3" });
+            var underTest = new SourcesList<string>(true, new[] { "1", "2", "3" });
 
             Assert.Equal("1", underTest.Next());
             Assert.Equal("2", underTest.Next());
@@ -25,7 +25,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void CyclesCorrectlyAfterReplacingNonEmptyList()
         {
-            var underTest = new Factories<string>(true, new[] { "1", "2", "3" });
+            var underTest = new SourcesList<string>(true, new[] { "1", "2", "3" });
 
             // initial cycling
             Assert.Equal("1", underTest.Next());
@@ -78,7 +78,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void CyclesCorrectlyAfterReplacingEmptyList()
         {
-            var underTest = new Factories<string>(true, new List<string>());
+            var underTest = new SourcesList<string>(true, new List<string>());
 
             underTest.Replace(new[] { "1", "2", "3" });
 
@@ -104,7 +104,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void RemovingHeadIsWellBehavedAtStart()
         {
-            var underTest = new Factories<string>(true, new[] { "1", "2", "3" });
+            var underTest = new SourcesList<string>(true, new[] { "1", "2", "3" });
 
             // head is currently pointing at "1"
             Assert.True(underTest.Remove("1"));
@@ -117,7 +117,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void RemovingHeadIsWellBehavedInMiddle()
         {
-            var underTest = new Factories<string>(true, new[] { "1", "2", "3" });
+            var underTest = new SourcesList<string>(true, new[] { "1", "2", "3" });
 
             Assert.Equal("1", underTest.Next()); // head now pointing to "2"
 
@@ -131,7 +131,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void RemovingHeadIsWellBehavedAtEnd()
         {
-            var underTest = new Factories<string>(true, new[] { "1", "2", "3" });
+            var underTest = new SourcesList<string>(true, new[] { "1", "2", "3" });
 
             Assert.Equal("1", underTest.Next());
             Assert.Equal("2", underTest.Next()); // head now pointing to "3"
@@ -146,7 +146,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void RemovingExistingReturnsTrue()
         {
-            var underTest = new Factories<string>(true, new[] { "1" });
+            var underTest = new SourcesList<string>(true, new[] { "1" });
 
             Assert.True(underTest.Remove("1"));
             Assert.Null(underTest.Next());
@@ -155,7 +155,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void RemovingNonexistentReturnsFalse()
         {
-            var underTest = new Factories<string>(true, new List<string>());
+            var underTest = new SourcesList<string>(true, new List<string>());
 
             Assert.False(underTest.Remove("1"));
             Assert.Null(underTest.Next());
@@ -164,7 +164,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void SingleElementRemovedAndNextCalled()
         {
-            var underTest = new Factories<string>(true, new[] { "1" });
+            var underTest = new SourcesList<string>(true, new[] { "1" });
 
             Assert.True(underTest.Remove("1"));
             Assert.Null(underTest.Next());
@@ -173,7 +173,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void NonCircularListReturnsNullAfterConsumingAllElements()
         {
-            var underTest = new Factories<string>(false, new[] { "1", "2", "3" });
+            var underTest = new SourcesList<string>(false, new[] { "1", "2", "3" });
 
             // Consume all elements
             Assert.Equal("1", underTest.Next());

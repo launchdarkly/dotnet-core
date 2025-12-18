@@ -142,6 +142,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 case Action.DataReceived:
                                     _state = State.Data;
                                     break;
+                                case Action.FallingBack:
+                                    _state = State.FallingBack;
+                                    break;
                                 case Action.InitializersExhausted:
                                     _initializersRemain = false;
                                     _state = State.InitializersExhausted;
@@ -254,7 +257,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     }
                     case DataSourceCategory.Synchronizers when newState == DataSourceState.Off:
                     {
+                        // Currently, FDv1 fallback happens in the synchronizers group. If something from that group
+                        // reports Off, with a reason indicating that it should fallback to v1, then we can
+                        // transition to that state.
+                        if (newError.HasValue && newError.Value.FDv1Fallback)
+                        {
+                            DetermineState(Action.FallingBack);
+                        }
+                        
                         DetermineState(Action.SynchronizersExhausted);
+
                         break;
                     }
                     case DataSourceCategory.FallbackSynchronizers when newState == DataSourceState.Off:
@@ -264,6 +276,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     }
                     case DataSourceCategory.FallbackSynchronizers when newState == DataSourceState.Initializing:
                     {
+                        // In the normal flow this will have be already handled via the `Off` state of the
+                        // synchronizers. This is purely redundant in the current implementation.
                         DetermineState(Action.FallingBack);
                         break;
                     }

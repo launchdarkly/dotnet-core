@@ -129,6 +129,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     errorCondition.VerifyDataSourceStatusError(status);
+                    Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
 
                     recorder.RequireRequest();
                     recorder.RequireNoRequests(TimeSpan.FromMilliseconds(100)); // did not retry
@@ -160,6 +161,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     errorCondition.VerifyDataSourceStatusError(status);
+                    Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for recoverable errors");
 
                     recorder.RequireRequest();
                     recorder.RequireNoRequests(TimeSpan.FromMilliseconds(100));
@@ -176,13 +178,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     c => c.DataSource(Components.PollingDataSource().PollIntervalNoMinimum(BriefInterval))
                         .Http(httpConfig)))
                 {
+                    // Get the count of status updates before starting, so we can check the new one
+                    var initialStatusCount = _updateSink.GetAllStatusUpdates().Count;
                     var initTask = dataSource.Start();
+                    
                     bool completed = initTask.Wait(TimeSpan.FromSeconds(1));
                     Assert.True(completed);
                     Assert.True(dataSource.Initialized);
 
-                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    // Check the status update that occurred during initialization
+                    var allUpdates = _updateSink.GetAllStatusUpdates();
+                    Assert.True(allUpdates.Count > initialStatusCount, "Expected at least one new status update");
+                    var status = allUpdates[initialStatusCount];
                     errorCondition.VerifyDataSourceStatusError(status);
+                    Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for recoverable errors");
 
                     // We don't check here for a second status update to the Valid state, because that was
                     // done by DataSourceUpdatesImpl when Init was called - our test fixture doesn't do it.

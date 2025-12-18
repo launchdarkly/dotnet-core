@@ -1,9 +1,3 @@
-streaming/retry behavior/do not retry after unrecoverable HTTP error on initial connect/error 401
-streaming/retry behavior/do not retry after unrecoverable HTTP error on initial connect/error 403
-streaming/retry behavior/do not retry after unrecoverable HTTP error on initial connect/error 405
-streaming/retry behavior/do not retry after unrecoverable HTTP error on reconnect/error 401
-streaming/retry behavior/do not retry after unrecoverable HTTP error on reconnect/error 403
-streaming/retry behavior/do not retry after unrecoverable HTTP error on reconnect/error 405
 streaming/fdv2/reconnection state management/initializes from 2 polling initializers
 streaming/fdv2/disconnects on goodbye
 streaming/fdv2/reconnection state management/initializes from polling initializer

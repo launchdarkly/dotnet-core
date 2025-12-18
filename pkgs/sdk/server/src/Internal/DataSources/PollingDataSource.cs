@@ -81,9 +81,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
             catch (UnsuccessfulResponseException ex)
             {
-                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(ex.StatusCode);
+                var recoverable = HttpErrors.IsRecoverable(ex.StatusCode);
+                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(ex.StatusCode, recoverable);
 
-                if (HttpErrors.IsRecoverable(ex.StatusCode))
+                if (errorInfo.Recoverable)
                 {
                     _log.Warn(HttpErrors.ErrorMessage(ex.StatusCode, "polling request", "will retry"));
                     _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
@@ -91,36 +92,37 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 else
                 {
                     _log.Error(HttpErrors.ErrorMessage(ex.StatusCode, "polling request", ""));
-                    _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
                     try
                     {
                         // if client is initializing, make it stop waiting
-                        _initTask.SetResult(true);
+                        _initTask.SetResult(false);
                     }
                     catch (InvalidOperationException)
                     {
                         // the task was already set - nothing more to do
                     }
-                    ((IDisposable)this).Dispose();
+                    Shutdown(errorInfo);
                 }
             }
             catch (JsonException ex)
             {
                 _log.Error("Polling request received malformed data: {0}", LogValues.ExceptionSummary(ex));
-                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted,
-                    new DataSourceStatus.ErrorInfo
-                    {
-                        Kind = DataSourceStatus.ErrorKind.InvalidData,
-                        Time = DateTime.Now
-                    });
+                var errorInfo = new DataSourceStatus.ErrorInfo
+                {
+                    Kind = DataSourceStatus.ErrorKind.InvalidData,
+                    Message = ex.Message,
+                    Time = DateTime.Now,
+                    Recoverable = true
+                };
+                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
             }
             catch (Exception ex)
             {
                 Exception realEx = (ex is AggregateException ae) ? ae.Flatten() : ex;
                 _log.Warn("Polling for feature flag updates failed: {0}", LogValues.ExceptionSummary(ex));
                 _log.Debug(LogValues.ExceptionTrace(ex));
-                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted,
-                    DataSourceStatus.ErrorInfo.FromException(realEx));
+                var errorInfo = DataSourceStatus.ErrorInfo.FromException(realEx, true); // default to recoverable
+                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
             }
         }
 
@@ -134,9 +136,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (disposing)
             {
-                _canceller?.Cancel();
-                _featureRequestor.Dispose();
+                Shutdown(null);
             }
+        }
+
+        private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
+        {
+            _canceller?.Cancel();
+            _featureRequestor.Dispose();
+            _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
         }
 
         private bool InitWithHeaders(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData,

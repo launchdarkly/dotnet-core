@@ -169,6 +169,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     // When a synchronizer reports it is off, fall back immediately
                     if (newState == DataSourceState.Off)
                     {
+                        if (newError != null && !newError.Value.Recoverable)
+                        {
+                            _actionable.BlacklistCurrent();
+                        }
+                        
                         _actionable.DisposeCurrent();
                         _actionable.GoToNext();
                         _actionable.StartCurrent();

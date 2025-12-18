@@ -112,12 +112,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (disposing)
             {
-                _es.Close();
-                if (_storeStatusMonitoringEnabled)
-                {
-                    _dataSourceUpdates.DataStoreStatusProvider.StatusChanged -= OnDataStoreStatusChanged;
-                }
+                Shutdown(null);
             }
+        }
+
+        private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
+        {
+            _es.Close();
+            if (_storeStatusMonitoringEnabled)
+            {
+                _dataSourceUpdates.DataStoreStatusProvider.StatusChanged -= OnDataStoreStatusChanged;
+            }
+            _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
         }
 
         #endregion
@@ -175,7 +181,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     Kind = DataSourceStatus.ErrorKind.InvalidData,
                     Message = ex.Message,
-                    Time = DateTime.Now
+                    Time = DateTime.Now,
+                    Recoverable = true
                 };
                 _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
 
@@ -187,7 +194,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     Kind = DataSourceStatus.ErrorKind.StoreError,
                     Message = (ex.InnerException ?? ex).Message,
-                    Time = DateTime.Now
+                    Time = DateTime.Now,
+                    Recoverable = true
                 };
                 _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
                 if (!_storeStatusMonitoringEnabled)
@@ -210,17 +218,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private void OnError(object sender, EventSource.ExceptionEventArgs e)
         {
             var ex = e.Exception;
-            var recoverable = true;
             DataSourceStatus.ErrorInfo errorInfo;
 
             if (ex is EventSourceServiceUnsuccessfulResponseException respEx)
             {
                 int status = respEx.StatusCode;
-                errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status);
+                var recoverable = HttpErrors.IsRecoverable(status);
+                errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status, recoverable);
                 RecordStreamInit(true);
-                if (!HttpErrors.IsRecoverable(status))
+                if (!recoverable)
                 {
-                    recoverable = false;
                     _log.Error(HttpErrors.ErrorMessage(status, "streaming connection", ""));
                 }
                 else
@@ -230,21 +237,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
             else
             {
-                errorInfo = DataSourceStatus.ErrorInfo.FromException(ex);
+                errorInfo = DataSourceStatus.ErrorInfo.FromException(ex, true); // default to recoverable
                 _log.Warn("Encountered EventSource error: {0}", LogValues.ExceptionSummary(ex));
                 _log.Debug(LogValues.ExceptionTrace(ex));
             }
 
-            _dataSourceUpdates.UpdateStatus(recoverable ? DataSourceState.Interrupted : DataSourceState.Off,
-                errorInfo);
-
-            if (!recoverable)
+            if (errorInfo.Recoverable)
+            {
+                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+                return;
+            }
+            else
             {
                 // Make _initTask complete to tell the client to stop waiting for initialization. We use
                 // TrySetResult rather than SetResult here because it might have already been completed
                 // (if for instance the stream started successfully, then restarted and got a 401).
                 _initTask.TrySetResult(false);
-                ((IDisposable)this).Dispose();
+                Shutdown(errorInfo);
             }
         }
 

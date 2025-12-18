@@ -63,6 +63,12 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
             public ErrorKind Kind { get; set; }
 
             /// <summary>
+            /// Whether the error is recoverable. Recoverable errors are those that can be retried, such as network errors. Unrecoverable 
+            /// errors are those that cannot be retried, such as invalid SDK key errors.
+            /// </summary>
+            public bool Recoverable { get; set; }
+
+            /// <summary>
             /// The HTTP status code if the error was <see cref="ErrorKind.ErrorResponse"/>, or zero otherwise.
             /// </summary>
             public int StatusCode { get; set; }
@@ -90,24 +96,28 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
             /// Constructs an instance based on an exception.
             /// </summary>
             /// <param name="e">the exception</param>
+            /// <param name="recoverable">whether the error is recoverable</param>
             /// <returns>an ErrorInfo</returns>
-            public static ErrorInfo FromException(Exception e) => new ErrorInfo
+            public static ErrorInfo FromException(Exception e, bool recoverable) => new ErrorInfo
             {
                 Kind = e is IOException ? ErrorKind.NetworkError : ErrorKind.Unknown,
                 Message = e.Message,
-                Time = DateTime.Now
+                Time = DateTime.Now,
+                Recoverable = recoverable
             };
 
             /// <summary>
             /// Constructs an instance based on an HTTP error status.
             /// </summary>
             /// <param name="statusCode">the status code</param>
+            /// <param name="recoverable">whether the error is recoverable</param>
             /// <returns>an ErrorInfo</returns>
-            public static ErrorInfo FromHttpError(int statusCode) => new ErrorInfo
+            public static ErrorInfo FromHttpError(int statusCode, bool recoverable) => new ErrorInfo
             {
                 Kind = ErrorKind.ErrorResponse,
                 StatusCode = statusCode,
-                Time = DateTime.Now
+                Time = DateTime.Now,
+                Recoverable = recoverable
             };
 
             /// <inheritdoc/>

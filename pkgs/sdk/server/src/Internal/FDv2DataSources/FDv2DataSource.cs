@@ -38,11 +38,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
 
-            var initializationTracker = new InitializationTracker(Any(initializers, synchronizers, fdv1Synchronizers));
+            var initializationTracker =
+                new InitializationTracker(Any(initializers), Any(synchronizers), Any(fdv1Synchronizers));
             var initializationObserver =
                 new InitializationObserver(initializationTracker, DataSourceCategory.Initializers);
             var synchronizationObserver =
                 new InitializationObserver(initializationTracker, DataSourceCategory.Synchronizers);
+            var fallbackSynchronizationObserver =
+                new InitializationObserver(initializationTracker, DataSourceCategory.FallbackSynchronizers);
 
             var underlyingComposites = new FactoryList();
 
@@ -115,7 +118,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         }
 
                         return new CompositeSource(sink, fdv1SynchronizersFactoryTuples);
-                    }, (applier) => synchronizationObserver
+                    }, (applier) => fallbackSynchronizationObserver
                 ));
             }
 
@@ -339,6 +342,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             Initializers,
             Synchronizers,
+            FallbackSynchronizers
         }
 
         /// <summary>

@@ -347,33 +347,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         /// <summary>
         /// Observes signals from underlying composites to determine if the data source is initialized.
-        /// <para>
-        /// Architecture:
-        /// <code>
-        ///                     ┌─────────────────────────┐
-        ///                     │  InitializationTracker  │
-        ///                     │  (tracks init state)    │
-        ///                     └───────────┬─────────────┘
-        ///                                 │
-        ///                 ┌───────────────┴───────────────┐
-        ///                 │                               │
-        ///                 ▼                               ▼
-        ///      ┌──────────────────────┐          ┌──────────────────────┐
-        ///      │InitializationObserver│          │InitializationObserver│
-        ///      │   (Initializers)     │          │  (Synchronizers)     │
-        ///      └──────────┬───────────┘          └──────────┬───────────┘
-        ///                 │                                 │
-        ///           observes                          observes
-        ///                 │                                 │
-        ///                 ▼                      ┌──────────┴──────────┐
-        ///        ┌────────────────┐              │                     │
-        ///        │ Initializers   │              ▼                     ▼
-        ///        │  Composite     │    ┌────────────────┐  ┌────────────────┐
-        ///        └────────────────┘    │ Synchronizers  │  │ FDv1 Fallback  │
-        ///                              │   Composite    │  │   Composite    │
-        ///                              └────────────────┘  └────────────────┘
-        /// </code>
-        /// </para>
         /// </summary>
         private class InitializationObserver : IDataSourceObserver
         {

@@ -20,32 +20,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// In the case where there isn't any potential to get data to initialize, for instance, no initializers and
         /// no synchronizers, then we assume we are initialized. (offline or daemon mode).
         /// </para>
-        /// <para>
-        /// State Machine:
-        /// <code>
-        /// </code>
-        /// ┌───────────────────────┐              ┌────────────────────────────────────────┐
-        /// │                       │              │                                        │
-        /// │         NoData        ├DataReceived─►│                  Data                  │
-        /// │                       │              │                                        │
-        /// └───────────┬───────────┘              └────────────────────┬───────────────────┘
-        ///             │                                               │                    
-        ///             │                            InitializersExhausted/SelectorReceived  
-        ///     SelectorReceived                                        ▼                      
-        ///             │                          ┌────────────────────────────────────────┐
-        ///             │                          │                                        │
-        ///             ├─────────────────────────►│              Initialized               │
-        ///   InitializersExhausted                │                                        │
-        ///             │                          └────────────────────────────────────────┘
-        ///             │                                               ▲                    
-        ///             │                                 DataReceived/SelectorReceived      
-        ///             │                                               │                    
-        ///             │                          ┌────────────────────┴───────────────────┐
-        ///             │                          │                                        │
-        ///             └─────────────────────────►│         InitializersExhausted          │
-        ///                                        │                                        │
-        ///                                        └────────────────────────────────────────┘
-        /// </para>
         /// </summary>
         private class InitializationTracker : IDisposable
         {

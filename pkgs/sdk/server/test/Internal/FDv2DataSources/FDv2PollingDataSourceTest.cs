@@ -373,7 +373,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 var startTask = dataSource.Start();
 
                 var result = await startTask;
-                Assert.False(result); // Init task completes even on error
+                // The task completes with a false result.
+                Assert.False(result);
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Off, status.State);
@@ -872,7 +873,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     var startTask = dataSource.Start();
 
                     var result = await startTask;
-                    Assert.False(result); // Init task completes even on error
+                    Assert.False(result);
 
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     Assert.Equal(DataSourceState.Off, status.State);
@@ -961,7 +962,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     var startTask = dataSource.Start();
 
                     var result = await startTask;
-                    Assert.False(result); // Init task completes even on error
+                    Assert.False(result);
 
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     Assert.Equal(DataSourceState.Off, status.State);

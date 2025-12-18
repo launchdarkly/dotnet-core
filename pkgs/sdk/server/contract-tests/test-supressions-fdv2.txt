@@ -1,3 +1,1 @@
-streaming/fdv2/reconnection state management/initializes from 2 polling initializers
 streaming/fdv2/disconnects on goodbye
-streaming/fdv2/reconnection state management/initializes from polling initializer

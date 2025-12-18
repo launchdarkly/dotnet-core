@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
-
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
-namespace LaunchDarkly.Sdk.Server.Internal.DataSources
+namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
-    internal static class FDv2DataSource
+    using FactoryList = List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>;
+
+
+    internal static partial class FDv2DataSource
     {
         /// <summary>
         /// Creates a new FDv2 data source.
@@ -32,8 +35,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
+
             ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
-            var underlyingComposites = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+
+            var initializationTracker =
+                new InitializationTracker(Any(initializers), Any(synchronizers));
+            var initializationObserver =
+                new InitializationObserver(initializationTracker, DataSourceCategory.Initializers);
+            var synchronizationObserver =
+                new InitializationObserver(initializationTracker, DataSourceCategory.Synchronizers);
+            var fallbackSynchronizationObserver =
+                new InitializationObserver(initializationTracker, DataSourceCategory.FallbackSynchronizers);
+
+            var underlyingComposites = new FactoryList();
 
             // Only create the initializers composite if initializers are provided
             if (initializers != null && initializers.Count > 0)
@@ -42,17 +56,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     // Create the initializersCompositeSource with action logic unique to initializers
                     (sink) =>
                     {
-                        var initializersFactoryTuples =
-                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                        var initializerFactory = new FactoryList();
                         for (int i = 0; i < initializers.Count; i++)
                         {
-                            initializersFactoryTuples.Add((initializers[i], fastFallbackApplierFactory));
+                            initializerFactory.Add((initializers[i],
+                                fastFallbackApplierFactory));
                         }
 
                         // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
-                        return new CompositeSource(sink, initializersFactoryTuples, circular: false);
+                        return new CompositeSource(sink, initializerFactory, circular: false);
                     },
-                    blacklistWhenSuccessOrOff
+                    (actionable) => new CompositeObserver(
+                        blacklistWhenSuccessOrOff(actionable), initializationObserver)
                 ));
             }
 
@@ -64,16 +79,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     (sink) =>
                     {
                         var synchronizersFactoryTuples =
-                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                            new FactoryList();
                         for (int i = 0; i < synchronizers.Count; i++)
                         {
-                            synchronizersFactoryTuples.Add((synchronizers[i], timedFallbackAndRecoveryApplierFactory));
+                            synchronizersFactoryTuples.Add((synchronizers[i],
+                                timedFallbackAndRecoveryApplierFactory));
                         }
 
-                        return new CompositeSource(sink as IDataSourceUpdatesV2, synchronizersFactoryTuples);
+                        return new CompositeSource(sink, synchronizersFactoryTuples);
                     },
-                    // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
-                    (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0) ? fdv1FallbackApplierFactory : null
+                    (actionable) =>
+                    {
+                        // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
+                        if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
+                        {
+                            return new CompositeObserver(fdv1FallbackApplierFactory(actionable),
+                                synchronizationObserver);
+                        }
+
+                        return synchronizationObserver;
+                    }
                 ));
             }
 
@@ -85,21 +110,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     (sink) =>
                     {
                         var fdv1SynchronizersFactoryTuples =
-                            new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+                            new FactoryList();
                         for (int i = 0; i < fdv1Synchronizers.Count; i++)
                         {
-                            fdv1SynchronizersFactoryTuples.Add((fdv1Synchronizers[i], timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
+                            fdv1SynchronizersFactoryTuples.Add((fdv1Synchronizers[i],
+                                timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
                         }
 
-                        return new CompositeSource(sink as IDataSourceUpdatesV2, fdv1SynchronizersFactoryTuples);
-                    },
-                    null // no action applier for fdv1Synchronizers as a whole
+                        return new CompositeSource(sink, fdv1SynchronizersFactoryTuples);
+                    }, (applier) => fallbackSynchronizationObserver
                 ));
             }
 
-            var combinedCompositeSource = new CompositeSource(updatesSink, underlyingComposites, circular: false);
-
-            return combinedCompositeSource;
+            return new CompletingDataSource(new CompositeSource(updatesSink, underlyingComposites, circular: false),
+                initializationTracker);
         }
 
         /// <summary>
@@ -134,6 +158,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     // trigger an error, which will then initiate the transition.
                     return;
                 }
+
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();
@@ -173,7 +198,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         {
                             _actionable.BlacklistCurrent();
                         }
-                        
                         _actionable.DisposeCurrent();
                         _actionable.GoToNext();
                         _actionable.StartCurrent();
@@ -315,6 +339,53 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 // this FDv1 fallback action applier doesn't care about apply, it only looks for the FDv1Fallback flag in the errors
             }
+        }
+
+
+        public enum DataSourceCategory
+        {
+            Initializers,
+            Synchronizers,
+            FallbackSynchronizers
+        }
+
+        /// <summary>
+        /// Observes signals from underlying composites to determine if the data source is initialized.
+        /// </summary>
+        private class InitializationObserver : IDataSourceObserver
+        {
+            private readonly InitializationTracker _initializationTracker;
+            private readonly DataSourceCategory _category;
+
+            public InitializationObserver(InitializationTracker initializationTracker, DataSourceCategory category)
+            {
+                _initializationTracker = initializationTracker ??
+                                         throw new ArgumentNullException(nameof(initializationTracker));
+                _category = category;
+            }
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                _initializationTracker.Apply(changeSet, _category);
+            }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+            {
+                _initializationTracker.UpdateStatus(newState, newError, _category);
+            }
+        }
+
+        private static bool Any<T>(params IList<T>[] items)
+        {
+            foreach (var item in items)
+            {
+                if (item != null && item.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

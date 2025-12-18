@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
-using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
-
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
     /// <summary>
@@ -196,6 +194,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             var entry = _sourcesList.Next();
+
             if (entry.Factory == null)
             {
                 // Failed to find a next source, report error and shut down the composite source

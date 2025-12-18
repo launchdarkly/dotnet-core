@@ -82,7 +82,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 /// <summary>
                 /// We have received signals that indicate all fallbacks are exhausted.
                 /// </summary>
-                FallbackExhausted,
+                FallbackSynchronizersExhausted,
 
                 /// <summary>
                 /// We have received a selector.
@@ -151,7 +151,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 _synchronizersRemain = false;
                                 HandleRemainingSources();
                                 break;
-                            case Action.FallbackExhausted:
+                            case Action.FallbackSynchronizersExhausted:
                                 // This would indicate that we skipped going through the fallback
                                 // process. So this generally shouldn't be an achievable state.
                                 _state = State.Failed;
@@ -165,7 +165,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             case Action.DataReceived:
                                 break;
                             case Action.SynchronizersExhausted:
-                            case Action.FallbackExhausted:
+                            case Action.FallbackSynchronizersExhausted:
                             case Action.InitializersExhausted:
                             case Action.SelectorReceived:
                             case Action.FallingBack:
@@ -183,7 +183,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 _synchronizersRemain = false;
                                 HandleRemainingSources();
                                 break;
-                            case Action.FallbackExhausted:
+                            case Action.FallbackSynchronizersExhausted:
                                 // This would indicate that we skipped going through the fallback
                                 // process. So this generally shouldn't be an achievable state.
                                 _state = State.Failed;
@@ -206,7 +206,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             case Action.InitializersExhausted:
                             case Action.SynchronizersExhausted:
                                 break;
-                            case Action.FallbackExhausted:
+                            case Action.FallbackSynchronizersExhausted:
                                 _state = State.Failed;
                                 break;
                             case Action.DataReceived:
@@ -255,7 +255,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     }
                     case DataSourceCategory.FallbackSynchronizers when newState == DataSourceState.Off:
                     {
-                        DetermineState(Action.FallbackExhausted);
+                        DetermineState(Action.FallbackSynchronizersExhausted);
                         break;
                     }
                     case DataSourceCategory.FallbackSynchronizers when newState == DataSourceState.Initializing:

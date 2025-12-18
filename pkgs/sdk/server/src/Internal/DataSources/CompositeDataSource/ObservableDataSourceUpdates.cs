@@ -28,8 +28,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         /// <param name="primary">The primary updates sink to forward to.</param>
         /// <param name="secondaries">The collection of observers to forward to.</param>
-        /// <param name="isLast">It is the last data source in the composite</param>
-        public ObservableDataSourceUpdates(IDataSourceUpdatesV2 primary, IReadOnlyList<IDataSourceObserver> secondaries, bool isLast = false)
+        public ObservableDataSourceUpdates(IDataSourceUpdatesV2 primary, IReadOnlyList<IDataSourceObserver> secondaries)
         {
             _primary = primary ?? throw new ArgumentNullException(nameof(primary));
             _secondaries = secondaries ?? throw new ArgumentNullException(nameof(secondaries));

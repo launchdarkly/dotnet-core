@@ -711,7 +711,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Wait for all expected status updates to be recorded
             // Expected sequence: Initializing (first initializer), Interrupted (first initializer failure),
             // Off (from composite source exhaustion)
-            var statusUpdates = capturingSink.WaitForStatusUpdates(3, TimeSpan.FromSeconds(10000));
+            var statusUpdates = capturingSink.WaitForStatusUpdates(3, TimeSpan.FromSeconds(5));
             TestLogger.Info($"Received {statusUpdates.Count} status updates");
 
             TestLogger.Info("Awaiting start task");

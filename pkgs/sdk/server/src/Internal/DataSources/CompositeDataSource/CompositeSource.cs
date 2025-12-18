@@ -194,7 +194,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
 
             var entry = _sourcesList.Next();
-            var isLast = (_sourcesList.Length - 1) == _sourcesList.Pos;
+
             if (entry.Factory == null)
             {
                 // Failed to find a next source, report error and shut down the composite source
@@ -224,7 +224,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             // here we wrap the sink in observability so that we can trigger actions, the sanitized sink is
             // invoked before the observers to ensure actions don't trigger before data can propagate
-            var observableUpdates = new ObservableDataSourceUpdates(_sanitizedUpdateSink, observers, isLast);
+            var observableUpdates = new ObservableDataSourceUpdates(_sanitizedUpdateSink, observers);
             var disableableUpdates = _disableableTracker.WrapAndTrack(observableUpdates);
             
             _currentEntry = entry;

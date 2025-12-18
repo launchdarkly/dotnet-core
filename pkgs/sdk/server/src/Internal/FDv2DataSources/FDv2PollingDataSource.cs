@@ -117,7 +117,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
                     try
                     {
-                        _initTask.SetResult(true);
+                        _initTask.SetResult(false);
                     }
                     catch (InvalidOperationException)
                     {

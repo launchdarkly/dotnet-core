@@ -52,9 +52,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             private readonly TaskCompletionSource<bool> _taskCompletionSource = new TaskCompletionSource<bool>();
             private State _state = State.NoData;
 
-            private bool _hasInitializers;
-            private bool _hasSynchronizers;
-            private bool _hasFallback;
+            private bool _initializersRemain;
+            private bool _synchronizersRemain;
+            private bool _fallbackRemain;
 
             private enum State
             {
@@ -72,11 +72,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 /// The tracker has been informed that initializers are exhausted.
                 /// </summary>
                 InitializersExhausted,
-
-                /// <summary>
-                /// The tracker has been informed that synchronizers are exhausted.
-                /// </summary>
-                SynchronizersExhausted,
 
                 /// <summary>
                 /// The tracker is initialized and is no longer processing updates.
@@ -126,22 +121,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     _taskCompletionSource.TrySetResult(true);
                 }
 
-                _hasInitializers = hasInitializers;
-                _hasSynchronizers = hasSynchronizers;
-                _hasFallback = hasFallback;
-                
-                if (!_hasInitializers)
+                _initializersRemain = hasInitializers;
+                _synchronizersRemain = hasSynchronizers;
+                _fallbackRemain = hasFallback;
+
+                if (!hasInitializers)
                 {
                     DetermineState(Action.InitializersExhausted);
-                }
-
-                if (!_hasSynchronizers)
-                {
-                    DetermineState(Action.SynchronizersExhausted);
                 }
             }
 
             public Task<bool> Task => _taskCompletionSource.Task;
+
+            private bool RemainingSources => _initializersRemain || _synchronizersRemain || _fallbackRemain;
+
+            private void HandleRemainingSources()
+            {
+                if (!RemainingSources)
+                {
+                    _state = State.Failed;
+                }
+            }
 
             private void DetermineState(Action action)
             {
@@ -156,16 +156,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 _state = State.Data;
                                 break;
                             case Action.InitializersExhausted:
+                                _initializersRemain = false;
                                 _state = State.InitializersExhausted;
+                                HandleRemainingSources();
                                 break;
                             case Action.SelectorReceived:
                                 _state = State.Initialized;
                                 break;
                             case Action.SynchronizersExhausted:
-                                _state = State.SynchronizersExhausted;
+                                _synchronizersRemain = false;
+                                HandleRemainingSources();
                                 break;
                             case Action.FallbackExhausted:
-                                _state = State.Failed;
+                                _fallbackRemain = false;
+                                HandleRemainingSources();
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException(nameof(action), action, null);
@@ -194,30 +198,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             case Action.InitializersExhausted:
                                 break;
                             case Action.SynchronizersExhausted:
-                                _state = State.SynchronizersExhausted;
-                                break;
-                            case Action.DataReceived:
-                            case Action.SelectorReceived:
-                                _state = State.Initialized;
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException(nameof(action), action, null);
-                        }
-
-                        break;
-                    case State.SynchronizersExhausted:
-                        switch (action)
-                        {
-                            case Action.DataReceived:
-                                _state = State.Initialized;
-                                break;
-                            case Action.InitializersExhausted:
-                            case Action.SynchronizersExhausted:
-                                // This shouldn't be a valid transition.
+                                _synchronizersRemain = false;
+                                HandleRemainingSources();
                                 break;
                             case Action.FallbackExhausted:
-                                _state = State.Failed;
+                                _fallbackRemain = false;
+                                HandleRemainingSources();
                                 break;
+                            case Action.DataReceived:
                             case Action.SelectorReceived:
                                 _state = State.Initialized;
                                 break;
@@ -255,46 +243,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     case DataSourceCategory.Initializers when newState == DataSourceState.Off:
                     {
                         DetermineState(Action.InitializersExhausted);
-                        if (!_hasSynchronizers)
-                        {
-                            DetermineState(Action.SynchronizersExhausted);
-                        }
-                        if(!_hasFallback)
-                        {
-                            DetermineState(Action.FallbackExhausted);
-                        }
-
                         break;
                     }
                     case DataSourceCategory.Synchronizers when newState == DataSourceState.Off:
                     {
                         DetermineState(Action.SynchronizersExhausted);
-                        if (!_hasInitializers)
-                        {
-                            DetermineState(Action.InitializersExhausted);
-                        }
-                        if(!_hasFallback)
-                        {
-                            DetermineState(Action.FallbackExhausted);;
-                        }
-
                         break;
                     }
                     case DataSourceCategory.FallbackSynchronizers when newState == DataSourceState.Off:
                     {
                         DetermineState(Action.FallbackExhausted);
-                        DetermineState(Action.SynchronizersExhausted);
-                        if (!_hasInitializers)
-                        {
-                            DetermineState(Action.InitializersExhausted);
-                        }
-                        if(!_hasSynchronizers)
-                        {
-                            DetermineState(Action.SynchronizersExhausted);;
-                        }
-
                         break;
                     }
+                    default:
+                        break;
                 }
             }
 

@@ -381,7 +381,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         ///                                        └────────────────────────────────────────┘
         /// </para>
         /// </summary>
-        private class InitializationTracker
+        private class InitializationTracker: IDisposable
         {
             private readonly TaskCompletionSource<bool> _taskCompletionSource = new TaskCompletionSource<bool>();
             private State _state = State.NoData;
@@ -512,6 +512,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 if (category != DataSourceCategory.Initializers || newState != DataSourceState.Off) return;
 
                 DetermineState(Action.InitializersExhausted);
+            }
+
+            public void Dispose()
+            {
+                _taskCompletionSource.TrySetResult(false);
             }
         }
 

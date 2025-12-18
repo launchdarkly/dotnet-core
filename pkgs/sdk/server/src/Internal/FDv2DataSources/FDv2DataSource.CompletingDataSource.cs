@@ -22,6 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             public void Dispose()
             {
                 _inner.Dispose();
+                _tracker.Dispose();
             }
 
             public Task<bool> Start()

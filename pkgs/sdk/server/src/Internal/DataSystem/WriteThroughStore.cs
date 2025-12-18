@@ -93,7 +93,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         public bool Initialized()
         {
-            return _hasPersistence ? _persistentStore.Initialized() : _memoryStore.Initialized();
+            return _activeReadStore.Initialized();
         }
 
         public void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet)

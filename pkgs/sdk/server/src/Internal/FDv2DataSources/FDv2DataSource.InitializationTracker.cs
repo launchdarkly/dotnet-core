@@ -230,16 +230,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 }
             }
 
-            public void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet, bool exhausted,
+            public void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet,
                 DataSourceCategory category)
             {
                 if (!changeSet.Selector.IsEmpty) DetermineState(Action.SelectorReceived);
 
                 DetermineState(Action.DataReceived);
-                if (category == DataSourceCategory.Initializers && exhausted)
-                {
-                    DetermineState(Action.InitializersExhausted);
-                }
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError,

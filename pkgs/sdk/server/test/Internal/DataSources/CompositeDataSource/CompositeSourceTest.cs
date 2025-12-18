@@ -520,7 +520,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Nothing to dispose
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 _capturingUpdates.Apply(changeSet);
             }
@@ -563,7 +563,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Nothing to dispose
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 _capturingUpdates.Apply(changeSet);
             }
@@ -651,7 +651,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Nothing to dispose
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 _capturingUpdates.Apply(changeSet);
             }

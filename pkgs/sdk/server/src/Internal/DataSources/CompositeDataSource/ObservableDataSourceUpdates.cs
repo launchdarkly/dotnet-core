@@ -22,7 +22,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     {
         private readonly IDataSourceUpdatesV2 _primary;
         private readonly IReadOnlyList<IDataSourceObserver> _secondaries;
-        private readonly bool _isLast;
 
         /// <summary>
         /// Creates a new <see cref="ObservableDataSourceUpdates"/> instance.
@@ -34,7 +33,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             _primary = primary ?? throw new ArgumentNullException(nameof(primary));
             _secondaries = secondaries ?? throw new ArgumentNullException(nameof(secondaries));
-            _isLast = isLast;
         }
 
         /// <inheritdoc/>
@@ -67,7 +65,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Then invoke on the secondaries
             foreach (var secondary in _secondaries)
             {
-                secondary.Apply(changeSet, _isLast);
+                secondary.Apply(changeSet);
             }
 
             return primarySucceeded;

@@ -11,7 +11,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// </summary>
     internal interface IDataSourceObserver
     {
-        void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted);
+        void Apply(ChangeSet<ItemDescriptor> changeSet);
 
         /// <param name="newState">the data source state</param>
         /// <param name="newError">information about a new error, if any</param>

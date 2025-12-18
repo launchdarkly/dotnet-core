@@ -19,11 +19,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _observers = observers ?? throw new ArgumentNullException(nameof(observers));
             }
 
-            public void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> changeSet)
             {
                 foreach (var dataSourceObserver in _observers)
                 {
-                    dataSourceObserver.Apply(changeSet, exhausted);
+                    dataSourceObserver.Apply(changeSet);
                 }
             }
 

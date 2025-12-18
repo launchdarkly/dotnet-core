@@ -149,7 +149,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 }
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 if (!changeSet.Selector.IsEmpty)
                 {
@@ -263,7 +263,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _interruptedFallbackTask = null;
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 lock (_lock)
                 {
@@ -297,7 +297,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 }
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 // If this change has a selector, then we know we can move out of the current phase.
                 // This doesn't look at the type of the changeset (Full, Partial, None), because having
@@ -332,7 +332,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 }
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 // this FDv1 fallback action applier doesn't care about apply, it only looks for the FDv1Fallback flag in the errors
             }
@@ -361,9 +361,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _category = category;
             }
 
-            public void Apply(ChangeSet<ItemDescriptor> changeSet, bool exhausted)
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                _initializationTracker.Apply(changeSet, exhausted, _category);
+                _initializationTracker.Apply(changeSet, _category);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)

@@ -290,7 +290,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             updates.StatusChanged += statuses.Add;
 
             var timeBeforeUpdate = DateTime.Now;
-            var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401);
+            var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401, false);
             updates.UpdateStatus(DataSourceState.Off, errorInfo);
 
             var status = statuses.ExpectValue();
@@ -310,7 +310,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var statuses = new EventSink<DataSourceStatus>();
             updates.StatusChanged += statuses.Add;
 
-            var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401);
+            var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401, false);
             updates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
 
             var status = statuses.ExpectValue();
@@ -346,7 +346,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 );
 
             // simulate an outage
-            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(500));
+            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(500, true));
 
             // but recover from it immediately
             updates.UpdateStatus(DataSourceState.Valid, null);
@@ -355,11 +355,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Thread.Sleep(outageTimeout.Add(TimeSpan.FromMilliseconds(50)));
 
             // simulate another outage
-            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(501));
-            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(502));
+            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(501, true));
+            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(502, true));
             updates.UpdateStatus(DataSourceState.Interrupted,
-                DataSourceStatus.ErrorInfo.FromException(new IOException("x")));
-            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(501));
+                DataSourceStatus.ErrorInfo.FromException(new IOException("x"), true));
+            updates.UpdateStatus(DataSourceState.Interrupted, DataSourceStatus.ErrorInfo.FromHttpError(501, true));
 
             Thread.Sleep(outageTimeout);
             AssertEventually(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(50), () =>

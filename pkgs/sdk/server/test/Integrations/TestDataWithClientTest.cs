@@ -105,7 +105,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             {
                 Assert.Equal(DataSourceState.Valid, client.DataSourceStatusProvider.Status.State);
 
-                var ei = DataSourceStatus.ErrorInfo.FromHttpError(500);
+                var ei = DataSourceStatus.ErrorInfo.FromHttpError(500, false);
                 _td.UpdateStatus(DataSourceState.Interrupted, ei);
 
                 Assert.Equal(DataSourceState.Interrupted, client.DataSourceStatusProvider.Status.State);

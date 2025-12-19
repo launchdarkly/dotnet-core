@@ -119,7 +119,7 @@ namespace LaunchDarkly.Sdk.Server
                 Assert.True(initialStatus.StateSince >= timeBeforeStarting);
                 Assert.Null(initialStatus.LastError);
 
-                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401);
+                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401, false);
                 testData.UpdateStatus(DataSourceState.Off, errorInfo);
 
                 var newStatus = client.DataSourceStatusProvider.Status;
@@ -142,7 +142,7 @@ namespace LaunchDarkly.Sdk.Server
                 var statuses = new EventSink<DataSourceStatus>();
                 client.DataSourceStatusProvider.StatusChanged += statuses.Add;
 
-                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401);
+                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401, false);
                 testData.UpdateStatus(DataSourceState.Off, errorInfo);
 
                 var newStatus = statuses.ExpectValue();

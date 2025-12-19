@@ -56,6 +56,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// </summary>
         private readonly AtomicBoolean _lastStoreUpdateFailed = new AtomicBoolean(false);
 
+        private bool _disposed = false;
+        private readonly AtomicBoolean _shuttingDown = new AtomicBoolean(false);
+
         internal FDv2StreamingDataSource(
             LdClientContext context,
             IDataSourceUpdates dataSourceUpdates,
@@ -102,19 +105,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         public void Dispose()
         {
+            // dispose is currently overloaded with shutdown responsibility, we handle this first
+            Shutdown(null);
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
         {
-            if (!disposing) return;
+            if (_disposed) return;
 
-            Shutdown(null);
+            if (disposing) {
+                // dispose managed resources if any
+            }
+
+            _disposed = true;
         }
 
         private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
         {
+            // Prevent concurrent shutdown calls - only allow the first call to proceed
+            // GetAndSet returns the OLD value, so if it was already true, we return early
+            if (_shuttingDown.GetAndSet(true)) return;
+            
             _es.Close();
             if (_storeStatusMonitoringEnabled)
             {

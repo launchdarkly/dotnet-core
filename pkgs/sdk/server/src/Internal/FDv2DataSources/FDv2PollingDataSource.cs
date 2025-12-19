@@ -30,6 +30,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private CancellationTokenSource _canceler;
         private string _environmentId;
 
+        private bool _disposed = false;
+        private readonly AtomicBoolean _shuttingDown = new AtomicBoolean(false);
+
         internal FDv2PollingDataSource(
             LdClientContext context,
             IDataSourceUpdates dataSourceUpdates,
@@ -230,21 +233,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         void IDisposable.Dispose()
         {
+            // dispose is currently overloaded with shutdown responsibility, we handle this first
+            Shutdown(null);
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
         {
-            if (!disposing) return;
+            if (_disposed) return;
 
-            Shutdown(null);
+            if (disposing) {
+                // dispose managed resources if any
+                _requestor.Dispose();
+            }
+
+            _disposed = true;
         }
 
         private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
         {
+            // Prevent concurrent shutdown calls - only allow the first call to proceed
+            // GetAndSet returns the OLD value, so if it was already true, we return early
+            if (_shuttingDown.GetAndSet(true)) return;
+
             _canceler?.Cancel();
-            _requestor.Dispose();
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
         }
     }

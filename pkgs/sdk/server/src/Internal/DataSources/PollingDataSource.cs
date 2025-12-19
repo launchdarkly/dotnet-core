@@ -23,6 +23,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly Logger _log;
         private CancellationTokenSource _canceller;
 
+        private bool _disposed = false;
+        private readonly AtomicBoolean _shuttingDown = new AtomicBoolean(false);
+
         internal PollingDataSource(
             LdClientContext context,
             IFeatureRequestor featureRequestor,
@@ -128,22 +131,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         void IDisposable.Dispose()
         {
+            // dispose is currently overloaded with shutdown responsibility, we handle this first
+            Shutdown(null);
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                Shutdown(null);
+            if (_disposed) return;
+
+            if (disposing) {
+                // dispose managed resources if any
+                _featureRequestor.Dispose();
             }
+
+            _disposed = true;
         }
 
         private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
         {
+            // Prevent concurrent shutdown calls - only allow the first call to proceed
+            // GetAndSet returns the OLD value, so if it was already true, we return early
+            if (_shuttingDown.GetAndSet(true)) return;
+
             _canceller?.Cancel();
-            _featureRequestor.Dispose();
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
         }
 

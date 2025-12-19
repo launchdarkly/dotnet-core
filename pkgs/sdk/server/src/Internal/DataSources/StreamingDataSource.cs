@@ -52,6 +52,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private IEnumerable<KeyValuePair<string, IEnumerable<string>>> _headers;
 
+        private bool _disposed = false;
+        private readonly AtomicBoolean _shuttingDown = new AtomicBoolean(false);
+
         internal delegate IEventSource EventSourceCreator(Uri streamUri,
             HttpConfiguration httpConfig);
 
@@ -104,20 +107,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public void Dispose()
         {
+            // dispose is currently overloaded with shutdown responsibility, we handle this first
+            Shutdown(null);
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                Shutdown(null);
+            if (_disposed) return;
+
+            if (disposing) {
+                // dispose managed resources if any
             }
+
+            _disposed = true;
         }
 
         private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
         {
+            // Prevent concurrent shutdown calls - only allow the first call to proceed
+            // GetAndSet returns the OLD value, so if it was already true, we return early
+            if (_shuttingDown.GetAndSet(true)) return;
+
             _es.Close();
             if (_storeStatusMonitoringEnabled)
             {

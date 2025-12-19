@@ -514,6 +514,45 @@ namespace TestService
                     if (synchronizers.Count > 0)
                     {
                         dataSystemBuilder.Synchronizers(synchronizers.ToArray());
+                        
+                        // Find the best synchronizer to use for FDv1 fallback configuration
+                        // Prefer polling synchronizers since FDv1 fallback is polling-based
+                        SdkConfigSynchronizerParams synchronizerForFallback = null;
+                        
+                        // First, try to find a polling synchronizer (check secondary first, then primary)
+                        if (sdkParams.DataSystem.Synchronizers.Secondary != null && 
+                            sdkParams.DataSystem.Synchronizers.Secondary.Polling != null)
+                        {
+                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Secondary;
+                        }
+                        else if (sdkParams.DataSystem.Synchronizers.Primary != null && 
+                                 sdkParams.DataSystem.Synchronizers.Primary.Polling != null)
+                        {
+                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Primary;
+                        }
+                        // If no polling synchronizer found, use primary synchronizer (could be streaming)
+                        else if (sdkParams.DataSystem.Synchronizers.Primary != null)
+                        {
+                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Primary;
+                        }
+                        
+                        if (synchronizerForFallback != null)
+                        {
+                            // Only configure global polling endpoints if we have a polling synchronizer with a custom base URI
+                            // This ensures the FDv1 fallback synchronizer uses the same base URI without overwriting
+                            // existing polling endpoint configuration
+                            if (synchronizerForFallback.Polling != null && 
+                                synchronizerForFallback.Polling.BaseUri != null)
+                            {
+                                endpoints.Polling(synchronizerForFallback.Polling.BaseUri);
+                            }
+                            
+                            var fdv1Fallback = CreateFDv1FallbackSynchronizer(synchronizerForFallback);
+                            if (fdv1Fallback != null)
+                            {
+                                dataSystemBuilder.FDv1FallbackSynchronizer(fdv1Fallback);
+                            }
+                        }
                     }
                 }
 
@@ -566,6 +605,33 @@ namespace TestService
                 return streamingBuilder;
             }
             return null;
+        }
+
+        private static IComponentConfigurer<IDataSource> CreateFDv1FallbackSynchronizer(
+            SdkConfigSynchronizerParams synchronizer)
+        {
+            // FDv1 fallback synchronizer is always polling-based
+            var fdv1PollingBuilder = DataSystemComponents.FDv1Polling();
+            
+            // Configure polling interval if the synchronizer has polling configuration
+            if (synchronizer.Polling != null)
+            {
+                if (synchronizer.Polling.PollIntervalMs.HasValue)
+                {
+                    fdv1PollingBuilder.PollInterval(TimeSpan.FromMilliseconds(synchronizer.Polling.PollIntervalMs.Value));
+                }
+                // Note: FDv1 polling doesn't support ServiceEndpointsOverride, so base URI
+                // will use the global service endpoints configuration
+            }
+            else if (synchronizer.Streaming != null)
+            {
+                // For streaming synchronizers, we still create a polling fallback
+                // Use default polling interval since streaming doesn't have a poll interval
+                // Note: FDv1 polling doesn't support ServiceEndpointsOverride, so base URI
+                // will use the global service endpoints configuration
+            }
+            
+            return fdv1PollingBuilder;
         }
 
         private MigrationVariationResponse DoMigrationVariation(MigrationVariationParams migrationVariation)

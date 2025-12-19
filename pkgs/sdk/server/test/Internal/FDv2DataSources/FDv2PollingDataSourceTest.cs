@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Internal.Http;
@@ -353,6 +356,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
                 Assert.Equal(503, status.LastError.Value.StatusCode);
+                Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for recoverable errors");
 
                 Assert.False(dataSource.Initialized);
             }
@@ -369,12 +373,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 var startTask = dataSource.Start();
 
                 var result = await startTask;
-                Assert.True(result); // Init task completes even on error
+                // The task completes with a false result.
+                Assert.False(result);
 
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Off, status.State);
                 Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
 
                 Assert.False(dataSource.Initialized);
             }
@@ -752,6 +758,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.Equal(DataSourceState.Interrupted, status.State);
                 Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, status.LastError.Value.Kind);
+                Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for invalid data errors");
                 Assert.Contains("Failed to deserialize", status.LastError.Value.Message);
 
                 // Data source should not be initialized due to the error
@@ -812,10 +819,252 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.Equal(DataSourceState.Interrupted, status.State);
                 Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, status.LastError.Value.Kind);
+                Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for invalid data errors");
                 Assert.Contains("Failed to deserialize", status.LastError.Value.Message);
 
                 // Data source should remain initialized
                 Assert.True(dataSource.Initialized);
+            }
+        }
+
+        [Fact]
+        public void RecoverableHttpErrorWithFallbackHeaderSetsFDv1Fallback()
+        {
+            // Create an HttpResponseMessage with the fallback header
+            using (var response = new HttpResponseMessage((HttpStatusCode)503))
+            {
+                response.Headers.Add("x-ld-fd-fallback", "true");
+                var exception = new UnsuccessfulResponseException(503, response.Headers);
+
+                _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                    .ThrowsAsync(exception);
+
+                using (var dataSource = MakeDataSource())
+                {
+                    _ = dataSource.Start();
+
+                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    Assert.Equal(DataSourceState.Interrupted, status.State);
+                    Assert.NotNull(status.LastError);
+                    Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                    Assert.Equal(503, status.LastError.Value.StatusCode);
+                    Assert.True(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be true when fallback header is present");
+                    Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for recoverable errors");
+
+                    Assert.False(dataSource.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task UnrecoverableHttpErrorWithFallbackHeaderSetsFDv1Fallback()
+        {
+            // Create an HttpResponseMessage with the fallback header
+            using (var response = new HttpResponseMessage((HttpStatusCode)401))
+            {
+                response.Headers.Add("x-ld-fd-fallback", "true");
+                var exception = new UnsuccessfulResponseException(401, response.Headers);
+
+                _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                    .ThrowsAsync(exception);
+
+                using (var dataSource = MakeDataSource())
+                {
+                    var startTask = dataSource.Start();
+
+                    var result = await startTask;
+                    Assert.False(result);
+
+                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    Assert.Equal(DataSourceState.Off, status.State);
+                    Assert.NotNull(status.LastError);
+                    Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                    Assert.Equal(401, status.LastError.Value.StatusCode);
+                    Assert.True(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be true when fallback header is present");
+                    Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
+
+                    Assert.False(dataSource.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public void RecoverableHttpErrorWithoutFallbackHeaderDoesNotSetFDv1Fallback()
+        {
+            // Create an HttpResponseMessage without the fallback header
+            using (var response = new HttpResponseMessage((HttpStatusCode)503))
+            {
+                var exception = new UnsuccessfulResponseException(503, response.Headers);
+
+                _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                    .ThrowsAsync(exception);
+
+                using (var dataSource = MakeDataSource())
+                {
+                    _ = dataSource.Start();
+
+                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    Assert.Equal(DataSourceState.Interrupted, status.State);
+                    Assert.NotNull(status.LastError);
+                    Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                    Assert.Equal(503, status.LastError.Value.StatusCode);
+                    Assert.False(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be false when fallback header is not present");
+                    Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for recoverable errors");
+
+                    Assert.False(dataSource.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public void RecoverableHttpErrorWithFallbackHeaderFalseDoesNotSetFDv1Fallback()
+        {
+            // Create an HttpResponseMessage with the fallback header set to false
+            using (var response = new HttpResponseMessage((HttpStatusCode)503))
+            {
+                response.Headers.Add("x-ld-fd-fallback", "false");
+                var exception = new UnsuccessfulResponseException(503, response.Headers);
+
+                _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                    .ThrowsAsync(exception);
+
+                using (var dataSource = MakeDataSource())
+                {
+                    _ = dataSource.Start();
+
+                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    Assert.Equal(DataSourceState.Interrupted, status.State);
+                    Assert.NotNull(status.LastError);
+                    Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                    Assert.Equal(503, status.LastError.Value.StatusCode);
+                    Assert.False(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be false when fallback header value is false");
+                    Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for recoverable errors");
+
+                    Assert.False(dataSource.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task UnrecoverableHttpErrorWithFallbackHeaderFalseDoesNotSetFDv1Fallback()
+        {
+            // Create an HttpResponseMessage with the fallback header set to false
+            using (var response = new HttpResponseMessage((HttpStatusCode)401))
+            {
+                response.Headers.Add("x-ld-fd-fallback", "false");
+                var exception = new UnsuccessfulResponseException(401, response.Headers);
+
+                _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                    .ThrowsAsync(exception);
+
+                using (var dataSource = MakeDataSource())
+                {
+                    var startTask = dataSource.Start();
+
+                    var result = await startTask;
+                    Assert.False(result);
+
+                    var status = _updateSink.StatusUpdates.ExpectValue();
+                    Assert.Equal(DataSourceState.Off, status.State);
+                    Assert.NotNull(status.LastError);
+                    Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                    Assert.Equal(401, status.LastError.Value.StatusCode);
+                    Assert.False(status.LastError.Value.FDv1Fallback, "FDv1Fallback should be false when fallback header value is false");
+                    Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
+
+                    Assert.False(dataSource.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task UnrecoverableHttpError403ReportsOffStatusWithRecoverableFalse()
+        {
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ThrowsAsync(new UnsuccessfulResponseException(403));
+
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                var result = await startTask;
+                Assert.False(result); // Init task completes even on error
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                Assert.Equal(403, status.LastError.Value.StatusCode);
+                Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
+
+                Assert.False(dataSource.Initialized);
+            }
+        }
+
+        [Fact]
+        public async Task UnrecoverableHttpError401ReportsOffStatusWithRecoverableFalse()
+        {
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ThrowsAsync(new UnsuccessfulResponseException(401));
+
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                var result = await startTask;
+                Assert.False(result); // Init task completes even on error
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                Assert.Equal(401, status.LastError.Value.StatusCode);
+                Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
+
+                Assert.False(dataSource.Initialized);
+            }
+        }
+
+        [Fact]
+        public async Task UnrecoverableHttpErrorAfterInitializationReportsOffStatusWithRecoverableFalse()
+        {
+            var callCount = 0;
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        // First poll: return server-intent "none" to initialize
+                        return CreatePollingResponse(
+                            CreateServerIntentEvent("none", "test-payload", 1)
+                        );
+                    }
+                    else
+                    {
+                        // Second poll: throw unrecoverable error
+                        throw new UnsuccessfulResponseException(403);
+                    }
+                });
+
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                var result = await startTask;
+                Assert.True(result);
+                Assert.True(dataSource.Initialized);
+
+                // Wait for second poll to happen and trigger the error
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+
+                // Now trigger an unrecoverable error after initialization
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.ErrorResponse, status.LastError.Value.Kind);
+                Assert.Equal(403, status.LastError.Value.StatusCode);
+                Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
             }
         }
     }

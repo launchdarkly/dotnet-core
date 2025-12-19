@@ -6,6 +6,7 @@ using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
+using LaunchDarkly.Sdk.Server.Internal.FDv2DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
@@ -59,7 +60,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             var persistentStore =
                 dataSystemConfiguration.PersistentStore?.Build(clientContext.WithDataStoreUpdates(dataStoreUpdates));
 
-            var writeThroughStore = new WriteThroughStore(memoryStore, persistentStore);
+            var writeThroughStore = new WriteThroughStore(memoryStore, persistentStore,
+                dataSystemConfiguration.PersistentDataStoreMode);
 
             // TODO: When a persistent store is available we monitor it, is this a consistent choice.
             // TODO: Update the responses data store monitoring?

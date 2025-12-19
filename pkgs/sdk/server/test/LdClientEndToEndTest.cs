@@ -57,6 +57,9 @@ namespace LaunchDarkly.Sdk.Server
                 using (var client = new LdClient(config))
                 {
                     Assert.False(client.Initialized);
+                    // Wait for the status to be updated to Off, as the status update happens asynchronously
+                    var statusUpdated = client.DataSourceStatusProvider.WaitFor(DataSourceState.Off, TimeSpan.FromSeconds(5));
+                    Assert.True(statusUpdated, "Status should have been updated to Off");
                     Assert.Equal(DataSourceState.Off, client.DataSourceStatusProvider.Status.State);
 
                     var value = client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false);
@@ -132,6 +135,9 @@ namespace LaunchDarkly.Sdk.Server
                 using (var client = new LdClient(config))
                 {
                     Assert.True(client.Initialized);
+                    // Wait for the status to be updated to Valid, as the status update happens asynchronously
+                    var statusUpdated = client.DataSourceStatusProvider.WaitFor(DataSourceState.Valid, TimeSpan.FromSeconds(5));
+                    Assert.True(statusUpdated, "Status should have been updated to Valid");
                     Assert.Equal(DataSourceState.Valid, client.DataSourceStatusProvider.Status.State);
 
                     var value = client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false);
@@ -187,6 +193,9 @@ namespace LaunchDarkly.Sdk.Server
                 using (var client = new LdClient(config))
                 {
                     Assert.False(client.Initialized);
+                    // Wait for the status to be updated to Off, as the status update happens asynchronously
+                    var statusUpdated = client.DataSourceStatusProvider.WaitFor(DataSourceState.Off, TimeSpan.FromSeconds(5));
+                    Assert.True(statusUpdated, "Status should have been updated to Off");
                     Assert.Equal(DataSourceState.Off, client.DataSourceStatusProvider.Status.State);
 
                     var value = client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false);
@@ -219,6 +228,9 @@ namespace LaunchDarkly.Sdk.Server
                 using (var client = new LdClient(config))
                 {
                     Assert.True(client.Initialized);
+                    // Wait for the status to be updated to Valid, as the status update happens asynchronously
+                    var statusUpdated = client.DataSourceStatusProvider.WaitFor(DataSourceState.Valid, TimeSpan.FromSeconds(5));
+                    Assert.True(statusUpdated, "Status should have been updated to Valid");
                     Assert.Equal(DataSourceState.Valid, client.DataSourceStatusProvider.Status.State);
 
                     var value = client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false);
@@ -354,6 +366,9 @@ namespace LaunchDarkly.Sdk.Server
 
         private static void VerifyClientStartedAndHasExpectedData(LdClient client, HttpServer server)
         {
+            // Wait for the status to be updated to Valid, as the status update happens asynchronously
+            var statusUpdated = client.DataSourceStatusProvider.WaitFor(DataSourceState.Valid, TimeSpan.FromSeconds(5));
+            Assert.True(statusUpdated, "Status should have been updated to Valid");
             Assert.Equal(DataSourceState.Valid, client.DataSourceStatusProvider.Status.State);
             Assert.True(client.Initialized);
 

@@ -52,6 +52,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private IEnumerable<KeyValuePair<string, IEnumerable<string>>> _headers;
 
+        private bool _disposed = false;
+        private readonly AtomicBoolean _shuttingDown = new AtomicBoolean(false);
+
         internal delegate IEventSource EventSourceCreator(Uri streamUri,
             HttpConfiguration httpConfig);
 
@@ -104,20 +107,36 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public void Dispose()
         {
+            // dispose is currently overloaded with shutdown responsibility, we handle this first
+            Shutdown(null);
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                _es.Close();
-                if (_storeStatusMonitoringEnabled)
-                {
-                    _dataSourceUpdates.DataStoreStatusProvider.StatusChanged -= OnDataStoreStatusChanged;
-                }
+            if (_disposed) return;
+
+            if (disposing) {
+                // dispose managed resources if any
             }
+
+            _disposed = true;
+        }
+
+        private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
+        {
+            // Prevent concurrent shutdown calls - only allow the first call to proceed
+            // GetAndSet returns the OLD value, so if it was already true, we return early
+            if (_shuttingDown.GetAndSet(true)) return;
+
+            _es.Close();
+            if (_storeStatusMonitoringEnabled)
+            {
+                _dataSourceUpdates.DataStoreStatusProvider.StatusChanged -= OnDataStoreStatusChanged;
+            }
+            _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
         }
 
         #endregion
@@ -175,7 +194,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     Kind = DataSourceStatus.ErrorKind.InvalidData,
                     Message = ex.Message,
-                    Time = DateTime.Now
+                    Time = DateTime.Now,
+                    Recoverable = true
                 };
                 _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
 
@@ -187,7 +207,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     Kind = DataSourceStatus.ErrorKind.StoreError,
                     Message = (ex.InnerException ?? ex).Message,
-                    Time = DateTime.Now
+                    Time = DateTime.Now,
+                    Recoverable = true
                 };
                 _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
                 if (!_storeStatusMonitoringEnabled)
@@ -210,17 +231,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private void OnError(object sender, EventSource.ExceptionEventArgs e)
         {
             var ex = e.Exception;
-            var recoverable = true;
             DataSourceStatus.ErrorInfo errorInfo;
 
             if (ex is EventSourceServiceUnsuccessfulResponseException respEx)
             {
                 int status = respEx.StatusCode;
-                errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status);
+                var recoverable = HttpErrors.IsRecoverable(status);
+                errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status, recoverable);
                 RecordStreamInit(true);
-                if (!HttpErrors.IsRecoverable(status))
+                if (!recoverable)
                 {
-                    recoverable = false;
                     _log.Error(HttpErrors.ErrorMessage(status, "streaming connection", ""));
                 }
                 else
@@ -230,21 +250,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
             else
             {
-                errorInfo = DataSourceStatus.ErrorInfo.FromException(ex);
+                errorInfo = DataSourceStatus.ErrorInfo.FromException(ex, true); // default to recoverable
                 _log.Warn("Encountered EventSource error: {0}", LogValues.ExceptionSummary(ex));
                 _log.Debug(LogValues.ExceptionTrace(ex));
             }
 
-            _dataSourceUpdates.UpdateStatus(recoverable ? DataSourceState.Interrupted : DataSourceState.Off,
-                errorInfo);
-
-            if (!recoverable)
+            if (errorInfo.Recoverable)
+            {
+                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+                return;
+            }
+            else
             {
                 // Make _initTask complete to tell the client to stop waiting for initialization. We use
                 // TrySetResult rather than SetResult here because it might have already been completed
                 // (if for instance the stream started successfully, then restarted and got a 401).
                 _initTask.TrySetResult(false);
-                ((IDisposable)this).Dispose();
+                Shutdown(errorInfo);
             }
         }
 

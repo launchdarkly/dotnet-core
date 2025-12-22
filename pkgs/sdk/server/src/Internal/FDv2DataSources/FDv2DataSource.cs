@@ -67,7 +67,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         return new CompositeSource(sink, initializerFactory, circular: false);
                     },
                     (actionable) => new CompositeObserver(
-                        blacklistWhenSuccessOrOff(actionable), initializationObserver)
+                        initializationObserver, blacklistWhenSuccessOrOff(actionable))
                 ));
             }
 
@@ -93,8 +93,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
                         if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
                         {
-                            return new CompositeObserver(fdv1FallbackApplierFactory(actionable),
-                                synchronizationObserver);
+                            return new CompositeObserver(synchronizationObserver, fdv1FallbackApplierFactory(actionable));
                         }
 
                         return synchronizationObserver;

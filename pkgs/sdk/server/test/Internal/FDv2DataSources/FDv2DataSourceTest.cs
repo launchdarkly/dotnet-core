@@ -917,6 +917,139 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
+        public async Task OneInitializerOneSynchronizerIsWellBehaved()
+        {
+            // Create a capturing sink to observe all updates
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+
+            // Create dummy data for initializer and synchronizer
+            var initializerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+            var synchronizerDummyData = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            // Track whether the initializer factory was invoked
+            bool initializerFactoryInvoked = false;
+            IDataSourceUpdatesV2 initializerUpdateSink = null;
+
+            // Create initializer factory: emits Initializing, calls init with dummy data, then reports Valid
+            SourceFactory initializerFactory = (updatesSink) =>
+            {
+                initializerFactoryInvoked = true;
+                initializerUpdateSink = updatesSink;
+                var source = new MockDataSourceWithInit(
+                    async () =>
+                    {
+                        // Emit Initializing
+                        updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        await Task.Delay(10);
+
+                        // Report Valid
+                        updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                        await Task.Delay(10);
+
+                        // Call Apply with dummy data (with selector to trigger switch to synchronizer)
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Make(1, "dummy-state"),
+                            initializerDummyData.Data,
+                            null
+                        ));
+                        await Task.Delay(10);
+                    }
+                );
+                return source;
+            };
+
+            // Track whether the synchronizer factory was invoked
+            bool synchronizerFactoryInvoked = false;
+            IDataSourceUpdatesV2 synchronizerUpdateSink = null;
+
+            // Create synchronizer factory: emits Initializing, calls init with dummy data, then reports Valid
+            SourceFactory synchronizerFactory = (updatesSink) =>
+            {
+                synchronizerFactoryInvoked = true;
+                synchronizerUpdateSink = updatesSink;
+                var source = new MockDataSourceWithInit(
+                    async () =>
+                    {
+                        // Emit Initializing
+                        updatesSink.UpdateStatus(DataSourceState.Initializing, null);
+                        await Task.Delay(10);
+
+                        // Report Valid
+                        updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                        await Task.Delay(10);
+
+                        // Call Apply with dummy data
+                        updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                            ChangeSetType.Full,
+                            Selector.Make(2, "dummy-state"),
+                            synchronizerDummyData.Data,
+                            null
+                        ));
+                        await Task.Delay(10);
+                    }
+                );
+                return source;
+            };
+
+            // Create FDv2DataSource with one initializer, one synchronizer, and empty fdv1Synchronizers
+            var initializers = new List<SourceFactory> { initializerFactory };
+            var synchronizers = new List<SourceFactory> { synchronizerFactory };
+            var fdv1Synchronizers = new List<SourceFactory>();
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                initializers,
+                synchronizers,
+                fdv1Synchronizers
+            );
+
+            // Start the data source
+            var startTask = dataSource.Start();
+
+            // Wait for all expected status updates to be recorded
+            // Expected sequence: Initializing (initializer), Valid (initializer), Interrupted (switching to synchronizer), Valid (synchronizer)
+            var statusUpdates = capturingSink.WaitForStatusUpdates(4, TimeSpan.FromSeconds(5));
+
+            // Verify that Start() completed successfully
+            var startResult = await startTask;
+            Assert.True(startResult);
+
+            // Verify status updates by position
+            // Position 0: Initializing (from initializer)
+            Assert.True(statusUpdates.Count > 0, "Expected at least 1 status update");
+            Assert.Equal(DataSourceState.Initializing, statusUpdates[0].State);
+
+            // Position 1: Valid (from initializer)
+            Assert.True(statusUpdates.Count > 1, "Expected at least 2 status updates");
+            Assert.Equal(DataSourceState.Valid, statusUpdates[1].State);
+
+            // Position 2: Interrupted (switching to synchronizer)
+            Assert.True(statusUpdates.Count > 2, "Expected at least 3 status updates");
+            Assert.Equal(DataSourceState.Interrupted, statusUpdates[2].State);
+
+            // Position 3: Valid (from synchronizer)
+            Assert.True(statusUpdates.Count > 3, "Expected at least 4 status updates");
+            Assert.Equal(DataSourceState.Valid, statusUpdates[3].State);
+
+            // Verify that both factories were invoked
+            Assert.True(initializerFactoryInvoked, "Initializer factory should have been invoked");
+            Assert.True(synchronizerFactoryInvoked, "Synchronizer factory should have been invoked");
+
+            // Verify that Apply was called twice: once for initializer, once for synchronizer
+            var firstChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, firstChangeSet.Type);
+
+            var secondChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+            Assert.Equal(ChangeSetType.Full, secondChangeSet.Type);
+
+            // Verify that there are no more Apply calls
+            capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+
+            dataSource.Dispose();
+        }
+
+        [Fact]
         public async Task NoInitializersAndNoSynchronizersIsWellBehaved()
         {
             // Create a capturing sink to observe all updates

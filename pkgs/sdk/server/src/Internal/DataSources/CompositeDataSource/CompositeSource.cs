@@ -247,34 +247,52 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             
             EnqueueAction(() =>
             {
-                IDataSource dataSourceToStart;
-                lock (_lock)
+                try
                 {
-                    TryFindNextUnderLock();
-                    dataSourceToStart = _currentDataSource;
-                }
-
-                if (dataSourceToStart is null)
-                {
-                    // No sources available.
-                    tcs.SetResult(false);
-                    return;
-                }
-
-                // Start the source asynchronously and complete the task when it finishes.
-                // We do this outside the lock to avoid blocking the queue.
-                _ = Task.Run(async () =>
-                {
-                    try
+                    IDataSource dataSourceToStart;
+                    bool disposed;
+                    lock (_lock)
                     {
-                        var result = await dataSourceToStart.Start().ConfigureAwait(false);
-                        tcs.TrySetResult(result);
+                        TryFindNextUnderLock();
+                        dataSourceToStart = _currentDataSource;
+                        disposed = _disposed;
                     }
-                    catch (Exception ex)
+
+                    if (disposed)
                     {
-                        tcs.TrySetException(ex);
+                        // Disposed while getting the data source.
+                        tcs.SetResult(false);
+                        return;
                     }
-                });
+
+                    if (dataSourceToStart is null)
+                    {
+                        // No sources available.
+                        tcs.SetResult(false);
+                        return;
+                    }
+
+                    // Start the source asynchronously and complete the task when it finishes.
+                    // We do this outside the lock to avoid blocking the queue.
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var result = await dataSourceToStart.Start().ConfigureAwait(false);
+                            tcs.TrySetResult(result);
+                        }
+                        catch (Exception ex)
+                        {
+                            tcs.TrySetException(ex);
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // If an exception occurs while finding or setting up the data source,
+                    // ensure the task is completed so callers don't wait indefinitely.
+                    tcs.TrySetException(ex);
+                }
             });
 
             return tcs.Task;

@@ -233,9 +233,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         #region ICompositeSourceActionable
 
-        /// <summary>
-        /// Starts the current data source.
-        /// </summary>
         public Task<bool> StartCurrent()
         {
             if (_disposed)
@@ -298,9 +295,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             return tcs.Task;
         }
 
-        /// <summary>
-        /// Disposes of the current data source. You must call GoToNext or GoToFirst after this to change to a new factory.
-        /// </summary>
         public void DisposeCurrent()
         {
             if (_disposed)
@@ -326,9 +320,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             });
         }
 
-        /// <summary>
-        /// Switches to the next source in the list. You must still call StartCurrent after this to actually start the new source.
-        /// </summary>
         public void GoToNext()
         {
             if (_disposed)
@@ -357,9 +348,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             });
         }
 
-        /// <summary>
-        /// Switches to the first source in the list. You must still call StartCurrent after this to actually start the new source.
-        /// </summary>
         public void GoToFirst()
         {
             if (_disposed)
@@ -393,10 +381,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             return _sourcesList.Pos == 0;
         }
 
-        /// <summary>
-        /// Blacklists the current source. This prevents the current source from being used again. 
-        /// Note that blacklisting does not tear down the current data source, it just prevents it from being used again.
-        /// </summary>
         public void BlacklistCurrent()
         {
             if (_disposed)

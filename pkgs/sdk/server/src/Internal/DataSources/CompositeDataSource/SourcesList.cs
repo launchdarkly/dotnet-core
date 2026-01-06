@@ -103,6 +103,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         /// <summary>
+        /// Returns the zero-based index of the first occurrence of the specified element in the list.
+        /// </summary>
+        /// <param name="element">the element to locate</param>
+        /// <returns>the zero-based index of the element, or -1 if not found</returns>
+        public int IndexOf(T element)
+        {
+            return _list.IndexOf(element);
+        }
+
+        /// <summary>
         /// Reset the head position to the start of the list.
         /// </summary>
         public void Reset()

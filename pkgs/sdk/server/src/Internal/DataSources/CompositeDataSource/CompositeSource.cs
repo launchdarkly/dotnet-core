@@ -378,7 +378,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public bool IsAtFirst()
         {
-            return _sourcesList.Pos == 0;
+            lock (_lock)
+            {
+                if (_currentEntry == default)
+                {
+                    return false; // No current entry means we're not at first
+                }
+                return _sourcesList.IndexOf(_currentEntry) == 0;
+            }
         }
 
         public void BlacklistCurrent()

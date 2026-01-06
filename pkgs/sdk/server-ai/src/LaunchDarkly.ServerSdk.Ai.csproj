@@ -35,11 +35,49 @@
 
     <!-- fail if XML comments are missing or invalid -->
     <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+    <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LaunchDarkly.ServerSdk" Version="8.*" />
     <PackageReference Include="Mustache.NETStandard" Version="1.1.0" />
+  </ItemGroup>
+
+  <!-- Use PackageReference in Debug/Release -->
+  <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences'">
+    <PackageReference Include="LaunchDarkly.ServerSdk" Version="8.*" />
+  </ItemGroup>
+
+  <!-- Use ProjectReference in DebugLocalReferences -->
+  <ItemGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <ProjectReference Include="../../server/src/LaunchDarkly.ServerSdk.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\CHANGELOG.md">
+      <Link>CHANGELOG.md</Link>
+    </Content>
+    <Content Include="..\CONTRIBUTING.md">
+      <Link>CONTRIBUTING.md</Link>
+    </Content>
+    <Content Include="..\docfx.json">
+      <Link>docfx.json</Link>
+    </Content>
+    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Ai.md">
+      <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Ai.md</Link>
+    </Content>
+    <Content Include="..\docs-src\README.md">
+      <Link>docs-src\README.md</Link>
+    </Content>
+    <Content Include="..\index.md">
+      <Link>index.md</Link>
+    </Content>
+    <Content Include="..\README.md">
+      <Link>README.md</Link>
+    </Content>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

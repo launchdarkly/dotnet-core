@@ -13,6 +13,8 @@
     <AssemblyName>LaunchDarkly.CommonSdk</AssemblyName>
     <OutputType>Library</OutputType>
     <LangVersion>7.3</LangVersion>
+    <!-- the system.text.json source generator require version 9.0 or greater -->
+    <LangVersion Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">9.0</LangVersion>
     <PackageId>LaunchDarkly.CommonSdk</PackageId>
     <Description>LaunchDarkly common code for .NET and Xamarin clients</Description>
     <Company>LaunchDarkly</Company>
@@ -34,6 +36,7 @@
 
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\LaunchDarkly.CommonSdk.xml</DocumentationFile>
     <RootNamespace>LaunchDarkly.Sdk</RootNamespace>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>

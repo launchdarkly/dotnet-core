@@ -1354,7 +1354,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             applier.UpdateStatus(DataSourceState.Interrupted, null);
 
             // Wait for the fallback task to complete
-            await Task.Delay(fallbackTimeout + TimeSpan.FromMilliseconds(100));
+            await Task.Delay(fallbackTimeout + TimeSpan.FromMilliseconds(50));
 
             // Verify fallback was called: DisposeCurrent, GoToNext, StartCurrent
             Assert.True(mockActionable.DisposeCurrentCalled, "DisposeCurrent should be called on fallback");
@@ -1365,17 +1365,34 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Reset the mock for the next test
             mockActionable.Reset();
 
-            // Test 2: Valid state should trigger recovery after timeout
+            // Test 2: Valid state should trigger recovery after timeout (when not at first)
+            mockActionable.SetIsAtFirst(false);
             applier.UpdateStatus(DataSourceState.Valid, null);
 
             // Wait for the recovery task to complete
-            await Task.Delay(recoveryTimeout + TimeSpan.FromMilliseconds(100));
+            await Task.Delay(recoveryTimeout + TimeSpan.FromMilliseconds(50));
 
             // Verify recovery was called: DisposeCurrent, GoToFirst, StartCurrent
             Assert.True(mockActionable.DisposeCurrentCalled, "DisposeCurrent should be called on recovery");
             Assert.True(mockActionable.GoToFirstCalled, "GoToFirst should be called on recovery");
             Assert.True(mockActionable.StartCurrentCalled, "StartCurrent should be called on recovery");
             Assert.False(mockActionable.GoToNextCalled, "GoToNext should not be called on recovery");
+
+            // Reset the mock for the next test
+            mockActionable.Reset();
+
+            // Test 3: Valid state when IsAtFirst() returns true should NOT trigger recovery
+            mockActionable.SetIsAtFirst(true);
+            applier.UpdateStatus(DataSourceState.Valid, null);
+
+            // Wait for the recovery timeout to pass
+            await Task.Delay(recoveryTimeout + TimeSpan.FromMilliseconds(50));
+
+            // Verify recovery was NOT called when already at first
+            Assert.False(mockActionable.DisposeCurrentCalled, "DisposeCurrent should not be called when already at first");
+            Assert.False(mockActionable.GoToFirstCalled, "GoToFirst should not be called when already at first");
+            Assert.False(mockActionable.StartCurrentCalled, "StartCurrent should not be called when already at first");
+            Assert.False(mockActionable.GoToNextCalled, "GoToNext should not be called when already at first");
         }
 
         private class MockCompositeSourceActionable : ICompositeSourceActionable
@@ -1385,6 +1402,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool GoToFirstCalled { get; private set; }
             public bool StartCurrentCalled { get; private set; }
             public bool BlacklistCurrentCalled { get; private set; }
+            private bool _isAtFirst = false;
 
             public void DisposeCurrent()
             {
@@ -1412,6 +1430,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 BlacklistCurrentCalled = true;
             }
 
+            public bool IsAtFirst()
+            {
+                return _isAtFirst;
+            }
+
+            public void SetIsAtFirst(bool value)
+            {
+                _isAtFirst = value;
+            }
+
             public void Reset()
             {
                 DisposeCurrentCalled = false;
@@ -1419,6 +1447,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 GoToFirstCalled = false;
                 StartCurrentCalled = false;
                 BlacklistCurrentCalled = false;
+                _isAtFirst = false;
             }
         }
     }

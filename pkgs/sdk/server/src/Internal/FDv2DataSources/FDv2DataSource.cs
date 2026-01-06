@@ -269,8 +269,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         }, cancellationToken);
                     }
 
-                    // If status is Valid, schedule a recovery task if not already scheduled
-                    if (_recoveryTask == null && newState == DataSourceState.Valid)
+                    // If we are not at the first of the underlying sources and status is Valid, schedule a recovery task if not already scheduled
+                    if (_recoveryTask == null && !_actionable.IsAtFirst() && newState == DataSourceState.Valid)
                     {
                         _recoveryCanceller = new CancellationTokenSource();
                         var cancellationToken = _recoveryCanceller.Token;

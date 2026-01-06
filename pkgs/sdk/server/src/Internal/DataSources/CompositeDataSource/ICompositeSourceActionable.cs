@@ -16,6 +16,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         void GoToFirst();
 
+        bool IsAtFirst();
+
         void BlacklistCurrent();
     }
 }

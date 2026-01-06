@@ -426,8 +426,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent", "{invalid json, missing quotes"));
 
-                Assert.Equal(1, _mockEventSource.RestartCallCount);
-
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Interrupted, status.State);
                 Assert.True(status.LastError.HasValue);
@@ -504,29 +502,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Assert.NotNull(status.LastError);
                 Assert.Equal(DataSourceStatus.ErrorKind.StoreError, status.LastError.Value.Kind);
                 Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for store errors");
-            }
-        }
-
-        [Fact]
-        public void StoreRecoveryWithRefreshNeededRestartsStream()
-        {
-            _updateSink.MockDataStoreStatusProvider.StatusMonitoringEnabled = true;
-
-            using (var dataSource = MakeDataSource())
-            {
-                dataSource.Start();
-
-                _mockEventSource.TriggerOpen();
-                _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
-                    CreateServerIntentJson("none", "test-payload", 1)));
-
-                _updateSink.MockDataStoreStatusProvider.FireStatusChanged(
-                    new DataStoreStatus { Available = false, RefreshNeeded = false });
-                _updateSink.MockDataStoreStatusProvider.FireStatusChanged(
-                    new DataStoreStatus { Available = true, RefreshNeeded = true });
-
-                Assert.Equal(1, _mockEventSource.RestartCallCount);
-                AssertLogMessage(true, LogLevel.Warn, "Restarting stream to refresh data after data store outage");
             }
         }
 

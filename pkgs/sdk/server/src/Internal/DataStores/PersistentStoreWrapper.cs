@@ -22,7 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
     /// class adds the caching behavior that we normally want for any persistent data store.
     /// </para>
     /// </remarks>
-    internal sealed class PersistentStoreWrapper : IDataStore
+    internal sealed class PersistentStoreWrapper : IDataStore, IExternalDataSourceSupport
     {
         private readonly IPersistentDataStore _core;
         private readonly DataStoreCacheConfig _caching;
@@ -35,6 +35,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         private readonly List<DataKind> _cachedDataKinds = new List<DataKind>();
         private readonly PersistentDataStoreStatusManager _statusManager;
 
+        private readonly object _externalStoreLock = new object();
+        private IDataStoreExporter _externalDataStore;
+
         private volatile bool _inited;
         
         internal PersistentStoreWrapper(
@@ -42,9 +45,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             DataStoreCacheConfig caching,
             IDataStoreUpdates dataStoreUpdates,
             TaskExecutor taskExecutor,
-            Logger log
+            Logger log,
+            IDataStoreExporter externalDataStore = null
             ) :
-            this(new PersistentStoreAsyncAdapter(coreAsync), caching, dataStoreUpdates, taskExecutor, log)
+            this(new PersistentStoreAsyncAdapter(coreAsync), caching, dataStoreUpdates, taskExecutor, log, externalDataStore)
         { }
 
         internal PersistentStoreWrapper(
@@ -52,13 +56,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             DataStoreCacheConfig caching,
             IDataStoreUpdates dataStoreUpdates,
             TaskExecutor taskExecutor,
-            Logger log
+            Logger log,
+            IDataStoreExporter externalDataStore = null
             )
         {
             this._core = core;
             this._caching = caching;
             this._dataStoreUpdates = dataStoreUpdates;
             this._log = log;
+            this._externalDataStore = externalDataStore;
 
             _cacheIndefinitely = caching.IsEnabled && caching.IsInfiniteTtl;
             if (caching.IsEnabled)
@@ -119,6 +125,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 _inited = true;
             }
             return result;
+        }
+
+        /// <summary>
+        /// Sets an external data source for recovery synchronization.
+        /// </summary>
+        /// <remarks>
+        /// This should be called during initialization if the wrapper is being used
+        /// in a write-through architecture where an external store maintains authoritative data.
+        /// </remarks>
+        /// <remarks>
+        /// When we remove FDv1 support, we should remove this functionality and instead handle it at a higher
+        /// layer.
+        /// </remarks>
+        /// <param name="externalDataSource">The external data source to sync from during recovery</param>
+        public void SetExternalDataSource(IDataStoreExporter externalDataSource)
+        {
+            lock (_externalStoreLock)
+            {
+                _externalDataStore = externalDataSource;
+            }
         }
 
         public void Init(FullDataSet<ItemDescriptor> items)
@@ -398,38 +424,79 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 return false;
             }
 
-            if (_cacheIndefinitely && _allCache != null)
+            if (_cacheIndefinitely)
             {
-                // If we're in infinite cache mode, then we can assume the cache has a full set of current
-                // flag data (since presumably the data source has still been running) and we can just
-                // write the contents of the cache to the underlying data store.
-                DataKind[] allKinds;
-                lock (_cachedDataKinds)
+                IDataStoreExporter externalDataStore;
+                lock (_externalStoreLock)
                 {
-                    allKinds = _cachedDataKinds.ToArray();
+                    externalDataStore = _externalDataStore;
                 }
-                var builder = ImmutableList.CreateBuilder<KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>>();
-                foreach (var kind in allKinds)
+                // If we have an external data source (e.g., WriteThroughStore's memory store),
+                // use that as the authoritative source. Otherwise, fall back to our internal cache.
+                if (externalDataStore != null)
                 {
-                    if (_allCache.TryGetValue(kind, out var items))
+                    try
                     {
-                        builder.Add(new KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>(kind,
-                            SerializeAll(kind, items)));
+                        var externalData = externalDataStore.ExportAllData();
+                        var serializedData = DataStoreConverter.ToSerializedFormat(externalData);
+                        var e = InitCore(serializedData);
+
+                        if (e is null)
+                        {
+                            _log.Warn("Successfully updated persistent store from external data source");
+                        }
+                        else
+                        {
+                            // We failed to write the data to the underlying store. In this case, we should not
+                            // return to a recovered state, but just try this all again next time the poll task runs.
+                            LogHelpers.LogException(_log,
+                                "Tried to write external data to persistent store after outage, but failed",
+                                e);
+                            return false;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // If we can't export from the external source, don't recover yet
+                        LogHelpers.LogException(_log,
+                            "Failed to export data from external source during persistent store recovery",
+                            ex);
+                        return false;
                     }
                 }
-                var e = InitCore(new FullDataSet<SerializedItemDescriptor>(builder.ToImmutable()));
-                if (e is null)
+                else if (_allCache != null)
                 {
-                    _log.Warn("Successfully updated persistent store from cached data");
-                }
-                else
-                {
-                    // We failed to write the cached data to the underlying store. In this case, we should not
-                    // return to a recovered state, but just try this all again next time the poll task runs.
-                    LogHelpers.LogException(_log,
-                        "Tried to write cached data to persistent store after a store outage, but failed",
-                        e);
-                    return false;
+                    // If we're in infinite cache mode, then we can assume the cache has a full set of current
+                    // flag data (since presumably the data source has still been running) and we can just
+                    // write the contents of the cache to the underlying data store.
+                    DataKind[] allKinds;
+                    lock (_cachedDataKinds)
+                    {
+                        allKinds = _cachedDataKinds.ToArray();
+                    }
+                    var builder = ImmutableList.CreateBuilder<KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>>();
+                    foreach (var kind in allKinds)
+                    {
+                        if (_allCache.TryGetValue(kind, out var items))
+                        {
+                            builder.Add(new KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>(kind,
+                                SerializeAll(kind, items)));
+                        }
+                    }
+                    var e = InitCore(new FullDataSet<SerializedItemDescriptor>(builder.ToImmutable()));
+                    if (e is null)
+                    {
+                        _log.Warn("Successfully updated persistent store from cached data");
+                    }
+                    else
+                    {
+                        // We failed to write the cached data to the underlying store. In this case, we should not
+                        // return to a recovered state, but just try this all again next time the poll task runs.
+                        LogHelpers.LogException(_log,
+                            "Tried to write cached data to persistent store after a store outage, but failed",
+                            e);
+                        return false;
+                    }
                 }
             }
 

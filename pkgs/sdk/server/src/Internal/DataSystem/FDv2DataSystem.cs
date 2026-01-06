@@ -60,6 +60,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             var persistentStore =
                 dataSystemConfiguration.PersistentStore?.Build(clientContext.WithDataStoreUpdates(dataStoreUpdates));
 
+            // Configure persistent store to sync from memory store during recovery (ReadWrite mode only)
+            if (persistentStore != null &&
+                dataSystemConfiguration.PersistentDataStoreMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
+            {
+                if (persistentStore is IExternalDataSourceSupport externalSourceSupport)
+                {
+                    externalSourceSupport.SetExternalDataSource(memoryStore);
+                }
+            }
+
             var writeThroughStore = new WriteThroughStore(memoryStore, persistentStore,
                 dataSystemConfiguration.PersistentDataStoreMode);
 

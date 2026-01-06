@@ -345,11 +345,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                lock (_lock)
-                {
-                    CancelPendingFallbackTask();
-                    CancelPendingRecoveryTask();
-                }
+                // apply does nothing wrt fallback and recovery, only status matters
             }
         }
 

@@ -34,15 +34,39 @@
 
     <!-- fail if XML comments are missing or invalid -->
     <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+    <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Use PackageReference in Debug/Release -->
+  <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences'">
     <PackageReference Include="LaunchDarkly.ServerSdk" Version="[8.7, 9.0)" />
+  </ItemGroup>
+
+  <!-- Use ProjectReference in DebugLocalReferences -->
+  <ItemGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <ProjectReference Include="../../sdk/server/src/LaunchDarkly.ServerSdk.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net462'">
     <!-- Use any 5.x to 8.x.  It's a built-in package in net8.0, hence conditional for targets -->
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[5,10)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\CHANGELOG.md">
+      <Link>CHANGELOG.md</Link>
+    </Content>
+    <Content Include="..\docfx.json">
+      <Link>docfx.json</Link>
+    </Content>
+    <Content Include="..\index.md">
+      <Link>index.md</Link>
+    </Content>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

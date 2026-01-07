@@ -35,6 +35,12 @@
 
     <!-- fail if XML comments are missing or invalid -->
     <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+    <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,6 +55,45 @@
     <PackageReference Include="System.Text.Json" Version="6.0.10" />
     <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
     <!-- it's a built-in package in net8.0 -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\CHANGELOG.md">
+      <Link>CHANGELOG.md</Link>
+    </Content>
+    <Content Include="..\CONTRIBUTING.md">
+      <Link>CONTRIBUTING.md</Link>
+    </Content>
+    <Content Include="..\docfx.json">
+      <Link>docfx.json</Link>
+    </Content>
+    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Json.md">
+      <Link>docs-src\namespaces\LaunchDarkly.Sdk.Json.md</Link>
+    </Content>
+    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.md">
+      <Link>docs-src\namespaces\LaunchDarkly.Sdk.md</Link>
+    </Content>
+    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Integrations.md">
+      <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Integrations.md</Link>
+    </Content>
+    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Interfaces.md">
+      <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Interfaces.md</Link>
+    </Content>
+    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.md">
+      <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.md</Link>
+    </Content>
+    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Subsystems.md">
+      <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Subsystems.md</Link>
+    </Content>
+    <Content Include="..\docs-src\README.md">
+      <Link>docs-src\README.md</Link>
+    </Content>
+    <Content Include="..\index.md">
+      <Link>index.md</Link>
+    </Content>
+    <Content Include="..\README.md">
+      <Link>README.md</Link>
+    </Content>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

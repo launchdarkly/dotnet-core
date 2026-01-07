@@ -10,11 +10,26 @@
     <Copyright>Copyright 2020 Catamorphic, Co.</Copyright>
     <LicenseExpression>Apache-2.0</LicenseExpression>
     <RootNamespace>LaunchDarkly.Sdk.Server.SharedTests</RootNamespace>
+    <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LaunchDarkly.ServerSdk" Version="7.0.0-alpha.3" />
     <PackageReference Include="LaunchDarkly.Logging" Version="[2.0.0,3.0.0)" />
     <PackageReference Include="xunit" Version="2.4.1" />
+  </ItemGroup>
+
+  <!-- Use PackageReference in Debug/Release -->
+  <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences'">
+    <PackageReference Include="LaunchDarkly.ServerSdk" Version="7.0.0-alpha.3" />
+  </ItemGroup>
+
+  <!-- Use ProjectReference in DebugLocalReferences -->
+  <ItemGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <ProjectReference Include="../../../sdk/server/src/LaunchDarkly.ServerSdk.csproj" />
   </ItemGroup>
 </Project>

@@ -7,10 +7,10 @@ using static LaunchDarkly.Sdk.Server.Internal.DataStores.DataStoreTestTypes;
 namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 {
     /// <summary>
-    /// Tests for the DataStoreConverter utility class that converts between
+    /// Tests for the PersistentDataStoreConverter utility class that converts between
     /// in-memory ItemDescriptor and serialized SerializedItemDescriptor formats.
     /// </summary>
-    public class DataStoreConverterTest
+    public class PersistentDataStoreConverterTest
     {
         [Fact]
         public void ToSerializedFormat_ConvertsCorrectly()
@@ -23,7 +23,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(TestDataKind, "key2", 2, item2)
                 .Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             // Should have one data kind
             Assert.Single(serializedData.Data);
@@ -56,7 +56,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(TestDataKind, "key2", 2, null) // Deleted item
                 .Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             var testKindData = serializedData.Data.First(kv => kv.Key == TestDataKind).Value;
             Assert.Equal(2, testKindData.Items.Count());
@@ -85,7 +85,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(OtherDataKind, "key2", 2, item2)
                 .Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             // Should have both data kinds
             Assert.Equal(2, serializedData.Data.Count());
@@ -106,7 +106,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         {
             var inMemoryData = new TestDataBuilder().Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             Assert.Empty(serializedData.Data);
         }
@@ -120,7 +120,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
             var inMemoryData = builder.Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             // Should have the kind with items
             Assert.Single(serializedData.Data);
@@ -138,7 +138,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(TestDataKind, "key2", 999, item1)
                 .Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             var testKindData = serializedData.Data.First(kv => kv.Key == TestDataKind).Value;
 
@@ -162,7 +162,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(TestDataKind, "key3", 3, item3)
                 .Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             var testKindData = serializedData.Data.First(kv => kv.Key == TestDataKind).Value;
             Assert.Equal(3, testKindData.Items.Count());
@@ -186,7 +186,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(TestDataKind, "key4", 4, null) // Deleted
                 .Build();
 
-            var serializedData = DataStoreConverter.ToSerializedFormat(inMemoryData);
+            var serializedData = PersistentDataStoreConverter.ToSerializedFormat(inMemoryData);
 
             var testKindData = serializedData.Data.First(kv => kv.Key == TestDataKind).Value;
             Assert.Equal(4, testKindData.Items.Count());

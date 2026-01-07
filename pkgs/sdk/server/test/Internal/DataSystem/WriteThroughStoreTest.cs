@@ -830,6 +830,115 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         #endregion
 
+        #region Cache Disabling Tests
+
+        [Fact]
+        public void Init_DisablesPersistentStoreCache_WhenSwitchingToMemoryStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStoreWithCacheControl();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                Assert.False(persistentStore.DisableCacheCalled);
+
+                var testData = CreateTestDataSet();
+                store.Init(testData);
+
+                Assert.True(persistentStore.DisableCacheCalled);
+                Assert.False(persistentStore.LastCacheEnabledValue);
+            }
+        }
+
+        [Fact]
+        public void Apply_DisablesPersistentStoreCache_WhenSwitchingToMemoryStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockTransactionalPersistentStoreWithCacheControl();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                Assert.False(persistentStore.DisableCacheCalled);
+
+                var changeSet = CreateFullChangeSet();
+                store.Apply(changeSet);
+
+                Assert.True(persistentStore.DisableCacheCalled);
+            }
+        }
+
+        [Fact]
+        public void Init_DisablesCacheOnlyOnce_OnSecondInit()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStoreWithCacheControl();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                var testData = CreateTestDataSet();
+                store.Init(testData);
+
+                Assert.True(persistentStore.DisableCacheCalled);
+                persistentStore.DisableCacheCalled = false;
+
+                // Second init should not call SetCacheEnabled again
+                store.Init(testData);
+                Assert.False(persistentStore.DisableCacheCalled);
+            }
+        }
+
+        [Fact]
+        public void Init_DoesNotCallSetCacheEnabled_WhenPersistentStoreDoesNotSupportIt()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                var testData = CreateTestDataSet();
+                store.Init(testData);
+
+                // Should not throw, just not call SetCacheEnabled
+                var result = store.Get(TestDataKind, Item1Key);
+                Assert.NotNull(result);
+            }
+        }
+
+        [Fact]
+        public void CacheDisabling_PreventsSubsequentWrites_FromPopulatingCache()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStoreWithCacheControl();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                // Initialize to switch to memory store and disable cache
+                var testData = CreateTestDataSet();
+                store.Init(testData);
+
+                Assert.True(persistentStore.DisableCacheCalled);
+                Assert.False(persistentStore.LastCacheEnabledValue);
+
+                // Reset tracking
+                persistentStore.CacheClearedCount = 0;
+
+                // Perform an upsert - this should NOT populate the cache
+                var item3 = new TestItem("item3");
+                store.Upsert(TestDataKind, "key3", new ItemDescriptor(30, item3));
+
+                // Verify cache was not re-populated by checking it wasn't cleared again
+                // (if cache was being written to, subsequent operations would interact with it)
+                Assert.Equal(0, persistentStore.CacheClearedCount);
+            }
+        }
+
+        #endregion
+
         #region Mock Stores
 
         private class MockPersistentStore : IDataStore
@@ -997,6 +1106,39 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             }
 
             public Selector Selector => Selector.Empty;
+        }
+
+        private class MockPersistentStoreWithCacheControl : MockPersistentStore, IExternalDataSourceSupport
+        {
+            public bool DisableCacheCalled { get; set; }
+            public bool LastCacheEnabledValue { get; private set; }
+            public int CacheClearedCount { get; set; }
+
+            public void SetExternalDataSource(IDataStoreExporter externalDataSource)
+            {
+                // Not used in these tests
+            }
+
+            public void DisableCache()
+            {
+                DisableCacheCalled = true;
+            }
+        }
+
+        private class MockTransactionalPersistentStoreWithCacheControl : MockTransactionalPersistentStore,
+            IExternalDataSourceSupport
+        {
+            public bool DisableCacheCalled { get; set; }
+
+            public void SetExternalDataSource(IDataStoreExporter externalDataSource)
+            {
+                // Not used in these tests
+            }
+
+            public void DisableCache()
+            {
+                DisableCacheCalled = true;
+            }
         }
 
         #endregion

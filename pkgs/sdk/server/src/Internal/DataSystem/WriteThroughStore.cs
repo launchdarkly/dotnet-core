@@ -127,6 +127,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             lock (_activeStoreLock)
             {
                 _activeReadStore = _memoryStore;
+
+                // Disable the persistent store's cache since reads are now going through memory store
+                if (_persistentStore is IExternalDataSourceSupport externalSupport)
+                {
+                    externalSupport.DisableCache();
+                }
             }
         }
 

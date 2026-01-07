@@ -23,5 +23,21 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// </remarks>
         /// <param name="externalDataSource">The external data source to sync from during recovery</param>
         void SetExternalDataSource(IDataStoreExporter externalDataSource);
+
+        /// <summary>
+        /// Disables the internal cache.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In write-through architectures, when the active read store switches from the persistent
+        /// store to the memory store, the persistent store's cache should be disabled to avoid
+        /// serving stale data and to reduce memory overhead since reads are no longer going through it.
+        /// </para>
+        /// <para>
+        /// When disabled, all read operations will bypass the cache and go directly to the underlying
+        /// persistent storage. Write operations continue to work normally.
+        /// </para>
+        /// </remarks>
+        void DisableCache();
     }
 }

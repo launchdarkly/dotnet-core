@@ -77,6 +77,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         /// <summary>
+        /// Returns a string representation of this data source for informational purposes.
+        /// </summary>
+        public override string ToString() => _compositeDescription;
+
+        /// <summary>
         /// When <see cref="Start"/> is called, the current data source is started. This should only be called once.
         /// </summary>
         /// <returns>

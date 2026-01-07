@@ -91,7 +91,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 timedFallbackAndRecoveryApplierFactory));
                         }
 
-                        return new CompositeSource("Synchronizers", sink, synchronizersFactoryTuples, sublogger, circular: false);
+                        return new CompositeSource("Synchronizers", sink, synchronizersFactoryTuples, sublogger);
                     },
                     (actionable) =>
                     {
@@ -121,7 +121,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
                         }
 
-                        return new CompositeSource("FDv1FallbackSynchronizers", sink, fdv1SynchronizersFactoryTuples, sublogger, circular: false);
+                        return new CompositeSource("FDv1FallbackSynchronizers", sink, fdv1SynchronizersFactoryTuples, sublogger);
                     }, (applier) => fallbackSynchronizationObserver
                 ));
             }

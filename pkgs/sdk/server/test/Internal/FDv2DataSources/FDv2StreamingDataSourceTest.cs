@@ -426,6 +426,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _mockEventSource.TriggerOpen();
                 _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent", "{invalid json, missing quotes"));
 
+                Assert.Equal(1, _mockEventSource.RestartCallCount);
+                
                 var status = _updateSink.StatusUpdates.ExpectValue();
                 Assert.Equal(DataSourceState.Interrupted, status.State);
                 Assert.True(status.LastError.HasValue);

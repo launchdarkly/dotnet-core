@@ -155,6 +155,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Recoverable = true
             };
             _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+            
+            _es.Restart(false);
         }
 
         private void HandleStoreError(string message)

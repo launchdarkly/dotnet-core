@@ -424,16 +424,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 return false;
             }
 
-            if (_cacheIndefinitely)
+            IDataStoreExporter externalDataStore;
+            lock (_externalStoreLock)
             {
-                IDataStoreExporter externalDataStore;
-                lock (_externalStoreLock)
+                externalDataStore = _externalDataStore;
+            }
+
+            // If we have an external data source (e.g., WriteThroughStore's memory store) that is initialized,
+            // use that as the authoritative source. Otherwise, fall back to our internal cache if it's configured
+            // to cache indefinitely.
+            if (externalDataStore != null)
+            {
+                // Check if the external store has data (is initialized)
+                // We use IDataStore interface to check initialization if available
+                bool externalStoreInitialized = false;
+                if (externalDataStore is IDataStore externalStore)
                 {
-                    externalDataStore = _externalDataStore;
+                    externalStoreInitialized = externalStore.Initialized();
                 }
-                // If we have an external data source (e.g., WriteThroughStore's memory store),
-                // use that as the authoritative source. Otherwise, fall back to our internal cache.
-                if (externalDataStore != null)
+
+                if (externalStoreInitialized)
                 {
                     try
                     {
@@ -463,40 +473,45 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                             ex);
                         return false;
                     }
+
+                    return true;
                 }
-                else if (_allCache != null)
+            }
+
+            // Fall back to cache-based recovery if external store is not available/initialized
+            // and we're in infinite cache mode
+            if (_cacheIndefinitely && _allCache != null)
+            {
+                // If we're in infinite cache mode, then we can assume the cache has a full set of current
+                // flag data (since presumably the data source has still been running) and we can just
+                // write the contents of the cache to the underlying data store.
+                DataKind[] allKinds;
+                lock (_cachedDataKinds)
                 {
-                    // If we're in infinite cache mode, then we can assume the cache has a full set of current
-                    // flag data (since presumably the data source has still been running) and we can just
-                    // write the contents of the cache to the underlying data store.
-                    DataKind[] allKinds;
-                    lock (_cachedDataKinds)
+                    allKinds = _cachedDataKinds.ToArray();
+                }
+                var builder = ImmutableList.CreateBuilder<KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>>();
+                foreach (var kind in allKinds)
+                {
+                    if (_allCache.TryGetValue(kind, out var items))
                     {
-                        allKinds = _cachedDataKinds.ToArray();
+                        builder.Add(new KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>(kind,
+                            SerializeAll(kind, items)));
                     }
-                    var builder = ImmutableList.CreateBuilder<KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>>();
-                    foreach (var kind in allKinds)
-                    {
-                        if (_allCache.TryGetValue(kind, out var items))
-                        {
-                            builder.Add(new KeyValuePair<DataKind, KeyedItems<SerializedItemDescriptor>>(kind,
-                                SerializeAll(kind, items)));
-                        }
-                    }
-                    var e = InitCore(new FullDataSet<SerializedItemDescriptor>(builder.ToImmutable()));
-                    if (e is null)
-                    {
-                        _log.Warn("Successfully updated persistent store from cached data");
-                    }
-                    else
-                    {
-                        // We failed to write the cached data to the underlying store. In this case, we should not
-                        // return to a recovered state, but just try this all again next time the poll task runs.
-                        LogHelpers.LogException(_log,
-                            "Tried to write cached data to persistent store after a store outage, but failed",
-                            e);
-                        return false;
-                    }
+                }
+                var e = InitCore(new FullDataSet<SerializedItemDescriptor>(builder.ToImmutable()));
+                if (e is null)
+                {
+                    _log.Warn("Successfully updated persistent store from cached data");
+                }
+                else
+                {
+                    // We failed to write the cached data to the underlying store. In this case, we should not
+                    // return to a recovered state, but just try this all again next time the poll task runs.
+                    LogHelpers.LogException(_log,
+                        "Tried to write cached data to persistent store after a store outage, but failed",
+                        e);
+                    return false;
                 }
             }
 

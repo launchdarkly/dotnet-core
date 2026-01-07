@@ -374,13 +374,67 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
         }
 
+        [Fact]
+        public void ExternalDataSourceSync_WhenExternalStoreNotInitialized_FallsBackToCache()
+        {
+            // Create an uninitialized external store
+            var externalSource = new MockDataStoreExporter();
+            externalSource.IsInitialized = false; // Not initialized
+
+            using (var wrapper = new PersistentStoreWrapper(
+                _core,
+                DataStoreCacheConfig.Enabled.WithTtl(System.Threading.Timeout.InfiniteTimeSpan),
+                _dataStoreUpdates,
+                BasicTaskExecutor,
+                TestLogger,
+                externalSource))
+            {
+                var dataStoreStatusProvider = new DataStoreStatusProviderImpl(wrapper, _dataStoreUpdates);
+                var statuses = new EventSink<DataStoreStatus>();
+                dataStoreStatusProvider.StatusChanged += statuses.Add;
+
+                var item1 = new TestItem("item1");
+                wrapper.Init(new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 1, item1)
+                    .Build());
+
+                // Cause error and update cache
+                _core.Available = false;
+                _core.Error = FakeError;
+                Assert.Equal(FakeError, Assert.Throws(FakeError.GetType(),
+                    () => wrapper.Upsert(TestDataKind, "key1", item1.WithVersion(2))));
+
+                statuses.ExpectValue(); // consume unavailable status
+
+                // The cache should have the update even though store failed
+                Assert.Equal(item1.WithVersion(2), wrapper.Get(TestDataKind, "key1"));
+
+                // Update external source with different data, but keep it uninitialized
+                externalSource.SetData(new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 99, new TestItem("wrong-item"))
+                    .Build());
+
+                // Recover
+                _core.Error = null;
+                _core.Available = true;
+
+                statuses.ExpectValue(TimeoutForRecovery);
+
+                // Should have synced from CACHE (not external source) because external store is not initialized
+                Assert.Equal(item1.SerializedWithVersion(2), _core.Data[TestDataKind]["key1"]);
+
+                AssertLogMessageRegex(true, LogLevel.Warn, "Successfully updated persistent store from cached data");
+            }
+        }
+
         /// <summary>
         /// Mock implementation of IDataStoreExporter for testing.
         /// </summary>
-        private class MockDataStoreExporter : IDataStoreExporter
+        private class MockDataStoreExporter : IDataStoreExporter, IDataStore
         {
             private FullDataSet<ItemDescriptor> _data = new TestDataBuilder().Build();
             public Exception ExportError { get; set; }
+            public bool IsInitialized { get; set; } = true;
 
             public void SetData(FullDataSet<ItemDescriptor> data)
             {
@@ -395,6 +449,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 }
                 return _data;
             }
+
+            // IDataStore implementation
+            public bool StatusMonitoringEnabled => false;
+
+            public void Init(FullDataSet<ItemDescriptor> allData)
+            {
+                _data = allData;
+                IsInitialized = true;
+            }
+
+            public ItemDescriptor? Get(DataKind kind, string key) => null;
+
+            public KeyedItems<ItemDescriptor> GetAll(DataKind kind) => KeyedItems<ItemDescriptor>.Empty();
+
+            public bool Upsert(DataKind kind, string key, ItemDescriptor item) => false;
+
+            public bool Initialized() => IsInitialized;
+
+            public void Dispose() { }
         }
     }
 }

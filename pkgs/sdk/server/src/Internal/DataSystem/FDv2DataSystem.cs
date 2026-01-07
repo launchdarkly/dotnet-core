@@ -78,7 +78,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 new List<SourceFactory>
                 {
                     FactoryWithContext(clientContext)(dataSystemConfiguration.FDv1FallbackSynchronizer)
-                }
+                },
+                logger
             );
 
             var dataSourceStatusProvider = new DataSourceStatusProviderImpl(dataSourceUpdates);

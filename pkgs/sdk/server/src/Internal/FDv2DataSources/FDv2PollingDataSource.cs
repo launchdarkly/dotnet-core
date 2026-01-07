@@ -33,6 +33,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private bool _disposed = false;
         private readonly AtomicBoolean _shuttingDown = new AtomicBoolean(false);
 
+        /// <summary>
+        /// Returns a string representation of this data source for informational purposes.
+        /// </summary>
+        public override string ToString() => "FDv2PollingDataSource";
+
         internal FDv2PollingDataSource(
             LdClientContext context,
             IDataSourceUpdates dataSourceUpdates,

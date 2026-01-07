@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -18,6 +19,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         // We also use a small, non-recursive action queue so that any re-entrant calls
         // from action applier logic is serialized and processed iteratively instead
         // of recursively, avoiding the risk of stack overflows.
+        private readonly string _compositeDescription;
+        private readonly Logger _log;
         private readonly object _lock = new object();
         private readonly Queue<Action> _pendingActions = new Queue<Action>();
         private bool _isProcessingActions;
@@ -37,12 +40,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <summary>
         /// Creates a new <see cref="CompositeSource"/>.
         /// </summary>
+        /// <param name="compositeDescription">description of the composite source for logging purposes</param>
         /// <param name="updatesSink">the sink that receives updates from the active source</param>
         /// <param name="factoryTuples">the ordered list of source factories and their associated action applier factories</param>
+        /// <param name="logger">the logger instance to use</param>
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
         public CompositeSource(
+            string compositeDescription,
             IDataSourceUpdatesV2 updatesSink,
             IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
+            Logger logger,
             bool circular = true)
         {
             if (updatesSink is null)
@@ -53,6 +60,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 throw new ArgumentNullException(nameof(factoryTuples));
             }
+
+            _compositeDescription = compositeDescription;
+            _log = logger;
 
             _originalUpdateSink = updatesSink;
             _sanitizedUpdateSink = new DataSourceUpdatesSanitizer(updatesSink);
@@ -201,7 +211,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 var errorInfo = new DataSourceStatus.ErrorInfo
                 {
                     Kind = DataSourceStatus.ErrorKind.Unknown,
-                    Message = "CompositeDataSource has exhausted all available sources.",
+                    Message = "Composite source " + _compositeDescription + " has exhausted its constituent sources.",
                     Time = DateTime.Now
                 };
                 InternalDispose(errorInfo);
@@ -275,6 +285,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     {
                         try
                         {
+                            _log.Debug("{0} started {1}.", _compositeDescription, dataSourceToStart.ToString());
                             var result = await dataSourceToStart.Start().ConfigureAwait(false);
                             tcs.TrySetResult(result);
                         }
@@ -306,6 +317,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 lock (_lock)
                 {
+                    String currentDescription = _currentDataSource?.ToString();
+                    _log.Debug("{0} is going to dispose of {1}.", _compositeDescription, currentDescription);
+
                     // cut off all the update proxies that have been handed out first, this is
                     // necessary to avoid a cascade of actions leading to callbacks leading to actions, etc.
                     _disableableTracker.DisablePreviouslyTracked();
@@ -331,6 +345,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 lock (_lock)
                 {
+                    // Get description of current source before disposing it
+                    String previousDescription = _currentDataSource?.ToString();
+
                     // cut off all the update proxies that have been handed out first, this is
                     // necessary to avoid a cascade of actions leading to callbacks leading to actions, etc.
                     _disableableTracker.DisablePreviouslyTracked();
@@ -343,7 +360,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     TryFindNextUnderLock();
 
-                    // if there is no next source, there's nothing more to do
+                    String currentDescription = _currentDataSource?.ToString();
+                    logTransition(previousDescription, currentDescription);  
                 }
             });
         }
@@ -359,6 +377,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 lock (_lock)
                 {
+                    String previousDescription = _currentDataSource?.ToString();
+
                     // moving always disconnects the current source
                     _disableableTracker.DisablePreviouslyTracked();
 
@@ -371,7 +391,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _sourcesList.Reset();
                     TryFindNextUnderLock();
 
-                    // if there are no sources, there's nothing more to do
+                    String currentDescription = _currentDataSource?.ToString();
+
+                    logTransition(previousDescription, currentDescription);
                 }
             });
         }
@@ -388,7 +410,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        public void BlacklistCurrent()
+        public void BlockCurrent()
         {
             if (_disposed)
             {
@@ -405,12 +427,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         return;
                     }
 
+                    String currentDescription = _currentDataSource?.ToString();
+
                     // remove the factory tuple for our current entry
                     // note: blacklisting does not tear down the current data source, it just prevents it from being used again
                     _sourcesList.Remove(_currentEntry);
                     _currentEntry = default;
+
+                    _log.Debug("{0} has blocked factory used to create {1} from being used again.", _compositeDescription, currentDescription);
                 }
             });
+        }
+
+        private void logTransition(String previousDescription, String currentDescription) {
+            if (previousDescription != null && currentDescription != null) {
+                _log.Debug("{0} transitioned from {1} to {2}.", _compositeDescription, previousDescription, currentDescription);
+            } else if (previousDescription != null) {
+                _log.Debug("{0} transitioned away from {1}.", _compositeDescription, previousDescription);
+            } else if (currentDescription != null) {
+                _log.Debug("{0} at {1}.", _compositeDescription, currentDescription);
+            }
         }
 
         #endregion

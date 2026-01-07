@@ -79,10 +79,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             var dataSourceUpdates = new DataSourceUpdatesImpl(writeThroughStore, dataStoreStatusProvider,
                 clientContext.TaskExecutor, logger, logConfig.LogDataSourceOutageAsErrorAfter);
 
-
             var contextWithSelectorSource =
                 clientContext.WithSelectorSource(new SelectorSourceFacade(writeThroughStore));
-            var compositeDataSource = FDv2DataSource.CreateFDv2DataSource(
+            var compositeDataSource = configuration.Offline ? Components.ExternalUpdatesOnly.Build(contextWithSelectorSource) : FDv2DataSource.CreateFDv2DataSource(
                 dataSourceUpdates,
                 dataSystemConfiguration.Initializers.Select(FactoryWithContext(contextWithSelectorSource)).ToList(),
                 dataSystemConfiguration.Synchronizers.Select(FactoryWithContext(contextWithSelectorSource)).ToList(),

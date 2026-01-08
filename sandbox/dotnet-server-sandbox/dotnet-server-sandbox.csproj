@@ -16,7 +16,7 @@
     <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
       <DefineConstants>DEBUG_LOCAL_REFERENCES</DefineConstants>
     </PropertyGroup>
-
+    
     <!-- Server SDK reference - always included -->
     <ItemGroup>
       <ProjectReference Include="..\..\pkgs\sdk\server\src\LaunchDarkly.ServerSdk.csproj" />

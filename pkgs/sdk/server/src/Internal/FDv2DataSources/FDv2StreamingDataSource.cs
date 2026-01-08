@@ -1,8 +1,6 @@
- using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.EventSource;
 using LaunchDarkly.Logging;
@@ -89,10 +87,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var esc = eventSourceCreator ?? CreateEventSource;
 
             _storeStatusMonitoringEnabled = _dataSourceUpdates.DataStoreStatusProvider.StatusMonitoringEnabled;
-            if (_storeStatusMonitoringEnabled)
-            {
-                _dataSourceUpdates.DataStoreStatusProvider.StatusChanged += OnDataStoreStatusChanged;
-            }
 
             // The query parameters will be handled by the event source request
             // modifier. The modifier is called during initial connection and reconnections.
@@ -116,7 +110,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             if (_disposed) return;
 
-            if (disposing) {
+            if (disposing)
+            {
                 // dispose managed resources if any
             }
 
@@ -128,12 +123,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             // Prevent concurrent shutdown calls - only allow the first call to proceed
             // GetAndSet returns the OLD value, so if it was already true, we return early
             if (_shuttingDown.GetAndSet(true)) return;
-            
+
             _es.Close();
-            if (_storeStatusMonitoringEnabled)
-            {
-                _dataSourceUpdates.DataStoreStatusProvider.StatusChanged -= OnDataStoreStatusChanged;
-            }
+
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
         }
 
@@ -163,7 +155,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 Recoverable = true
             };
             _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
-
+            
             _es.Restart(false);
         }
 
@@ -197,6 +189,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 // Ignore unknown message types from the protocol.
                 return;
             }
+
             var parsed = FDv2Event.TryDeserializeFromJsonString(
                 e.Message.Name,
                 e.Message.Data,
@@ -292,7 +285,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 var status = respEx.StatusCode;
                 var recoverable = HttpErrors.IsRecoverable(status);
                 errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status, recoverable);
-                
+
                 // Check for LD fallback header
                 if (respEx.Headers != null)
                 {
@@ -301,7 +294,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         .SelectMany(h => h.Value)
                         .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
                 }
-                
+
                 RecordStreamInit(true);
                 if (!recoverable)
                 {
@@ -319,10 +312,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _log.Debug(LogValues.ExceptionTrace(ex));
             }
 
-            if (errorInfo.Recoverable) {
+            if (errorInfo.Recoverable)
+            {
                 _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
                 return;
-            } else {
+            }
+            else
+            {
                 // Make _initTask complete to tell the client to stop waiting for initialization. We use
                 // TrySetResult rather than SetResult here because it might have already been completed
                 // (if, for instance, the stream started successfully, then restarted and got a 401).
@@ -354,16 +350,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var now = DateTime.Now;
             _diagnosticStore.AddStreamInit(_esStarted, now - _esStarted, failed);
             _esStarted = now;
-        }
-
-        private void OnDataStoreStatusChanged(object sender, DataStoreStatus newStatus)
-        {
-            if (!newStatus.Available || !newStatus.RefreshNeeded) return;
-
-            // The store has just transitioned from unavailable to available, and we can't guarantee that
-            // all the latest data got cached, so let's restart the stream to refresh all the data.
-            _log.Warn("Restarting stream to refresh data after data store outage");
-            _es.Restart(false);
         }
 
         private IEventSource CreateEventSource(Uri uri, HttpConfiguration httpConfig)

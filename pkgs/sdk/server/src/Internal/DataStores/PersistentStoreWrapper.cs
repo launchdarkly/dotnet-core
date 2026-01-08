@@ -22,7 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
     /// class adds the caching behavior that we normally want for any persistent data store.
     /// </para>
     /// </remarks>
-    internal sealed class PersistentStoreWrapper : IDataStore, IExternalDataSourceSupport
+    internal sealed class PersistentStoreWrapper : IDataStore, ISettableCache
     {
         private readonly IPersistentDataStore _core;
         private readonly DataStoreCacheConfig _caching;
@@ -36,7 +36,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         private readonly PersistentDataStoreStatusManager _statusManager;
 
         private readonly object _externalStoreLock = new object();
-        private IDataStoreExporter _externalDataStore;
+        private ICacheExporter _externalCache;
 
         private volatile bool _inited;
         
@@ -46,9 +46,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             IDataStoreUpdates dataStoreUpdates,
             TaskExecutor taskExecutor,
             Logger log,
-            IDataStoreExporter externalDataStore = null
+            ICacheExporter externalCache = null
             ) :
-            this(new PersistentStoreAsyncAdapter(coreAsync), caching, dataStoreUpdates, taskExecutor, log, externalDataStore)
+            this(new PersistentStoreAsyncAdapter(coreAsync), caching, dataStoreUpdates, taskExecutor, log, externalCache)
         { }
 
         internal PersistentStoreWrapper(
@@ -57,14 +57,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             IDataStoreUpdates dataStoreUpdates,
             TaskExecutor taskExecutor,
             Logger log,
-            IDataStoreExporter externalDataStore = null
+            ICacheExporter externalCache = null
             )
         {
             this._core = core;
             this._caching = caching;
             this._dataStoreUpdates = dataStoreUpdates;
             this._log = log;
-            this._externalDataStore = externalDataStore;
+            this._externalCache = externalCache;
 
             _cacheIndefinitely = caching.IsEnabled && caching.IsInfiniteTtl;
             if (caching.IsEnabled)
@@ -139,11 +139,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         /// layer.
         /// </remarks>
         /// <param name="externalDataSource">The external data source to sync from during recovery</param>
-        public void SetExternalDataSource(IDataStoreExporter externalDataSource)
+        public void SetCacheExporter(ICacheExporter externalDataSource)
         {
             lock (_externalStoreLock)
             {
-                _externalDataStore = externalDataSource;
+                _externalCache = externalDataSource;
             }
         }
 
@@ -390,30 +390,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 return false;
             }
 
-            IDataStoreExporter externalDataStore;
+            ICacheExporter externalCache;
             lock (_externalStoreLock)
             {
-                externalDataStore = _externalDataStore;
+                externalCache = _externalCache;
             }
 
             // If we have an external data source (e.g., WriteThroughStore's memory store) that is initialized,
             // use that as the authoritative source. Otherwise, fall back to our internal cache if it's configured
             // to cache indefinitely.
-            if (externalDataStore != null)
+            if (externalCache != null)
             {
-                // Check if the external store has data (is initialized)
-                // We use IDataStore interface to check initialization if available
-                var externalStoreInitialized = false;
-                if (externalDataStore is IDataStore externalStore)
-                {
-                    externalStoreInitialized = externalStore.Initialized();
-                }
-
-                if (externalStoreInitialized)
+                if (externalCache.Initialized())
                 {
                     try
                     {
-                        var externalData = externalDataStore.ExportAllData();
+                        var externalData = externalCache.ExportAll();
                         var serializedData = PersistentDataStoreConverter.ToSerializedFormat(externalData);
                         var e = InitCore(serializedData);
 

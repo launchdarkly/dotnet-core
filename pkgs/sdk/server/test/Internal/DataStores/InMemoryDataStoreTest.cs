@@ -496,7 +496,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(OtherDataKind, "key3", 3, item3)
                 .Build());
 
-            var exported = TypedStore.ExportAllData();
+            var exported = TypedStore.ExportAll();
 
             // Should have both data kinds
             Assert.Equal(2, exported.Data.Count());
@@ -519,7 +519,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         [Fact]
         public void ExportAllData_WithEmptyStore_ReturnsEmptyDataSet()
         {
-            var exported = TypedStore.ExportAllData();
+            var exported = TypedStore.ExportAll();
 
             Assert.Empty(exported.Data);
         }
@@ -534,7 +534,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(TestDataKind, "key2", 2, null) // Deleted item
                 .Build());
 
-            var exported = TypedStore.ExportAllData();
+            var exported = TypedStore.ExportAll();
 
             var testKindData = exported.Data.First(kv => kv.Key == TestDataKind).Value;
             Assert.Equal(2, testKindData.Items.Count());
@@ -568,7 +568,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             {
                 exportStarted.Set();
                 continueExport.Wait();
-                return TypedStore.ExportAllData();
+                return TypedStore.ExportAll();
             });
 
             // Wait for export to start
@@ -612,7 +612,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 .Add(TestDataKind, "key1", 1, item1)
                 .Build());
 
-            var exported = TypedStore.ExportAllData();
+            var exported = TypedStore.ExportAll();
 
             // Modify store after export
             var item2 = new TestItem("item2");

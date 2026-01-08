@@ -64,9 +64,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             if (persistentStore != null &&
                 dataSystemConfiguration.PersistentDataStoreMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
             {
-                if (persistentStore is IExternalDataSourceSupport externalSourceSupport)
+                if (persistentStore is ISettableCache externalSourceSupport)
                 {
-                    externalSourceSupport.SetExternalDataSource(memoryStore);
+                    externalSourceSupport.SetCacheExporter(memoryStore);
                 }
             }
 

@@ -32,7 +32,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             _dataStoreUpdates = new DataStoreUpdatesImpl(BasicTaskExecutor, TestLogger);
         }
 
-        private PersistentStoreWrapper MakeWrapperWithExternalSource(IDataStoreExporter externalSource)
+        private PersistentStoreWrapper MakeWrapperWithExternalSource(ICacheExporter externalSource)
         {
             return new PersistentStoreWrapper(
                 _core,
@@ -47,7 +47,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         public void ExternalDataSourceSync_WhenStoreRecovers_SyncsFromExternalSource()
         {
             // Create a mock external data source with some initial data
-            var externalSource = new MockDataStoreExporter();
+            var externalSource = new MockCacheExporter();
             var item1 = new TestItem("item1");
             var item2 = new TestItem("item2");
 
@@ -104,7 +104,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         [Fact]
         public void ExternalDataSourceSync_WithMultipleKinds_SyncsAllKinds()
         {
-            var externalSource = new MockDataStoreExporter();
+            var externalSource = new MockCacheExporter();
             var item1 = new TestItem("item1");
             var item2 = new TestItem("item2");
 
@@ -119,7 +119,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 var statuses = new EventSink<DataStoreStatus>();
                 dataStoreStatusProvider.StatusChanged += statuses.Add;
 
-                wrapper.Init(externalSource.ExportAllData());
+                wrapper.Init(externalSource.ExportAll());
 
                 // Cause error
                 _core.Available = false;
@@ -150,7 +150,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         [Fact]
         public void ExternalDataSourceSync_WhenExportFails_DoesNotRecover()
         {
-            var externalSource = new MockDataStoreExporter();
+            var externalSource = new MockCacheExporter();
             externalSource.SetData(new TestDataBuilder()
                 .Add(TestDataKind, "key1", 1, new TestItem("item1"))
                 .Build());
@@ -161,7 +161,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 var statuses = new EventSink<DataStoreStatus>();
                 dataStoreStatusProvider.StatusChanged += statuses.Add;
 
-                wrapper.Init(externalSource.ExportAllData());
+                wrapper.Init(externalSource.ExportAll());
 
                 // Cause error
                 _core.Available = false;
@@ -201,7 +201,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         [Fact]
         public void ExternalDataSourceSync_WhenInitCoreFails_DoesNotRecover()
         {
-            var externalSource = new MockDataStoreExporter();
+            var externalSource = new MockCacheExporter();
             externalSource.SetData(new TestDataBuilder()
                 .Add(TestDataKind, "key1", 1, new TestItem("item1"))
                 .Build());
@@ -212,7 +212,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 var statuses = new EventSink<DataStoreStatus>();
                 dataStoreStatusProvider.StatusChanged += statuses.Add;
 
-                wrapper.Init(externalSource.ExportAllData());
+                wrapper.Init(externalSource.ExportAll());
 
                 // Cause error
                 _core.Available = false;
@@ -256,7 +256,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 _dataStoreUpdates,
                 BasicTaskExecutor,
                 TestLogger,
-                externalDataStore: null)) // No external source
+                externalCache: null)) // No external source
             {
                 var dataStoreStatusProvider = new DataStoreStatusProviderImpl(wrapper, _dataStoreUpdates);
                 var statuses = new EventSink<DataStoreStatus>();
@@ -294,7 +294,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         [Fact]
         public void ExternalDataSourceSync_WithEmptyExternalSource_HandlesGracefully()
         {
-            var externalSource = new MockDataStoreExporter();
+            var externalSource = new MockCacheExporter();
             // External source has no data
             externalSource.SetData(new TestDataBuilder().Build());
 
@@ -330,7 +330,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         [Fact]
         public void ExternalDataSourceSync_WithDeletedItems_SyncsCorrectly()
         {
-            var externalSource = new MockDataStoreExporter();
+            var externalSource = new MockCacheExporter();
             var item1 = new TestItem("item1");
 
             externalSource.SetData(new TestDataBuilder()
@@ -344,7 +344,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 var statuses = new EventSink<DataStoreStatus>();
                 dataStoreStatusProvider.StatusChanged += statuses.Add;
 
-                wrapper.Init(externalSource.ExportAllData());
+                wrapper.Init(externalSource.ExportAll());
 
                 // Cause error
                 _core.Available = false;
@@ -378,7 +378,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         public void ExternalDataSourceSync_WhenExternalStoreNotInitialized_FallsBackToCache()
         {
             // Create an uninitialized external store
-            var externalSource = new MockDataStoreExporter();
+            var externalSource = new MockCacheExporter();
             externalSource.IsInitialized = false; // Not initialized
 
             using (var wrapper = new PersistentStoreWrapper(
@@ -430,7 +430,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         /// <summary>
         /// Mock implementation of IDataStoreExporter for testing.
         /// </summary>
-        private class MockDataStoreExporter : IDataStoreExporter, IDataStore
+        private class MockCacheExporter : ICacheExporter, IDataStore
         {
             private FullDataSet<ItemDescriptor> _data = new TestDataBuilder().Build();
             public Exception ExportError { get; set; }
@@ -441,7 +441,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 _data = data;
             }
 
-            public FullDataSet<ItemDescriptor> ExportAllData()
+            public FullDataSet<ItemDescriptor> ExportAll()
             {
                 if (ExportError != null)
                 {

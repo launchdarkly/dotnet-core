@@ -13,7 +13,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
     /// Application code cannot see this implementation class and uses
     /// <see cref="Components.InMemoryDataStore"/> instead.
     /// </remarks>
-    internal class InMemoryDataStore : IDataStore, IDataStoreMetadata, ITransactionalDataStore, IDataStoreExporter
+    internal class InMemoryDataStore : IDataStore, IDataStoreMetadata, ITransactionalDataStore, ICacheExporter
     {
         private readonly object WriterLock = new object();
 
@@ -201,7 +201,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             return _metadata;
         }
 
-        public FullDataSet<ItemDescriptor> ExportAllData()
+        public FullDataSet<ItemDescriptor> ExportAll()
         {
             lock (WriterLock)
             {

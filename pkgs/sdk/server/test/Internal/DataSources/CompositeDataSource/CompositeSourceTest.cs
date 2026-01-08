@@ -80,6 +80,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Wait for the first data source to report initializing
             WaitForStatus(capturingSink, DataSourceState.Initializing);
 
+            // Verify we're at the first source initially
+            Assert.True(compositeSource.IsAtFirst());
+
             // Wait for interrupted state
             WaitForStatus(capturingSink, DataSourceState.Interrupted);
 
@@ -92,6 +95,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             // Verify that the composite source is initialized
             Assert.True(compositeSource.Initialized);
+
+            // Verify we're no longer at the first source (we've moved to the third)
+            Assert.False(compositeSource.IsAtFirst());
 
             compositeSource.Dispose();
         }
@@ -194,6 +200,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // The second factory should be called again since it's the only remaining factory
             Assert.Equal(2, secondFactoryCallCount);
 
+            // After GoToFirst, the second factory is now the first in the list (since first was blacklisted)
+            // so IsAtFirst should be true
+            Assert.True(compositeSource.IsAtFirst());
+
             compositeSource.Dispose();
         }
 
@@ -265,6 +275,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Wait for the first data source to report initializing
             WaitForStatus(capturingSink, DataSourceState.Initializing);
 
+            // Verify we're at the first source initially
+            Assert.True(compositeSource.IsAtFirst());
+
             // Capture the UpdateSink that was passed to the first data source
             // This is the disableable wrapper that will be disabled when we move to the second source
             firstDataSourceUpdatesSink = firstDataSource.UpdateSink;
@@ -276,6 +289,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             // Wait for valid state from the second source
             WaitForStatus(capturingSink, DataSourceState.Valid);
+
+            // Verify we're no longer at the first source (we've moved to the second)
+            Assert.False(compositeSource.IsAtFirst());
 
             // Verify that Start() completed successfully
             var startResult = await startTask;
@@ -346,6 +362,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that the composite source is initialized
             Assert.True(compositeSource.Initialized);
 
+            // Verify we're at the first source (only one source in the list)
+            Assert.True(compositeSource.IsAtFirst());
+
             // Dispose the composite source
             compositeSource.Dispose();
 
@@ -412,6 +431,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Wait for Initializing status (from first source)
             WaitForStatus(capturingSink, DataSourceState.Initializing);
 
+            // Verify we're at the first source initially
+            Assert.True(compositeSource.IsAtFirst());
+
             // Wait for Interrupted status (from first source failure)
             // Additional Interrupted statuses from subsequent source failures may be suppressed by the status sanitizer
             WaitForStatus(capturingSink, DataSourceState.Interrupted);
@@ -427,6 +449,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 "Did not receive Off status with expected error message within timeout",
                 actualTimeout
             );
+
+            // After moving to later sources, we should no longer be at first
+            Assert.False(compositeSource.IsAtFirst());
 
             // Verify that the first Start() call completed successfully
             var startResult = await startTask;
@@ -468,6 +493,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Verify that Start() completed but returned false (no sources available)
             var startResult = await startTask;
             Assert.False(startResult, "Start() should return false when there are no sources");
+
+            // Verify that IsAtFirst returns false when there are no sources (no current entry)
+            Assert.False(compositeSource.IsAtFirst());
 
             // Verify that a second call to Start() also fails
             var secondStartResult = await compositeSource.Start();

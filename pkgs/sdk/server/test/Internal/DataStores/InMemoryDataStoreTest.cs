@@ -480,5 +480,150 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         }
 
         #endregion
+
+        #region ExportAllData tests
+
+        [Fact]
+        public void ExportAllData_ReturnsCompleteSnapshot()
+        {
+            var item1 = new TestItem("item1");
+            var item2 = new TestItem("item2");
+            var item3 = new TestItem("item3");
+
+            store.Init(new TestDataBuilder()
+                .Add(TestDataKind, "key1", 1, item1)
+                .Add(TestDataKind, "key2", 2, item2)
+                .Add(OtherDataKind, "key3", 3, item3)
+                .Build());
+
+            var exported = TypedStore.ExportAll();
+
+            // Should have both data kinds
+            Assert.Equal(2, exported.Data.Count());
+
+            // Verify TestDataKind data
+            var testKindData = exported.Data.First(kv => kv.Key == TestDataKind).Value;
+            Assert.Equal(2, testKindData.Items.Count());
+            Assert.Equal(item1, testKindData.Items.First(kv => kv.Key == "key1").Value.Item);
+            Assert.Equal(1, testKindData.Items.First(kv => kv.Key == "key1").Value.Version);
+            Assert.Equal(item2, testKindData.Items.First(kv => kv.Key == "key2").Value.Item);
+            Assert.Equal(2, testKindData.Items.First(kv => kv.Key == "key2").Value.Version);
+
+            // Verify OtherDataKind data
+            var otherKindData = exported.Data.First(kv => kv.Key == OtherDataKind).Value;
+            Assert.Single(otherKindData.Items);
+            Assert.Equal(item3, otherKindData.Items.First().Value.Item);
+            Assert.Equal(3, otherKindData.Items.First().Value.Version);
+        }
+
+        [Fact]
+        public void ExportAllData_WithEmptyStore_ReturnsEmptyDataSet()
+        {
+            var exported = TypedStore.ExportAll();
+
+            Assert.Empty(exported.Data);
+        }
+
+        [Fact]
+        public void ExportAllData_WithDeletedItems_IncludesDeletedItems()
+        {
+            var item1 = new TestItem("item1");
+
+            store.Init(new TestDataBuilder()
+                .Add(TestDataKind, "key1", 1, item1)
+                .Add(TestDataKind, "key2", 2, null) // Deleted item
+                .Build());
+
+            var exported = TypedStore.ExportAll();
+
+            var testKindData = exported.Data.First(kv => kv.Key == TestDataKind).Value;
+            Assert.Equal(2, testKindData.Items.Count());
+
+            // Regular item
+            var regularItem = testKindData.Items.First(kv => kv.Key == "key1").Value;
+            Assert.Equal(item1, regularItem.Item);
+            Assert.Equal(1, regularItem.Version);
+
+            // Deleted item
+            var deletedItem = testKindData.Items.First(kv => kv.Key == "key2").Value;
+            Assert.Null(deletedItem.Item);
+            Assert.Equal(2, deletedItem.Version);
+        }
+
+        [Fact]
+        public void ExportAllData_IsThreadSafe()
+        {
+            // Initialize with some data
+            var item1 = new TestItem("item1");
+            store.Init(new TestDataBuilder()
+                .Add(TestDataKind, "key1", 1, item1)
+                .Build());
+
+            // Start export in background thread
+            System.Threading.Tasks.Task<FullDataSet<ItemDescriptor>> exportTask = null;
+            var exportStarted = new System.Threading.ManualResetEventSlim(false);
+            var continueExport = new System.Threading.ManualResetEventSlim(false);
+
+            exportTask = System.Threading.Tasks.Task.Run(() =>
+            {
+                exportStarted.Set();
+                continueExport.Wait();
+                return TypedStore.ExportAll();
+            });
+
+            // Wait for export to start
+            exportStarted.Wait();
+
+            // Try to perform concurrent upsert (should block until export completes)
+            var item2 = new TestItem("item2");
+            var upsertTask = System.Threading.Tasks.Task.Run(() =>
+            {
+                store.Upsert(TestDataKind, "key2", new ItemDescriptor(2, item2));
+            });
+
+            // Let export continue
+            continueExport.Set();
+
+            // Wait for both operations to complete
+            var exported = exportTask.Result;
+            upsertTask.Wait();
+
+            // Export should have completed successfully (no need to assert on value type)
+
+            // Either key2 is in the export (upsert happened before export) or not (upsert happened after)
+            // Both are valid outcomes as long as no exception was thrown
+            var testKindEntry = exported.Data.FirstOrDefault(kv => kv.Key == TestDataKind);
+            if (testKindEntry.Value.Items != null && testKindEntry.Value.Items.Any())
+            {
+                Assert.Contains(testKindEntry.Value.Items, kv => kv.Key == "key1");
+                // key2 may or may not be present depending on timing
+            }
+
+            // Verify store now has both items
+            Assert.Equal(item1, store.Get(TestDataKind, "key1").Value.Item);
+            Assert.Equal(item2, store.Get(TestDataKind, "key2").Value.Item);
+        }
+
+        [Fact]
+        public void ExportAllData_ReturnsImmutableSnapshot()
+        {
+            var item1 = new TestItem("item1");
+            store.Init(new TestDataBuilder()
+                .Add(TestDataKind, "key1", 1, item1)
+                .Build());
+
+            var exported = TypedStore.ExportAll();
+
+            // Modify store after export
+            var item2 = new TestItem("item2");
+            store.Upsert(TestDataKind, "key2", new ItemDescriptor(2, item2));
+
+            // Exported data should not be affected
+            var testKindData = exported.Data.First(kv => kv.Key == TestDataKind).Value;
+            Assert.Single(testKindData.Items);
+            Assert.Equal("key1", testKindData.Items.First().Key);
+        }
+
+        #endregion
     }
 }

@@ -37,6 +37,12 @@
 
         <!-- fail if XML comments are missing or invalid -->
         <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+        <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
@@ -117,6 +123,23 @@
         <Compile Update="Subsystems\IComponentConfigurer.cs">
             <SubType></SubType>
         </Compile>
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="..\CHANGELOG.md">
+        <Link>CHANGELOG.md</Link>
+      </Content>
+      <Content Include="..\CONTRIBUTING.md">
+        <Link>CONTRIBUTING.md</Link>
+      </Content>
+      <Content Include="..\index.md">
+        <Link>index.md</Link>
+      </Content>
+      <Content Include="..\README.md">
+        <Link>README.md</Link>
+      </Content>
+      <Content Include="..\toc.yml">
+        <Link>toc.yml</Link>
+      </Content>
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.ClientSdk.snk</AssemblyOriginatorKeyFile>

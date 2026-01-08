@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
 using LaunchDarkly.Cache;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -18,7 +19,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         private readonly bool _isInfiniteTtl;
         private readonly List<DataStoreTypes.DataKind> _cachedDataKinds = new List<DataStoreTypes.DataKind>();
 
-        private readonly object _cacheLock = new object();
+        private readonly object _cacheLock = new ReaderWriterLockSlim();
 
         public PersistenceCacheContainer()
         {
@@ -211,9 +212,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             lock (_cacheLock)
             {
                 _cachingEnabled = false;
-                _itemCache.Clear();
-                _allCache.Clear();
-                _initCache.Clear();
+                _itemCache?.Clear();
+                _allCache?.Clear();
+                _initCache?.Clear();
             }
         }
 

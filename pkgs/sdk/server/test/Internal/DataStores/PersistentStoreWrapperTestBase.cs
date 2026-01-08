@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -660,8 +661,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
     
     public class MockCoreBase : IDisposable
     {
-        public IDictionary<DataKind, IDictionary<string, SerializedItemDescriptor>> Data =
-            new Dictionary<DataKind, IDictionary<string, SerializedItemDescriptor>>();
+        public ConcurrentDictionary<DataKind, ConcurrentDictionary<string, SerializedItemDescriptor>> Data =
+            new ConcurrentDictionary<DataKind, ConcurrentDictionary<string, SerializedItemDescriptor>>();
         public bool PersistOnlyAsString = false;
         public bool Inited;
         public int InitedQueryCount;
@@ -708,7 +709,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             foreach (var e in allData.Data)
             {
                 var kind = e.Key;
-                Data[kind] = e.Value.Items.ToDictionary(kv => kv.Key, kv => StorableItem(kind, kv.Value));
+                Data[kind] = new ConcurrentDictionary<string, SerializedItemDescriptor>(
+                    e.Value.Items.Select(kv => new KeyValuePair<string, SerializedItemDescriptor>(kv.Key, StorableItem(kind, kv.Value))));
             }
             Inited = true;
         }
@@ -716,11 +718,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         public bool Upsert(DataKind kind, string key, SerializedItemDescriptor item)
         {
             MaybeThrowError();
-            if (!Data.ContainsKey(kind))
-            {
-                Data[kind] = new Dictionary<string, SerializedItemDescriptor>();
-            }
-            if (Data[kind].TryGetValue(key, out var oldItem))
+            var kindData = Data.GetOrAdd(kind, _ => new ConcurrentDictionary<string, SerializedItemDescriptor>());
+
+            if (kindData.TryGetValue(key, out var oldItem))
             {
                 // If PersistOnlyAsString is true, simulate the kind of implementation where we can't see the
                 // version as a separate attribute in the database and must deserialize the item to get it.
@@ -732,7 +732,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                     return false;
                 }
             }
-            Data[kind][key] = StorableItem(kind, item);
+            kindData[key] = StorableItem(kind, item);
             return true;
         }
 
@@ -750,20 +750,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
         public void ForceSet(DataKind kind, string key, int version, object item)
         {
-            if (!Data.ContainsKey(kind))
-            {
-                Data[kind] = new Dictionary<string, SerializedItemDescriptor>();
-            }
+            var kindData = Data.GetOrAdd(kind, _ => new ConcurrentDictionary<string, SerializedItemDescriptor>());
             var serializedItemDesc = new SerializedItemDescriptor(version,
                 item is null, kind.Serialize(new ItemDescriptor(version, item)));
-            Data[kind][key] = StorableItem(kind, serializedItemDesc);
+            kindData[key] = StorableItem(kind, serializedItemDesc);
         }
 
         public void ForceRemove(DataKind kind, string key)
         {
-            if (Data.ContainsKey(kind))
+            if (Data.TryGetValue(kind, out var kindData))
             {
-                Data[kind].Remove(key);
+                kindData.TryRemove(key, out _);
             }
         }
 

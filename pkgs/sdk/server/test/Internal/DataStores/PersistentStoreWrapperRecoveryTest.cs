@@ -427,6 +427,267 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
         }
 
+        #region Cache Disabling Tests
+
+        [Fact]
+        public void DisableCache_PreventsSubsequentReads_FromUsingCache()
+        {
+            // Arrange
+            using (var wrapper = MakeWrapperWithExternalSource(null))
+            {
+                var item1 = new TestItem("item1");
+                var item2 = new TestItem("item2");
+
+                // Initialize wrapper with item1
+                wrapper.Init(new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 1, item1)
+                    .Build());
+
+                // Verify item1 is cached
+                var cachedResult = wrapper.Get(TestDataKind, "key1");
+                Assert.Equal(item1, cachedResult.Value.Item);
+
+                // Change the underlying data in the core store
+                _core.Data[TestDataKind]["key1"] = new SerializedItemDescriptor(2, false, TestItem.Serialize(new ItemDescriptor(2, item2)));
+
+                // Before disable, should still get cached item1
+                cachedResult = wrapper.Get(TestDataKind, "key1");
+                Assert.Equal(item1, cachedResult.Value.Item);
+
+                // Act - Disable cache
+                wrapper.DisableCache();
+
+                // Assert - Should now get item2 from core, not cached item1
+                var directResult = wrapper.Get(TestDataKind, "key1");
+                Assert.Equal(item2, directResult.Value.Item);
+                Assert.Equal(2, directResult.Value.Version);
+            }
+        }
+
+        [Fact]
+        public void DisableCache_PreventsSubsequentWrites_FromPopulatingCache()
+        {
+            // Arrange
+            using (var wrapper = MakeWrapperWithExternalSource(null))
+            {
+                var item1 = new TestItem("item1");
+                var item2 = new TestItem("item2");
+
+                // Initialize
+                wrapper.Init(new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 1, item1)
+                    .Build());
+
+                // Act - Disable cache
+                wrapper.DisableCache();
+
+                // Perform an upsert
+                wrapper.Upsert(TestDataKind, "key2", new ItemDescriptor(1, item2));
+
+                // Make core unavailable to verify cache wasn't populated
+                _core.Available = false;
+                _core.Error = FakeError;
+
+                // Assert - Should fail reading key2 because cache wasn't populated
+                Assert.Throws<NotImplementedException>(() => wrapper.Get(TestDataKind, "key2"));
+            }
+        }
+
+        [Fact]
+        public void DisableCache_ClearsExistingCache()
+        {
+            // Arrange
+            using (var wrapper = MakeWrapperWithExternalSource(null))
+            {
+                var item1 = new TestItem("item1");
+                var item2 = new TestItem("item2");
+
+                // Populate cache
+                wrapper.Init(new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 1, item1)
+                    .Build());
+
+                // Verify cache is populated
+                var cachedResult = wrapper.Get(TestDataKind, "key1");
+                Assert.Equal(item1, cachedResult.Value.Item);
+
+                // Change underlying data
+                _core.Data[TestDataKind]["key1"] = new SerializedItemDescriptor(2, false, TestItem.Serialize(new ItemDescriptor(2, item2)));
+
+                // Act - Disable cache
+                wrapper.DisableCache();
+
+                // Assert - Should get item2 from core (cache was cleared)
+                var result = wrapper.Get(TestDataKind, "key1");
+                Assert.Equal(item2, result.Value.Item);
+                Assert.Equal(2, result.Value.Version);
+            }
+        }
+
+        [Fact]
+        public void DisableCache_DuringConcurrentReads_NoExceptions()
+        {
+            // Arrange
+            using (var wrapper = MakeWrapperWithExternalSource(null))
+            {
+                var item = new TestItem("item1");
+                wrapper.Init(new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 1, item)
+                    .Build());
+
+                var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+                var readCount = 0;
+                var iterations = 1000;
+                var readsStarted = new System.Threading.Tasks.TaskCompletionSource<bool>();
+
+                // Act
+                var readTasks = new List<System.Threading.Tasks.Task>();
+                for (int t = 0; t < 5; t++)
+                {
+                    var taskIndex = t;
+                    readTasks.Add(System.Threading.Tasks.Task.Run(() =>
+                    {
+                        for (int i = 0; i < iterations; i++)
+                        {
+                            if (taskIndex == 0 && i == 10)
+                            {
+                                readsStarted.TrySetResult(true);
+                            }
+
+                            try
+                            {
+                                wrapper.Get(TestDataKind, "key1");
+                                System.Threading.Interlocked.Increment(ref readCount);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.Add(ex);
+                            }
+                        }
+                    }));
+                }
+
+                // Wait for reads to start, then disable
+                Assert.True(readsStarted.Task.Wait(TimeSpan.FromSeconds(2)), "Reads failed to start in time");
+                wrapper.DisableCache();
+
+                Assert.True(System.Threading.Tasks.Task.WaitAll(readTasks.ToArray(), TimeSpan.FromSeconds(10)),
+                    "Read tasks did not complete in time");
+
+                // Assert
+                Assert.Empty(exceptions);
+                Assert.Equal(5 * iterations, readCount);
+            }
+        }
+
+        [Fact]
+        public void DisableCache_DuringConcurrentWrites_NoExceptions()
+        {
+            // Arrange
+            using (var wrapper = MakeWrapperWithExternalSource(null))
+            {
+                var item = new TestItem("item1");
+                wrapper.Init(new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 1, item)
+                    .Build());
+
+                var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+                var writeCount = 0;
+                var iterations = 500;
+                var writesStarted = new System.Threading.Tasks.TaskCompletionSource<bool>();
+
+                // Act
+                var writeTasks = new List<System.Threading.Tasks.Task>();
+                for (int t = 0; t < 5; t++)
+                {
+                    var taskIndex = t;
+                    writeTasks.Add(System.Threading.Tasks.Task.Run(() =>
+                    {
+                        for (int i = 0; i < iterations; i++)
+                        {
+                            if (taskIndex == 0 && i == 10)
+                            {
+                                writesStarted.TrySetResult(true);
+                            }
+
+                            try
+                            {
+                                wrapper.Upsert(TestDataKind, $"key{i % 10}", new ItemDescriptor(i, item));
+                                System.Threading.Interlocked.Increment(ref writeCount);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.Add(ex);
+                            }
+                        }
+                    }));
+                }
+
+                // Wait for writes to start, then disable
+                Assert.True(writesStarted.Task.Wait(TimeSpan.FromSeconds(2)), "Writes failed to start in time");
+                wrapper.DisableCache();
+
+                Assert.True(System.Threading.Tasks.Task.WaitAll(writeTasks.ToArray(), TimeSpan.FromSeconds(10)),
+                    "Write tasks did not complete in time");
+
+                // Assert
+                Assert.Empty(exceptions);
+                Assert.Equal(5 * iterations, writeCount);
+            }
+        }
+
+        [Fact]
+        public void DisableCache_DuringInit_NoExceptions()
+        {
+            // Arrange
+            using (var wrapper = MakeWrapperWithExternalSource(null))
+            {
+                var item = new TestItem("item1");
+                var testData = new TestDataBuilder()
+                    .Add(TestDataKind, "key1", 1, item)
+                    .Build();
+
+                var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+                var initCount = 0;
+                var iterations = 100;
+                var initsStarted = new System.Threading.Tasks.TaskCompletionSource<bool>();
+
+                // Act
+                var initTask = System.Threading.Tasks.Task.Run(() =>
+                {
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        if (i == 5)
+                        {
+                            initsStarted.TrySetResult(true);
+                        }
+
+                        try
+                        {
+                            wrapper.Init(testData);
+                            System.Threading.Interlocked.Increment(ref initCount);
+                        }
+                        catch (Exception ex)
+                        {
+                            exceptions.Add(ex);
+                        }
+                    }
+                });
+
+                // Wait for inits to start, then disable
+                Assert.True(initsStarted.Task.Wait(TimeSpan.FromSeconds(2)), "Inits failed to start in time");
+                wrapper.DisableCache();
+
+                Assert.True(initTask.Wait(TimeSpan.FromSeconds(10)), "Init task did not complete in time");
+
+                // Assert
+                Assert.Empty(exceptions);
+                Assert.Equal(iterations, initCount);
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Mock implementation of IDataStoreExporter for testing.
         /// </summary>

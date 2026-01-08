@@ -167,17 +167,29 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <summary>
         /// Action applier for synchronizers that handles falling back to the next synchronizer when Interrupted and Off states is seen.
         /// </summary>
-        private class ActionApplierTimedFallbackAndRecovery : IDataSourceObserver
+        internal class ActionApplierTimedFallbackAndRecovery : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
             private readonly object _lock = new object();
-            private Task _interruptedFallbackTask;
-            private CancellationTokenSource _interruptedFallbackCanceller;
-            private static readonly TimeSpan InterruptedFallbackTimeout = TimeSpan.FromMinutes(2);
+            private Task _fallbackTask;
+            private CancellationTokenSource _fallbackCanceller;
+            private Task _recoveryTask;
+            private CancellationTokenSource _recoveryCanceller;
+            private readonly TimeSpan _interruptedFallbackTimeout;
+            private readonly TimeSpan _validRecoveryTimeout;
+            private static readonly TimeSpan DefaultInterruptedFallbackTimeout = TimeSpan.FromMinutes(2);
+            private static readonly TimeSpan DefaultValidRecoveryTimeout = TimeSpan.FromMinutes(5);
 
             public ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable)
+                : this(actionable, DefaultInterruptedFallbackTimeout, DefaultValidRecoveryTimeout)
+            {
+            }
+
+            internal ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, TimeSpan interruptedFallbackTimeout, TimeSpan validRecoveryTimeout)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+                _interruptedFallbackTimeout = interruptedFallbackTimeout;
+                _validRecoveryTimeout = validRecoveryTimeout;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -185,9 +197,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 lock (_lock)
                 {
                     // If there's a pending fallback task and status is not Interrupted, cancel it
-                    if (_interruptedFallbackTask != null && newState != DataSourceState.Interrupted)
+                    if (_fallbackTask != null && newState != DataSourceState.Interrupted)
                     {
                         CancelPendingFallbackTask();
+                    }
+
+                    // If there's a pending recovery task and status is not Valid, cancel it
+                    if (_recoveryTask != null && newState != DataSourceState.Valid)
+                    {
+                        CancelPendingRecoveryTask();
                     }
 
                     // When a synchronizer reports it is off, fall back immediately
@@ -204,17 +222,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     }
 
                     // If status is Interrupted, schedule a fallback task if not already scheduled
-                    if (_interruptedFallbackTask == null && newState == DataSourceState.Interrupted)
+                    if (_fallbackTask == null && newState == DataSourceState.Interrupted)
                     {
-                        _interruptedFallbackCanceller = new CancellationTokenSource();
-                        var cancellationToken = _interruptedFallbackCanceller.Token;
+                        _fallbackCanceller = new CancellationTokenSource();
+                        var cancellationToken = _fallbackCanceller.Token;
 
                         // Schedule a task to check after 2 minutes if status is still Interrupted
-                        _interruptedFallbackTask = Task.Run(async () =>
+                        _fallbackTask = Task.Run(async () =>
                         {
                             try
                             {
-                                await Task.Delay(InterruptedFallbackTimeout, cancellationToken);
+                                await Task.Delay(_interruptedFallbackTimeout, cancellationToken);
 
                                 // If we reach here, the task wasn't cancelled during the delay
                                 // But we need to check again inside the lock to handle race conditions
@@ -222,15 +240,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 {
                                     // If _interruptedFallbackTask is null, the task was cancelled after the delay completed
                                     // Also check if the token was cancelled as an additional safety check
-                                    if (_interruptedFallbackTask == null || cancellationToken.IsCancellationRequested)
+                                    if (_fallbackTask == null || cancellationToken.IsCancellationRequested)
                                     {
                                         return;
                                     }
 
                                     // Clean up
-                                    _interruptedFallbackCanceller?.Dispose();
-                                    _interruptedFallbackCanceller = null;
-                                    _interruptedFallbackTask = null;
+                                    _fallbackCanceller?.Dispose();
+                                    _fallbackCanceller = null;
+                                    _fallbackTask = null;
 
                                     // Do the fallback: dispose current, go to next, start current
                                     _actionable.DisposeCurrent();
@@ -244,9 +262,57 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 // Clean up the task reference
                                 lock (_lock)
                                 {
-                                    _interruptedFallbackTask = null;
+                                    _fallbackTask = null;
                                 }
                                 // The CancellationTokenSource will be disposed by CancelPendingFallbackTask
+                            }
+                        }, cancellationToken);
+                    }
+
+                    // If we are not at the first of the underlying sources and status is Valid, schedule a recovery task if not already scheduled
+                    if (_recoveryTask == null && !_actionable.IsAtFirst() && newState == DataSourceState.Valid)
+                    {
+                        _recoveryCanceller = new CancellationTokenSource();
+                        var cancellationToken = _recoveryCanceller.Token;
+
+                        // Schedule a task to check after 5 minutes if status is still Valid
+                        _recoveryTask = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await Task.Delay(_validRecoveryTimeout, cancellationToken);
+
+                                // If we reach here, the task wasn't cancelled during the delay
+                                // But we need to check again inside the lock to handle race conditions
+                                lock (_lock)
+                                {
+                                    // If _validRecoveryTask is null, the task was cancelled after the delay completed
+                                    // Also check if the token was cancelled as an additional safety check
+                                    if (_recoveryTask == null || cancellationToken.IsCancellationRequested)
+                                    {
+                                        return;
+                                    }
+
+                                    // Clean up
+                                    _recoveryCanceller?.Dispose();
+                                    _recoveryCanceller = null;
+                                    _recoveryTask = null;
+
+                                    // Do the recovery: dispose current, go to first, start current
+                                    _actionable.DisposeCurrent();
+                                    _actionable.GoToFirst();
+                                    _actionable.StartCurrent();
+                                }
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                // Task was cancelled, which is expected if status changed
+                                // Clean up the task reference
+                                lock (_lock)
+                                {
+                                    _recoveryTask = null;
+                                }
+                                // The CancellationTokenSource will be disposed by CancelPendingRecoveryTask
                             }
                         }, cancellationToken);
                     }
@@ -255,22 +321,31 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             private void CancelPendingFallbackTask()
             {
-                if (_interruptedFallbackCanceller != null)
+                if (_fallbackCanceller != null)
                 {
-                    _interruptedFallbackCanceller.Cancel();
-                    _interruptedFallbackCanceller.Dispose();
-                    _interruptedFallbackCanceller = null;
+                    _fallbackCanceller.Cancel();
+                    _fallbackCanceller.Dispose();
+                    _fallbackCanceller = null;
                 }
 
-                _interruptedFallbackTask = null;
+                _fallbackTask = null;
+            }
+
+            private void CancelPendingRecoveryTask()
+            {
+                if (_recoveryCanceller != null)
+                {
+                    _recoveryCanceller.Cancel();
+                    _recoveryCanceller.Dispose();
+                    _recoveryCanceller = null;
+                }
+
+                _recoveryTask = null;
             }
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                lock (_lock)
-                {
-                    CancelPendingFallbackTask();
-                }
+                // apply does nothing wrt fallback and recovery, only status matters
             }
         }
 

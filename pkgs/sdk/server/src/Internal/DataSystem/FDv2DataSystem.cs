@@ -72,9 +72,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
             var writeThroughStore = new WriteThroughStore(memoryStore, persistentStore,
                 dataSystemConfiguration.PersistentDataStoreMode);
-
-            // TODO: When a persistent store is available we monitor it, is this a consistent choice.
-            // TODO: Update the responses data store monitoring?
+            
             var dataStoreStatusProvider = new DataStoreStatusProviderImpl(writeThroughStore, dataStoreUpdates);
             var dataSourceUpdates = new DataSourceUpdatesImpl(writeThroughStore, dataStoreStatusProvider,
                 clientContext.TaskExecutor, logger, logConfig.LogDataSourceOutageAsErrorAfter);

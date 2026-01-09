@@ -22,6 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly string _compositeDescription;
         private readonly Logger _log;
         private readonly object _lock = new object();
+        private readonly object _actionQueueLock = new object();
         private readonly Queue<Action> _pendingActions = new Queue<Action>();
         private bool _isProcessingActions;
         private bool _disposed;
@@ -145,7 +146,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private void EnqueueAction(Action action)
         {
             bool shouldProcess = false;
-            lock (_lock)
+            lock (_actionQueueLock)
             {
                 _pendingActions.Enqueue(action);
                 if (!_isProcessingActions)
@@ -171,7 +172,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             while (true)
             {
                 Action action;
-                lock (_lock)
+                lock (_actionQueueLock)
                 {
                     // Check if disposed to allow disposal to interrupt action processing
                     if (_disposed || _pendingActions.Count == 0)

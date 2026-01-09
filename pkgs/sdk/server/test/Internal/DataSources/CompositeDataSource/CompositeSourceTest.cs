@@ -72,7 +72,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 (thirdSourceFactory, actionApplierFactory)
             };
 
-            var compositeSource = new CompositeSource(capturingSink, factoryTuples);
+            var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
 
             // Start the composite source
             var startTask = compositeSource.Start();
@@ -153,7 +153,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 (secondSourceFactory, secondActionApplierFactory)
             };
 
-            var compositeSource = new CompositeSource(capturingSink, factoryTuples, circular: true);
+            var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger, circular: true);
 
             // Start the composite source
             var startTask = compositeSource.Start();
@@ -267,7 +267,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 (secondSourceFactory, secondActionApplierFactory)
             };
 
-            var compositeSource = new CompositeSource(capturingSink, factoryTuples, circular: true);
+            var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger, circular: true);
 
             // Start the composite source
             var startTask = compositeSource.Start();
@@ -344,7 +344,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 (sourceFactory, actionApplierFactory)
             };
 
-            var compositeSource = new CompositeSource(capturingSink, factoryTuples);
+            var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
 
             // Start the composite source
             var startTask = compositeSource.Start();
@@ -423,7 +423,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 (thirdSourceFactory, actionApplierFactory)
             };
 
-            var compositeSource = new CompositeSource(capturingSink, factoryTuples);
+            var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
 
             // Start the composite source
             var startTask = compositeSource.Start();
@@ -445,7 +445,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink.StatusUpdates,
                 status => status.State == DataSourceState.Off &&
                           status.LastError.HasValue &&
-                          status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
+                          status.LastError.Value.Message == "Composite source test-composite has exhausted its constituent sources.",
                 "Did not receive Off status with expected error message within timeout",
                 actualTimeout
             );
@@ -473,7 +473,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Create CompositeSource with empty factory tuples list
             var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
 
-            var compositeSource = new CompositeSource(capturingSink, factoryTuples);
+            var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
 
             // Start the composite source
             var startTask = compositeSource.Start();
@@ -485,7 +485,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink.StatusUpdates,
                 status => status.State == DataSourceState.Off &&
                           status.LastError.HasValue &&
-                          status.LastError.Value.Message == "CompositeDataSource has exhausted all available sources.",
+                          status.LastError.Value.Message == "Composite source test-composite has exhausted its constituent sources.",
                 "Did not receive Off status with expected error message within timeout",
                 actualTimeout
             );
@@ -579,7 +579,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // If we see Off state, blacklist the current source and fallback to next
                 if (newState == DataSourceState.Off)
                 {
-                    _actionable.BlacklistCurrent();
+                    _actionable.BlockCurrent();
                     _actionable.DisposeCurrent();
                     _actionable.GoToNext();
                     _actionable.StartCurrent();

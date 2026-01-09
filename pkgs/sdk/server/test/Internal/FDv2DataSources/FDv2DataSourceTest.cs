@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.FDv2DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
@@ -123,7 +124,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -283,7 +285,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -422,7 +425,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -551,7 +555,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -700,7 +705,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             TestLogger.Info("Starting data source");
@@ -794,7 +800,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -880,7 +887,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -1001,7 +1009,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -1064,7 +1073,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -1084,7 +1094,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.True(statusUpdates.Count > 0, "Expected at least 1 status update");
             Assert.Equal(DataSourceState.Off, statusUpdates[0].State);
             Assert.True(statusUpdates[0].LastError.HasValue, "Expected error message in Off status");
-            Assert.Equal("CompositeDataSource has exhausted all available sources.", statusUpdates[0].LastError.Value.Message);
+            Assert.Equal("Composite source FDv2DataSource has exhausted its constituent sources.", statusUpdates[0].LastError.Value.Message);
 
             // Verify that Apply was never called
             capturingSink.Applies.ExpectNoValue(TimeSpan.FromMilliseconds(100));
@@ -1149,7 +1159,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -1261,7 +1272,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 capturingSink,
                 initializers,
                 synchronizers,
-                fdv1Synchronizers
+                fdv1Synchronizers,
+                TestLogger
             );
 
             // Start the data source
@@ -1346,6 +1358,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Create the action applier with test-friendly timeouts
             var applier = new FDv2DataSource.ActionApplierTimedFallbackAndRecovery(
                 mockActionable,
+                TestLogger,
                 fallbackTimeout,
                 recoveryTimeout
             );
@@ -1362,6 +1375,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.True(mockActionable.StartCurrentCalled, "StartCurrent should be called on fallback");
             Assert.False(mockActionable.GoToFirstCalled, "GoToFirst should not be called on fallback");
 
+            // Verify fallback log message was written
+            AssertLogMessageRegex(true, LogLevel.Warn, ".*Current data source has been interrupted for more than.*falling back to next source.*");
+
             // Reset the mock for the next test
             mockActionable.Reset();
 
@@ -1377,6 +1393,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.True(mockActionable.GoToFirstCalled, "GoToFirst should be called on recovery");
             Assert.True(mockActionable.StartCurrentCalled, "StartCurrent should be called on recovery");
             Assert.False(mockActionable.GoToNextCalled, "GoToNext should not be called on recovery");
+
+            // Verify recovery log message was written
+            AssertLogMessageRegex(true, LogLevel.Info, ".*Current data source has been valid for more than.*recovering to primary source.*");
 
             // Reset the mock for the next test
             mockActionable.Reset();
@@ -1401,7 +1420,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool GoToNextCalled { get; private set; }
             public bool GoToFirstCalled { get; private set; }
             public bool StartCurrentCalled { get; private set; }
-            public bool BlacklistCurrentCalled { get; private set; }
+            public bool BlockCurrentCalled { get; private set; }
             private bool _isAtFirst = false;
 
             public void DisposeCurrent()
@@ -1425,9 +1444,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 return Task.FromResult(true);
             }
 
-            public void BlacklistCurrent()
+            public void BlockCurrent()
             {
-                BlacklistCurrentCalled = true;
+                BlockCurrentCalled = true;
             }
 
             public bool IsAtFirst()
@@ -1446,7 +1465,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 GoToNextCalled = false;
                 GoToFirstCalled = false;
                 StartCurrentCalled = false;
-                BlacklistCurrentCalled = false;
+                BlockCurrentCalled = false;
                 _isAtFirst = false;
             }
         }

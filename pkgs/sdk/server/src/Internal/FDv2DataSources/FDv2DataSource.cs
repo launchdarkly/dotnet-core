@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Subsystems;
@@ -21,20 +22,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <param name="initializers">List of data source factories used for initialization</param>
         /// <param name="synchronizers">List of data source factories used for synchronization</param>
         /// <param name="fdv1Synchronizers">List of data source factories used for FDv1 synchronization if fallback to FDv1 occurs</param>
+        /// <param name="logger">the logger instance to use</param>
         /// <returns>a new data source instance</returns>
         public static IDataSource CreateFDv2DataSource(
             IDataSourceUpdatesV2 updatesSink,
             IList<SourceFactory> initializers,
             IList<SourceFactory> synchronizers,
-            IList<SourceFactory> fdv1Synchronizers)
+            IList<SourceFactory> fdv1Synchronizers,
+            Logger logger)
         {
+            var sublogger = logger.SubLogger(LogNames.FDv2DataSourceSubLog);
+            
             // Here we make a combined composite source, with the initializer source first which switches or falls back to the 
             // synchronizer source when the initializer succeeds or when the initializer source reports Off (all initializers failed)
             ActionApplierFactory blacklistWhenSuccessOrOff =
                 (actionable) => new ActionApplierBlacklistWhenSuccessOrOff(actionable);
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
-                (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable);
+                (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable, sublogger);
 
             ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
 
@@ -64,7 +69,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         }
 
                         // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
-                        return new CompositeSource(sink, initializerFactory, circular: false);
+                        return new CompositeSource("Initializers", sink, initializerFactory, sublogger, circular: false);
                     },
                     (actionable) => new CompositeObserver(
                         initializationObserver, blacklistWhenSuccessOrOff(actionable))
@@ -86,7 +91,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 timedFallbackAndRecoveryApplierFactory));
                         }
 
-                        return new CompositeSource(sink, synchronizersFactoryTuples);
+                        return new CompositeSource("Synchronizers", sink, synchronizersFactoryTuples, sublogger);
                     },
                     (actionable) =>
                     {
@@ -116,12 +121,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
                         }
 
-                        return new CompositeSource(sink, fdv1SynchronizersFactoryTuples);
+                        return new CompositeSource("FDv1FallbackSynchronizers", sink, fdv1SynchronizersFactoryTuples, sublogger);
                     }, (applier) => fallbackSynchronizationObserver
                 ));
             }
 
-            return new CompletingDataSource(new CompositeSource(updatesSink, underlyingComposites, circular: false),
+            return new CompletingDataSource(new CompositeSource("FDv2DataSource", updatesSink, underlyingComposites, sublogger, circular: false),
                 initializationTracker);
         }
 
@@ -170,6 +175,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         internal class ActionApplierTimedFallbackAndRecovery : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
+            private readonly Logger _log;
             private readonly object _lock = new object();
             private Task _fallbackTask;
             private CancellationTokenSource _fallbackCanceller;
@@ -180,14 +186,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             private static readonly TimeSpan DefaultInterruptedFallbackTimeout = TimeSpan.FromMinutes(2);
             private static readonly TimeSpan DefaultValidRecoveryTimeout = TimeSpan.FromMinutes(5);
 
-            public ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable)
-                : this(actionable, DefaultInterruptedFallbackTimeout, DefaultValidRecoveryTimeout)
+            public ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, Logger logger)
+                : this(actionable, logger, DefaultInterruptedFallbackTimeout, DefaultValidRecoveryTimeout)
             {
             }
 
-            internal ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, TimeSpan interruptedFallbackTimeout, TimeSpan validRecoveryTimeout)
+            internal ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, Logger logger, TimeSpan interruptedFallbackTimeout, TimeSpan validRecoveryTimeout)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+                _log = logger ?? throw new ArgumentNullException(nameof(logger));
                 _interruptedFallbackTimeout = interruptedFallbackTimeout;
                 _validRecoveryTimeout = validRecoveryTimeout;
             }
@@ -213,7 +220,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     {
                         if (newError != null && !newError.Value.Recoverable)
                         {
-                            _actionable.BlacklistCurrent();
+                            _actionable.BlockCurrent();
                         }
                         _actionable.DisposeCurrent();
                         _actionable.GoToNext();
@@ -249,6 +256,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                     _fallbackCanceller?.Dispose();
                                     _fallbackCanceller = null;
                                     _fallbackTask = null;
+
+                                    _log.Warn("Current data source has been interrupted for more than {0} minutes, falling back to next source.", _interruptedFallbackTimeout.TotalMinutes);
 
                                     // Do the fallback: dispose current, go to next, start current
                                     _actionable.DisposeCurrent();
@@ -297,6 +306,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                     _recoveryCanceller?.Dispose();
                                     _recoveryCanceller = null;
                                     _recoveryTask = null;
+
+                                    _log.Info("Current data source has been valid for more than {0} minutes, recovering to primary source.", _validRecoveryTimeout.TotalMinutes);
 
                                     // Do the recovery: dispose current, go to first, start current
                                     _actionable.DisposeCurrent();
@@ -367,7 +378,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 // When Off status is seen, blacklist current, dispose current, go to next, and start current
                 if (newState == DataSourceState.Off)
                 {
-                    _actionable.BlacklistCurrent();
+                    _actionable.BlockCurrent();
                     _actionable.DisposeCurrent();
                     _actionable.GoToNext();
                     _actionable.StartCurrent();
@@ -382,7 +393,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 // From a forward development perspective this could be because we had a local stale selector which was
                 // persisted in some way, and we are getting up to date via an initializer.
                 if (changeSet.Selector.IsEmpty) return;
-                _actionable.BlacklistCurrent();
+                _actionable.BlockCurrent();
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();
@@ -402,7 +413,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             {
                 if (newError != null && newError.Value.FDv1Fallback)
                 {
-                    _actionable.BlacklistCurrent(); // blacklist the synchronizers altogether
+                    _actionable.BlockCurrent(); // blacklist the synchronizers altogether
                     _actionable.DisposeCurrent(); // dispose the synchronizers
                     _actionable.GoToNext(); // go to the FDv1 fallback synchronizer
                     _actionable.StartCurrent(); // start the FDv1 fallback synchronizer

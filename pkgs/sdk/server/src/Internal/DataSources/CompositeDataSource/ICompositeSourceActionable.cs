@@ -34,10 +34,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         bool IsAtFirst();
 
         /// <summary>
-        /// Blacklists the current source. This prevents the current source from being used again. 
-        /// Note that blacklisting does not tear down the current data source, it just prevents it from being used again.
+        /// Blocks the the current source's factory. This prevents the current source's factory from being used again. 
+        /// Note that this does not tear down the current data source, it just prevents its factory from being used again.
         /// </summary>
-        void BlacklistCurrent();
+        void BlockCurrent();
     }
 }
 

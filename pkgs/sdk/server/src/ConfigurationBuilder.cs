@@ -420,8 +420,7 @@ namespace LaunchDarkly.Sdk.Server
         /// </remarks>
         /// <param name="dataSystemBuilder">the data system builder</param>
         /// <returns>the same builder</returns>
-        /// TODO: SDK-1678: Internal until ready for use.
-        internal ConfigurationBuilder DataSystem(DataSystemBuilder dataSystemBuilder)
+        public ConfigurationBuilder DataSystem(DataSystemBuilder dataSystemBuilder)
         {
             _dataSystem = dataSystemBuilder;
             return this;

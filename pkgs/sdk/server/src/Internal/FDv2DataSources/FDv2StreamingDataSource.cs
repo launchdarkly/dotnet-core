@@ -224,9 +224,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     if (!storeError)
                     {
                         _lastStoreUpdateFailed.GetAndSet(false);
-
-                        // TODO: This may be more nuanced or not required once we have the composite
-                        // data source.
                         MaybeMarkInitialized();
                     }
                     else

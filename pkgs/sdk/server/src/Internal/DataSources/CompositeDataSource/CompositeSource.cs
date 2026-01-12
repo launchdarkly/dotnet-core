@@ -24,6 +24,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly object _lock = new object();
         private readonly object _actionQueueLock = new object();
         private readonly Queue<Action> _pendingActions = new Queue<Action>();
+        private bool _actionQueueShutdown = false;
         private bool _isProcessingActions;
         private bool _disposed;
 
@@ -108,6 +109,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private void InternalDispose(DataSourceStatus.ErrorInfo? error = null)
         {
+            lock (_actionQueueLock)
+            {
+                _pendingActions.Clear();
+                _actionQueueShutdown = true;
+            }
             // When disposing the whole composite, we bypass the action queue and tear
             // down the current data source immediately while still honoring the same
             // state transitions under the shared lock. Any queued actions become no-ops
@@ -144,6 +150,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             bool shouldProcess = false;
             lock (_actionQueueLock)
             {
+                if (_actionQueueShutdown)
+                {
+                    return;
+                }
                 _pendingActions.Enqueue(action);
                 if (!_isProcessingActions)
                 {
@@ -171,7 +181,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 lock (_actionQueueLock)
                 {
                     // Check if disposed to allow disposal to interrupt action processing
-                    if (_disposed || _pendingActions.Count == 0)
+                    if (_actionQueueShutdown || _pendingActions.Count == 0)
                     {
                         _isProcessingActions = false;
                         return;

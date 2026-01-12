@@ -10,9 +10,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// It is in early access. If you want access to this feature please join the EAP. https://launchdarkly.com/docs/sdk/features/data-saving-mode
     /// </para>
     /// </summary>
-    internal static class DataSystemComponents
+    public static class DataSystemComponents
     {
-        // TODO: SDK-1678: Internal until ready for use.
         
         /// <summary>
         /// Get a builder for a polling data source.

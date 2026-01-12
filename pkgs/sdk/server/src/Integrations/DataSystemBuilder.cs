@@ -11,10 +11,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// It is in early access. If you want access to this feature please join the EAP. https://launchdarkly.com/docs/sdk/features/data-saving-mode
     /// </para>
     /// </summary>
-    internal sealed class DataSystemBuilder
+    public sealed class DataSystemBuilder
     {
-        // TODO: SDK-1678: Internal until ready for use.
-
         private readonly List<IComponentConfigurer<IDataSource>> _initializers =
             new List<IComponentConfigurer<IDataSource>>();
 
@@ -89,6 +87,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             return this;
         }
 
+        /// <summary>
+        /// Configures the persistent data store.
+        /// </summary>
+        /// <param name="persistentStore">the persistent data store</param>
+        /// <param name="mode">the mode for the persistent data store</param>
+        /// <returns>a reference to the builder</returns>
+        /// <remarks>
+        /// The SDK will use the persistent data store to store feature flag data.
+        /// </remarks>
+        /// <seealso cref="DataSystemConfiguration.DataStoreMode"/>
         public DataSystemBuilder PersistentStore(IComponentConfigurer<IDataStore> persistentStore,
             DataSystemConfiguration.DataStoreMode mode)
         {

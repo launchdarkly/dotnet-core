@@ -102,8 +102,7 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// <summary>
         /// The configured selector source.
         /// </summary>
-        /// TODO: SDK-1678: Internal until ready for use.
-        internal ISelectorSource SelectorSource { get; }
+        public ISelectorSource SelectorSource { get; }
 
         /// <summary>
         /// Constructs a new instance with only the public properties.

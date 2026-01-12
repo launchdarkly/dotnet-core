@@ -25,10 +25,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     ///         .FDv1FallbackSynchronizer(DataSystemComponents.FDv1Polling()));
     /// </code>
     /// </example>
-    internal sealed class FDv2PollingDataSourceBuilder : IComponentConfigurer<IDataSource>, IDiagnosticDescription
+    public sealed class FDv2PollingDataSourceBuilder : IComponentConfigurer<IDataSource>, IDiagnosticDescription
     {
-        // TODO: SDK-1678: Internal until ready for use.
-
         /// <summary>
         /// The default value for <see cref="PollInterval(TimeSpan)"/>: 30 seconds.
         /// </summary>

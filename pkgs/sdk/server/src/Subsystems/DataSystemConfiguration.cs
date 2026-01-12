@@ -9,10 +9,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
     /// It is in early access. If you want access to this feature please join the EAP. https://launchdarkly.com/docs/sdk/features/data-saving-mode
     /// </para>
     /// </summary>
-    internal sealed class DataSystemConfiguration
+    public sealed class DataSystemConfiguration
     {
-        // TODO: SDK-1678: Internal until ready for use.
-
         /// <summary>
         /// The persistent data store mode.
         /// </summary>

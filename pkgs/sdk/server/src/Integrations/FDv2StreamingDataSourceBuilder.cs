@@ -25,10 +25,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     ///         .FDv1FallbackSynchronizer(DataSystemComponents.FDv1Polling()));
     /// </code>
     /// </example>
-    internal sealed class FDv2StreamingDataSourceBuilder : IComponentConfigurer<IDataSource>, IDiagnosticDescription
+    public sealed class FDv2StreamingDataSourceBuilder : IComponentConfigurer<IDataSource>, IDiagnosticDescription
     {
-        // TODO: SDK-1678: Internal until ready for use.
-
         /// <summary>
         /// The default value for <see cref="InitialReconnectDelay(TimeSpan)"/>: 1000 milliseconds.
         /// </summary>
@@ -92,7 +90,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public LdValue DescribeConfiguration(LdClientContext context) =>
             LdValue.BuildObject()
                 .WithStreamingProperties(
-                    StandardEndpoints.IsCustomUri(_serviceEndpointsOverride ?? context.ServiceEndpoints, e => e.StreamingBaseUri),
+                    StandardEndpoints.IsCustomUri(_serviceEndpointsOverride ?? context.ServiceEndpoints,
+                        e => e.StreamingBaseUri),
                     false,
                     _initialReconnectDelay
                 )

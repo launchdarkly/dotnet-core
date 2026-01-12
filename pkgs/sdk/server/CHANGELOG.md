@@ -1,5 +1,17 @@
 # Changelog
 
+## [8.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.4...LaunchDarkly.ServerSdk-v8.11.0) (2026-01-12)
+
+
+### Features
+
+* **experimental:** Release EAP support for FDv2 data system. ([d78799a](https://github.com/launchdarkly/dotnet-core/commit/d78799acb38323c8ca7207046b41570e1d333a28))
+
+
+### Bug Fixes
+
+* Update FileDataSource to process reload triggers under lock. ([#199](https://github.com/launchdarkly/dotnet-core/issues/199)) ([75f51c6](https://github.com/launchdarkly/dotnet-core/commit/75f51c67bff8ccf36035a948763998c10f083dbd))
+
 ## [8.10.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.3...LaunchDarkly.ServerSdk-v8.10.4) (2025-11-10)
 
 

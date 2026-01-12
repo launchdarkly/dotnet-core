@@ -121,10 +121,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // dispose of the current data source
                 _currentDataSource?.Dispose();
                 _currentDataSource = null;
-
-                // clear any queued actions and reset processing state
-                _pendingActions.Clear();
-                _isProcessingActions = false;
                 _currentEntry = default;
                 _disposed = true;
             }

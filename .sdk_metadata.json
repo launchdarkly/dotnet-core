@@ -73,7 +73,7 @@
           "introduced": "5.4"
         },
         "webProxy": {
-          "introduced": "1.0"
+          "introduced": "3.2"
         }
       },
       "releases": {

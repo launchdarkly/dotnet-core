@@ -6,14 +6,13 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// A set of different data system modes which provided pre-configured <see cref="DataSystemBuilder"/>s.
     /// <para>
     /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
-    /// It is not suitable for production usage. Do not use it. You have been warned.
+    /// It is in early access. If you want access to this feature please join the EAP. https://launchdarkly.com/docs/sdk/features/data-saving-mode
     /// </para>
     /// </summary>
-    internal sealed class DataSystemModes
+    public sealed class DataSystemModes
     {
         // This implementation is non-static to allow for easy usage with "Components".
         // Where we can return an instance of this object, and the user can chain into their desired configuration.
-        // TODO: SDK-1678: Internal until ready for use.
 
         /// <summary>
         /// Configure's LaunchDarkly's recommended flag data acquisition strategy.

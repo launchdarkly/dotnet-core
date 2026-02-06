@@ -11,7 +11,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// Contains methods for configuring the polling data source.
     /// <para>
     /// This class is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
-    /// It is not suitable for production usage. Do not use it. You have been warned.
+    /// It is in early access. If you want access to this feature please join the EAP. https://launchdarkly.com/docs/sdk/features/data-saving-mode
     /// </para>
     /// </summary>
     /// <example>
@@ -25,10 +25,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     ///         .FDv1FallbackSynchronizer(DataSystemComponents.FDv1Polling()));
     /// </code>
     /// </example>
-    internal sealed class FDv2PollingDataSourceBuilder : IComponentConfigurer<IDataSource>, IDiagnosticDescription
+    public sealed class FDv2PollingDataSourceBuilder : IComponentConfigurer<IDataSource>, IDiagnosticDescription
     {
-        // TODO: SDK-1678: Internal until ready for use.
-
         /// <summary>
         /// The default value for <see cref="PollInterval(TimeSpan)"/>: 30 seconds.
         /// </summary>

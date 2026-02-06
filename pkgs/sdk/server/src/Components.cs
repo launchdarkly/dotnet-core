@@ -490,7 +490,6 @@ namespace LaunchDarkly.Sdk.Server
         /// <see cref="ConfigurationBuilder.DataStore"/> in the configuration.
         /// </summary>
         /// <returns>a configuration builder</returns>
-        /// TODO: SDK-1678: Internal until ready for use.
-        internal static DataSystemModes DataSystem() => new DataSystemModes();
+        public static DataSystemModes DataSystem() => new DataSystemModes();
     }
 }

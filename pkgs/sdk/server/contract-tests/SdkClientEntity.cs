@@ -487,27 +487,16 @@ namespace TestService
                 }
 
                 // Configure synchronizers
-                if (sdkParams.DataSystem.Synchronizers != null)
+                if (sdkParams.DataSystem.Synchronizers != null && sdkParams.DataSystem.Synchronizers.Length > 0)
                 {
                     var synchronizers = new List<IComponentConfigurer<IDataSource>>();
 
-                    // Primary synchronizer
-                    if (sdkParams.DataSystem.Synchronizers.Primary != null)
+                    foreach (var synchronizerParams in sdkParams.DataSystem.Synchronizers)
                     {
-                        var primary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Primary, sdkParams.DataSystem.PayloadFilter);
-                        if (primary != null)
+                        var synchronizer = CreateSynchronizer(synchronizerParams, sdkParams.DataSystem.PayloadFilter);
+                        if (synchronizer != null)
                         {
-                            synchronizers.Add(primary);
-                        }
-                    }
-
-                    // Secondary synchronizer (optional)
-                    if (sdkParams.DataSystem.Synchronizers.Secondary != null)
-                    {
-                        var secondary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Secondary, sdkParams.DataSystem.PayloadFilter);
-                        if (secondary != null)
-                        {
-                            synchronizers.Add(secondary);
+                            synchronizers.Add(synchronizer);
                         }
                     }
 
@@ -517,23 +506,22 @@ namespace TestService
                         
                         // Find the best synchronizer to use for FDv1 fallback configuration
                         // Prefer polling synchronizers since FDv1 fallback is polling-based
-                        SdkConfigSynchronizerParams synchronizerForFallback = null;
+                        SdkConfigDataSynchronizerParams synchronizerForFallback = null;
                         
-                        // First, try to find a polling synchronizer (check secondary first, then primary)
-                        if (sdkParams.DataSystem.Synchronizers.Secondary != null && 
-                            sdkParams.DataSystem.Synchronizers.Secondary.Polling != null)
+                        // First, try to find a polling synchronizer
+                        foreach (var syncParams in sdkParams.DataSystem.Synchronizers)
                         {
-                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Secondary;
+                            if (syncParams.Polling != null)
+                            {
+                                synchronizerForFallback = syncParams;
+                                break;
+                            }
                         }
-                        else if (sdkParams.DataSystem.Synchronizers.Primary != null && 
-                                 sdkParams.DataSystem.Synchronizers.Primary.Polling != null)
+                        
+                        // If no polling synchronizer found, use the first synchronizer (could be streaming)
+                        if (synchronizerForFallback == null && sdkParams.DataSystem.Synchronizers.Length > 0)
                         {
-                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Primary;
-                        }
-                        // If no polling synchronizer found, use primary synchronizer (could be streaming)
-                        else if (sdkParams.DataSystem.Synchronizers.Primary != null)
-                        {
-                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Primary;
+                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers[0];
                         }
                         
                         if (synchronizerForFallback != null)
@@ -563,7 +551,7 @@ namespace TestService
         }
 
         private static IComponentConfigurer<IDataSource> CreateSynchronizer(
-            SdkConfigSynchronizerParams synchronizer,
+            SdkConfigDataSynchronizerParams synchronizer,
             string payloadFilter)
         {
             if (synchronizer.Polling != null)
@@ -608,7 +596,7 @@ namespace TestService
         }
 
         private static IComponentConfigurer<IDataSource> CreateFDv1FallbackSynchronizer(
-            SdkConfigSynchronizerParams synchronizer)
+            SdkConfigDataSynchronizerParams synchronizer)
         {
             // FDv1 fallback synchronizer is always polling-based
             var fdv1PollingBuilder = DataSystemComponents.FDv1Polling();

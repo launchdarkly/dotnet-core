@@ -12,7 +12,7 @@ inputs:
     required: false
     default: ''
   run_fdv2_tests:
-    description: 'Whether to run contract tests from the feat/fdv2 branch'
+    description: 'Whether to run contract tests from the v3.0.0-alpha.3 tag'
     required: false
     default: 'false'
 
@@ -64,7 +64,7 @@ runs:
       shell: bash
       run: dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
 
-    - name: Clone and run contract tests from feat/fdv2 branch
+    - name: Clone and run contract tests from v3.0.0-alpha.3 tag
       if: inputs.run_fdv2_tests == 'true'
       shell: bash
       run: |
@@ -72,7 +72,7 @@ runs:
         git clone https://github.com/launchdarkly/sdk-test-harness.git /tmp/sdk-test-harness
         cp $(dirname ./${{ inputs.service_project_file }})/test-supressions-fdv2.txt /tmp/sdk-test-harness/testharness-suppressions-fdv2.txt
         cd /tmp/sdk-test-harness
-        git checkout feat/fdv2
+        git checkout v3.0.0-alpha.3
         go build -o test-harness .
         ./test-harness -url http://localhost:8000 -debug -status-timeout=360 --skip-from=testharness-suppressions-fdv2.txt --stop-service-at-end
       env:

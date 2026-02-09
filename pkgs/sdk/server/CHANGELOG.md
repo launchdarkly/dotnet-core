@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.12.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.0...LaunchDarkly.ServerSdk-v8.12.0) (2026-02-09)
+
+
+### Features
+
+* Update contract tests to support multiple synchronizers and initializers ([#222](https://github.com/launchdarkly/dotnet-core/issues/222)) ([5b308b5](https://github.com/launchdarkly/dotnet-core/commit/5b308b5dd6e7bd6ee44030c9479d47ba41a54811))
+
 ## [8.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.4...LaunchDarkly.ServerSdk-v8.11.0) (2026-01-12)
 
 

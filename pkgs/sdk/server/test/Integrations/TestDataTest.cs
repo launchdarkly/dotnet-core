@@ -388,9 +388,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
-        public void CustomerScenario_MultiContextAndConditions_StoresCorrectContextKinds()
+        public void AndMatchContext_TwoCustomContextKindsOnSameAttribute_StoresCorrectContextKinds()
         {
-            // This is the exact scenario reported by the customer
             var contextA = ContextKind.Of("context_a");
             var contextB = ContextKind.Of("context_b");
 

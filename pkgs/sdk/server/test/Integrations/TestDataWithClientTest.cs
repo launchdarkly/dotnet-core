@@ -132,5 +132,88 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 }
             }
         }
+
+        [Fact]
+        public void RulesWithContextKindEvaluateCorrectly()
+        {
+            var companyKind = ContextKind.Of("company");
+            var orgKind = ContextKind.Of("org");
+
+            // Create flag with rules targeting specific context kinds
+            _td.Update(_td.Flag("company-flag")
+                .BooleanFlag()
+                .FallthroughVariation(false)
+                .IfMatchContext(companyKind, "name", LdValue.Of("Acme"))
+                .ThenReturn(true));
+
+            using (var client = new LdClient(_config))
+            {
+                // Matching company context returns true
+                var matchingCompany = Context.Builder("company-123")
+                    .Kind(companyKind)
+                    .Set("name", "Acme")
+                    .Build();
+                Assert.True(client.BoolVariation("company-flag", matchingCompany, false));
+
+                // Non-matching company context returns false
+                var nonMatchingCompany = Context.Builder("company-456")
+                    .Kind(companyKind)
+                    .Set("name", "OtherCorp")
+                    .Build();
+                Assert.False(client.BoolVariation("company-flag", nonMatchingCompany, false));
+
+                // User context with same attribute value returns false (different kind)
+                var userContext = Context.Builder("user-123")
+                    .Set("name", "Acme")
+                    .Build();
+                Assert.False(client.BoolVariation("company-flag", userContext, false));
+
+                // Multi-context with matching company returns true
+                var multiContext = Context.NewMulti(
+                    Context.New("user-123"),
+                    Context.Builder("company-123").Kind(companyKind).Set("name", "Acme").Build()
+                );
+                Assert.True(client.BoolVariation("company-flag", multiContext, false));
+            }
+
+            // Test multi-kind rule (AND condition across different context kinds)
+            _td.Update(_td.Flag("multi-kind-flag")
+                .BooleanFlag()
+                .FallthroughVariation(false)
+                .IfMatchContext(companyKind, "name", LdValue.Of("Acme"))
+                .AndMatchContext(orgKind, "tier", LdValue.Of("premium"))
+                .ThenReturn(true));
+
+            using (var client = new LdClient(_config))
+            {
+                // Both conditions match
+                var matchingMulti = Context.NewMulti(
+                    Context.Builder("company-123").Kind(companyKind).Set("name", "Acme").Build(),
+                    Context.Builder("org-456").Kind(orgKind).Set("tier", "premium").Build()
+                );
+                Assert.True(client.BoolVariation("multi-kind-flag", matchingMulti, false));
+
+                // Only company matches
+                var onlyCompanyMatches = Context.NewMulti(
+                    Context.Builder("company-123").Kind(companyKind).Set("name", "Acme").Build(),
+                    Context.Builder("org-456").Kind(orgKind).Set("tier", "standard").Build()
+                );
+                Assert.False(client.BoolVariation("multi-kind-flag", onlyCompanyMatches, false));
+
+                // Only org matches
+                var onlyOrgMatches = Context.NewMulti(
+                    Context.Builder("company-123").Kind(companyKind).Set("name", "OtherCorp").Build(),
+                    Context.Builder("org-456").Kind(orgKind).Set("tier", "premium").Build()
+                );
+                Assert.False(client.BoolVariation("multi-kind-flag", onlyOrgMatches, false));
+
+                // Neither matches
+                var neitherMatches = Context.NewMulti(
+                    Context.Builder("company-123").Kind(companyKind).Set("name", "OtherCorp").Build(),
+                    Context.Builder("org-456").Kind(orgKind).Set("tier", "standard").Build()
+                );
+                Assert.False(client.BoolVariation("multi-kind-flag", neitherMatches, false));
+            }
+        }
     }
 }

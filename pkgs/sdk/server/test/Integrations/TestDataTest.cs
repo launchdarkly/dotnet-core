@@ -302,6 +302,73 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
+        public void FlagRulesWithContextKind()
+        {
+            ContextKind companyKind = ContextKind.Of("company");
+            ContextKind orgKind = ContextKind.Of("org");
+
+            Func<FeatureFlagBuilder, FeatureFlagBuilder> expectedBooleanFlag = fb =>
+                fb.Variations(true, false).On(true).OffVariation(1).FallthroughVariation(0);
+
+            // IfMatchContext with specific context kind
+            VerifyFlag(
+                f => f.IfMatchContext(companyKind, "name", LdValue.Of("Acme")).ThenReturn(true),
+                fb => expectedBooleanFlag(fb).Rules(new RuleBuilder().Id("rule0").Variation(0).Clauses(
+                    new ClauseBuilder().ContextKind(companyKind).Attribute("name").Op("in").Values("Acme").Build()
+                ).Build())
+            );
+
+            // IfNotMatchContext with specific context kind
+            VerifyFlag(
+                f => f.IfNotMatchContext(companyKind, "name", LdValue.Of("Acme")).ThenReturn(true),
+                fb => expectedBooleanFlag(fb).Rules(new RuleBuilder().Id("rule0").Variation(0).Clauses(
+                    new ClauseBuilder().ContextKind(companyKind).Attribute("name").Op("in").Values("Acme").Negate(true).Build()
+                ).Build())
+            );
+
+            // AndMatchContext with multiple context kinds
+            VerifyFlag(
+                f => f.IfMatchContext(companyKind, "name", LdValue.Of("Acme"))
+                    .AndMatchContext(orgKind, "key", LdValue.Of("org-123"))
+                    .ThenReturn(true),
+                fb => expectedBooleanFlag(fb).Rules(new RuleBuilder().Id("rule0").Variation(0).Clauses(
+                    new ClauseBuilder().ContextKind(companyKind).Attribute("name").Op("in").Values("Acme").Build(),
+                    new ClauseBuilder().ContextKind(orgKind).Attribute("key").Op("in").Values("org-123").Build()
+                ).Build())
+            );
+
+            // AndNotMatchContext
+            VerifyFlag(
+                f => f.IfMatchContext(companyKind, "name", LdValue.Of("Acme"))
+                    .AndNotMatchContext(companyKind, "status", LdValue.Of("inactive"))
+                    .ThenReturn(true),
+                fb => expectedBooleanFlag(fb).Rules(new RuleBuilder().Id("rule0").Variation(0).Clauses(
+                    new ClauseBuilder().ContextKind(companyKind).Attribute("name").Op("in").Values("Acme").Build(),
+                    new ClauseBuilder().ContextKind(companyKind).Attribute("status").Op("in").Values("inactive").Negate(true).Build()
+                ).Build())
+            );
+
+            // User context (IfMatch) produces null contextKind (for backwards compatibility)
+            VerifyFlag(
+                f => f.IfMatch("name", LdValue.Of("Lucy")).ThenReturn(true),
+                fb => expectedBooleanFlag(fb).Rules(new RuleBuilder().Id("rule0").Variation(0).Clauses(
+                    new ClauseBuilder().Attribute("name").Op("in").Values("Lucy").Build()
+                ).Build())
+            );
+
+            // Mixing user and non-user context kinds
+            VerifyFlag(
+                f => f.IfMatch("name", LdValue.Of("Lucy"))
+                    .AndMatchContext(companyKind, "name", LdValue.Of("Acme"))
+                    .ThenReturn(true),
+                fb => expectedBooleanFlag(fb).Rules(new RuleBuilder().Id("rule0").Variation(0).Clauses(
+                    new ClauseBuilder().Attribute("name").Op("in").Values("Lucy").Build(),
+                    new ClauseBuilder().ContextKind(companyKind).Attribute("name").Op("in").Values("Acme").Build()
+                ).Build())
+            );
+        }
+
+        [Fact]
         public void ItCanSetTheSamplingRatio()
         {
             UpsertTestFlag(new TestData.FlagBuilder("my-flag").BooleanFlag().On(true).SamplingRatio(3));

@@ -807,7 +807,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                     null,
                     $"rule{index}",
                     r._clauses.Select(c => new Internal.Model.Clause(
-                        null,
+                        c._contextKind,
                         c._attribute,
                         Operator.ForName(c._operator),
                         c._values.ToArray(),
@@ -985,7 +985,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 
             private FlagRuleBuilder AddClause(ContextKind contextKind, AttributeRef attr, string op, LdValue[] values, bool negate)
             {
-                _clauses.Add(new Clause(attr, op, values, negate));
+                // Convert ContextKind.Default to null for consistency
+                ContextKind? storedContextKind = contextKind == ContextKind.Default ? (ContextKind?)null : contextKind;
+                _clauses.Add(new Clause(storedContextKind, attr, op, values, negate));
                 return this;
             }
 
@@ -1046,13 +1048,15 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 
         internal class Clause
         {
+            internal readonly ContextKind? _contextKind;
             internal readonly AttributeRef _attribute;
             internal readonly string _operator;
             internal readonly LdValue[] _values;
             internal readonly bool _negate;
 
-            internal Clause(AttributeRef attribute, string op, LdValue[] values, bool negate)
+            internal Clause(ContextKind? contextKind, AttributeRef attribute, string op, LdValue[] values, bool negate)
             {
+                _contextKind = contextKind;
                 _attribute = attribute;
                 _operator = op;
                 _values = values;

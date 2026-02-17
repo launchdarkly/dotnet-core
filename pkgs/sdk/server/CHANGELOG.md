@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.11.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.0...LaunchDarkly.ServerSdk-v8.11.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* IfMatchContext/AndMatchContext utilize context kind. ([#225](https://github.com/launchdarkly/dotnet-core/issues/225)) ([95bc949](https://github.com/launchdarkly/dotnet-core/commit/95bc9495984976833efd736f36fc4023c37eb663))
+
 ## [8.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.4...LaunchDarkly.ServerSdk-v8.11.0) (2026-01-12)
 
 

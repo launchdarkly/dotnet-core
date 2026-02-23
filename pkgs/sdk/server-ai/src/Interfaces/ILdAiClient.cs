@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 
@@ -24,6 +25,18 @@ public interface ILdAiClient
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
     /// <returns>an AI Config tracker</returns>
+    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue,
+        IReadOnlyDictionary<string, object> variables = null);
+
+    /// <summary>
+    /// Retrieves a LaunchDarkly AI Config identified by the given key.
+    /// </summary>
+    /// <param name="key">the AI Config key</param>
+    /// <param name="context">the context</param>
+    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
+    /// <param name="variables">the list of variables used when interpolating the prompt</param>
+    /// <returns>an AI Config tracker</returns>
+    [Obsolete("Use CompletionConfig instead.")]
     public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null);
 }

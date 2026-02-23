@@ -21,6 +21,24 @@ public sealed class LdAiClient : ILdAiClient
     private readonly ILogger _logger;
 
     /// <summary>
+    /// The name of the AI SDK package.
+    /// </summary>
+    internal const string AiSdkName = "LaunchDarkly.ServerSdk.Ai";
+
+    /// <summary>
+    /// The version of the AI SDK package.
+    /// </summary>
+    internal const string AiSdkVersion = "0.9.1"; // x-release-please-version
+
+    /// <summary>
+    /// The implementation language.
+    /// </summary>
+    internal const string AiSdkLanguage = "dotnet";
+
+    private const string TrackSdkInfo = "$ld:ai:sdk:info";
+    private const string TrackUsageCompletionConfig = "$ld:ai:usage:completion-config";
+
+    /// <summary>
     /// Constructs a new LaunchDarkly AI client. Please note, the client library is an alpha release and is
     /// not considered ready for production use.
     ///
@@ -36,6 +54,17 @@ public sealed class LdAiClient : ILdAiClient
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _logger = _client.GetLogger();
+
+        _client.Track(
+            TrackSdkInfo,
+            Context.Builder(ContextKind.Of("ld_ai"), "ld-internal-tracking").Anonymous(true).Build(),
+            LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "aiSdkName", LdValue.Of(AiSdkName) },
+                { "aiSdkVersion", LdValue.Of(AiSdkVersion) },
+                { "aiSdkLanguage", LdValue.Of(AiSdkLanguage) }
+            }),
+            1);
     }
 
 
@@ -44,10 +73,11 @@ public sealed class LdAiClient : ILdAiClient
     private const string LdContextVariable = "ldctx";
 
     /// <inheritdoc/>
-    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null)
     {
-        _client.Track("$ld:ai:config:function:single", context, LdValue.Of(key), 1);
+        _client.Track(TrackUsageCompletionConfig, context, LdValue.Of(key), 1);
+
 
         var result = _client.JsonVariation(key, context, defaultValue.ToLdValue());
 
@@ -95,6 +125,21 @@ public sealed class LdAiClient : ILdAiClient
 
         return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider), context);
 
+    }
+
+    /// <summary>
+    /// Retrieves a LaunchDarkly AI Config identified by the given key.
+    /// </summary>
+    /// <param name="key">the AI Config key</param>
+    /// <param name="context">the context</param>
+    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
+    /// <param name="variables">the list of variables used when interpolating the prompt</param>
+    /// <returns>an AI Config tracker</returns>
+    [Obsolete("Use CompletionConfig instead.")]
+    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
+        IReadOnlyDictionary<string, object> variables = null)
+    {
+        return CompletionConfig(key, context, defaultValue, variables);
     }
 
 

@@ -23,17 +23,17 @@ public sealed class LdAiClient : ILdAiClient
     /// <summary>
     /// The name of the AI SDK package.
     /// </summary>
-    internal const string AiSdkName = "LaunchDarkly.ServerSdk.Ai";
+    public const string AiSdkName = "LaunchDarkly.ServerSdk.Ai";
 
     /// <summary>
     /// The version of the AI SDK package.
     /// </summary>
-    internal const string AiSdkVersion = "0.9.1"; // x-release-please-version
+    public const string AiSdkVersion = "0.9.1"; // x-release-please-version
 
     /// <summary>
     /// The implementation language.
     /// </summary>
-    internal const string AiSdkLanguage = "dotnet";
+    public const string AiSdkLanguage = "dotnet";
 
     private const string TrackSdkInfo = "$ld:ai:sdk:info";
     private const string TrackUsageCompletionConfig = "$ld:ai:usage:completion-config";

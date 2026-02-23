@@ -113,9 +113,9 @@ public class LdAiClientTest
                 ctx.Key == "ld-internal-tracking" &&
                 ctx.Anonymous),
             It.Is<LdValue>(v =>
-                v.Get("aiSdkName").AsString == LdAiClient.AiSdkName &&
-                v.Get("aiSdkVersion").AsString == LdAiClient.AiSdkVersion &&
-                v.Get("aiSdkLanguage").AsString == LdAiClient.AiSdkLanguage),
+                v.Get("aiSdkName").AsString == SdkInfo.Name &&
+                v.Get("aiSdkVersion").AsString == SdkInfo.Version &&
+                v.Get("aiSdkLanguage").AsString == SdkInfo.Language),
             1), Times.Once);
     }
 

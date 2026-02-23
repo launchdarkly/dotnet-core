@@ -20,21 +20,6 @@ public sealed class LdAiClient : ILdAiClient
     private readonly ILaunchDarklyClient _client;
     private readonly ILogger _logger;
 
-    /// <summary>
-    /// The name of the AI SDK package.
-    /// </summary>
-    public const string AiSdkName = "LaunchDarkly.ServerSdk.Ai";
-
-    /// <summary>
-    /// The version of the AI SDK package.
-    /// </summary>
-    public const string AiSdkVersion = "0.9.1"; // x-release-please-version
-
-    /// <summary>
-    /// The implementation language.
-    /// </summary>
-    public const string AiSdkLanguage = "dotnet";
-
     private const string TrackSdkInfo = "$ld:ai:sdk:info";
     private const string TrackUsageCompletionConfig = "$ld:ai:usage:completion-config";
 
@@ -60,9 +45,9 @@ public sealed class LdAiClient : ILdAiClient
             Context.Builder(ContextKind.Of("ld_ai"), "ld-internal-tracking").Anonymous(true).Build(),
             LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
-                { "aiSdkName", LdValue.Of(AiSdkName) },
-                { "aiSdkVersion", LdValue.Of(AiSdkVersion) },
-                { "aiSdkLanguage", LdValue.Of(AiSdkLanguage) }
+                { "aiSdkName", LdValue.Of(SdkInfo.Name) },
+                { "aiSdkVersion", LdValue.Of(SdkInfo.Version) },
+                { "aiSdkLanguage", LdValue.Of(SdkInfo.Language) }
             }),
             1);
     }

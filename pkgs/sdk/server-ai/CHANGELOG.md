@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.1...LaunchDarkly.ServerSdk.Ai-v0.9.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* Improve usage reporting ([#228](https://github.com/launchdarkly/dotnet-core/issues/228)) ([376b6b0](https://github.com/launchdarkly/dotnet-core/commit/376b6b0cbca28c7b49e5f64ee54b1f6d317d99fa))
+
 ## [0.9.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.0...LaunchDarkly.ServerSdk.Ai-v0.9.1) (2025-08-29)
 
 

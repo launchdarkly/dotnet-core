@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Client.Hooks;
 using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal;
 using LaunchDarkly.Sdk.Client.Internal.DataSources;
@@ -13,6 +14,7 @@ using LaunchDarkly.Sdk.Client.Internal.Events;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
 using LaunchDarkly.Sdk.Client.PlatformSpecific;
 using LaunchDarkly.Sdk.Client.Subsystems;
+using LaunchDarkly.Sdk.Integrations.Plugins;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Internal.Concurrent;
 
@@ -68,6 +70,7 @@ namespace LaunchDarkly.Sdk.Client
         readonly TaskExecutor _taskExecutor;
         readonly AnonymousKeyContextDecorator _anonymousKeyContextDecorator;
         private readonly AutoEnvContextDecorator _autoEnvContextDecorator;
+        private readonly List<Hook> _pluginHooks;
 
         private readonly Logger _log;
 
@@ -227,6 +230,11 @@ namespace LaunchDarkly.Sdk.Client
                     Context = _context
                 });
             }
+
+            var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
+            var environmentMetadata = CreateEnvironmentMetadata();
+            _pluginHooks = this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log);
+            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;
@@ -923,6 +931,23 @@ namespace LaunchDarkly.Sdk.Client
             return await _connectionManager.SetContext(newContext);
         }
 
+        private EnvironmentMetadata CreateEnvironmentMetadata()
+        {
+            var applicationInfo = _config.ApplicationInfo?.Build() ?? new ApplicationInfo();
+
+            var sdkMetadata = new SdkMetadata(
+                SdkPackage.Name,
+                SdkPackage.Version
+            );
+
+            var applicationMetadata = new ApplicationMetadata(
+                applicationInfo.ApplicationId,
+                applicationInfo.ApplicationVersion
+            );
+
+            return new EnvironmentMetadata(sdkMetadata, _config.MobileKey, CredentialType.MobileKey, applicationMetadata);
+        }
+
         /// <summary>
         /// Permanently shuts down the SDK client.
         /// </summary>
@@ -954,6 +979,10 @@ namespace LaunchDarkly.Sdk.Client
                 _connectionManager.Dispose();
                 _dataStore.Dispose();
                 _eventProcessor.Dispose();
+                foreach (var hook in _pluginHooks)
+                {
+                    hook?.Dispose();
+                }
 
                 // Reset the static Instance to null *if* it was referring to this instance
                 DetachInstance();

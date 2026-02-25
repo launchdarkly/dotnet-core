@@ -36,10 +36,11 @@
       "package-name": "LaunchDarkly.ServerSdk.Ai",
       "bump-minor-pre-major": true,
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Ai.csproj"
+        "src/LaunchDarkly.ServerSdk.Ai.csproj",
+        "src/SdkInfo.cs"
       ]
     },
-    "pkgs/sdk/client": {
+    "pkgs/sdk/client":{
       "release-type": "simple",
       "package-name": "LaunchDarkly.ClientSdk",
       "extra-files": [

@@ -5,7 +5,7 @@
   "pkgs/sdk/server": "8.11.1",
   "pkgs/sdk/client": "5.5.4",
   "pkgs/telemetry": "1.4.0",
-  "pkgs/sdk/server-ai": "0.9.1",
+  "pkgs/sdk/server-ai": "0.9.2",
   "pkgs/shared/common": "7.1.1",
   "pkgs/shared/common-json-net": "7.0.2"
 }

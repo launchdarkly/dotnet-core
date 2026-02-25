@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 
@@ -10,7 +11,7 @@ public interface ILdAiClient
 {
 
     /// <summary>
-    /// Retrieves a LaunchDarkly AI Config identified by the given key. The return value
+    /// Retrieves a LaunchDarkly AI Completion Config identified by the given key. The return value
     /// is an <see cref="ILdAiConfigTracker"/>, which makes the configuration available and
     /// provides convenience methods for generating events related to model usage.
     ///
@@ -19,11 +20,23 @@ public interface ILdAiClient
     /// a prompt message.
     ///
     /// </summary>
-    /// <param name="key">the AI Config key</param>
+    /// <param name="key">the AI Completion Config key</param>
     /// <param name="context">the context</param>
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
-    /// <returns>an AI Config tracker</returns>
+    /// <returns>an AI Completion Config tracker</returns>
+    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue,
+        IReadOnlyDictionary<string, object> variables = null);
+
+    /// <summary>
+    /// Retrieves a LaunchDarkly AI Completion Config identified by the given key.
+    /// </summary>
+    /// <param name="key">the AI Completion Config key</param>
+    /// <param name="context">the context</param>
+    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
+    /// <param name="variables">the list of variables used when interpolating the prompt</param>
+    /// <returns>an AI Completion Config tracker</returns>
+    [Obsolete("Use CompletionConfig instead.")]
     public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
         IReadOnlyDictionary<string, object> variables = null);
 }

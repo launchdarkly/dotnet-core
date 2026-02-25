@@ -982,13 +982,13 @@ namespace LaunchDarkly.Sdk.Client
                 _dataSourceUpdateSink.UpdateStatus(DataSourceState.Shutdown, null);
 
                 _backgroundModeManager.BackgroundModeChanged -= OnBackgroundModeChanged;
-                _connectionManager.Dispose();
-                _dataStore.Dispose();
-                _eventProcessor.Dispose();
                 foreach (var hook in _pluginHooks)
                 {
                     hook?.Dispose();
                 }
+                _connectionManager.Dispose();
+                _dataStore.Dispose();
+                _eventProcessor.Dispose();
 
                 // Reset the static Instance to null *if* it was referring to this instance
                 DetachInstance();

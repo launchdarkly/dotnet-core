@@ -70,7 +70,7 @@ namespace LaunchDarkly.Sdk.Client
         readonly TaskExecutor _taskExecutor;
         readonly AnonymousKeyContextDecorator _anonymousKeyContextDecorator;
         private readonly AutoEnvContextDecorator _autoEnvContextDecorator;
-        private readonly List<Hook> _pluginHooks;
+        private readonly List<Hook> _pluginHooks = new List<Hook>();
 
         private readonly Logger _log;
 
@@ -231,10 +231,16 @@ namespace LaunchDarkly.Sdk.Client
                 });
             }
 
-            var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
-            var environmentMetadata = CreateEnvironmentMetadata();
-            _pluginHooks = this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log);
-            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
+            if (_config.Plugins != null)
+            {
+                var pluginConfig = _config.Plugins.Build();
+                if (pluginConfig.Plugins.Any())
+                {
+                    var environmentMetadata = CreateEnvironmentMetadata();
+                    _pluginHooks = this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log);
+                    this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
+                }
+            }
 
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;

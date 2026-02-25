@@ -63,7 +63,17 @@ public sealed class LdAiClient : ILdAiClient
     {
         _client.Track(TrackUsageCompletionConfig, context, LdValue.Of(key), 1);
 
+        return Evaluate(key, context, defaultValue, variables);
+    }
 
+    /// <summary>
+    /// Internal evaluation method that retrieves and parses an AI Config without tracking usage.
+    /// This allows higher-level SDK entry methods to track their own usage events without
+    /// double-counting.
+    /// </summary>
+    private ILdAiConfigTracker Evaluate(string key, Context context, LdAiConfig defaultValue,
+        IReadOnlyDictionary<string, object> variables = null)
+    {
         var result = _client.JsonVariation(key, context, defaultValue.ToLdValue());
 
         var parsed = ParseConfig(result, key);
@@ -87,7 +97,6 @@ public sealed class LdAiClient : ILdAiClient
             }
         }
 
-
         var prompt = new List<LdAiConfig.Message>();
 
         if (parsed.Messages != null)
@@ -109,7 +118,6 @@ public sealed class LdAiClient : ILdAiClient
         }
 
         return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider), context);
-
     }
 
     /// <summary>

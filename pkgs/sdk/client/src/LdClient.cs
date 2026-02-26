@@ -9,6 +9,8 @@ using LaunchDarkly.Sdk.Client.Hooks;
 using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal;
 using LaunchDarkly.Sdk.Client.Internal.DataSources;
+using LaunchDarkly.Sdk.Client.Internal.Hooks.Executor;
+using LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal.DataStores;
 using LaunchDarkly.Sdk.Client.Internal.Events;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
@@ -70,7 +72,8 @@ namespace LaunchDarkly.Sdk.Client
         readonly TaskExecutor _taskExecutor;
         readonly AnonymousKeyContextDecorator _anonymousKeyContextDecorator;
         private readonly AutoEnvContextDecorator _autoEnvContextDecorator;
-        private readonly List<Hook> _pluginHooks = new List<Hook>();
+        private readonly IHookExecutor _hookExecutor;
+        private List<Hook> _pluginHooks = new List<Hook>();
 
         private readonly Logger _log;
 
@@ -241,6 +244,10 @@ namespace LaunchDarkly.Sdk.Client
                     this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
                 }
             }
+
+            _hookExecutor = _pluginHooks.Any()
+                ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), _pluginHooks)
+                : new NoopExecutor();
 
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;
@@ -742,6 +749,15 @@ namespace LaunchDarkly.Sdk.Client
         EvaluationDetail<T> VariationInternal<T>(string featureKey, LdValue defaultJson, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
         {
+            var evalSeriesContext = new EvaluationSeriesContext(featureKey, Context, defaultJson,
+                GetMethodName<T>(checkType, eventFactory));
+            return _hookExecutor.EvaluationSeries(evalSeriesContext, converter,
+                () => EvaluateInternal(featureKey, defaultJson, converter, checkType, eventFactory));
+        }
+
+        EvaluationDetail<T> EvaluateInternal<T>(string featureKey, LdValue defaultJson, LdValue.Converter<T> converter,
+            bool checkType, EventFactory eventFactory)
+        {
             T defaultValue = converter.ToType(defaultJson);
 
             EvaluationDetail<T> errorResult(EvaluationErrorKind kind) =>
@@ -775,22 +791,13 @@ namespace LaunchDarkly.Sdk.Client
                 }
             }
 
-            // The flag.Prerequisites array represents the evaluated prerequisites of this flag. We need to generate
-            // events for both this flag and its prerequisites (recursively), which is necessary to ensure LaunchDarkly
-            // analytics functions properly.
-            //
-            // We're using JsonVariationDetail because the type of the prerequisite is both unknown and irrelevant
-            // to emitting the events.
-            //
-            // We're passing LdValue.Null to match a server-side SDK's behavior when evaluating prerequisites.
-            //
-            // NOTE: if "hooks" functionality is implemented into this SDK, take care that evaluating prerequisites
-            // does not trigger hooks. This may require refactoring the code below to not use JsonVariationDetail.
+            // Prerequisites are evaluated directly via EvaluateInternal to avoid triggering hooks.
             if (flag.Prerequisites != null)
             {
                 foreach (var prerequisiteKey in flag.Prerequisites)
                 {
-                    JsonVariationDetail(prerequisiteKey, LdValue.Null);
+                    EvaluateInternal(prerequisiteKey, LdValue.Null, LdValue.Convert.Json, false,
+                        _eventFactoryWithReasons);
                 }
             }
 
@@ -823,6 +830,18 @@ namespace LaunchDarkly.Sdk.Client
                 defaultJson);
             SendEvaluationEventIfOnline(featureEvent);
             return result;
+        }
+
+        private string GetMethodName<T>(bool checkType, EventFactory eventFactory)
+        {
+            bool isDetail = eventFactory == _eventFactoryWithReasons;
+            var type = typeof(T);
+            if (type == typeof(bool)) return isDetail ? Method.BoolVariationDetail : Method.BoolVariation;
+            if (type == typeof(int)) return isDetail ? Method.IntVariationDetail : Method.IntVariation;
+            if (type == typeof(float)) return isDetail ? Method.FloatVariationDetail : Method.FloatVariation;
+            if (type == typeof(double)) return isDetail ? Method.DoubleVariationDetail : Method.DoubleVariation;
+            if (type == typeof(string)) return isDetail ? Method.StringVariationDetail : Method.StringVariation;
+            return isDetail ? Method.JsonVariationDetail : Method.JsonVariation;
         }
 
         private void SendEvaluationEventIfOnline(EventProcessorTypes.EvaluationEvent e)
@@ -982,10 +1001,7 @@ namespace LaunchDarkly.Sdk.Client
                 _dataSourceUpdateSink.UpdateStatus(DataSourceState.Shutdown, null);
 
                 _backgroundModeManager.BackgroundModeChanged -= OnBackgroundModeChanged;
-                foreach (var hook in _pluginHooks)
-                {
-                    hook?.Dispose();
-                }
+                _hookExecutor.Dispose();
                 _connectionManager.Dispose();
                 _dataStore.Dispose();
                 _eventProcessor.Dispose();

@@ -1,10 +1,26 @@
 using System;
+using System.Collections.Immutable;
 
 namespace LaunchDarkly.Sdk.Client.Hooks
 {
+
+    using SeriesData = ImmutableDictionary<string, object>;
+
     /// <summary>
     /// A Hook is a set of user-defined callbacks that are executed by the SDK at various points
     /// of interest. To create your own hook with customized logic, derive from Hook and override its methods.
+    ///
+    /// Hook currently defines an "evaluation" series, which is composed of two stages:
+    /// "beforeEvaluation" and "afterEvaluation".
+    ///
+    /// These are executed by the SDK before and after the evaluation of a
+    /// feature flag.
+    ///
+    /// Multiple hooks may be configured in the SDK. By default, the SDK will execute each hook's beforeEvaluation
+    /// stage in the order they were configured, and afterEvaluation in reverse order.
+    ///
+    /// This means the last hook defined will tightly wrap the evaluation process, while hooks defined earlier in the
+    /// sequence are nested outside of it.
     /// </summary>
     public class Hook : IDisposable
     {
@@ -12,6 +28,80 @@ namespace LaunchDarkly.Sdk.Client.Hooks
         /// Access this hook's <see cref="HookMetadata"/>.
         /// </summary>
         public HookMetadata Metadata { get; private set; }
+
+
+        /// <summary>
+        /// BeforeEvaluation is executed by the SDK before the evaluation of a feature flag. It does not apply to
+        /// evaluations performed during a call to AllFlagsState.
+        ///
+        /// To pass user-configured data to <see cref="AfterEvaluation"/>, return a modification of the given
+        /// <see cref="SeriesData"/>. You may use existing ImmutableDictionary methods, for example:
+        ///
+        /// <code>
+        /// var builder = data.ToBuilder();
+        /// builder["foo"] = "bar";
+        /// return builder.ToImmutable();
+        /// </code>
+        ///
+        /// Or, you may use the <see cref="SeriesDataBuilder"/> for a fluent API:
+        /// <code>
+        /// return new SeriesDataBuilder(data).Set("foo", "bar").Build();
+        /// </code>
+        ///
+        /// The modified data is not shared with any other hook. It will be passed to subsequent stages in the evaluation
+        /// series, including <see cref="AfterEvaluation"/>.
+        ///
+        /// </summary>
+        /// <param name="context">parameters associated with this evaluation</param>
+        /// <param name="data">user-configurable data, currently empty</param>
+        /// <returns>user-configurable data, which will be forwarded to <see cref="AfterEvaluation"/></returns>
+        public virtual SeriesData BeforeEvaluation(EvaluationSeriesContext context, SeriesData data) =>
+            data;
+
+
+        /// <summary>
+        /// AfterEvaluation is executed by the SDK after the evaluation of a feature flag. It does not apply to
+        /// evaluations performed during a call to AllFlagsState.
+        ///
+        /// The function should return the given <see cref="SeriesData"/> unmodified, for forward compatibility with subsequent
+        /// stages that may be added.
+        ///
+        /// </summary>
+        /// <param name="context">parameters associated with this evaluation</param>
+        /// <param name="data">user-configurable data from the <see cref="BeforeEvaluation"/> stage</param>
+        /// <param name="detail">flag evaluation result</param>
+        /// <returns>user-configurable data, which is currently unused but may be forwarded to subsequent stages in future versions of the SDK</returns>
+        public virtual SeriesData AfterEvaluation(EvaluationSeriesContext context, SeriesData data,
+            EvaluationDetail<LdValue> detail) => data;
+
+
+        /// <summary>
+        /// BeforeIdentify is executed by the SDK before an identify operation.
+        ///
+        /// The modified data is not shared with any other hook. It will be passed to subsequent stages in the identify
+        /// series, including <see cref="AfterIdentify"/>.
+        ///
+        /// </summary>
+        /// <param name="context">parameters associated with this identify operation</param>
+        /// <param name="data">user-configurable data, currently empty</param>
+        /// <returns>user-configurable data, which will be forwarded to <see cref="AfterIdentify"/></returns>
+        public virtual SeriesData BeforeIdentify(IdentifySeriesContext context, SeriesData data) =>
+            data;
+
+
+        /// <summary>
+        /// AfterIdentify is executed by the SDK after an identify operation.
+        ///
+        /// The function should return the given <see cref="SeriesData"/> unmodified, for forward compatibility with subsequent
+        /// stages that may be added.
+        ///
+        /// </summary>
+        /// <param name="context">parameters associated with this identify operation</param>
+        /// <param name="data">user-configurable data from the <see cref="BeforeIdentify"/> stage</param>
+        /// <param name="result">the result of the identify operation</param>
+        /// <returns>user-configurable data, which is currently unused but may be forwarded to subsequent stages in future versions of the SDK</returns>
+        public virtual SeriesData AfterIdentify(IdentifySeriesContext context, SeriesData data,
+            IdentifySeriesResult result) => data;
 
         /// <summary>
         /// Constructs a new Hook with the given name. The name may be used in log messages.

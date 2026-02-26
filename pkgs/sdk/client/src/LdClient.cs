@@ -757,7 +757,7 @@ namespace LaunchDarkly.Sdk.Client
             bool checkType, EventFactory eventFactory)
         {
             var evalSeriesContext = new EvaluationSeriesContext(featureKey, Context, defaultJson,
-                GetMethodName<T>(checkType, eventFactory));
+                GetMethodName<T>(eventFactory));
             return _hookExecutor.EvaluationSeries(evalSeriesContext, converter,
                 () => EvaluateInternal(featureKey, defaultJson, converter, checkType, eventFactory));
         }
@@ -839,7 +839,7 @@ namespace LaunchDarkly.Sdk.Client
             return result;
         }
 
-        private string GetMethodName<T>(bool checkType, EventFactory eventFactory)
+        private string GetMethodName<T>(EventFactory eventFactory)
         {
             bool isDetail = eventFactory == _eventFactoryWithReasons;
             var type = typeof(T);

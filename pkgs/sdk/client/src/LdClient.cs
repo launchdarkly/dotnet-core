@@ -234,20 +234,27 @@ namespace LaunchDarkly.Sdk.Client
                 });
             }
 
+            PluginConfiguration pluginConfig = null;
+            EnvironmentMetadata environmentMetadata = null;
             if (_config.Plugins != null)
             {
-                var pluginConfig = _config.Plugins.Build();
+                pluginConfig = _config.Plugins.Build();
                 if (pluginConfig.Plugins.Any())
                 {
-                    var environmentMetadata = CreateEnvironmentMetadata();
+                    environmentMetadata = CreateEnvironmentMetadata();
                     _pluginHooks = this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log);
-                    this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
                 }
             }
 
             _hookExecutor = _pluginHooks.Any()
                 ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), _pluginHooks)
                 : new NoopExecutor();
+
+            // Register plugins after creating the hook executor to ensure hooks are available
+            if (pluginConfig != null && pluginConfig.Plugins.Any())
+            {
+                this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
+            }
 
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;

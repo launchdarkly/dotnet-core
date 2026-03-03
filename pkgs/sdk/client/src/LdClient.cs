@@ -5,14 +5,18 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Client.Hooks;
 using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal;
 using LaunchDarkly.Sdk.Client.Internal.DataSources;
+using LaunchDarkly.Sdk.Client.Internal.Hooks.Executor;
+using LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal.DataStores;
 using LaunchDarkly.Sdk.Client.Internal.Events;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
 using LaunchDarkly.Sdk.Client.PlatformSpecific;
 using LaunchDarkly.Sdk.Client.Subsystems;
+using LaunchDarkly.Sdk.Integrations.Plugins;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Internal.Concurrent;
 
@@ -68,6 +72,7 @@ namespace LaunchDarkly.Sdk.Client
         readonly TaskExecutor _taskExecutor;
         readonly AnonymousKeyContextDecorator _anonymousKeyContextDecorator;
         private readonly AutoEnvContextDecorator _autoEnvContextDecorator;
+        private readonly IHookExecutor _hookExecutor;
 
         private readonly Logger _log;
 
@@ -227,6 +232,18 @@ namespace LaunchDarkly.Sdk.Client
                     Context = _context
                 });
             }
+
+            var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
+            var environmentMetadata = pluginConfig.Plugins.Any() ? CreateEnvironmentMetadata() : null;
+            var hooks = pluginConfig.Plugins.Any()
+                ? this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log)
+                : new List<Hook>();
+
+            _hookExecutor = hooks.Any()
+                ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), hooks)
+                : new NoopExecutor();
+
+            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;
@@ -728,6 +745,15 @@ namespace LaunchDarkly.Sdk.Client
         EvaluationDetail<T> VariationInternal<T>(string featureKey, LdValue defaultJson, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
         {
+            var evalSeriesContext = new EvaluationSeriesContext(featureKey, Context, defaultJson,
+                GetMethodName<T>(eventFactory));
+            return _hookExecutor.EvaluationSeries(evalSeriesContext, converter,
+                () => EvaluateInternal(featureKey, defaultJson, converter, checkType, eventFactory));
+        }
+
+        EvaluationDetail<T> EvaluateInternal<T>(string featureKey, LdValue defaultJson, LdValue.Converter<T> converter,
+            bool checkType, EventFactory eventFactory)
+        {
             T defaultValue = converter.ToType(defaultJson);
 
             EvaluationDetail<T> errorResult(EvaluationErrorKind kind) =>
@@ -761,22 +787,13 @@ namespace LaunchDarkly.Sdk.Client
                 }
             }
 
-            // The flag.Prerequisites array represents the evaluated prerequisites of this flag. We need to generate
-            // events for both this flag and its prerequisites (recursively), which is necessary to ensure LaunchDarkly
-            // analytics functions properly.
-            //
-            // We're using JsonVariationDetail because the type of the prerequisite is both unknown and irrelevant
-            // to emitting the events.
-            //
-            // We're passing LdValue.Null to match a server-side SDK's behavior when evaluating prerequisites.
-            //
-            // NOTE: if "hooks" functionality is implemented into this SDK, take care that evaluating prerequisites
-            // does not trigger hooks. This may require refactoring the code below to not use JsonVariationDetail.
+            // Prerequisites are evaluated directly via EvaluateInternal to avoid triggering hooks.
             if (flag.Prerequisites != null)
             {
                 foreach (var prerequisiteKey in flag.Prerequisites)
                 {
-                    JsonVariationDetail(prerequisiteKey, LdValue.Null);
+                    EvaluateInternal(prerequisiteKey, LdValue.Null, LdValue.Convert.Json, false,
+                        _eventFactoryWithReasons);
                 }
             }
 
@@ -809,6 +826,18 @@ namespace LaunchDarkly.Sdk.Client
                 defaultJson);
             SendEvaluationEventIfOnline(featureEvent);
             return result;
+        }
+
+        private string GetMethodName<T>(EventFactory eventFactory)
+        {
+            bool isDetail = eventFactory == _eventFactoryWithReasons;
+            var type = typeof(T);
+            if (type == typeof(bool)) return isDetail ? Method.BoolVariationDetail : Method.BoolVariation;
+            if (type == typeof(int)) return isDetail ? Method.IntVariationDetail : Method.IntVariation;
+            if (type == typeof(float)) return isDetail ? Method.FloatVariationDetail : Method.FloatVariation;
+            if (type == typeof(double)) return isDetail ? Method.DoubleVariationDetail : Method.DoubleVariation;
+            if (type == typeof(string)) return isDetail ? Method.StringVariationDetail : Method.StringVariation;
+            return isDetail ? Method.JsonVariationDetail : Method.JsonVariation;
         }
 
         private void SendEvaluationEventIfOnline(EventProcessorTypes.EvaluationEvent e)
@@ -923,6 +952,25 @@ namespace LaunchDarkly.Sdk.Client
             return await _connectionManager.SetContext(newContext);
         }
 
+        private EnvironmentMetadata CreateEnvironmentMetadata()
+        {
+            var applicationInfo = _config.ApplicationInfo?.Build() ?? new ApplicationInfo();
+
+            var sdkMetadata = new SdkMetadata(
+                SdkPackage.Name,
+                SdkPackage.Version
+            );
+
+            var applicationMetadata = new ApplicationMetadata(
+                applicationInfo.ApplicationId,
+                applicationInfo.ApplicationVersion,
+                applicationInfo.ApplicationName,
+                applicationInfo.ApplicationVersionName
+            );
+
+            return new EnvironmentMetadata(sdkMetadata, _config.MobileKey, CredentialType.MobileKey, applicationMetadata);
+        }
+
         /// <summary>
         /// Permanently shuts down the SDK client.
         /// </summary>
@@ -951,6 +999,7 @@ namespace LaunchDarkly.Sdk.Client
                 _dataSourceUpdateSink.UpdateStatus(DataSourceState.Shutdown, null);
 
                 _backgroundModeManager.BackgroundModeChanged -= OnBackgroundModeChanged;
+                _hookExecutor.Dispose();
                 _connectionManager.Dispose();
                 _dataStore.Dispose();
                 _eventProcessor.Dispose();

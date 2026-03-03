@@ -1,8 +1,7 @@
 namespace LaunchDarkly.Sdk.Client.Hooks
 {
     /// <summary>
-    /// IdentifySeriesResult contains the outcome of an identify operation, made available
-    /// in <see cref="Hook.AfterIdentify"/>.
+    /// IdentifySeriesResult contains the outcome of an identify operation.
     /// </summary>
     public sealed class IdentifySeriesResult
     {

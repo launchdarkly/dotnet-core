@@ -974,7 +974,9 @@ namespace LaunchDarkly.Sdk.Client
 
             var applicationMetadata = new ApplicationMetadata(
                 applicationInfo.ApplicationId,
-                applicationInfo.ApplicationVersion
+                applicationInfo.ApplicationVersion,
+                applicationInfo.ApplicationName,
+                applicationInfo.ApplicationVersionName
             );
 
             return new EnvironmentMetadata(sdkMetadata, _config.MobileKey, CredentialType.MobileKey, applicationMetadata);

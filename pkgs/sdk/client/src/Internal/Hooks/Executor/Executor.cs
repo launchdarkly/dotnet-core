@@ -11,12 +11,14 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Executor
     internal sealed class Executor : IHookExecutor
     {
         private readonly List<Hook> _hooks;
+        private readonly Logger _logger;
 
         private readonly IStageExecutor<EvaluationSeriesContext> _beforeEvaluation;
         private readonly IStageExecutor<EvaluationSeriesContext, EvaluationDetail<LdValue>> _afterEvaluation;
 
         public Executor(Logger logger, IEnumerable<Hook> hooks)
         {
+            _logger = logger;
             _hooks = hooks.ToList();
             _beforeEvaluation = new BeforeEvaluation(logger, _hooks, EvaluationStage.Order.Forward);
             _afterEvaluation = new AfterEvaluation(logger, _hooks, EvaluationStage.Order.Reverse);
@@ -40,7 +42,15 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Executor
         {
             foreach (var hook in _hooks)
             {
-                hook?.Dispose();
+                try
+                {
+                    hook?.Dispose();
+                }
+                catch (Exception e)
+                {
+                    _logger.Error("During disposal of hook \"{0}\" reported error: {1}",
+                        hook?.Metadata.Name, e.Message);
+                }
             }
         }
     }

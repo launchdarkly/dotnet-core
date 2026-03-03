@@ -73,7 +73,6 @@ namespace LaunchDarkly.Sdk.Client
         readonly AnonymousKeyContextDecorator _anonymousKeyContextDecorator;
         private readonly AutoEnvContextDecorator _autoEnvContextDecorator;
         private readonly IHookExecutor _hookExecutor;
-        private List<Hook> _pluginHooks = new List<Hook>();
 
         private readonly Logger _log;
 
@@ -234,27 +233,17 @@ namespace LaunchDarkly.Sdk.Client
                 });
             }
 
-            PluginConfiguration pluginConfig = null;
-            EnvironmentMetadata environmentMetadata = null;
-            if (_config.Plugins != null)
-            {
-                pluginConfig = _config.Plugins.Build();
-                if (pluginConfig.Plugins.Any())
-                {
-                    environmentMetadata = CreateEnvironmentMetadata();
-                    _pluginHooks = this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log);
-                }
-            }
+            var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
+            var environmentMetadata = pluginConfig.Plugins.Any() ? CreateEnvironmentMetadata() : null;
+            var hooks = pluginConfig.Plugins.Any()
+                ? this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log)
+                : new List<Hook>();
 
-            _hookExecutor = _pluginHooks.Any()
-                ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), _pluginHooks)
+            _hookExecutor = hooks.Any()
+                ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), hooks)
                 : new NoopExecutor();
 
-            // Register plugins after creating the hook executor to ensure hooks are available
-            if (pluginConfig != null && pluginConfig.Plugins.Any())
-            {
-                this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
-            }
+            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;

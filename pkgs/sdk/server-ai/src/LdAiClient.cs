@@ -58,10 +58,11 @@ public sealed class LdAiClient : ILdAiClient
     private const string LdContextVariable = "ldctx";
 
     /// <inheritdoc/>
-    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
         _client.Track(TrackUsageCompletionConfig, context, LdValue.Of(key), 1);
+        defaultValue ??= LdAiConfig.Disabled;
 
         return Evaluate(key, context, defaultValue, variables);
     }
@@ -129,7 +130,7 @@ public sealed class LdAiClient : ILdAiClient
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
     /// <returns>an AI Completion Config tracker</returns>
     [Obsolete("Use CompletionConfig instead.")]
-    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
         return CompletionConfig(key, context, defaultValue, variables);

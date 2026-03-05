@@ -22,10 +22,11 @@ public interface ILdAiClient
     /// </summary>
     /// <param name="key">the AI Completion Config key</param>
     /// <param name="context">the context</param>
-    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
+    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly. When not provided,
+    /// a disabled config is used as the fallback.</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
     /// <returns>an AI Completion Config tracker</returns>
-    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null);
 
     /// <summary>
@@ -37,6 +38,6 @@ public interface ILdAiClient
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
     /// <returns>an AI Completion Config tracker</returns>
     [Obsolete("Use CompletionConfig instead.")]
-    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue,
+    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null);
 }

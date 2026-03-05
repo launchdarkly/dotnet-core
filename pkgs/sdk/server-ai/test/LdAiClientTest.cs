@@ -324,4 +324,35 @@ public class LdAiClientTest
 
         Assert.Equal("amazing-provider", tracker.Config.Provider.Name);
     }
+
+    [Fact]
+    public void ConfigWithoutDefaultValueUsesDisabledConfig()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var tracker = client.Config("foo", Context.New(ContextKind.Default, "key"));
+
+        Assert.False(tracker.Config.Enabled);
+    }
+
+    [Fact]
+    public void DisabledMethodReturnsDisabledConfig()
+    {
+        var config = LdAiConfig.Disabled;
+        Assert.False(config.Enabled);
+    }
+
+    [Fact]
+    public void DisabledMethodReturnsNewInstanceEachCall()
+    {
+        var first = LdAiConfig.Disabled;
+        var second = LdAiConfig.Disabled;
+        Assert.NotSame(first, second);
+    }
 }

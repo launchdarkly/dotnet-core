@@ -30,7 +30,7 @@ namespace LaunchDarkly.Sdk.Client
     /// <para>
     /// Like all client-side LaunchDarkly SDKs, the <c>LdClient</c> always has a single current <see cref="Context"/>.
     /// You specify this context at initialization time, and you can change it later with <see cref="Identify(Sdk.Context,TimeSpan)"/>
-    /// or <see cref="IdentifyAsync(Sdk.Context, TimeSpan)"/>. All subsequent calls to evaluation methods like
+    /// or <see cref="IdentifyAsync(Sdk.Context)"/>. All subsequent calls to evaluation methods like
     /// <see cref="BoolVariation(string, bool)"/> refer to the flag values for the current context.
     /// </para>
     /// <para>
@@ -106,7 +106,7 @@ namespace LaunchDarkly.Sdk.Client
         /// <remarks>
         /// This is initially the context specified for <see cref="Init(Configuration, Sdk.Context, TimeSpan)"/> or
         /// <see cref="InitAsync(Configuration, Sdk.Context)"/>, but can be changed later with
-        /// <see cref="Identify(Sdk.Context,TimeSpan)"/> or <see cref="IdentifyAsync(Sdk.Context, TimeSpan)"/>.
+        /// <see cref="Identify(Sdk.Context,TimeSpan)"/> or <see cref="IdentifyAsync(Sdk.Context)"/>.
         /// </remarks>
         public Context Context => LockUtils.WithReadLock(_stateLock, () => _context);
 
@@ -906,7 +906,9 @@ namespace LaunchDarkly.Sdk.Client
         }
 
         /// <inheritdoc/>
-        public async Task<bool> IdentifyAsync(Context context, TimeSpan maxWaitTime = default)
+        public Task<bool> IdentifyAsync(Context context) => IdentifyAsync(context, TimeSpan.Zero);
+
+        internal async Task<bool> IdentifyAsync(Context context, TimeSpan maxWaitTime)
         {
             Context newContext = _anonymousKeyContextDecorator.DecorateContext(context);
             if (_config.AutoEnvAttributes)

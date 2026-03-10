@@ -153,7 +153,7 @@ namespace LaunchDarkly.Sdk.Client
             public bool Identify(Context context, System.TimeSpan maxWaitTime) =>
                 throw new System.NotImplementedException();
 
-            public Task<bool> IdentifyAsync(Context context, TimeSpan maxWaitTime = default) =>
+            public Task<bool> IdentifyAsync(Context context) =>
                 throw new System.NotImplementedException();
 
             public int IntVariation(string key, int defaultValue = 0) =>

@@ -1,3 +1,5 @@
+using System;
+
 namespace LaunchDarkly.Sdk.Client.Hooks
 {
     /// <summary>
@@ -12,16 +14,17 @@ namespace LaunchDarkly.Sdk.Client.Hooks
         public Context Context { get; }
 
         /// <summary>
-        /// The timeout in seconds for the identify operation.
+        /// The timeout for the identify operation. A value of <see cref="TimeSpan.Zero"/> indicates
+        /// that no timeout was specified.
         /// </summary>
-        public int Timeout { get; }
+        public TimeSpan Timeout { get; }
 
         /// <summary>
         /// Constructs a new IdentifySeriesContext.
         /// </summary>
         /// <param name="context">the context being identified</param>
-        /// <param name="timeout">the timeout in seconds</param>
-        public IdentifySeriesContext(Context context, int timeout)
+        /// <param name="timeout">the timeout for the identify operation</param>
+        public IdentifySeriesContext(Context context, TimeSpan timeout)
         {
             Context = context;
             Timeout = timeout;

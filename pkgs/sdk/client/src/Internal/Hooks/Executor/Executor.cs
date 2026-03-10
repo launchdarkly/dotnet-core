@@ -46,7 +46,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Executor
 
         public async Task<bool> IdentifySeries(Context context, TimeSpan maxWaitTime, Func<Task<bool>> identify)
         {
-            var identifyContext = new IdentifySeriesContext(context, (int)maxWaitTime.TotalSeconds);
+            var identifyContext = new IdentifySeriesContext(context, maxWaitTime);
             var seriesData = _beforeIdentify.Execute(identifyContext, default);
 
             try

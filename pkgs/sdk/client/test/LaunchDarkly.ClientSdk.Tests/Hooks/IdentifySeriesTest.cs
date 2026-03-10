@@ -118,7 +118,7 @@ namespace LaunchDarkly.Sdk.Client.Hooks
         {
             var got = new List<string>();
 
-            var seriesContext = new IdentifySeriesContext(MakeContext(), 0);
+            var seriesContext = new IdentifySeriesContext(MakeContext(), TimeSpan.Zero);
 
             var hooks = new List<Hook>
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace LaunchDarkly.Sdk.Client.Interfaces
 {
@@ -24,7 +24,7 @@ namespace LaunchDarkly.Sdk.Client.Interfaces
         /// </para>
         /// <para>
         /// Currently this event will not fire in a scenario where 1. the client is offline, 2.
-        /// <see cref="LdClient.Identify(Context, TimeSpan)"/> or <see cref="LdClient.IdentifyAsync(Context)"/>
+        /// <see cref="LdClient.Identify(Context, TimeSpan)"/> or <see cref="LdClient.IdentifyAsync(Context, TimeSpan)"/>
         /// has been called to change the current user, and 3. the SDK had previously stored flag data
         /// for that user (see <see cref="Integrations.PersistenceConfigurationBuilder"/>) and has
         /// now loaded those flags. The event will only fire if the SDK has received new flag data

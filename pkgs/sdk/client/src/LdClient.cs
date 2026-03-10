@@ -30,7 +30,7 @@ namespace LaunchDarkly.Sdk.Client
     /// <para>
     /// Like all client-side LaunchDarkly SDKs, the <c>LdClient</c> always has a single current <see cref="Context"/>.
     /// You specify this context at initialization time, and you can change it later with <see cref="Identify(Sdk.Context,TimeSpan)"/>
-    /// or <see cref="IdentifyAsync(Sdk.Context)"/>. All subsequent calls to evaluation methods like
+    /// or <see cref="IdentifyAsync(Sdk.Context, TimeSpan)"/>. All subsequent calls to evaluation methods like
     /// <see cref="BoolVariation(string, bool)"/> refer to the flag values for the current context.
     /// </para>
     /// <para>
@@ -106,7 +106,7 @@ namespace LaunchDarkly.Sdk.Client
         /// <remarks>
         /// This is initially the context specified for <see cref="Init(Configuration, Sdk.Context, TimeSpan)"/> or
         /// <see cref="InitAsync(Configuration, Sdk.Context)"/>, but can be changed later with
-        /// <see cref="Identify(Sdk.Context,TimeSpan)"/> or <see cref="IdentifyAsync(Sdk.Context)"/>.
+        /// <see cref="Identify(Sdk.Context,TimeSpan)"/> or <see cref="IdentifyAsync(Sdk.Context, TimeSpan)"/>.
         /// </remarks>
         public Context Context => LockUtils.WithReadLock(_stateLock, () => _context);
 
@@ -902,11 +902,11 @@ namespace LaunchDarkly.Sdk.Client
         /// <inheritdoc/>
         public bool Identify(Context context, TimeSpan maxWaitTime)
         {
-            return AsyncUtils.WaitSafely(() => IdentifyAsync(context), maxWaitTime);
+            return AsyncUtils.WaitSafely(() => IdentifyAsync(context, maxWaitTime), maxWaitTime);
         }
 
         /// <inheritdoc/>
-        public async Task<bool> IdentifyAsync(Context context)
+        public async Task<bool> IdentifyAsync(Context context, TimeSpan maxWaitTime = default)
         {
             Context newContext = _anonymousKeyContextDecorator.DecorateContext(context);
             if (_config.AutoEnvAttributes)
@@ -943,13 +943,16 @@ namespace LaunchDarkly.Sdk.Client
                 false // false means "don't rewrite the flags to persistent storage"
             );
 
-            EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
+            return await _hookExecutor.IdentifySeries(newContext, maxWaitTime, async () =>
             {
-                Timestamp = UnixMillisecondTime.Now,
-                Context = newContext
-            });
+                EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
+                {
+                    Timestamp = UnixMillisecondTime.Now,
+                    Context = newContext
+                });
 
-            return await _connectionManager.SetContext(newContext);
+               return await _connectionManager.SetContext(newContext);
+            });
         }
 
         private EnvironmentMetadata CreateEnvironmentMetadata()
@@ -970,7 +973,7 @@ namespace LaunchDarkly.Sdk.Client
 
             return new EnvironmentMetadata(sdkMetadata, _config.MobileKey, CredentialType.MobileKey, applicationMetadata);
         }
-
+ 
         /// <summary>
         /// Permanently shuts down the SDK client.
         /// </summary>

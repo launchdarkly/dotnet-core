@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Client.Hooks;
 
 namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces
@@ -21,5 +22,14 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces
         /// <returns>the EvaluationDetail returned from the evaluator</returns>
         EvaluationDetail<T> EvaluationSeries<T>(EvaluationSeriesContext context,
             LdValue.Converter<T> converter, Func<EvaluationDetail<T>> evaluate);
+
+        /// <summary>
+        /// IdentifySeries should run the identify series for each configured hook.
+        /// </summary>
+        /// <param name="context">the evaluation context being identified</param>
+        /// <param name="maxWaitTime">the timeout for the identify operation</param>
+        /// <param name="identify">async function that performs the identify operation</param>
+        /// <returns>the result of the identify operation</returns>
+        Task<bool> IdentifySeries(Context context, TimeSpan maxWaitTime, Func<Task<bool>> identify);
     }
 }

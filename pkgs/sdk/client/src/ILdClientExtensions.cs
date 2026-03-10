@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Client.Interfaces;
 
@@ -116,7 +116,7 @@ namespace LaunchDarkly.Sdk.Client
         /// and generates an analytics event to tell LaunchDarkly about the user.
         /// </summary>
         /// <remarks>
-        /// This is equivalent to <see cref="ILdClient.IdentifyAsync(Context)"/>, but using the
+        /// This is equivalent to <see cref="ILdClient.IdentifyAsync(Context, TimeSpan)"/>, but using the
         /// <see cref="User"/> type instead of <see cref="Context"/>.
         /// </remarks>
         /// <param name="client">the client instance</param>

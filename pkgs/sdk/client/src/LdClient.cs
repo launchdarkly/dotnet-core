@@ -222,17 +222,7 @@ namespace LaunchDarkly.Sdk.Client
                 _ = _connectionManager.SetNetworkEnabled(networkAvailable); // do not await the result
             };
 
-            // Send an initial identify event, but only if we weren't explicitly set to be offline
-
-            if (!_config.Offline)
-            {
-                _eventProcessor.RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
-                {
-                    Timestamp = UnixMillisecondTime.Now,
-                    Context = _context
-                });
-            }
-
+            // Build the plugin config and environment metadata
             var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
             var environmentMetadata = pluginConfig.Plugins.Any() ? CreateEnvironmentMetadata() : null;
             var hooks = pluginConfig.Plugins.Any()
@@ -245,8 +235,10 @@ namespace LaunchDarkly.Sdk.Client
 
             this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
+            // Start the background mode manager
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;
+
         }
 
         void Start(TimeSpan maxWaitTime)
@@ -261,6 +253,7 @@ namespace LaunchDarkly.Sdk.Client
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
+            _ = IdentifyWithHook(_context, maxWaitTime);
         }
 
         /// <summary>
@@ -283,6 +276,7 @@ namespace LaunchDarkly.Sdk.Client
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
+            await IdentifyWithHook(_context, maxWaitTime);
         }
 
         /// <summary>
@@ -291,6 +285,7 @@ namespace LaunchDarkly.Sdk.Client
         async Task StartAsync()
         {
             await _connectionManager.Start();
+            await IdentifyWithHook(_context, TimeSpan.Zero);
         }
 
         /// <summary>
@@ -902,13 +897,13 @@ namespace LaunchDarkly.Sdk.Client
         /// <inheritdoc/>
         public bool Identify(Context context, TimeSpan maxWaitTime)
         {
-            return AsyncUtils.WaitSafely(() => IdentifyAsync(context, maxWaitTime), maxWaitTime);
+            return AsyncUtils.WaitSafely(() => InternalIdentifyAsync(context, maxWaitTime), maxWaitTime);
         }
 
         /// <inheritdoc/>
-        public Task<bool> IdentifyAsync(Context context) => IdentifyAsync(context, TimeSpan.Zero);
+        public Task<bool> IdentifyAsync(Context context) => InternalIdentifyAsync(context, TimeSpan.Zero);
 
-        internal async Task<bool> IdentifyAsync(Context context, TimeSpan maxWaitTime)
+        private async Task<bool> InternalIdentifyAsync(Context context, TimeSpan maxWaitTime)
         {
             Context newContext = _anonymousKeyContextDecorator.DecorateContext(context);
             if (_config.AutoEnvAttributes)
@@ -945,7 +940,13 @@ namespace LaunchDarkly.Sdk.Client
                 false // false means "don't rewrite the flags to persistent storage"
             );
 
-            return await _hookExecutor.IdentifySeries(newContext, maxWaitTime, async () =>
+            await IdentifyWithHook(newContext, maxWaitTime);
+            return await _connectionManager.SetContext(newContext);
+        }
+
+        private async Task IdentifyWithHook(Context newContext, TimeSpan maxWaitTime)
+        {
+            await _hookExecutor.IdentifySeries(newContext, maxWaitTime, () =>
             {
                 EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
                 {
@@ -953,7 +954,7 @@ namespace LaunchDarkly.Sdk.Client
                     Context = newContext
                 });
 
-               return await _connectionManager.SetContext(newContext);
+                return Task.FromResult(true);
             });
         }
 

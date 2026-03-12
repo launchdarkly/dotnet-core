@@ -4,8 +4,12 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Client.Hooks;
+using LaunchDarkly.Sdk.Client.Integrations;
+using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal.Hooks.Series;
 using LaunchDarkly.Sdk.Client.Internal.Hooks.Executor;
+using LaunchDarkly.Sdk.Client.Plugins;
+using LaunchDarkly.Sdk.Integrations.Plugins;
 using Xunit;
 using LogLevel = LaunchDarkly.Logging.LogLevel;
 
@@ -233,6 +237,68 @@ namespace LaunchDarkly.Sdk.Client.Hooks
             var result = await executor.IdentifySeries(context, TimeSpan.Zero, () => Task.FromResult(true));
 
             Assert.True(result);
+        }
+
+        [Fact]
+        public async Task IdentifyHookIsActivatedAfterInitAsync()
+        {
+            var hook = new IdentifyTrackingHook("init-hook");
+            var plugin = new HookProvidingPlugin("test-plugin", hook);
+            var config = Configuration.Builder("mobile-key", ConfigurationBuilder.AutoEnvAttributes.Disabled)
+                .BackgroundModeManager(new MockBackgroundModeManager())
+                .ConnectivityStateManager(new MockConnectivityStateManager(true))
+                .DataSource(new MockDataSource().AsSingletonFactory<Subsystems.IDataSource>())
+                .Events(Components.NoEvents)
+                .Logging(testLogging)
+                .Persistence(
+                    Components.Persistence().Storage(
+                        new MockPersistentDataStore().AsSingletonFactory<Subsystems.IPersistentDataStore>()))
+                .Plugins(new PluginConfigurationBuilder().Add(plugin))
+                .Build();
+
+            using (var client = await TestUtil.CreateClientAsync(config, MakeContext(), TimeSpan.FromSeconds(5)))
+            {
+                Assert.True(hook.BeforeIdentifyCalled, "BeforeIdentify should have been called after InitAsync");
+                Assert.True(hook.AfterIdentifyCalled, "AfterIdentify should have been called after InitAsync");
+            }
+        }
+
+        private class IdentifyTrackingHook : Hook
+        {
+            public bool BeforeIdentifyCalled { get; private set; }
+            public bool AfterIdentifyCalled { get; private set; }
+
+            public IdentifyTrackingHook(string name) : base(name) { }
+
+            public override SeriesData BeforeIdentify(IdentifySeriesContext context, SeriesData data)
+            {
+                BeforeIdentifyCalled = true;
+                return data;
+            }
+
+            public override SeriesData AfterIdentify(IdentifySeriesContext context, SeriesData data,
+                IdentifySeriesResult result)
+            {
+                AfterIdentifyCalled = true;
+                return data;
+            }
+        }
+
+        private class HookProvidingPlugin : Plugin
+        {
+            private readonly Hook _hook;
+
+            public HookProvidingPlugin(string name, Hook hook) : base(name)
+            {
+                _hook = hook;
+            }
+
+            public override void Register(ILdClient client, EnvironmentMetadata metadata) { }
+
+            public override IList<Hook> GetHooks(EnvironmentMetadata metadata)
+            {
+                return new List<Hook> { _hook };
+            }
         }
     }
 }

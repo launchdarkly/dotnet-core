@@ -14,7 +14,17 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Executor
         public EvaluationDetail<T> EvaluationSeries<T>(EvaluationSeriesContext context,
             LdValue.Converter<T> converter, Func<EvaluationDetail<T>> evaluate) => evaluate();
 
-        public Task<bool> IdentifySeries(Context context, TimeSpan maxWaitTime, Func<Task<bool>> identify) => identify();
+        public async Task<bool> IdentifySeries(Context context, TimeSpan maxWaitTime, Func<Task<bool>> identify)
+        {
+            try
+            {
+                return await identify();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
         public void Dispose()
         {

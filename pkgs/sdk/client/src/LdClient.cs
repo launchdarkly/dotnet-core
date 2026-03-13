@@ -222,17 +222,7 @@ namespace LaunchDarkly.Sdk.Client
                 _ = _connectionManager.SetNetworkEnabled(networkAvailable); // do not await the result
             };
 
-            // Send an initial identify event, but only if we weren't explicitly set to be offline
-
-            if (!_config.Offline)
-            {
-                _eventProcessor.RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
-                {
-                    Timestamp = UnixMillisecondTime.Now,
-                    Context = _context
-                });
-            }
-
+            // Build the plugin config and environment metadata
             var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
             var environmentMetadata = pluginConfig.Plugins.Any() ? CreateEnvironmentMetadata() : null;
             var hooks = pluginConfig.Plugins.Any()
@@ -245,8 +235,10 @@ namespace LaunchDarkly.Sdk.Client
 
             this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
+            // Start the background mode manager
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;
+
         }
 
         void Start(TimeSpan maxWaitTime)
@@ -256,7 +248,12 @@ namespace LaunchDarkly.Sdk.Client
                 _log.Warn(ExcessiveInitWaitTimeWarning, maxWaitTime, ExcessiveInitWaitTime);
             }
 
-            var success = AsyncUtils.WaitSafely(() => _connectionManager.Start(), maxWaitTime);
+            var success = AsyncUtils.WaitSafely(async () =>
+            {
+                await RecordIdentify(_context, maxWaitTime);
+                await _connectionManager.Start();
+            }, maxWaitTime);
+
             if (!success)
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
@@ -277,9 +274,14 @@ namespace LaunchDarkly.Sdk.Client
                     maxWaitTime, ExcessiveInitWaitTime);
             }
 
-            var startTask = _connectionManager.Start();
-            var completedTask = await Task.WhenAny(startTask, Task.Delay(maxWaitTime));
-            if (completedTask != startTask)
+            var combinedTask = Task.Run(async () =>
+            {
+                await RecordIdentify(_context, maxWaitTime);
+                await _connectionManager.Start();
+            });
+            
+            var completedTask = await Task.WhenAny(combinedTask, Task.Delay(maxWaitTime));
+            if (completedTask != combinedTask)
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
@@ -290,6 +292,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </summary>
         async Task StartAsync()
         {
+            await RecordIdentify(_context, TimeSpan.Zero);
             await _connectionManager.Start();
         }
 
@@ -902,11 +905,13 @@ namespace LaunchDarkly.Sdk.Client
         /// <inheritdoc/>
         public bool Identify(Context context, TimeSpan maxWaitTime)
         {
-            return AsyncUtils.WaitSafely(() => IdentifyAsync(context), maxWaitTime);
+            return AsyncUtils.WaitSafely(() => RecordIdentifyWithContextUpdate(context, maxWaitTime), maxWaitTime);
         }
 
         /// <inheritdoc/>
-        public async Task<bool> IdentifyAsync(Context context)
+        public Task<bool> IdentifyAsync(Context context) => RecordIdentifyWithContextUpdate(context, TimeSpan.Zero);
+
+        private async Task<bool> RecordIdentifyWithContextUpdate(Context context, TimeSpan maxWaitTime)
         {
             Context newContext = _anonymousKeyContextDecorator.DecorateContext(context);
             if (_config.AutoEnvAttributes)
@@ -914,42 +919,58 @@ namespace LaunchDarkly.Sdk.Client
                 newContext = _autoEnvContextDecorator.DecorateContext(newContext);
             }
 
-            Context
-                oldContext =
-                    newContext; // this initialization is overwritten below, it's only here to satisfy the compiler
-
-            LockUtils.WithWriteLock(_stateLock, () =>
+            return await _hookExecutor.IdentifySeries(newContext, maxWaitTime, async () =>
             {
-                oldContext = _context;
-                _context = newContext;
+                Context
+                    oldContext =
+                        newContext; // this initialization is overwritten below, it's only here to satisfy the compiler
+
+                LockUtils.WithWriteLock(_stateLock, () =>
+                {
+                    oldContext = _context;
+                    _context = newContext;
+                });
+
+                // If we had cached data for the new context, set the current in-memory flag data state to use
+                // that data, so that any Variation calls made before Identify has completed will use the
+                // last known values. If we did not have cached data, then we update the current in-memory
+                // state to reflect that there is no flag data, so that Variation calls done before completion
+                // will receive default values rather than the previous context's values. This does not modify
+                // any flags in persistent storage, and (currently) it does *not* trigger any FlagValueChanged
+                // events from FlagTracker.
+                var cachedData = _dataStore.GetCachedData(newContext);
+                if (cachedData != null)
+                {
+                    _log.Debug("Identify found cached flag data for the new context");
+                }
+
+                _dataStore.Init(
+                    newContext,
+                    cachedData ?? new DataStoreTypes.FullDataSet(null),
+                    false // false means "don't rewrite the flags to persistent storage"
+                );
+                
+                EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
+                {
+                    Timestamp = UnixMillisecondTime.Now,
+                    Context = newContext
+                });
+
+                return await _connectionManager.SetContext(newContext);
             });
+        }
 
-            // If we had cached data for the new context, set the current in-memory flag data state to use
-            // that data, so that any Variation calls made before Identify has completed will use the
-            // last known values. If we did not have cached data, then we update the current in-memory
-            // state to reflect that there is no flag data, so that Variation calls done before completion
-            // will receive default values rather than the previous context's values. This does not modify
-            // any flags in persistent storage, and (currently) it does *not* trigger any FlagValueChanged
-            // events from FlagTracker.
-            var cachedData = _dataStore.GetCachedData(newContext);
-            if (cachedData != null)
+        private async Task RecordIdentify(Context newContext, TimeSpan maxWaitTime)
+        {
+            await _hookExecutor.IdentifySeries(newContext, maxWaitTime, () =>
             {
-                _log.Debug("Identify found cached flag data for the new context");
-            }
-
-            _dataStore.Init(
-                newContext,
-                cachedData ?? new DataStoreTypes.FullDataSet(null),
-                false // false means "don't rewrite the flags to persistent storage"
-            );
-
-            EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
-            {
-                Timestamp = UnixMillisecondTime.Now,
-                Context = newContext
+                EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
+                {
+                    Timestamp = UnixMillisecondTime.Now,
+                    Context = newContext
+                });
+                return Task.FromResult(true);
             });
-
-            return await _connectionManager.SetContext(newContext);
         }
 
         private EnvironmentMetadata CreateEnvironmentMetadata()
@@ -970,7 +991,7 @@ namespace LaunchDarkly.Sdk.Client
 
             return new EnvironmentMetadata(sdkMetadata, _config.MobileKey, CredentialType.MobileKey, applicationMetadata);
         }
-
+ 
         /// <summary>
         /// Permanently shuts down the SDK client.
         /// </summary>

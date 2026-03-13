@@ -74,6 +74,35 @@ namespace LaunchDarkly.Sdk.Client.Hooks
         public virtual SeriesData AfterEvaluation(EvaluationSeriesContext context, SeriesData data,
             EvaluationDetail<LdValue> detail) => data;
 
+
+        /// <summary>
+        /// BeforeIdentify is executed by the SDK before an identify operation.
+        ///
+        /// The modified data is not shared with any other hook. It will be passed to subsequent stages in the identify
+        /// series, including <see cref="AfterIdentify"/>.
+        ///
+        /// </summary>
+        /// <param name="context">parameters associated with this identify operation</param>
+        /// <param name="data">user-configurable data, currently empty</param>
+        /// <returns>user-configurable data, which will be forwarded to <see cref="AfterIdentify"/></returns>
+        public virtual SeriesData BeforeIdentify(IdentifySeriesContext context, SeriesData data) =>
+            data;
+
+
+        /// <summary>
+        /// AfterIdentify is executed by the SDK after an identify operation.
+        ///
+        /// The function should return the given <see cref="SeriesData"/> unmodified, for forward compatibility with subsequent
+        /// stages that may be added.
+        ///
+        /// </summary>
+        /// <param name="context">parameters associated with this identify operation</param>
+        /// <param name="data">user-configurable data from the <see cref="BeforeIdentify"/> stage</param>
+        /// <param name="result">the result of the identify operation</param>
+        /// <returns>user-configurable data, which is currently unused but may be forwarded to subsequent stages in future versions of the SDK</returns>
+        public virtual SeriesData AfterIdentify(IdentifySeriesContext context, SeriesData data,
+            IdentifySeriesResult result) => data;
+
         /// <summary>
         /// Constructs a new Hook with the given name. The name may be used in log messages.
         /// </summary>

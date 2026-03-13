@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Client.Hooks;
 using LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces;
@@ -16,12 +17,17 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Executor
         private readonly IStageExecutor<EvaluationSeriesContext> _beforeEvaluation;
         private readonly IStageExecutor<EvaluationSeriesContext, EvaluationDetail<LdValue>> _afterEvaluation;
 
+        private readonly IStageExecutor<IdentifySeriesContext> _beforeIdentify;
+        private readonly IStageExecutor<IdentifySeriesContext, IdentifySeriesResult> _afterIdentify;
+
         public Executor(Logger logger, IEnumerable<Hook> hooks)
         {
             _logger = logger;
             _hooks = hooks.ToList();
             _beforeEvaluation = new BeforeEvaluation(logger, _hooks, EvaluationStage.Order.Forward);
             _afterEvaluation = new AfterEvaluation(logger, _hooks, EvaluationStage.Order.Reverse);
+            _beforeIdentify = new BeforeIdentify(logger, _hooks, EvaluationStage.Order.Forward);
+            _afterIdentify = new AfterIdentify(logger, _hooks, EvaluationStage.Order.Reverse);
         }
 
         public EvaluationDetail<T> EvaluationSeries<T>(EvaluationSeriesContext context,
@@ -36,6 +42,31 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Executor
                 seriesData);
 
             return detail;
+        }
+
+        public async Task<bool> IdentifySeries(Context context, TimeSpan maxWaitTime, Func<Task<bool>> identify)
+        {
+            var identifyContext = new IdentifySeriesContext(context, maxWaitTime);
+            var seriesData = _beforeIdentify.Execute(identifyContext, default);
+
+            try
+            {
+                var result = await identify();
+
+                _afterIdentify.Execute(identifyContext,
+                    new IdentifySeriesResult(IdentifySeriesResult.IdentifySeriesStatus.Completed),
+                    seriesData);
+
+                return result;
+            }
+            catch (Exception)
+            {
+                _afterIdentify.Execute(identifyContext,
+                    new IdentifySeriesResult(IdentifySeriesResult.IdentifySeriesStatus.Error),
+                    seriesData);
+
+                throw;
+            }
         }
 
         public void Dispose()

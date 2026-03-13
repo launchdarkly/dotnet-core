@@ -253,7 +253,7 @@ namespace LaunchDarkly.Sdk.Client
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
-            _ = IdentifyWithHook(_context, maxWaitTime);
+            _ = RecordIdentify(_context, maxWaitTime);
         }
 
         /// <summary>
@@ -276,7 +276,7 @@ namespace LaunchDarkly.Sdk.Client
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
-            await IdentifyWithHook(_context, maxWaitTime);
+            await RecordIdentify(_context, maxWaitTime);
         }
 
         /// <summary>
@@ -285,7 +285,7 @@ namespace LaunchDarkly.Sdk.Client
         async Task StartAsync()
         {
             await _connectionManager.Start();
-            await IdentifyWithHook(_context, TimeSpan.Zero);
+            await RecordIdentify(_context, TimeSpan.Zero);
         }
 
         /// <summary>
@@ -897,13 +897,13 @@ namespace LaunchDarkly.Sdk.Client
         /// <inheritdoc/>
         public bool Identify(Context context, TimeSpan maxWaitTime)
         {
-            return AsyncUtils.WaitSafely(() => InternalIdentifyAsync(context, maxWaitTime), maxWaitTime);
+            return AsyncUtils.WaitSafely(() => RecordIdentifyWithContextUpdate(context, maxWaitTime), maxWaitTime);
         }
 
         /// <inheritdoc/>
-        public Task<bool> IdentifyAsync(Context context) => InternalIdentifyAsync(context, TimeSpan.Zero);
+        public Task<bool> IdentifyAsync(Context context) => RecordIdentifyWithContextUpdate(context, TimeSpan.Zero);
 
-        private async Task<bool> InternalIdentifyAsync(Context context, TimeSpan maxWaitTime)
+        private async Task<bool> RecordIdentifyWithContextUpdate(Context context, TimeSpan maxWaitTime)
         {
             Context newContext = _anonymousKeyContextDecorator.DecorateContext(context);
             if (_config.AutoEnvAttributes)
@@ -911,40 +911,48 @@ namespace LaunchDarkly.Sdk.Client
                 newContext = _autoEnvContextDecorator.DecorateContext(newContext);
             }
 
-            Context
-                oldContext =
-                    newContext; // this initialization is overwritten below, it's only here to satisfy the compiler
-
-            LockUtils.WithWriteLock(_stateLock, () =>
+            return await _hookExecutor.IdentifySeries(newContext, maxWaitTime, async () =>
             {
-                oldContext = _context;
-                _context = newContext;
+                Context
+                    oldContext =
+                        newContext; // this initialization is overwritten below, it's only here to satisfy the compiler
+
+                LockUtils.WithWriteLock(_stateLock, () =>
+                {
+                    oldContext = _context;
+                    _context = newContext;
+                });
+
+                // If we had cached data for the new context, set the current in-memory flag data state to use
+                // that data, so that any Variation calls made before Identify has completed will use the
+                // last known values. If we did not have cached data, then we update the current in-memory
+                // state to reflect that there is no flag data, so that Variation calls done before completion
+                // will receive default values rather than the previous context's values. This does not modify
+                // any flags in persistent storage, and (currently) it does *not* trigger any FlagValueChanged
+                // events from FlagTracker.
+                var cachedData = _dataStore.GetCachedData(newContext);
+                if (cachedData != null)
+                {
+                    _log.Debug("Identify found cached flag data for the new context");
+                }
+
+                _dataStore.Init(
+                    newContext,
+                    cachedData ?? new DataStoreTypes.FullDataSet(null),
+                    false // false means "don't rewrite the flags to persistent storage"
+                );
+                
+                EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
+                {
+                    Timestamp = UnixMillisecondTime.Now,
+                    Context = newContext
+                });
+
+                return await _connectionManager.SetContext(newContext);
             });
-
-            // If we had cached data for the new context, set the current in-memory flag data state to use
-            // that data, so that any Variation calls made before Identify has completed will use the
-            // last known values. If we did not have cached data, then we update the current in-memory
-            // state to reflect that there is no flag data, so that Variation calls done before completion
-            // will receive default values rather than the previous context's values. This does not modify
-            // any flags in persistent storage, and (currently) it does *not* trigger any FlagValueChanged
-            // events from FlagTracker.
-            var cachedData = _dataStore.GetCachedData(newContext);
-            if (cachedData != null)
-            {
-                _log.Debug("Identify found cached flag data for the new context");
-            }
-
-            _dataStore.Init(
-                newContext,
-                cachedData ?? new DataStoreTypes.FullDataSet(null),
-                false // false means "don't rewrite the flags to persistent storage"
-            );
-
-            await IdentifyWithHook(newContext, maxWaitTime);
-            return await _connectionManager.SetContext(newContext);
         }
 
-        private async Task IdentifyWithHook(Context newContext, TimeSpan maxWaitTime)
+        private async Task RecordIdentify(Context newContext, TimeSpan maxWaitTime)
         {
             await _hookExecutor.IdentifySeries(newContext, maxWaitTime, () =>
             {
@@ -953,7 +961,6 @@ namespace LaunchDarkly.Sdk.Client
                     Timestamp = UnixMillisecondTime.Now,
                     Context = newContext
                 });
-
                 return Task.FromResult(true);
             });
         }

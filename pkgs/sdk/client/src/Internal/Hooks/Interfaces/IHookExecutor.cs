@@ -13,7 +13,8 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces
     internal interface IHookExecutor : IDisposable
     {
         /// <summary>
-        /// EvaluationSeries should run the evaluation series for each configured hook.
+        /// Runs the evaluation series for each configured hook, invoking the <paramref name="evaluate"/>
+        /// delegate to obtain the flag value. Exceptions thrown by the delegate are propagated to the caller.
         /// </summary>
         /// <param name="context">context for the evaluation series</param>
         /// <param name="converter">used to convert the primitive evaluation value into a wrapped <see cref="LdValue"/> suitable for use in hooks</param>
@@ -24,7 +25,9 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces
             LdValue.Converter<T> converter, Func<EvaluationDetail<T>> evaluate);
 
         /// <summary>
-        /// IdentifySeries should run the identify series for each configured hook.
+        /// Runs the identify series for each configured hook, invoking the <paramref name="identify"/>
+        /// delegate to perform the identify operation. Exceptions thrown by the delegate are propagated
+        /// to the caller.
         /// </summary>
         /// <param name="context">the evaluation context being identified</param>
         /// <param name="maxWaitTime">the timeout for the identify operation</param>

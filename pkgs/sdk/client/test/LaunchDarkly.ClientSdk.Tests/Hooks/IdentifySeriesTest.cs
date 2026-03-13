@@ -203,10 +203,10 @@ namespace LaunchDarkly.Sdk.Client.Hooks
 
             var executor = new Executor(testLogger, new List<Hook> { hook });
 
-            var result = await executor.IdentifySeries(context, TimeSpan.Zero,
-                () => Task.FromException<bool>(new InvalidOperationException("identify failed")));
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                executor.IdentifySeries(context, TimeSpan.Zero,
+                    () => Task.FromException<bool>(new InvalidOperationException("identify failed"))));
 
-            Assert.False(result);
             Assert.NotNull(hook.CapturedResult);
             Assert.Equal(IdentifySeriesResult.IdentifySeriesStatus.Error, hook.CapturedResult.Status);
         }

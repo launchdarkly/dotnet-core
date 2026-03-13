@@ -65,7 +65,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Executor
                     new IdentifySeriesResult(IdentifySeriesResult.IdentifySeriesStatus.Error),
                     seriesData);
 
-                return false;
+                throw;
             }
         }
 

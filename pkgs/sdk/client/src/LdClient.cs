@@ -248,12 +248,16 @@ namespace LaunchDarkly.Sdk.Client
                 _log.Warn(ExcessiveInitWaitTimeWarning, maxWaitTime, ExcessiveInitWaitTime);
             }
 
-            var success = AsyncUtils.WaitSafely(() => _connectionManager.Start(), maxWaitTime);
+            var success = AsyncUtils.WaitSafely(async () =>
+            {
+                await RecordIdentify(_context, maxWaitTime);
+                await _connectionManager.Start();
+            }, maxWaitTime);
+
             if (!success)
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
-            _ = RecordIdentify(_context, maxWaitTime);
         }
 
         /// <summary>
@@ -270,13 +274,17 @@ namespace LaunchDarkly.Sdk.Client
                     maxWaitTime, ExcessiveInitWaitTime);
             }
 
-            var startTask = _connectionManager.Start();
-            var completedTask = await Task.WhenAny(startTask, Task.Delay(maxWaitTime));
-            if (completedTask != startTask)
+            var combinedTask = Task.Run(async () =>
+            {
+                await RecordIdentify(_context, maxWaitTime);
+                await _connectionManager.Start();
+            });
+            
+            var completedTask = await Task.WhenAny(combinedTask, Task.Delay(maxWaitTime));
+            if (completedTask != combinedTask)
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
-            await RecordIdentify(_context, maxWaitTime);
         }
 
         /// <summary>
@@ -284,8 +292,8 @@ namespace LaunchDarkly.Sdk.Client
         /// </summary>
         async Task StartAsync()
         {
-            await _connectionManager.Start();
             await RecordIdentify(_context, TimeSpan.Zero);
+            await _connectionManager.Start();
         }
 
         /// <summary>

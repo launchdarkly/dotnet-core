@@ -270,7 +270,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     file1.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    var newData = _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
+                    // Use ExpectJsonValue to handle potential race conditions where the file watcher
+                    // may trigger multiple reload events. This keeps checking events until one matches
+                    // the expected JSON or the timeout expires.
+                    var newData = AssertHelpers.ExpectJsonValue(
+                        _updateSink.Inits,
+                        DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)),
+                        DataSetAsJson,
+                        TimeSpan.FromSeconds(30));
 
                     AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)), DataSetAsJson(newData));
                 }
@@ -291,11 +298,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     file.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    var newData = _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-
-                    AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)), DataSetAsJson(newData));
+                    // Use ExpectJsonValue to handle potential race conditions where the file watcher
+                    // may trigger multiple reload events. This keeps checking events until one matches
+                    // the expected JSON or the timeout expires.
                     // Note that the expected version is 2 because we increment the version on each
                     // *attempt* to load the files, not on each successful load.
+                    var newData = AssertHelpers.ExpectJsonValue(
+                        _updateSink.Inits,
+                        DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)),
+                        DataSetAsJson,
+                        TimeSpan.FromSeconds(30));
+
+                    AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)), DataSetAsJson(newData));
                 }
             }
         }

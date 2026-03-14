@@ -198,6 +198,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     errorCondition.VerifyDataSourceStatusError(status);
+                    Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for recoverable errors");
 
                     // We don't check here for a second status update to the Valid state, because that was
                     // done by DataSourceUpdatesImpl when Init was called - our test fixture doesn't do it.
@@ -230,6 +231,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     var initTask = dataSource.Start();
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     errorCondition.VerifyDataSourceStatusError(status);
+                    Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
 
                     _updateSink.Inits.ExpectNoValue();
 
@@ -289,7 +291,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public void EventWithMalformedJsonCausesStreamRestart(string eventName, string data)
         {
             VerifyEventCausesStreamRestart(eventName, data,
-                err => Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, err.Kind));
+                err =>
+                {
+                    Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, err.Kind);
+                    Assert.True(err.Recoverable, "Recoverable should be true for invalid data errors");
+                });
         }
 
         [Theory]
@@ -300,7 +306,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public void EventWithWellFormedJsonButInvalidDataCausesStreamRestart(string eventName, string data)
         {
             VerifyEventCausesStreamRestart(eventName, data,
-                err => Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, err.Kind));
+                err =>
+                {
+                    Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, err.Kind);
+                    Assert.True(err.Recoverable, "Recoverable should be true for invalid data errors");
+                });
         }
 
         [Theory]

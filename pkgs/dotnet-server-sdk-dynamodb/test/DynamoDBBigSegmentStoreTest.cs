@@ -11,6 +11,7 @@ using static LaunchDarkly.Sdk.Server.Subsystems.BigSegmentStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Integrations
 {
+    [Collection("DynamoDB Tests")]
     public class DynamoDBBigSegmentStoreTest : BigSegmentStoreBaseTests, IAsyncLifetime
     {
         override protected BigSegmentStoreTestConfig Configuration => new BigSegmentStoreTestConfig

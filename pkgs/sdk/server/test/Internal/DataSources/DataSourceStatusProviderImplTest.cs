@@ -32,7 +32,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Equal(DataSourceState.Initializing, statusProvider.Status.State);
 
             var timeBefore = DateTime.Now;
-            var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(500);
+            var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(500, false);
 
             updates.UpdateStatus(DataSourceState.Valid, errorInfo);
 

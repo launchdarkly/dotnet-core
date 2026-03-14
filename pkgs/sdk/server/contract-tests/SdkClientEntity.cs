@@ -7,7 +7,9 @@ using LaunchDarkly.Sdk;
 using LaunchDarkly.Sdk.Json;
 using LaunchDarkly.Sdk.Server;
 using LaunchDarkly.Sdk.Server.Hooks;
+using LaunchDarkly.Sdk.Server.Integrations;
 using LaunchDarkly.Sdk.Server.Migrations;
+using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace TestService
 {
@@ -372,7 +374,252 @@ namespace TestService
                 builder.Hooks(Components.Hooks(hooks));
             }
 
+            if (sdkParams.DataSystem != null)
+            {
+                var dataSystemBuilder = Components.DataSystem().Custom();
+
+                // TODO: re-enable this code in the future and determine which dependencies on persistent stores need to be added to contract test build process
+                // Configure persistent store if provided
+                // if (sdkParams.DataSystem.Store?.PersistentDataStore != null)
+                // {
+                //     var storeConfig = sdkParams.DataSystem.Store.PersistentDataStore;
+                //     var storeType = storeConfig.Store.Type.ToLower();
+                //     IComponentConfigurer<IDataStore> persistentStore = null;
+
+                //     PersistentDataStoreBuilder persistentStoreBuilder = null;
+
+                //     switch (storeType)
+                //     {
+                //         case "redis":
+                //             var redisBuilder = Redis.DataStore();
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.DSN))
+                //             {
+                //                 redisBuilder.Uri(storeConfig.Store.DSN);
+                //             }
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
+                //             {
+                //                 redisBuilder.Prefix(storeConfig.Store.Prefix);
+                //             }
+                //             persistentStoreBuilder = Components.PersistentDataStore(redisBuilder);
+                //             break;
+
+                //         case "dynamodb":
+                //             // For DynamoDB, DSN is the table name
+                //             var dynamoBuilder = DynamoDB.DataStore(storeConfig.Store.DSN ?? "sdk-contract-tests");
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
+                //             {
+                //                 dynamoBuilder.Prefix(storeConfig.Store.Prefix);
+                //             }
+                //             // DynamoDB uses IPersistentDataStoreAsync, so use the async overload
+                //             persistentStoreBuilder = Components.PersistentDataStore(dynamoBuilder);
+                //             break;
+
+                //         case "consul":
+                //             var consulBuilder = Consul.DataStore();
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.DSN))
+                //             {
+                //                 consulBuilder.Address(storeConfig.Store.DSN);
+                //             }
+                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
+                //             {
+                //                 consulBuilder.Prefix(storeConfig.Store.Prefix);
+                //             }
+                //             persistentStoreBuilder = Components.PersistentDataStore(consulBuilder);
+                //             break;
+                //     }
+
+                //     if (persistentStoreBuilder != null)
+                //     {
+                //         // Configure cache
+                //         var cacheMode = storeConfig.Cache?.Mode?.ToLower();
+                //         if (cacheMode == "off")
+                //         {
+                //             persistentStoreBuilder.NoCaching();
+                //         }
+                //         else if (cacheMode == "ttl" && storeConfig.Cache.TTL.HasValue)
+                //         {
+                //             persistentStoreBuilder.CacheTime(TimeSpan.FromSeconds(storeConfig.Cache.TTL.Value));
+                //         }
+                //         else if (cacheMode == "infinite")
+                //         {
+                //             persistentStoreBuilder.CacheForever();
+                //         }
+
+                //         // Determine store mode
+                //         var storeMode = sdkParams.DataSystem.StoreMode == 0
+                //             ? DataSystemConfiguration.DataStoreMode.ReadOnly 
+                //             : DataSystemConfiguration.DataStoreMode.ReadWrite;
+
+                //         dataSystemBuilder.PersistentStore(persistentStoreBuilder, storeMode);
+                //     }
+                // }
+
+                // Configure initializers
+                if (sdkParams.DataSystem.Initializers != null && sdkParams.DataSystem.Initializers.Length > 0)
+                {
+                    var initializers = new List<IComponentConfigurer<IDataSource>>();
+                    foreach (var initializer in sdkParams.DataSystem.Initializers)
+                    {
+                        if (initializer.Polling != null)
+                        {
+                            var pollingBuilder = DataSystemComponents.Polling();
+                            if (initializer.Polling.BaseUri != null)
+                            {
+                                var endpointOverride = Components.ServiceEndpoints().Polling(initializer.Polling.BaseUri);
+                                pollingBuilder.ServiceEndpointsOverride(endpointOverride);
+                            }
+                            if (initializer.Polling.PollIntervalMs.HasValue)
+                            {
+                                pollingBuilder.PollInterval(TimeSpan.FromMilliseconds(initializer.Polling.PollIntervalMs.Value));
+                            }
+                            if (!string.IsNullOrEmpty(sdkParams.DataSystem.PayloadFilter))
+                            {
+                                // PayloadFilter is not yet supported in FDv2 builders, so we skip it for now
+                                // TODO: Add PayloadFilter support when available
+                            }
+                            initializers.Add(pollingBuilder);
+                        }
+                    }
+                    if (initializers.Count > 0)
+                    {
+                        dataSystemBuilder.Initializers(initializers.ToArray());
+                    }
+                }
+
+                // Configure synchronizers
+                if (sdkParams.DataSystem.Synchronizers != null && sdkParams.DataSystem.Synchronizers.Length > 0)
+                {
+                    var synchronizers = new List<IComponentConfigurer<IDataSource>>();
+
+                    foreach (var synchronizerParams in sdkParams.DataSystem.Synchronizers)
+                    {
+                        var synchronizer = CreateSynchronizer(synchronizerParams, sdkParams.DataSystem.PayloadFilter);
+                        if (synchronizer != null)
+                        {
+                            synchronizers.Add(synchronizer);
+                        }
+                    }
+
+                    if (synchronizers.Count > 0)
+                    {
+                        dataSystemBuilder.Synchronizers(synchronizers.ToArray());
+                        
+                        // Find the best synchronizer to use for FDv1 fallback configuration
+                        // Prefer polling synchronizers since FDv1 fallback is polling-based
+                        SdkConfigDataSynchronizerParams synchronizerForFallback = null;
+                        
+                        // First, try to find a polling synchronizer
+                        foreach (var syncParams in sdkParams.DataSystem.Synchronizers)
+                        {
+                            if (syncParams.Polling != null)
+                            {
+                                synchronizerForFallback = syncParams;
+                                break;
+                            }
+                        }
+                        
+                        // If no polling synchronizer found, use the first synchronizer (could be streaming)
+                        if (synchronizerForFallback == null && sdkParams.DataSystem.Synchronizers.Length > 0)
+                        {
+                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers[0];
+                        }
+                        
+                        if (synchronizerForFallback != null)
+                        {
+                            // Only configure global polling endpoints if we have a polling synchronizer with a custom base URI
+                            // This ensures the FDv1 fallback synchronizer uses the same base URI without overwriting
+                            // existing polling endpoint configuration
+                            if (synchronizerForFallback.Polling != null && 
+                                synchronizerForFallback.Polling.BaseUri != null)
+                            {
+                                endpoints.Polling(synchronizerForFallback.Polling.BaseUri);
+                            }
+                            
+                            var fdv1Fallback = CreateFDv1FallbackSynchronizer(synchronizerForFallback);
+                            if (fdv1Fallback != null)
+                            {
+                                dataSystemBuilder.FDv1FallbackSynchronizer(fdv1Fallback);
+                            }
+                        }
+                    }
+                }
+
+                builder.DataSystem(dataSystemBuilder);
+            }
+
             return builder.Build();
+        }
+
+        private static IComponentConfigurer<IDataSource> CreateSynchronizer(
+            SdkConfigDataSynchronizerParams synchronizer,
+            string payloadFilter)
+        {
+            if (synchronizer.Polling != null)
+            {
+                var pollingBuilder = DataSystemComponents.Polling();
+                if (synchronizer.Polling.BaseUri != null)
+                {
+                    var endpointOverride = Components.ServiceEndpoints().Polling(synchronizer.Polling.BaseUri);
+                    pollingBuilder.ServiceEndpointsOverride(endpointOverride);
+                }
+                if (synchronizer.Polling.PollIntervalMs.HasValue)
+                {
+                    pollingBuilder.PollInterval(TimeSpan.FromMilliseconds(synchronizer.Polling.PollIntervalMs.Value));
+                }
+                if (!string.IsNullOrEmpty(payloadFilter))
+                {
+                    // PayloadFilter is not yet supported in FDv2 builders, so we skip it for now
+                    // TODO: Add PayloadFilter support when available
+                }
+                return pollingBuilder;
+            }
+            else if (synchronizer.Streaming != null)
+            {
+                var streamingBuilder = DataSystemComponents.Streaming();
+                if (synchronizer.Streaming.BaseUri != null)
+                {
+                    var endpointOverride = Components.ServiceEndpoints().Streaming(synchronizer.Streaming.BaseUri);
+                    streamingBuilder.ServiceEndpointsOverride(endpointOverride);
+                }
+                if (synchronizer.Streaming.InitialRetryDelayMs.HasValue)
+                {
+                    streamingBuilder.InitialReconnectDelay(TimeSpan.FromMilliseconds(synchronizer.Streaming.InitialRetryDelayMs.Value));
+                }
+                if (!string.IsNullOrEmpty(payloadFilter))
+                {
+                    // PayloadFilter is not yet supported in FDv2 builders, so we skip it for now
+                    // TODO: Add PayloadFilter support when available
+                }
+                return streamingBuilder;
+            }
+            return null;
+        }
+
+        private static IComponentConfigurer<IDataSource> CreateFDv1FallbackSynchronizer(
+            SdkConfigDataSynchronizerParams synchronizer)
+        {
+            // FDv1 fallback synchronizer is always polling-based
+            var fdv1PollingBuilder = DataSystemComponents.FDv1Polling();
+            
+            // Configure polling interval if the synchronizer has polling configuration
+            if (synchronizer.Polling != null)
+            {
+                if (synchronizer.Polling.PollIntervalMs.HasValue)
+                {
+                    fdv1PollingBuilder.PollInterval(TimeSpan.FromMilliseconds(synchronizer.Polling.PollIntervalMs.Value));
+                }
+                // Note: FDv1 polling doesn't support ServiceEndpointsOverride, so base URI
+                // will use the global service endpoints configuration
+            }
+            else if (synchronizer.Streaming != null)
+            {
+                // For streaming synchronizers, we still create a polling fallback
+                // Use default polling interval since streaming doesn't have a poll interval
+                // Note: FDv1 polling doesn't support ServiceEndpointsOverride, so base URI
+                // will use the global service endpoints configuration
+            }
+            
+            return fdv1PollingBuilder;
         }
 
         private MigrationVariationResponse DoMigrationVariation(MigrationVariationParams migrationVariation)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.TestHelpers;
 using Xunit;
@@ -37,7 +38,7 @@ namespace LaunchDarkly.Sdk.Server.Internal
         {
             var flagKey = "flagKey";
             
-            var tracker = new FlagTrackerImpl(_dataSourceUpdates, null);
+            var tracker = new FlagTrackerImpl(new FlagChangedFacade(_dataSourceUpdates), null);
 
             var eventSink1 = new EventSink<FlagChangeEvent>();
             var eventSink2 = new EventSink<FlagChangeEvent>();
@@ -79,7 +80,7 @@ namespace LaunchDarkly.Sdk.Server.Internal
             
             var resultMap = new Dictionary<KeyValuePair<string, Context>, LdValue>();
             
-            var tracker = new FlagTrackerImpl(_dataSourceUpdates, (key, u) =>
+            var tracker = new FlagTrackerImpl(new FlagChangedFacade(_dataSourceUpdates), (key, u) =>
                 resultMap[new KeyValuePair<string, Context>(key, u)]);
 
             resultMap[new KeyValuePair<string, Context>(flagKey, user)] = LdValue.Of(false);

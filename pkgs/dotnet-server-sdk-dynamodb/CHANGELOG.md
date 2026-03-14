@@ -2,6 +2,32 @@
 
 All notable changes to the LaunchDarkly .NET SDK DynamoDB integration will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.0.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDB-v4.0.2...LaunchDarkly.ServerSdk.DynamoDB-v5.0.0) (2025-10-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* Drop support for AWSSDK.DynamoDB v3 ([#173](https://github.com/launchdarkly/dotnet-core/issues/173))
+
+### Features
+
+* Support AWSSDK.DynamoDB v4 ([#173](https://github.com/launchdarkly/dotnet-core/issues/173)) ([05c16c1](https://github.com/launchdarkly/dotnet-core/commit/05c16c16865f6978df2cd6eb9b057bdbbacb4aad))
+
+## [4.0.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDB-v4.0.1...LaunchDarkly.ServerSdk.DynamoDB-v4.0.2) (2025-10-21)
+
+
+### Bug Fixes
+
+* Fix package deployment process ([#174](https://github.com/launchdarkly/dotnet-core/issues/174)) ([3b2ce8b](https://github.com/launchdarkly/dotnet-core/commit/3b2ce8b88610f12b94d79c815eeba6a49f9cbeed))
+* Prevent using incompatible AWS version ([#171](https://github.com/launchdarkly/dotnet-core/issues/171)) ([5496a64](https://github.com/launchdarkly/dotnet-core/commit/5496a64bedc2bc25fdf8ca9757345de25b67f38f))
+
+## [4.0.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDb-v4.0.0...LaunchDarkly.ServerSdk.DynamoDb-v4.0.1) (2025-10-21)
+
+
+### Bug Fixes
+
+* Prevent using incompatible AWS version ([#171](https://github.com/launchdarkly/dotnet-core/issues/171)) ([5496a64](https://github.com/launchdarkly/dotnet-core/commit/5496a64bedc2bc25fdf8ca9757345de25b67f38f))
+
 ## [4.0.0] - 2023-10-16
 ### Changed:
 - This release requires the `8.0.0` release of the `LaunchDarkly.ServerSdk`.

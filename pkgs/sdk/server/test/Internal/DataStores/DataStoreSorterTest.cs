@@ -1,7 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal.Model;
+using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
@@ -106,5 +108,202 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 }
             }
         }
+
+        #region SortChangeset tests
+
+        [Fact]
+        public void SortChangeset_PreservesChangeSetMetadata()
+        {
+            var selector = Selector.Make(42, "test-state");
+            const string environmentId = "test-env";
+            var changeSet = new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Partial,
+                selector,
+                ImmutableList<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>.Empty,
+                environmentId
+            );
+
+            var result = DataStoreSorter.SortChangeset(changeSet);
+
+            Assert.Equal(ChangeSetType.Partial, result.Type);
+            Assert.Equal(selector.Version, result.Selector.Version);
+            Assert.Equal(selector.State, result.Selector.State);
+            Assert.Equal(environmentId, result.EnvironmentId);
+        }
+        
+        [Fact]
+        public void SortChangeset_SortsPrerequisiteFlagsFirst()
+        {
+            var flagC = new FeatureFlagBuilder("c").Version(1).Build();
+            var flagE = new FeatureFlagBuilder("e").Version(1).Build();
+            var flagB = new FeatureFlagBuilder("b").Version(1)
+                .Prerequisites(new List<Prerequisite>
+                {
+                    new Prerequisite("c", 0),
+                    new Prerequisite("e", 0)
+                })
+                .Build();
+            var flagA = new FeatureFlagBuilder("a").Version(1)
+                .Prerequisites(new List<Prerequisite>
+                {
+                    new Prerequisite("b", 0),
+                    new Prerequisite("c", 0)
+                })
+                .Build();
+
+            var changeSetData = ImmutableList.Create(
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
+                        new KeyValuePair<string, ItemDescriptor>("a", new ItemDescriptor(1, flagA)),
+                        new KeyValuePair<string, ItemDescriptor>("b", new ItemDescriptor(1, flagB)),
+                        new KeyValuePair<string, ItemDescriptor>("c", new ItemDescriptor(1, flagC)),
+                        new KeyValuePair<string, ItemDescriptor>("e", new ItemDescriptor(1, flagE))
+                    ))
+                )
+            );
+
+            var changeSet = new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Partial,
+                Selector.Make(1, "state1"),
+                changeSetData,
+                null
+            );
+
+            var result = DataStoreSorter.SortChangeset(changeSet);
+
+            var flagsData = result.Data.First(kv => kv.Key == DataModel.Features);
+            var resultKeys = flagsData.Value.Items.Select(kv => kv.Key).ToList();
+
+            // Verify ordering constraints
+            Assert.True(resultKeys.IndexOf("c") < resultKeys.IndexOf("b"), "c should come before b");
+            Assert.True(resultKeys.IndexOf("e") < resultKeys.IndexOf("b"), "e should come before b");
+            Assert.True(resultKeys.IndexOf("b") < resultKeys.IndexOf("a"), "b should come before a");
+            Assert.True(resultKeys.IndexOf("c") < resultKeys.IndexOf("a"), "c should come before a");
+        }
+
+        [Fact]
+        public void SortChangeset_SortsSegmentsBeforeFlags()
+        {
+            var flag1 = new FeatureFlagBuilder("flag1").Version(1).Build();
+            var segment1 = new SegmentBuilder("seg1").Version(1).Build();
+
+            var changeSetData = ImmutableList.Create(
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
+                        new KeyValuePair<string, ItemDescriptor>("flag1", new ItemDescriptor(1, flag1))
+                    ))
+                ),
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Segments,
+                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
+                        new KeyValuePair<string, ItemDescriptor>("seg1", new ItemDescriptor(1, segment1))
+                    ))
+                )
+            );
+
+            var changeSet = new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full,
+                Selector.Make(1, "state1"),
+                changeSetData,
+                null
+            );
+
+            var result = DataStoreSorter.SortChangeset(changeSet);
+
+            var kinds = result.Data.Select(kv => kv.Key).ToList();
+            Assert.Equal(2, kinds.Count);
+            Assert.Equal(DataModel.Segments, kinds[0]);
+            Assert.Equal(DataModel.Features, kinds[1]);
+        }
+
+        [Fact]
+        public void SortChangeset_HandlesEmptyChangeset()
+        {
+            var changeSet = new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full,
+                Selector.Make(1, "state1"),
+                ImmutableList<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>.Empty,
+                null
+            );
+
+            var result = DataStoreSorter.SortChangeset(changeSet);
+
+            Assert.Empty(result.Data);
+            Assert.Equal(ChangeSetType.Full, result.Type);
+        }
+
+        [Fact]
+        public void SortChangeset_HandlesMultipleDataKinds()
+        {
+            var flag1 = new FeatureFlagBuilder("flag1").Version(1).Build();
+            var segment1 = new SegmentBuilder("seg1").Version(1).Build();
+            var segment2 = new SegmentBuilder("seg2").Version(2).Build();
+
+            var changeSetData = ImmutableList.Create(
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
+                        new KeyValuePair<string, ItemDescriptor>("flag1", new ItemDescriptor(1, flag1))
+                    ))
+                ),
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Segments,
+                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
+                        new KeyValuePair<string, ItemDescriptor>("seg1", new ItemDescriptor(1, segment1)),
+                        new KeyValuePair<string, ItemDescriptor>("seg2", new ItemDescriptor(2, segment2))
+                    ))
+                )
+            );
+
+            var changeSet = new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Partial,
+                Selector.Make(1, "state1"),
+                changeSetData,
+                null
+            );
+
+            var result = DataStoreSorter.SortChangeset(changeSet);
+
+            Assert.Equal(2, result.Data.Count());
+
+            var segments = result.Data.First(kv => kv.Key == DataModel.Segments);
+            Assert.Equal(2, segments.Value.Items.Count());
+
+            var flags = result.Data.First(kv => kv.Key == DataModel.Features);
+            Assert.Single(flags.Value.Items);
+        }
+
+        [Fact]
+        public void SortChangeset_PreservesDeletedItems()
+        {
+            var changeSetData = ImmutableList.Create(
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    DataModel.Features,
+                    new KeyedItems<ItemDescriptor>(ImmutableList.Create(
+                        new KeyValuePair<string, ItemDescriptor>("flag1", ItemDescriptor.Deleted(5))
+                    ))
+                )
+            );
+
+            var changeSet = new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Partial,
+                Selector.Make(1, "state1"),
+                changeSetData,
+                null
+            );
+
+            var result = DataStoreSorter.SortChangeset(changeSet);
+
+            var flagsData = result.Data.First(kv => kv.Key == DataModel.Features);
+            var item = flagsData.Value.Items.First();
+
+            Assert.Equal("flag1", item.Key);
+            Assert.Null(item.Value.Item);
+            Assert.Equal(5, item.Value.Version);
+        }
+
+        #endregion
     }
 }

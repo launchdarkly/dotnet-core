@@ -116,6 +116,15 @@ namespace LaunchDarkly.Sdk.Server
         /// Contains methods for configuring the SDK's 'plugins' to extend or customize SDK behavior.
         /// </summary>
         public PluginConfigurationBuilder Plugins { get; }
+        
+        /// <summary>
+        /// Contains the data system configuration.
+        /// <para>
+        /// This property is not stable, and not subject to any backwards compatibility guarantees or semantic versioning.
+        /// It is in early access. If you want access to this feature please join the EAP. https://launchdarkly.com/docs/sdk/features/data-saving-mode
+        /// </para>
+        /// </summary>
+        public DataSystemBuilder DataSystem { get; }
 
         #endregion
 
@@ -195,6 +204,7 @@ namespace LaunchDarkly.Sdk.Server
             WrapperInfo = builder._wrapperInfo;
             Hooks = builder._hooks;
             Plugins = builder._plugins;
+            DataSystem = builder._dataSystem;
         }
 
         #endregion

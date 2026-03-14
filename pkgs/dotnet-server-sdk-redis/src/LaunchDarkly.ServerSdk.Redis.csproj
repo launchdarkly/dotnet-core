@@ -20,11 +20,43 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <RootNamespace>LaunchDarkly.Sdk.Server.Integrations</RootNamespace>
+    <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LaunchDarkly.ServerSdk" Version="[8.0.0, 9.0.0)" />
     <PackageReference Include="StackExchange.Redis" Version="[2.0.513,]" />
+  </ItemGroup>
+
+  <!-- Use PackageReference in Debug/Release -->
+  <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences'">
+    <PackageReference Include="LaunchDarkly.ServerSdk" Version="[8.0.0, 9.0.0)" />
+  </ItemGroup>
+
+  <!-- Use ProjectReference in DebugLocalReferences -->
+  <ItemGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <ProjectReference Include="../../sdk/server/src/LaunchDarkly.ServerSdk.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\CHANGELOG.md">
+      <Link>CHANGELOG.md</Link>
+    </Content>
+    <Content Include="..\CONTRIBUTING.md">
+      <Link>CONTRIBUTING.md</Link>
+    </Content>
+    <Content Include="..\docfx.json">
+      <Link>docfx.json</Link>
+    </Content>
+    <Content Include="..\README.md">
+      <Link>README.md</Link>
+    </Content>
+    <Content Include="..\SECURITY.md">
+      <Link>SECURITY.md</Link>
+    </Content>
   </ItemGroup>
 
   <PropertyGroup>

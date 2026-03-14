@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal.Model;
@@ -30,6 +30,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 dataOut.Add(kind, new KeyedItems<ItemDescriptor>(SortCollection(kind, entry.Value.Items)));
             }
             return new FullDataSet<ItemDescriptor>(dataOut);
+        }
+        
+        /// <summary>
+        /// Sort the data in the changeset in dependency order. If there are any duplicates, then the highest version
+        /// of the duplicate item will be retained.
+        /// </summary>
+        /// <param name="inSet">the changeset to sort</param>
+        /// <returns>a sorted copy of the changeset</returns>
+        public static ChangeSet<ItemDescriptor> SortChangeset(ChangeSet<ItemDescriptor> inSet)
+        {
+            var dataOut = new SortedDictionary<DataKind, KeyedItems<ItemDescriptor>>(
+                PriorityComparer.Instance);
+
+            foreach (var entry in inSet.Data)
+            {
+                var kind = entry.Key;
+                dataOut.Add(kind, new KeyedItems<ItemDescriptor>(SortCollection(kind, entry.Value.Items)));
+            }
+
+            return new ChangeSet<ItemDescriptor>(inSet.Type, inSet.Selector, dataOut, inSet.EnvironmentId);
         }
 
         private static IEnumerable<KeyValuePair<string, ItemDescriptor>> SortCollection(DataKind kind,

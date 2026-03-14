@@ -12,9 +12,9 @@
     },
     "pkgs/dotnet-server-sdk-dynamodb": {
       "release-type": "simple",
-      "package-name": "LaunchDarkly.ServerSdk.DynamoDb",
+      "package-name": "LaunchDarkly.ServerSdk.DynamoDB",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.DynamoDb.csproj"
+        "src/LaunchDarkly.ServerSdk.DynamoDB.csproj"
       ]
     },
     "pkgs/dotnet-server-sdk-redis": {
@@ -36,10 +36,11 @@
       "package-name": "LaunchDarkly.ServerSdk.Ai",
       "bump-minor-pre-major": true,
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Ai.csproj"
+        "src/LaunchDarkly.ServerSdk.Ai.csproj",
+        "src/SdkInfo.cs"
       ]
     },
-    "pkgs/sdk/client": {
+    "pkgs/sdk/client":{
       "release-type": "simple",
       "package-name": "LaunchDarkly.ClientSdk",
       "extra-files": [

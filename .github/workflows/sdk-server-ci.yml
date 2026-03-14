@@ -36,6 +36,7 @@ jobs:
           service_project_file: ${{ env.CONTRACT_TEST_PROJECT_FILE}}
           service_dll_file: ${{ env.CONTRACT_TEST_DLL_FILE}}
           token: ${{ secrets.GITHUB_TOKEN }}
+          run_fdv2_tests: 'true'
 
       - uses: ./.github/actions/build-docs
         with:

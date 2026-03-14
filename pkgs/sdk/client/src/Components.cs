@@ -1,7 +1,10 @@
-﻿using LaunchDarkly.Logging;
+using System.Collections.Generic;
+using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Client.Hooks;
 using LaunchDarkly.Sdk.Client.Integrations;
 using LaunchDarkly.Sdk.Client.Internal;
 using LaunchDarkly.Sdk.Client.Internal.DataStores;
+using LaunchDarkly.Sdk.Client.Plugins;
 using LaunchDarkly.Sdk.Client.Subsystems;
 
 namespace LaunchDarkly.Sdk.Client
@@ -336,5 +339,26 @@ namespace LaunchDarkly.Sdk.Client
         /// <see cref="ConfigurationBuilder.DataSource(IComponentConfigurer{IDataSource})"/>
         public static StreamingDataSourceBuilder StreamingDataSource() =>
             new StreamingDataSourceBuilder();
+
+        /// <summary>
+        /// Returns a configuration builder for the SDK's plugin configuration.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder(mobileKey, AutoEnvAttributes.Enabled)
+        ///         .Plugins(Components.Plugins()
+        ///             .Add(new MyPlugin(...))
+        ///         ).Build();
+        /// </code>
+        /// </example>
+        /// <returns>a configuration builder</returns>
+        public static PluginConfigurationBuilder Plugins() => new PluginConfigurationBuilder();
+
+        /// <summary>
+        /// Returns a configuration builder for the SDK's plugin configuration, with an initial set of plugins.
+        /// </summary>
+        /// <param name="plugins">a collection of plugins</param>
+        /// <returns>a configuration builder</returns>
+        public static PluginConfigurationBuilder Plugins(IEnumerable<Plugin> plugins) => new PluginConfigurationBuilder(plugins);
     }
 }

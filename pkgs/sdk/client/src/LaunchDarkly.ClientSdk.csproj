@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <!--x-release-please-start-version-->
-        <Version>5.5.4</Version>
+        <Version>5.7.0</Version>
         <!--x-release-please-end-->
         <!-- The BUILDFRAMEWORKS variable allows us to override the target frameworks in
              a situation where we need to build only the .NET Standard target and do not
@@ -10,6 +10,7 @@
              that doesn't have the MAUI tools installed. That is currently the case in
              the release phase where we build HTML documentation. -->
 
+        <BuildFrameworks Condition="'$(BUILDFRAMEWORKS)' == '' and $([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))">netstandard2.0;net8.0</BuildFrameworks>
         <BuildFrameworks Condition="'$(BUILDFRAMEWORKS)' == ''">netstandard2.0;net8.0;net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-windows</BuildFrameworks>
         <TargetFrameworks>$(BUILDFRAMEWORKS)</TargetFrameworks>
         <OutputType>Library</OutputType>
@@ -36,6 +37,12 @@
 
         <!-- fail if XML comments are missing or invalid -->
         <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+        <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
@@ -116,6 +123,23 @@
         <Compile Update="Subsystems\IComponentConfigurer.cs">
             <SubType></SubType>
         </Compile>
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="..\CHANGELOG.md">
+        <Link>CHANGELOG.md</Link>
+      </Content>
+      <Content Include="..\CONTRIBUTING.md">
+        <Link>CONTRIBUTING.md</Link>
+      </Content>
+      <Content Include="..\index.md">
+        <Link>index.md</Link>
+      </Content>
+      <Content Include="..\README.md">
+        <Link>README.md</Link>
+      </Content>
+      <Content Include="..\toc.yml">
+        <Link>toc.yml</Link>
+      </Content>
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.ClientSdk.snk</AssemblyOriginatorKeyFile>

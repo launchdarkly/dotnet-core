@@ -483,5 +483,13 @@ namespace LaunchDarkly.Sdk.Server
         /// </remarks>
         /// <returns>a configuration builder</returns>
         public static WrapperInfoBuilder WrapperInfo() => new WrapperInfoBuilder();
+
+        /// <summary>
+        /// Returns a set of builder options for configuring the SDK data system. When the data system configuration
+        /// is used it overrides <see cref="ConfigurationBuilder.DataSource"/> and
+        /// <see cref="ConfigurationBuilder.DataStore"/> in the configuration.
+        /// </summary>
+        /// <returns>a configuration builder</returns>
+        public static DataSystemModes DataSystem() => new DataSystemModes();
     }
 }

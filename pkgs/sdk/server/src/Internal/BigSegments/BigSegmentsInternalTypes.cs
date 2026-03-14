@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Cryptography;
 using System.Text;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 
@@ -9,11 +8,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.BigSegments
 {
     internal static class BigSegmentsInternalTypes
     {
-        private static readonly SHA256 _hasher = SHA256.Create();
-
         internal static string BigSegmentContextKeyHash(string userKey) =>
             Convert.ToBase64String(
-                _hasher.ComputeHash(Encoding.UTF8.GetBytes(userKey))
+                LdSha256.HashData(Encoding.UTF8.GetBytes(userKey))
                 );
 
         internal static string MakeBigSegmentRef(Segment s) =>

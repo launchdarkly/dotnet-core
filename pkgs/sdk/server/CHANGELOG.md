@@ -1,5 +1,31 @@
 # Changelog
 
+## [8.11.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.0...LaunchDarkly.ServerSdk-v8.11.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* IfMatchContext/AndMatchContext utilize context kind. ([#225](https://github.com/launchdarkly/dotnet-core/issues/225)) ([95bc949](https://github.com/launchdarkly/dotnet-core/commit/95bc9495984976833efd736f36fc4023c37eb663))
+
+## [8.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.4...LaunchDarkly.ServerSdk-v8.11.0) (2026-01-12)
+
+
+### Features
+
+* **experimental:** Release EAP support for FDv2 data system. ([d78799a](https://github.com/launchdarkly/dotnet-core/commit/d78799acb38323c8ca7207046b41570e1d333a28))
+
+
+### Bug Fixes
+
+* Update FileDataSource to process reload triggers under lock. ([#199](https://github.com/launchdarkly/dotnet-core/issues/199)) ([75f51c6](https://github.com/launchdarkly/dotnet-core/commit/75f51c67bff8ccf36035a948763998c10f083dbd))
+
+## [8.10.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.3...LaunchDarkly.ServerSdk-v8.10.4) (2025-11-10)
+
+
+### Bug Fixes
+
+* Use thread-safe hash for big segments hashing. ([#180](https://github.com/launchdarkly/dotnet-core/issues/180)) ([06196d8](https://github.com/launchdarkly/dotnet-core/commit/06196d881d306e2bd09631469c657a4f11685fcc))
+
 ## [8.10.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.2...LaunchDarkly.ServerSdk-v8.10.3) (2025-09-29)
 
 

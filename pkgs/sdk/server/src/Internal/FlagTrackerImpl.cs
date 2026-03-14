@@ -1,32 +1,33 @@
 ﻿using System;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 
 namespace LaunchDarkly.Sdk.Server.Internal
 {
     internal sealed class FlagTrackerImpl : IFlagTracker
     {
-        private readonly DataSourceUpdatesImpl _dataSourceUpdates;
+        private readonly IFlagChanged _flagChanged;
         private readonly Func<string, Context, LdValue> _evaluateFn;
 
         public event EventHandler<FlagChangeEvent> FlagChanged
         {
             add
             {
-                _dataSourceUpdates.FlagChanged += value;
+                _flagChanged.FlagChanged += value;
             }
             remove
             {
-                _dataSourceUpdates.FlagChanged -= value;
+                _flagChanged.FlagChanged -= value;
             }
         }
 
         internal FlagTrackerImpl(
-            DataSourceUpdatesImpl dataSourceUpdates,
+            IFlagChanged flagChanged,
             Func<string, Context, LdValue> evaluateFn
             )
         {
-            _dataSourceUpdates = dataSourceUpdates;
+            _flagChanged = flagChanged;
             _evaluateFn = evaluateFn;
         }
 

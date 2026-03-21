@@ -36,7 +36,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     /// </remarks>
     /// <example>
     /// <code>
-    ///     var config = Configuration.Builder("my-sdk-key", AutoEnvAttributes.Enabled)
+    ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
     ///         .Logging(Components.Logging().Level(LogLevel.Warn))
     ///         .Build();
     /// </code>
@@ -131,7 +131,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         /// <code>
         ///     // This example configures the SDK to send log output to a file writer.
         ///     var writer = File.CreateText("sdk.log");
-        ///     var config = Configuration.Builder("my-sdk-key", AutoEnvAttributes.Enabled)
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Components.Logging().Adapter(Logs.ToWriter(writer)))
         ///         .Build();
         /// </code>

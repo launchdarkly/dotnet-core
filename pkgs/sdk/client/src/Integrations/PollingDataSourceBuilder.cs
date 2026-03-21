@@ -28,7 +28,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     /// </remarks>
     /// <example>
     /// <code>
-    ///     var config = Configuration.Builder(sdkKey, AutoEnvAttributes.Enabled)
+    ///     var config = Configuration.Builder(sdkKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
     ///         .DataSource(Components.PollingDataSource()
     ///             .PollInterval(TimeSpan.FromSeconds(45)))
     ///         .Build();

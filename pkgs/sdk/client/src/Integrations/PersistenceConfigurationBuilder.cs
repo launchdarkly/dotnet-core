@@ -21,7 +21,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     /// </remarks>
     /// <example>
     /// <code>
-    ///     var config = Configuration.Builder(sdkKey)
+    ///     var config = Configuration.Builder(sdkKey, AutoEnvAttributes.Enabled)
     ///         .Persistence(
     ///             Components.Persistence().MaxCachedUsers(5)
     ///         )

@@ -68,7 +68,7 @@ namespace LaunchDarkly.Sdk.Client.Interfaces
         /// </para>
         /// <code>
         ///     // create the client but do not wait
-        ///     var config = Configuration.Builder("my-sdk-key").StartWaitTime(TimeSpan.Zero).Build();
+        ///     var config = Configuration.Builder("my-sdk-key", AutoEnvAttributes.Enabled).StartWaitTime(TimeSpan.Zero).Build();
         ///     var client = new LDClient(config);
         ///
         ///     // later, possibly on another thread:
@@ -98,7 +98,7 @@ namespace LaunchDarkly.Sdk.Client.Interfaces
         /// </para>
         /// <code>
         ///     // create the client but do not wait
-        ///     var config = Configuration.Builder("my-sdk-key").StartWaitTime(TimeSpan.Zero).Build();
+        ///     var config = Configuration.Builder("my-sdk-key", AutoEnvAttributes.Enabled).StartWaitTime(TimeSpan.Zero).Build();
         ///     var client = new LDClient(config);
         ///
         ///     // later, possibly on another thread:

@@ -35,7 +35,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     ///     var td = TestData.DataSource();
     ///     td.Update(td.Flag("flag-key-1").BooleanFlag().Variation(true));
     ///
-    ///     var config = Configuration.Builder("sdk-key")
+    ///     var config = Configuration.Builder("sdk-key", AutoEnvAttributes.Enabled)
     ///         .DataSource(td)
     ///         .Build();
     ///     var client = new LdClient(config);

@@ -51,13 +51,13 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     /// <example>
     /// <code >
     ///     // Example of specifying a Relay Proxy instance
-    ///     var config = Configuration.Builder(mobileKey)
+    ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
     ///         .ServiceEndpoints(Components.ServiceEndpoints()
     ///             .RelayProxy("http://my-relay-hostname:8080"))
     ///         .Build();
     ///
     ///     // Example of specifying a private LaunchDarkly instance
-    ///     var config = Configuration.Builder(mobileKey)
+    ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
     ///         .ServiceEndpoints(Components.ServiceEndpoints()
     ///             .Streaming("https://stream.mycompany.launchdarkly.com")
     ///             .Polling("https://app.mycompany.launchdarkly.com")
@@ -89,7 +89,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         /// call <see cref="RelayProxy(Uri)"/> instead.
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .ServiceEndpoints(Components.ServiceEndpoints()
         ///             .Streaming("https://stream.mycompany.launchdarkly.com")
         ///             .Polling("https://app.mycompany.launchdarkly.com")
@@ -125,7 +125,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         /// call <see cref="RelayProxy(Uri)"/> instead.
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .ServiceEndpoints(Components.ServiceEndpoints()
         ///             .Streaming("https://stream.mycompany.launchdarkly.com")
         ///             .Polling("https://app.mycompany.launchdarkly.com")
@@ -169,7 +169,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         /// <example>
         /// <code>
         ///     var relayUri = new Uri("http://my-relay-hostname:8080");
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .ServiceEndpoints(Components.ServiceEndpoints().RelayProxy(relayUri))
         ///         .Build();
         /// </code>
@@ -213,7 +213,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         /// </para>
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .ServiceEndpoints(Components.ServiceEndpoints()
         ///             .Streaming("https://stream.mycompany.launchdarkly.com")
         ///             .Polling("https://app.mycompany.launchdarkly.com")

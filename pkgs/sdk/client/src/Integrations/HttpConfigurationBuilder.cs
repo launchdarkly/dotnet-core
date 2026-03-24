@@ -22,7 +22,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     /// </para>
     /// <example>
     /// <code>
-    ///     var config = Configuration.Builder(sdkKey)
+    ///     var config = Configuration.Builder(sdkKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
     ///         .Http(
     ///             Components.HttpConfiguration()
     ///                 .ConnectTimeout(TimeSpan.FromMilliseconds(3000))
@@ -144,7 +144,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
         ///         new System.Net.NetworkCredential("username", "password"));
         ///     proxy.Credentials = credentials;
         ///
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Http(
         ///             Components.HttpConfiguration().Proxy(proxy)
         ///         )

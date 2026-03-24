@@ -165,7 +165,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .EventFlushInterval(TimeSpan.FromSeconds(90))
         ///         .StartWaitTime(TimeSpan.FromSeconds(5))
         ///         .Build();

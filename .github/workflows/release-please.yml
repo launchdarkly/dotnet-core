@@ -8,6 +8,9 @@ on:
 jobs:
   release-please:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
 
     outputs:
       package-sdk-client-released: ${{ steps.release.outputs['pkgs/sdk/client--release_created'] }}
@@ -52,7 +55,6 @@ jobs:
       actions: read
       id-token: write
       contents: write
-      pull-requests: write
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: "${{ needs.release-sdk-client.outputs.hashes }}"

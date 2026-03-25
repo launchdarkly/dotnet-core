@@ -8,6 +8,9 @@ on:
 jobs:
   release-please:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
 
     outputs:
       package-sdk-client-released: ${{ steps.release.outputs['pkgs/sdk/client--release_created'] }}

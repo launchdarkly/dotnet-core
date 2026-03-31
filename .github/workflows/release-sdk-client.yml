@@ -156,12 +156,14 @@ jobs:
           dry_run: ${{ inputs.dry_run }}
 
       - name: Generate checksums file
+        if: ${{ inputs.dry_run == 'false' }}
         env:
           HASHES: ${{ steps.publish.outputs.hashes }}
         run: |
           echo "$HASHES" | base64 -d > checksums.txt
 
       - name: Attest build provenance
+        if: ${{ inputs.dry_run == 'false' }}
         uses: actions/attest@v4
         with:
           subject-checksums: checksums.txt

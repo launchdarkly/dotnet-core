@@ -40,78 +40,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: ${{ github.ref_name }}
 
-  create-tags:
-    needs: release-please
-    if: >-
-      needs.release-please.outputs.package-sdk-client-released == 'true' ||
-      needs.release-please.outputs.package-sdk-server-released == 'true' ||
-      needs.release-please.outputs.package-sdk-server-ai-released == 'true' ||
-      needs.release-please.outputs.package-sdk-server-telemetry-released == 'true' ||
-      needs.release-please.outputs.package-sdk-server-redis-released == 'true' ||
-      needs.release-please.outputs.package-sdk-server-consul-released == 'true' ||
-      needs.release-please.outputs.package-sdk-server-dynamodb-released == 'true' ||
-      needs.release-please.outputs.package-shared-common-released == 'true' ||
-      needs.release-please.outputs.package-shared-common-json-net-released == 'true'
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Create release tags
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_CLIENT: ${{ needs.release-please.outputs.package-sdk-client-tag_name }}
-          TAG_SERVER: ${{ needs.release-please.outputs.package-sdk-server-tag_name }}
-          TAG_SERVER_AI: ${{ needs.release-please.outputs.package-sdk-server-ai-tag_name }}
-          TAG_TELEMETRY: ${{ needs.release-please.outputs.package-sdk-server-telemetry-tag_name }}
-          TAG_REDIS: ${{ needs.release-please.outputs.package-sdk-server-redis-tag_name }}
-          TAG_CONSUL: ${{ needs.release-please.outputs.package-sdk-server-consul-tag_name }}
-          TAG_DYNAMODB: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-tag_name }}
-          TAG_COMMON: ${{ needs.release-please.outputs.package-shared-common-tag_name }}
-          TAG_COMMON_JSON_NET: ${{ needs.release-please.outputs.package-shared-common-json-net-tag_name }}
-          RELEASED_CLIENT: ${{ needs.release-please.outputs.package-sdk-client-released }}
-          RELEASED_SERVER: ${{ needs.release-please.outputs.package-sdk-server-released }}
-          RELEASED_SERVER_AI: ${{ needs.release-please.outputs.package-sdk-server-ai-released }}
-          RELEASED_TELEMETRY: ${{ needs.release-please.outputs.package-sdk-server-telemetry-released }}
-          RELEASED_REDIS: ${{ needs.release-please.outputs.package-sdk-server-redis-released }}
-          RELEASED_CONSUL: ${{ needs.release-please.outputs.package-sdk-server-consul-released }}
-          RELEASED_DYNAMODB: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-released }}
-          RELEASED_COMMON: ${{ needs.release-please.outputs.package-shared-common-released }}
-          RELEASED_COMMON_JSON_NET: ${{ needs.release-please.outputs.package-shared-common-json-net-released }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          create_tag() {
-            local tag="$1"
-            local released="$2"
-            if [ "$released" = "true" ] && [ -n "$tag" ]; then
-              if gh api "repos/${{ github.repository }}/git/ref/tags/${tag}" >/dev/null 2>&1; then
-                echo "Tag ${tag} already exists, skipping creation."
-              else
-                echo "Creating tag ${tag}."
-                git tag "${tag}"
-                git push origin "${tag}"
-              fi
-            fi
-          }
-
-          create_tag "$TAG_CLIENT" "$RELEASED_CLIENT"
-          create_tag "$TAG_SERVER" "$RELEASED_SERVER"
-          create_tag "$TAG_SERVER_AI" "$RELEASED_SERVER_AI"
-          create_tag "$TAG_TELEMETRY" "$RELEASED_TELEMETRY"
-          create_tag "$TAG_REDIS" "$RELEASED_REDIS"
-          create_tag "$TAG_CONSUL" "$RELEASED_CONSUL"
-          create_tag "$TAG_DYNAMODB" "$RELEASED_DYNAMODB"
-          create_tag "$TAG_COMMON" "$RELEASED_COMMON"
-          create_tag "$TAG_COMMON_JSON_NET" "$RELEASED_COMMON_JSON_NET"
-
-  # this job calls to the release-sdk-client workflow because the client SDK has to be built on macos
   release-sdk-client:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-client-released == 'true'}}
     uses: ./.github/workflows/release-sdk-client.yml
     with:
@@ -119,7 +49,7 @@ jobs:
 
   # Server packages using the shared release workflow
   release-sdk-server:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -129,7 +59,7 @@ jobs:
       tag_name: ${{ needs.release-please.outputs.package-sdk-server-tag_name }}
 
   release-sdk-server-ai:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-ai-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -139,7 +69,7 @@ jobs:
       tag_name: ${{ needs.release-please.outputs.package-sdk-server-ai-tag_name }}
 
   release-telemetry:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-telemetry-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -149,7 +79,7 @@ jobs:
       tag_name: ${{ needs.release-please.outputs.package-sdk-server-telemetry-tag_name }}
 
   release-sdk-server-redis:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-redis-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -159,7 +89,7 @@ jobs:
       tag_name: ${{ needs.release-please.outputs.package-sdk-server-redis-tag_name }}
 
   release-sdk-server-consul:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-consul-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -169,7 +99,7 @@ jobs:
       tag_name: ${{ needs.release-please.outputs.package-sdk-server-consul-tag_name }}
 
   release-sdk-server-dynamodb:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -179,7 +109,7 @@ jobs:
       tag_name: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-tag_name }}
 
   release-shared-common:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-shared-common-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -189,7 +119,7 @@ jobs:
       tag_name: ${{ needs.release-please.outputs.package-shared-common-tag_name }}
 
   release-shared-common-json-net:
-    needs: ['release-please', 'create-tags']
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-shared-common-json-net-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -197,73 +127,3 @@ jobs:
       dry_run: false
       generate_provenance: true
       tag_name: ${{ needs.release-please.outputs.package-shared-common-json-net-tag_name }}
-
-  publish-release:
-    needs:
-      - release-please
-      - release-sdk-client
-      - release-sdk-server
-      - release-sdk-server-ai
-      - release-telemetry
-      - release-sdk-server-redis
-      - release-sdk-server-consul
-      - release-sdk-server-dynamodb
-      - release-shared-common
-      - release-shared-common-json-net
-    if: always()
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - name: Publish released drafts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_CLIENT: ${{ needs.release-please.outputs.package-sdk-client-tag_name }}
-          TAG_SERVER: ${{ needs.release-please.outputs.package-sdk-server-tag_name }}
-          TAG_SERVER_AI: ${{ needs.release-please.outputs.package-sdk-server-ai-tag_name }}
-          TAG_TELEMETRY: ${{ needs.release-please.outputs.package-sdk-server-telemetry-tag_name }}
-          TAG_REDIS: ${{ needs.release-please.outputs.package-sdk-server-redis-tag_name }}
-          TAG_CONSUL: ${{ needs.release-please.outputs.package-sdk-server-consul-tag_name }}
-          TAG_DYNAMODB: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-tag_name }}
-          TAG_COMMON: ${{ needs.release-please.outputs.package-shared-common-tag_name }}
-          TAG_COMMON_JSON_NET: ${{ needs.release-please.outputs.package-shared-common-json-net-tag_name }}
-          RELEASED_CLIENT: ${{ needs.release-please.outputs.package-sdk-client-released }}
-          RELEASED_SERVER: ${{ needs.release-please.outputs.package-sdk-server-released }}
-          RELEASED_SERVER_AI: ${{ needs.release-please.outputs.package-sdk-server-ai-released }}
-          RELEASED_TELEMETRY: ${{ needs.release-please.outputs.package-sdk-server-telemetry-released }}
-          RELEASED_REDIS: ${{ needs.release-please.outputs.package-sdk-server-redis-released }}
-          RELEASED_CONSUL: ${{ needs.release-please.outputs.package-sdk-server-consul-released }}
-          RELEASED_DYNAMODB: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-released }}
-          RELEASED_COMMON: ${{ needs.release-please.outputs.package-shared-common-released }}
-          RELEASED_COMMON_JSON_NET: ${{ needs.release-please.outputs.package-shared-common-json-net-released }}
-          RESULT_CLIENT: ${{ needs.release-sdk-client.result }}
-          RESULT_SERVER: ${{ needs.release-sdk-server.result }}
-          RESULT_SERVER_AI: ${{ needs.release-sdk-server-ai.result }}
-          RESULT_TELEMETRY: ${{ needs.release-telemetry.result }}
-          RESULT_REDIS: ${{ needs.release-sdk-server-redis.result }}
-          RESULT_CONSUL: ${{ needs.release-sdk-server-consul.result }}
-          RESULT_DYNAMODB: ${{ needs.release-sdk-server-dynamodb.result }}
-          RESULT_COMMON: ${{ needs.release-shared-common.result }}
-          RESULT_COMMON_JSON_NET: ${{ needs.release-shared-common-json-net.result }}
-        run: |
-          publish_release() {
-            local tag="$1"
-            local released="$2"
-            local result="$3"
-            if [ "$released" = "true" ] && [ "$result" = "success" ] && [ -n "$tag" ]; then
-              echo "Publishing release for tag ${tag}."
-              gh release edit "$tag" \
-                --repo ${{ github.repository }} \
-                --draft=false
-            fi
-          }
-
-          publish_release "$TAG_CLIENT" "$RELEASED_CLIENT" "$RESULT_CLIENT"
-          publish_release "$TAG_SERVER" "$RELEASED_SERVER" "$RESULT_SERVER"
-          publish_release "$TAG_SERVER_AI" "$RELEASED_SERVER_AI" "$RESULT_SERVER_AI"
-          publish_release "$TAG_TELEMETRY" "$RELEASED_TELEMETRY" "$RESULT_TELEMETRY"
-          publish_release "$TAG_REDIS" "$RELEASED_REDIS" "$RESULT_REDIS"
-          publish_release "$TAG_CONSUL" "$RELEASED_CONSUL" "$RESULT_CONSUL"
-          publish_release "$TAG_DYNAMODB" "$RELEASED_DYNAMODB" "$RESULT_DYNAMODB"
-          publish_release "$TAG_COMMON" "$RELEASED_COMMON" "$RESULT_COMMON"
-          publish_release "$TAG_COMMON_JSON_NET" "$RELEASED_COMMON_JSON_NET" "$RESULT_COMMON_JSON_NET"

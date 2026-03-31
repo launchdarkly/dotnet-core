@@ -6,7 +6,6 @@
     "pkgs/dotnet-server-sdk-consul": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Consul",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Consul.csproj"
@@ -15,7 +14,6 @@
     "pkgs/dotnet-server-sdk-dynamodb": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.DynamoDB",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.DynamoDB.csproj"
@@ -24,7 +22,6 @@
     "pkgs/dotnet-server-sdk-redis": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Redis",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Redis.csproj"
@@ -33,7 +30,6 @@
     "pkgs/sdk/server": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.csproj"
@@ -43,7 +39,6 @@
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Ai",
       "bump-minor-pre-major": true,
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Ai.csproj",
@@ -53,7 +48,6 @@
     "pkgs/sdk/client": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ClientSdk",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.ClientSdk.csproj"
@@ -62,7 +56,6 @@
     "pkgs/telemetry": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Telemetry",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Telemetry.csproj"
@@ -71,7 +64,6 @@
     "pkgs/shared/common": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.CommonSdk.csproj"
@@ -80,7 +72,6 @@
     "pkgs/shared/common-json-net": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk.JsonNet",
-      "draft": true,
       "force-tag-creation": true,
       "extra-files": [
         "src/LaunchDarkly.CommonSdk.JsonNet.csproj"

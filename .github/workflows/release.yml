@@ -51,8 +51,7 @@ jobs:
       id-token: write
       contents: write
       pull-requests: write
-    outputs:
-      hashes: ${{ steps.full-release.outputs.hashes }}
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -76,16 +75,15 @@ jobs:
           run_dynamodb: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-dynamodb' }}
           run_redis: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-redis' }}
 
-  release-provenance:
-    needs: ['release']
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    if: inputs.generate_provenance
-    with:
-      base64-subjects: "${{ needs.release.outputs.hashes }}"
-      upload-assets: true
-      upload-tag-name: ${{ inputs.tag_name }}
-      provenance-name: ${{ format('{0}_provenance.intoto.jsonl', inputs.tag_name) }}
+      - name: Generate checksums file
+        if: ${{ inputs.generate_provenance }}
+        env:
+          HASHES: ${{ steps.full-release.outputs.hashes }}
+        run: |
+          echo "$HASHES" | base64 -d > checksums.txt
+
+      - name: Attest build provenance
+        if: ${{ inputs.generate_provenance }}
+        uses: actions/attest@v4
+        with:
+          subject-checksums: checksums.txt

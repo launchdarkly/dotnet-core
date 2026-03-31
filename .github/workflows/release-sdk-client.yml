@@ -13,10 +13,6 @@ on:
         description: 'Is this a dry run. If so no package will be published.'
         type: boolean
         required: true
-    outputs:
-      hashes:
-        description: sha256sum hashes of built artifacts
-        value: ${{ jobs.publish.outputs.hashes }}
 
 jobs:
 # Building is done on mac runner due to xcode build dependencies
@@ -121,8 +117,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    outputs:
-      hashes: ${{ steps.publish.outputs.hashes }}
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -159,6 +154,17 @@ jobs:
         with:
           project_file: ${{ env.PROJECT_FILE }}
           dry_run: ${{ inputs.dry_run }}
+
+      - name: Generate checksums file
+        env:
+          HASHES: ${{ steps.publish.outputs.hashes }}
+        run: |
+          echo "$HASHES" | base64 -d > checksums.txt
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-checksums: checksums.txt
 
       - name: Publish Documentation
         if: ${{ inputs.dry_run == 'false' }}

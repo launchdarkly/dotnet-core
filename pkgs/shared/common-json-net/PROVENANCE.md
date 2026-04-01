@@ -1,28 +1,30 @@
-## Verifying SDK build provenance with GitHub artifact attestations
+## Verifying build provenance with GitHub artifact attestations
 
 LaunchDarkly uses [GitHub artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds) to help developers make their supply chain more secure by ensuring the authenticity and build integrity of our published SDK packages.
 
 LaunchDarkly publishes provenance about our SDK package builds using [GitHub's `actions/attest` action](https://github.com/actions/attest). These attestations are stored in GitHub's attestation API and can be verified using the [GitHub CLI](https://cli.github.com/).
 
-To verify build provenance attestations, we recommend using the [GitHub CLI `attestation verify` command](https://cli.github.com/manual/gh_attestation_verify). Example usage for verifying SDK packages is included below. This repository contains multiple packages; the example below uses the Server SDK as a reference.
+To verify build provenance attestations, we recommend using the [GitHub CLI `attestation verify` command](https://cli.github.com/manual/gh_attestation_verify). Example usage for verifying this package is included below.
 
+<!-- x-release-please-start-version -->
 ```
 # Set the version of the SDK to verify
-SDK_VERSION=8.11.1
+SDK_VERSION=7.0.2
 ```
+<!-- x-release-please-end -->
 
 ```
 # Download the nupkg from NuGet
-$ nuget install LaunchDarkly.ServerSdk -Version $SDK_VERSION -OutputDirectory ./packages
+$ nuget install LaunchDarkly.CommonSdk.JsonNet -Version $SDK_VERSION -OutputDirectory ./packages
 
 # Verify provenance using the GitHub CLI
-$ gh attestation verify ./packages/LaunchDarkly.ServerSdk.${SDK_VERSION}/LaunchDarkly.ServerSdk.${SDK_VERSION}.nupkg --owner launchdarkly
+$ gh attestation verify ./packages/LaunchDarkly.CommonSdk.JsonNet.${SDK_VERSION}/LaunchDarkly.CommonSdk.JsonNet.${SDK_VERSION}.nupkg --owner launchdarkly
 ```
 
 Below is a sample of expected output.
 
 ```
-Loaded digest sha256:... for file://LaunchDarkly.ServerSdk.8.11.1.nupkg
+Loaded digest sha256:... for file://LaunchDarkly.CommonSdk.JsonNet.7.0.2.nupkg
 Loaded 1 attestation from GitHub API
 
 The following policy criteria will be enforced:
@@ -41,20 +43,6 @@ The following 1 attestation matched the policy criteria
   - Signer repo:.... launchdarkly/dotnet-core
   - Signer workflow: .github/workflows/release-please.yml
 ```
-
-The same verification process applies to all packages published from this repository:
-
-| Package | NuGet Name |
-|---------|-----------|
-| Server SDK | `LaunchDarkly.ServerSdk` |
-| Server SDK AI | `LaunchDarkly.ServerSdk.Ai` |
-| Client SDK | `LaunchDarkly.ClientSdk` |
-| Common SDK | `LaunchDarkly.CommonSdk` |
-| Common SDK JsonNet | `LaunchDarkly.CommonSdk.JsonNet` |
-| Server SDK Telemetry | `LaunchDarkly.ServerSdk.Telemetry` |
-| Server SDK Consul | `LaunchDarkly.ServerSdk.Consul` |
-| Server SDK DynamoDB | `LaunchDarkly.ServerSdk.DynamoDB` |
-| Server SDK Redis | `LaunchDarkly.ServerSdk.Redis` |
 
 For more information, see [GitHub's documentation on verifying artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds#verifying-artifact-attestations-with-the-github-cli).
 

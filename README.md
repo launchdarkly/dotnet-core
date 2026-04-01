@@ -43,7 +43,7 @@ We encourage pull requests and other contributions from the community. Check out
 
 ## Verifying build provenance with the SLSA framework
 
-LaunchDarkly uses the [SLSA framework](https://slsa.dev/spec/v1.0/about) (Supply-chain Levels for Software Artifacts) to help developers make their supply chain more secure by ensuring the authenticity and build integrity of our published packages. To learn more, see the [provenance guide](PROVENANCE.md).
+LaunchDarkly uses the [SLSA framework](https://slsa.dev/spec/v1.0/about) (Supply-chain Levels for Software Artifacts) to help developers make their supply chain more secure by ensuring the authenticity and build integrity of our published packages. Each package in this repository contains its own provenance guide with verification instructions.
 
 ## About LaunchDarkly
  

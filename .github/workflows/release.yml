@@ -39,10 +39,6 @@ on:
         description: 'Whether to generate provenance for this publish.'
         type: boolean
         default: true
-      tag_name:
-        description: 'The tag name to use for the provenance file'
-        type: string
-        required: true
 
 jobs:
   release:

@@ -76,7 +76,7 @@ jobs:
           run_redis: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-redis' }}
 
       - name: Attest build provenance
-        if: ${{ inputs.generate_provenance && inputs.dry_run == false }}
+        if: ${{ inputs.generate_provenance && format('{0}', inputs.dry_run) == 'false' }}
         uses: actions/attest@v4
         with:
           subject-path: 'nupkgs/*'

@@ -7,28 +7,32 @@
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Consul",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Consul.csproj"
+        "src/LaunchDarkly.ServerSdk.Consul.csproj",
+        "PROVENANCE.md"
       ]
     },
     "pkgs/dotnet-server-sdk-dynamodb": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.DynamoDB",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.DynamoDB.csproj"
+        "src/LaunchDarkly.ServerSdk.DynamoDB.csproj",
+        "PROVENANCE.md"
       ]
     },
     "pkgs/dotnet-server-sdk-redis": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Redis",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Redis.csproj"
+        "src/LaunchDarkly.ServerSdk.Redis.csproj",
+        "PROVENANCE.md"
       ]
     },
     "pkgs/sdk/server": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.csproj"
+        "src/LaunchDarkly.ServerSdk.csproj",
+        "PROVENANCE.md"
       ]
     },
     "pkgs/sdk/server-ai": {
@@ -37,35 +41,40 @@
       "bump-minor-pre-major": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.Ai.csproj",
-        "src/SdkInfo.cs"
+        "src/SdkInfo.cs",
+        "PROVENANCE.md"
       ]
     },
-    "pkgs/sdk/client":{
+    "pkgs/sdk/client": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ClientSdk",
       "extra-files": [
-        "src/LaunchDarkly.ClientSdk.csproj"
+        "src/LaunchDarkly.ClientSdk.csproj",
+        "PROVENANCE.md"
       ]
     },
     "pkgs/telemetry": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk.Telemetry",
       "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Telemetry.csproj"
+        "src/LaunchDarkly.ServerSdk.Telemetry.csproj",
+        "PROVENANCE.md"
       ]
     },
     "pkgs/shared/common": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk",
       "extra-files": [
-        "src/LaunchDarkly.CommonSdk.csproj"
+        "src/LaunchDarkly.CommonSdk.csproj",
+        "PROVENANCE.md"
       ]
     },
     "pkgs/shared/common-json-net": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk.JsonNet",
       "extra-files": [
-        "src/LaunchDarkly.CommonSdk.JsonNet.csproj"
+        "src/LaunchDarkly.CommonSdk.JsonNet.csproj",
+        "PROVENANCE.md"
       ]
     }
   }

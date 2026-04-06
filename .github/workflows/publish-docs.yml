@@ -36,21 +36,18 @@ jobs:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
           s3_path_pairs: ${{ env.ASSEMBLY_KEY_PATH_PAIR }}
 
-      - id: build
-        name: Build and Test SDK
+      - name: Build and Test SDK
         uses: ./.github/actions/ci
         with:
           project_file: ${{ env.PROJECT_FILE }}
           test_project_file: ${{ env.TEST_PROJECT_FILE }}
 
-      - id: build-docs
-        name: Build Documentation
+      - name: Build Documentation
         uses: ./.github/actions/build-docs
         with:
           workspace_path: ${{ env.WORKSPACE_PATH }}
 
-      - id: publish-docs
-        name: Publish Documentation
+      - name: Publish Documentation
         uses: ./.github/actions/publish-docs
         with:
           workspace_path: ${{ env.WORKSPACE_PATH }}

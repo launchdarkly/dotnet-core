@@ -24,105 +24,11 @@ jobs:
       package-shared-common-json-net-released: ${{ steps.release.outputs['pkgs/shared/common-json-net--release_created'] }}
 
     steps:
-      # Create any releases first, then create tags, and then optionally create any new PRs.
       - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: ${{ github.ref_name }}
-          skip-github-pull-request: true
-
-      # Need the repository content to be able to create and push tags.
-      - uses: actions/checkout@v4
-        if: >-
-          steps.release.outputs['pkgs/sdk/client--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/sdk/server--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/sdk/server-ai--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/telemetry--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/dotnet-server-sdk-redis--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/dotnet-server-sdk-consul--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/dotnet-server-sdk-dynamodb--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/shared/common--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/shared/common-json-net--release_created'] == 'true'
-
-      - name: Create release tags
-        if: >-
-          steps.release.outputs['pkgs/sdk/client--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/sdk/server--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/sdk/server-ai--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/telemetry--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/dotnet-server-sdk-redis--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/dotnet-server-sdk-consul--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/dotnet-server-sdk-dynamodb--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/shared/common--release_created'] == 'true' ||
-          steps.release.outputs['pkgs/shared/common-json-net--release_created'] == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CLIENT_TAG: ${{ steps.release.outputs['pkgs/sdk/client--tag_name'] }}
-          SERVER_TAG: ${{ steps.release.outputs['pkgs/sdk/server--tag_name'] }}
-          SERVER_AI_TAG: ${{ steps.release.outputs['pkgs/sdk/server-ai--tag_name'] }}
-          TELEMETRY_TAG: ${{ steps.release.outputs['pkgs/telemetry--tag_name'] }}
-          REDIS_TAG: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-redis--tag_name'] }}
-          CONSUL_TAG: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-consul--tag_name'] }}
-          DYNAMODB_TAG: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-dynamodb--tag_name'] }}
-          COMMON_TAG: ${{ steps.release.outputs['pkgs/shared/common--tag_name'] }}
-          COMMON_JSON_TAG: ${{ steps.release.outputs['pkgs/shared/common-json-net--tag_name'] }}
-          CLIENT_RELEASED: ${{ steps.release.outputs['pkgs/sdk/client--release_created'] }}
-          SERVER_RELEASED: ${{ steps.release.outputs['pkgs/sdk/server--release_created'] }}
-          SERVER_AI_RELEASED: ${{ steps.release.outputs['pkgs/sdk/server-ai--release_created'] }}
-          TELEMETRY_RELEASED: ${{ steps.release.outputs['pkgs/telemetry--release_created'] }}
-          REDIS_RELEASED: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-redis--release_created'] }}
-          CONSUL_RELEASED: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-consul--release_created'] }}
-          DYNAMODB_RELEASED: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-dynamodb--release_created'] }}
-          COMMON_RELEASED: ${{ steps.release.outputs['pkgs/shared/common--release_created'] }}
-          COMMON_JSON_RELEASED: ${{ steps.release.outputs['pkgs/shared/common-json-net--release_created'] }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          for pair in \
-            "${CLIENT_RELEASED}:${CLIENT_TAG}" \
-            "${SERVER_RELEASED}:${SERVER_TAG}" \
-            "${SERVER_AI_RELEASED}:${SERVER_AI_TAG}" \
-            "${TELEMETRY_RELEASED}:${TELEMETRY_TAG}" \
-            "${REDIS_RELEASED}:${REDIS_TAG}" \
-            "${CONSUL_RELEASED}:${CONSUL_TAG}" \
-            "${DYNAMODB_RELEASED}:${DYNAMODB_TAG}" \
-            "${COMMON_RELEASED}:${COMMON_TAG}" \
-            "${COMMON_JSON_RELEASED}:${COMMON_JSON_TAG}"; do
-
-            RELEASED="${pair%%:*}"
-            TAG="${pair#*:}"
-
-            if [ "${RELEASED}" != "true" ] || [ -z "${TAG}" ]; then
-              continue
-            fi
-
-            if gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
-              echo "Tag ${TAG} already exists, skipping creation."
-            else
-              echo "Creating tag ${TAG}."
-              git tag "${TAG}"
-              git push origin "${TAG}"
-            fi
-          done
-
-      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
-        if: >-
-          steps.release.outputs['pkgs/sdk/client--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/sdk/server--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/sdk/server-ai--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/telemetry--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/dotnet-server-sdk-redis--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/dotnet-server-sdk-consul--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/dotnet-server-sdk-dynamodb--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/shared/common--release_created'] != 'true' &&
-          steps.release.outputs['pkgs/shared/common-json-net--release_created'] != 'true'
-        id: release-prs
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target-branch: ${{ github.ref_name }}
-          skip-github-release: true
 
   release-sdk-client:
     needs: ['release-please']

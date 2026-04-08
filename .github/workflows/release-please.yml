@@ -91,6 +91,9 @@ jobs:
 
   release-sdk-server-consul:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-sdk-server-consul-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:

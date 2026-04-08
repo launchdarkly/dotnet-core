@@ -32,6 +32,9 @@ jobs:
 
   release-sdk-client:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-sdk-client-released == 'true'}}
     uses: ./.github/workflows/release-sdk-client.yml
     with:
@@ -40,6 +43,9 @@ jobs:
   # Server packages using the shared release workflow
   release-sdk-server:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-sdk-server-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -49,6 +55,9 @@ jobs:
 
   release-sdk-server-ai:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-sdk-server-ai-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -58,6 +67,9 @@ jobs:
 
   release-telemetry:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-sdk-server-telemetry-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -67,6 +79,9 @@ jobs:
 
   release-sdk-server-redis:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-sdk-server-redis-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -85,6 +100,9 @@ jobs:
 
   release-sdk-server-dynamodb:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -94,6 +112,9 @@ jobs:
 
   release-shared-common:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-shared-common-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
@@ -103,6 +124,9 @@ jobs:
 
   release-shared-common-json-net:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
     if: ${{ needs.release-please.outputs.package-shared-common-json-net-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:

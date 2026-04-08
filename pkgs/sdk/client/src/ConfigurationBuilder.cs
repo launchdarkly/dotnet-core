@@ -22,7 +22,7 @@ namespace LaunchDarkly.Sdk.Client
     /// </remarks>
     /// <example>
     /// <code>
-    ///     var config = Configuration.Builder("my-mobile-key").AllAttributesPrivate(true).EventCapacity(1000).Build();
+    ///     var config = Configuration.Builder("my-mobile-key", ConfigurationBuilder.AutoEnvAttributes.Enabled).AllAttributesPrivate(true).EventCapacity(1000).Build();
     /// </code>
     /// </example>
     public sealed class ConfigurationBuilder
@@ -331,7 +331,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Logs.ToWriter(Console.Out))
         ///         .Build();
         /// </example>
@@ -360,7 +360,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Components.Logging().Level(LogLevel.Warn)))
         ///         .Build();
         /// </example>
@@ -423,7 +423,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Persistence(Components.Persistence().MaxCachedUsers(10))
         ///         .Build();
         /// </example>

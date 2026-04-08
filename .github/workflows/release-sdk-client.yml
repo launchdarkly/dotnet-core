@@ -13,10 +13,6 @@ on:
         description: 'Is this a dry run. If so no package will be published.'
         type: boolean
         required: true
-    outputs:
-      hashes:
-        description: sha256sum hashes of built artifacts
-        value: ${{ jobs.publish.outputs.hashes }}
 
 jobs:
 # Building is done on mac runner due to xcode build dependencies
@@ -121,8 +117,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    outputs:
-      hashes: ${{ steps.publish.outputs.hashes }}
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -160,8 +155,14 @@ jobs:
           project_file: ${{ env.PROJECT_FILE }}
           dry_run: ${{ inputs.dry_run }}
 
+      - name: Attest build provenance
+        if: ${{ format('{0}', inputs.dry_run) == 'false' }}
+        uses: actions/attest@v4
+        with:
+          subject-path: 'nupkgs/*'
+
       - name: Publish Documentation
-        if: ${{ inputs.dry_run == 'false' }}
+        if: ${{ format('{0}', inputs.dry_run) == 'false' }}
         uses: ./.github/actions/publish-docs
         with:
           workspace_path: ${{ env.WORKSPACE_PATH }}

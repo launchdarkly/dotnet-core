@@ -8,134 +8,104 @@ on:
 jobs:
   release-please:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
 
     outputs:
       package-sdk-client-released: ${{ steps.release.outputs['pkgs/sdk/client--release_created'] }}
-      package-sdk-client-tag_name: ${{ steps.release.outputs['pkgs/sdk/client--tag_name'] }}
       package-sdk-server-ai-released: ${{ steps.release.outputs['pkgs/sdk/server-ai--release_created'] }}
-      package-sdk-server-ai-tag_name: ${{ steps.release.outputs['pkgs/sdk/server-ai--tag_name'] }}
       package-sdk-server-consul-released: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-consul--release_created'] }}
-      package-sdk-server-consul-tag_name: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-consul--tag_name'] }}
       package-sdk-server-dynamodb-released: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-dynamodb--release_created'] }}
-      package-sdk-server-dynamodb-tag_name: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-dynamodb--tag_name'] }}
       package-sdk-server-redis-released: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-redis--release_created'] }}
-      package-sdk-server-redis-tag_name: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-redis--tag_name'] }}
       package-sdk-server-released: ${{ steps.release.outputs['pkgs/sdk/server--release_created'] }}
-      package-sdk-server-tag_name: ${{ steps.release.outputs['pkgs/sdk/server--tag_name'] }}
       package-sdk-server-telemetry-released: ${{ steps.release.outputs['pkgs/telemetry--release_created'] }}
-      package-sdk-server-telemetry-tag_name: ${{ steps.release.outputs['pkgs/telemetry--tag_name'] }}
       package-shared-common-released: ${{ steps.release.outputs['pkgs/shared/common--release_created'] }}
-      package-shared-common-tag_name: ${{ steps.release.outputs['pkgs/shared/common--tag_name'] }}
       package-shared-common-json-net-released: ${{ steps.release.outputs['pkgs/shared/common-json-net--release_created'] }}
-      package-shared-common-json-net-tag_name: ${{ steps.release.outputs['pkgs/shared/common-json-net--tag_name'] }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: ${{ github.ref_name }}
 
-  # this job calls to the release-sdk-client workflow because the client SDK has to be built on macos
   release-sdk-client:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-client-released == 'true'}}
     uses: ./.github/workflows/release-sdk-client.yml
     with:
       dry_run: false
-    
-  # Client SDK provenance job (since it uses a different workflow)
-  release-sdk-client-provenance:
-    needs: ['release-please', 'release-sdk-client']
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    with:
-      base64-subjects: "${{ needs.release-sdk-client.outputs.hashes }}"
-      upload-assets: true
-      upload-tag-name: ${{ needs.release-please.outputs.package-sdk-client-tag_name }}
-      provenance-name: ${{ format('LaunchDarkly.ClientSdk-{0}_provenance.intoto.jsonl', needs.release-please.outputs.package-sdk-client-tag_name) }}
 
   # Server packages using the shared release workflow
   release-sdk-server:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/sdk/server
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-sdk-server-tag_name }}
 
   release-sdk-server-ai:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-ai-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/sdk/server-ai
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-sdk-server-ai-tag_name }}
 
   release-telemetry:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-telemetry-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/telemetry
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-sdk-server-telemetry-tag_name }}
 
   release-sdk-server-redis:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-redis-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/dotnet-server-sdk-redis
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-sdk-server-redis-tag_name }}
 
   release-sdk-server-consul:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-consul-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/dotnet-server-sdk-consul
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-sdk-server-consul-tag_name }}
 
   release-sdk-server-dynamodb:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/dotnet-server-sdk-dynamodb
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-sdk-server-dynamodb-tag_name }}
 
   release-shared-common:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-shared-common-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/shared/common
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-shared-common-tag_name }}
 
   release-shared-common-json-net:
-    needs: release-please
+    needs: ['release-please']
     if: ${{ needs.release-please.outputs.package-shared-common-json-net-released == 'true'}}
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/shared/common-json-net
       dry_run: false
       generate_provenance: true
-      tag_name: ${{ needs.release-please.outputs.package-shared-common-json-net-tag_name }}

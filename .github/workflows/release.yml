@@ -39,10 +39,6 @@ on:
         description: 'Whether to generate provenance for this publish.'
         type: boolean
         default: true
-      tag_name:
-        description: 'The tag name to use for the provenance file'
-        type: string
-        required: true
 
 jobs:
   release:
@@ -51,8 +47,7 @@ jobs:
       id-token: write
       contents: write
       pull-requests: write
-    outputs:
-      hashes: ${{ steps.full-release.outputs.hashes }}
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -76,16 +71,8 @@ jobs:
           run_dynamodb: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-dynamodb' }}
           run_redis: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-redis' }}
 
-  release-provenance:
-    needs: ['release']
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    if: inputs.generate_provenance
-    with:
-      base64-subjects: "${{ needs.release.outputs.hashes }}"
-      upload-assets: true
-      upload-tag-name: ${{ inputs.tag_name }}
-      provenance-name: ${{ format('{0}_provenance.intoto.jsonl', inputs.tag_name) }}
+      - name: Attest build provenance
+        if: ${{ format('{0}', inputs.generate_provenance) == 'true' && format('{0}', inputs.dry_run) == 'false' }}
+        uses: actions/attest@v4
+        with:
+          subject-path: 'nupkgs/*'

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
@@ -16,8 +18,9 @@ public class LdAiConfigTracker : ILdAiConfigTracker
 {
     private readonly ILaunchDarklyClient _client;
     private readonly Context _context;
+    private readonly string _configKey;
     private readonly LdValue _trackData;
-    private readonly string _runId = Guid.NewGuid().ToString();
+    private readonly string _runId;
     private readonly ILogger _logger;
 
     private bool _trackedDuration;
@@ -46,17 +49,25 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <param name="context">the context</param>
     /// <exception cref="ArgumentNullException"></exception>
     public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context)
+        : this(client, configKey, config, context, GenerateRunId())
+    {
+    }
+
+    internal LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context,
+        string runId)
     {
         Config = config ?? throw new ArgumentNullException(nameof(config));
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _context = context;
+        _configKey = configKey ?? throw new ArgumentNullException(nameof(configKey));
+        _runId = runId ?? throw new ArgumentNullException(nameof(runId));
         _logger = client.GetLogger();
         _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
             { "runId", LdValue.Of(_runId) },
             { "variationKey", LdValue.Of(config.VariationKey)},
             { "version", LdValue.Of(config.Version)},
-            { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) },
+            { "configKey" , LdValue.Of(_configKey) },
             { "modelName", LdValue.Of(config.Model?.Name) },
             { "providerName", LdValue.Of(config.Provider?.Name) },
         });
@@ -65,6 +76,23 @@ public class LdAiConfigTracker : ILdAiConfigTracker
 
     /// <inheritdoc/>
     public LdAiConfig Config { get; }
+
+    /// <inheritdoc/>
+    public string ResumptionToken
+    {
+        get
+        {
+            var json = JsonSerializer.Serialize(new
+            {
+                runId = _runId,
+                configKey = _configKey,
+                variationKey = Config.VariationKey,
+                version = Config.Version,
+            });
+            var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+            return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+        }
+    }
 
     /// <inheritdoc/>
     public void TrackDuration(float durationMs)
@@ -200,4 +228,17 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             _client.Track(TokenOutput, _context, _trackData, usage.Output.Value);
         }
     }
+
+    /// <inheritdoc/>
+    public ILdAiConfigTracker CreateTracker()
+    {
+        if (!Config.Enabled)
+        {
+            return null;
+        }
+        var runId = GenerateRunId();
+        return new LdAiConfigTracker(_client, _configKey, Config, _context, runId);
+    }
+
+    private static string GenerateRunId() => Guid.NewGuid().ToString();
 }

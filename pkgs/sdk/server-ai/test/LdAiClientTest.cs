@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Text;
+using System.Text.Json;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
@@ -354,5 +357,154 @@ public class LdAiClientTest
         var first = LdAiConfig.Disabled;
         var second = LdAiConfig.Disabled;
         Assert.NotSame(first, second);
+    }
+
+    [Fact]
+    public void CreateTrackerFromResumptionTokenRoundTrips()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var context = Context.New("user-key");
+        const string configKey = "my-config";
+
+        mockClient.Setup(x =>
+            x.JsonVariation(configKey, It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(
+            LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["variationKey"] = LdValue.Of("var-1"),
+                    ["version"] = LdValue.Of(3)
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("gpt-4")
+                }),
+                ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("openai")
+                }),
+                ["messages"] = LdValue.ArrayOf()
+            }));
+
+        var client = new LdAiClient(mockClient.Object);
+        var originalTracker = client.CompletionConfig(configKey, context);
+        var token = originalTracker.ResumptionToken;
+
+        // Reconstruct in a different context
+        var newContext = Context.New("other-user");
+        var resumedTracker = client.CreateTracker(token, newContext);
+
+        Assert.NotNull(resumedTracker);
+
+        // Track on both and verify the resumed tracker uses the same runId
+        originalTracker.TrackDuration(100);
+        resumedTracker.TrackDuration(200);
+
+        string originalRunId = null;
+        string resumedRunId = null;
+
+        foreach (var call in mockClient.Invocations)
+        {
+            if (call.Method.Name == "Track" && (string)call.Arguments[0] == "$ld:ai:duration:total")
+            {
+                var data = (LdValue)call.Arguments[2];
+                var runId = data.Get("runId").AsString;
+                if (originalRunId == null) originalRunId = runId;
+                else resumedRunId = runId;
+            }
+        }
+
+        Assert.NotNull(originalRunId);
+        Assert.NotNull(resumedRunId);
+        Assert.Equal(originalRunId, resumedRunId);
+    }
+
+    [Fact]
+    public void CreateTrackerFromResumptionTokenSetsEmptyModelAndProvider()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var context = Context.New("user-key");
+
+        // Build a token manually with known values
+        var payload = JsonSerializer.Serialize(new
+        {
+            runId = "test-run-id",
+            configKey = "test-key",
+            variationKey = "var-1",
+            version = 2,
+        });
+        var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+        var token = base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        var client = new LdAiClient(mockClient.Object);
+        var tracker = client.CreateTracker(token, context);
+
+        // Track something and verify the track data has empty model/provider
+        tracker.TrackSuccess();
+
+        mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+            It.Is<LdValue>(d =>
+                d.Get("runId").AsString == "test-run-id" &&
+                d.Get("configKey").AsString == "test-key" &&
+                d.Get("variationKey").AsString == "var-1" &&
+                d.Get("version").AsInt == 2 &&
+                d.Get("modelName").AsString == "" &&
+                d.Get("providerName").AsString == ""),
+            1.0f), Times.Once);
+    }
+
+    [Fact]
+    public void CreateTrackerFromInvalidTokenThrows()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var context = Context.New("user-key");
+
+        Assert.Throws<ArgumentException>(() => client.CreateTracker("not-valid-base64!!!", context));
+    }
+
+    [Fact]
+    public void CreateTrackerFromNullTokenThrows()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var context = Context.New("user-key");
+
+        Assert.Throws<ArgumentNullException>(() => client.CreateTracker(null, context));
+    }
+
+    [Fact]
+    public void CreateTrackerFromTokenMissingRunIdThrows()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var context = Context.New("user-key");
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            configKey = "test-key",
+            variationKey = "var-1",
+            version = 1,
+        });
+        var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+        var token = base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        Assert.Throws<ArgumentException>(() => client.CreateTracker(token, context));
     }
 }

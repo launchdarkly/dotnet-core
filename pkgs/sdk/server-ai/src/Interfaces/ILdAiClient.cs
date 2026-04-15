@@ -40,4 +40,17 @@ public interface ILdAiClient
     [Obsolete("Use CompletionConfig instead.")]
     public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null);
+
+    /// <summary>
+    /// Reconstructs a tracker from a resumption token. This enables cross-process scenarios
+    /// such as deferred feedback, where a tracker's runId needs to be reused in a different
+    /// process or at a later time.
+    ///
+    /// The reconstructed tracker will have empty model and provider names, as these are not
+    /// included in the resumption token.
+    /// </summary>
+    /// <param name="resumptionToken">the resumption token obtained from <see cref="ILdAiConfigTracker.ResumptionToken"/></param>
+    /// <param name="context">the context to use for track events</param>
+    /// <returns>a tracker associated with the original runId</returns>
+    public ILdAiConfigTracker CreateTracker(string resumptionToken, Context context);
 }

@@ -17,6 +17,14 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private readonly ILaunchDarklyClient _client;
     private readonly Context _context;
     private readonly LdValue _trackData;
+    private readonly string _runId = Guid.NewGuid().ToString();
+    private readonly ILogger _logger;
+
+    private bool _trackedDuration;
+    private bool _trackedTimeToFirstToken;
+    private bool _trackedTokens;
+    private bool _trackedFeedback;
+    private bool? _trackedSuccess;
 
     private const string Duration = "$ld:ai:duration:total";
     private const string FeedbackPositive = "$ld:ai:feedback:user:positive";
@@ -42,8 +50,10 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         Config = config ?? throw new ArgumentNullException(nameof(config));
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _context = context;
+        _logger = client.GetLogger();
         _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
+            { "runId", LdValue.Of(_runId) },
             { "variationKey", LdValue.Of(config.VariationKey)},
             { "version", LdValue.Of(config.Version)},
             { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) },
@@ -57,8 +67,16 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     public LdAiConfig Config { get; }
 
     /// <inheritdoc/>
-    public void TrackDuration(float durationMs) =>
+    public void TrackDuration(float durationMs)
+    {
+        if (_trackedDuration)
+        {
+            _logger?.Warn("Duration has already been tracked for this operation.");
+            return;
+        }
+        _trackedDuration = true;
         _client.Track(Duration, _context, _trackData, durationMs);
+    }
 
 
     /// <inheritdoc/>
@@ -74,12 +92,26 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     }
 
     /// <inheritdoc/>
-    public void TrackTimeToFirstToken(float timeToFirstTokenMs) =>
+    public void TrackTimeToFirstToken(float timeToFirstTokenMs)
+    {
+        if (_trackedTimeToFirstToken)
+        {
+            _logger?.Warn("Time to first token has already been tracked for this operation.");
+            return;
+        }
+        _trackedTimeToFirstToken = true;
         _client.Track(TimeToFirstToken, _context, _trackData, timeToFirstTokenMs);
+    }
 
     /// <inheritdoc/>
     public void TrackFeedback(Feedback feedback)
     {
+        if (_trackedFeedback)
+        {
+            _logger?.Warn("Feedback has already been tracked for this operation.");
+            return;
+        }
+        _trackedFeedback = true;
         switch (feedback)
         {
             case Feedback.Positive:
@@ -96,12 +128,24 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public void TrackSuccess()
     {
+        if (_trackedSuccess.HasValue)
+        {
+            _logger?.Warn("Generation result has already been tracked for this operation.");
+            return;
+        }
+        _trackedSuccess = true;
         _client.Track(GenerationSuccess, _context, _trackData, 1);
     }
 
     /// <inheritdoc/>
     public void TrackError()
     {
+        if (_trackedSuccess.HasValue)
+        {
+            _logger?.Warn("Generation result has already been tracked for this operation.");
+            return;
+        }
+        _trackedSuccess = false;
         _client.Track(GenerationError, _context, _trackData, 1);
     }
 
@@ -137,6 +181,12 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public void TrackTokens(Usage usage)
     {
+        if (_trackedTokens)
+        {
+            _logger?.Warn("Tokens have already been tracked for this operation.");
+            return;
+        }
+        _trackedTokens = true;
         if (usage.Total is > 0)
         {
             _client.Track(TokenTotal, _context, _trackData, usage.Total.Value);

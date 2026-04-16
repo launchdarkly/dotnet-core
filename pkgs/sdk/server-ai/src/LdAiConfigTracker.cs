@@ -23,10 +23,10 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private readonly string _runId;
     private readonly ILogger _logger;
 
-    private bool _trackedDuration;
-    private bool _trackedTimeToFirstToken;
-    private bool _trackedTokens;
-    private bool _trackedFeedback;
+    private double? _durationMs;
+    private double? _timeToFirstTokenMs;
+    private Usage? _tokens;
+    private Feedback? _feedback;
     private bool? _trackedSuccess;
 
     private const string Duration = "$ld:ai:duration:total";
@@ -97,12 +97,12 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public void TrackDuration(float durationMs)
     {
-        if (_trackedDuration)
+        if (_durationMs.HasValue)
         {
             _logger?.Warn("Duration has already been tracked for this operation.");
             return;
         }
-        _trackedDuration = true;
+        _durationMs = durationMs;
         _client.Track(Duration, _context, _trackData, durationMs);
     }
 
@@ -122,24 +122,24 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public void TrackTimeToFirstToken(float timeToFirstTokenMs)
     {
-        if (_trackedTimeToFirstToken)
+        if (_timeToFirstTokenMs.HasValue)
         {
             _logger?.Warn("Time to first token has already been tracked for this operation.");
             return;
         }
-        _trackedTimeToFirstToken = true;
+        _timeToFirstTokenMs = timeToFirstTokenMs;
         _client.Track(TimeToFirstToken, _context, _trackData, timeToFirstTokenMs);
     }
 
     /// <inheritdoc/>
     public void TrackFeedback(Feedback feedback)
     {
-        if (_trackedFeedback)
+        if (_feedback.HasValue)
         {
             _logger?.Warn("Feedback has already been tracked for this operation.");
             return;
         }
-        _trackedFeedback = true;
+        _feedback = feedback;
         switch (feedback)
         {
             case Feedback.Positive:
@@ -209,12 +209,12 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public void TrackTokens(Usage usage)
     {
-        if (_trackedTokens)
+        if (_tokens.HasValue)
         {
             _logger?.Warn("Tokens have already been tracked for this operation.");
             return;
         }
-        _trackedTokens = true;
+        _tokens = usage;
         if (usage.Total is > 0)
         {
             _client.Track(TokenTotal, _context, _trackData, usage.Total.Value);

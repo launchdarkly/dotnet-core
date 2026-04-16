@@ -80,15 +80,19 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             new Model { Name = _modelName },
             new Provider { Name = _providerName });
 
-        _trackData = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        var trackDataBuilder = new Dictionary<string, LdValue>
         {
             { "runId", LdValue.Of(_runId) },
-            { "variationKey", LdValue.Of(_variationKey) },
-            { "version", LdValue.Of(_version) },
             { "configKey", LdValue.Of(_configKey) },
+            { "version", LdValue.Of(_version) },
             { "modelName", LdValue.Of(_modelName) },
             { "providerName", LdValue.Of(_providerName) },
-        });
+        };
+        if (!string.IsNullOrEmpty(_variationKey))
+        {
+            trackDataBuilder.Add("variationKey", LdValue.Of(_variationKey));
+        }
+        _trackData = LdValue.ObjectFrom(trackDataBuilder);
     }
 
 

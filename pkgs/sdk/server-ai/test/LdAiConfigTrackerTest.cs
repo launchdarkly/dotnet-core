@@ -15,7 +15,11 @@ namespace LaunchDarkly.Sdk.Server.Ai
     {
         private static bool MatchesTrackData(LdValue actual, string flagKey, LdAiConfig config)
         {
-            return actual.Get("variationKey").Equals(LdValue.Of(config.VariationKey)) &&
+            var variationKeyMatch = string.IsNullOrEmpty(config.VariationKey)
+                ? actual.Get("variationKey").IsNull
+                : actual.Get("variationKey").Equals(LdValue.Of(config.VariationKey));
+
+            return variationKeyMatch &&
                    actual.Get("version").Equals(LdValue.Of(config.Version)) &&
                    actual.Get("configKey").Equals(LdValue.Of(flagKey)) &&
                    actual.Get("modelName").Equals(LdValue.Of(config.Model.Name)) &&

@@ -572,9 +572,11 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var doc = JsonDocument.Parse(json);
 
             Assert.Equal("my-config-key", doc.RootElement.GetProperty("configKey").GetString());
-            Assert.Equal(config.VariationKey, doc.RootElement.GetProperty("variationKey").GetString());
             Assert.Equal(config.Version, doc.RootElement.GetProperty("version").GetInt32());
             Assert.True(doc.RootElement.GetProperty("runId").GetString().Length > 0);
+
+            // variationKey is empty for builder-created configs, so it should be omitted
+            Assert.False(doc.RootElement.TryGetProperty("variationKey", out _));
 
             // modelName and providerName should NOT be in the token
             Assert.False(doc.RootElement.TryGetProperty("modelName", out _));
@@ -610,6 +612,45 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var token2 = tracker.ResumptionToken;
 
             Assert.Equal(token1, token2);
+        }
+
+        [Fact]
+        public void ResumptionTokenIncludesVariationKeyWhenPresent()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+
+            // Use the LdAiClient to get a config with a real variationKey from flag evaluation
+            mockClient.Setup(x =>
+                x.JsonVariation("key", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(
+                LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                    {
+                        ["enabled"] = LdValue.Of(true),
+                        ["variationKey"] = LdValue.Of("my-variation"),
+                        ["version"] = LdValue.Of(5)
+                    }),
+                    ["messages"] = LdValue.ArrayOf()
+                }));
+
+            var client = new LdAiClient(mockClient.Object);
+            var tracker = client.CompletionConfig("key", context);
+            var token = tracker.ResumptionToken;
+
+            // Decode and verify variationKey is present
+            var base64 = token.Replace('-', '+').Replace('_', '/');
+            switch (base64.Length % 4)
+            {
+                case 2: base64 += "=="; break;
+                case 3: base64 += "="; break;
+            }
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+            var doc = JsonDocument.Parse(json);
+
+            Assert.Equal("my-variation", doc.RootElement.GetProperty("variationKey").GetString());
         }
     }
 }

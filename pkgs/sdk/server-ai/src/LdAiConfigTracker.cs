@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
 
@@ -17,10 +18,14 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 public class LdAiConfigTracker : ILdAiConfigTracker
 {
     private readonly ILaunchDarklyClient _client;
-    private readonly Context _context;
-    private readonly string _configKey;
-    private readonly LdValue _trackData;
     private readonly string _runId;
+    private readonly string _configKey;
+    private readonly string _variationKey;
+    private readonly int _version;
+    private readonly Context _context;
+    private readonly string _modelName;
+    private readonly string _providerName;
+    private readonly LdValue _trackData;
     private readonly ILogger _logger;
 
     private double? _durationMs;
@@ -49,27 +54,39 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <param name="context">the context</param>
     /// <exception cref="ArgumentNullException"></exception>
     public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context)
-        : this(client, configKey, config, context, GenerateRunId())
+        : this(client, GenerateRunId(), configKey,
+            (config ?? throw new ArgumentNullException(nameof(config))).VariationKey,
+            config.Version, context, config.Model?.Name ?? "", config.Provider?.Name ?? "", config)
     {
     }
 
-    internal LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context,
-        string runId)
+    internal LdAiConfigTracker(ILaunchDarklyClient client, string runId, string configKey,
+        string variationKey, int version, Context context, string modelName, string providerName,
+        LdAiConfig config = null)
     {
-        Config = config ?? throw new ArgumentNullException(nameof(config));
         _client = client ?? throw new ArgumentNullException(nameof(client));
-        _context = context;
-        _configKey = configKey ?? throw new ArgumentNullException(nameof(configKey));
         _runId = runId ?? throw new ArgumentNullException(nameof(runId));
+        _configKey = configKey ?? throw new ArgumentNullException(nameof(configKey));
+        _variationKey = variationKey;
+        _version = version;
+        _context = context;
+        _modelName = modelName ?? "";
+        _providerName = providerName ?? "";
         _logger = client.GetLogger();
-        _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
+
+        Config = config ?? new LdAiConfig(true, null,
+            new Meta { VariationKey = _variationKey ?? "", Version = _version },
+            new Model { Name = _modelName },
+            new Provider { Name = _providerName });
+
+        _trackData = LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
             { "runId", LdValue.Of(_runId) },
-            { "variationKey", LdValue.Of(config.VariationKey)},
-            { "version", LdValue.Of(config.Version)},
-            { "configKey" , LdValue.Of(_configKey) },
-            { "modelName", LdValue.Of(config.Model?.Name) },
-            { "providerName", LdValue.Of(config.Provider?.Name) },
+            { "variationKey", LdValue.Of(_variationKey) },
+            { "version", LdValue.Of(_version) },
+            { "configKey", LdValue.Of(_configKey) },
+            { "modelName", LdValue.Of(_modelName) },
+            { "providerName", LdValue.Of(_providerName) },
         });
     }
 
@@ -82,13 +99,18 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     {
         get
         {
-            var json = JsonSerializer.Serialize(new
+            var dict = new Dictionary<string, object>
             {
-                runId = _runId,
-                configKey = _configKey,
-                variationKey = Config.VariationKey,
-                version = Config.Version,
-            });
+                { "runId", _runId },
+                { "configKey", _configKey },
+            };
+            if (!string.IsNullOrEmpty(_variationKey))
+            {
+                dict.Add("variationKey", _variationKey);
+            }
+            dict.Add("version", _version);
+
+            var json = JsonSerializer.Serialize(dict);
             var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
             return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
         }
@@ -237,7 +259,8 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             return null;
         }
         var runId = GenerateRunId();
-        return new LdAiConfigTracker(_client, _configKey, Config, _context, runId);
+        return new LdAiConfigTracker(_client, runId, _configKey,
+            _variationKey, _version, _context, _modelName, _providerName, Config);
     }
 
     private static string GenerateRunId() => Guid.NewGuid().ToString();

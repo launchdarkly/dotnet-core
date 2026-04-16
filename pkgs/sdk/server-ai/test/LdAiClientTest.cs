@@ -507,4 +507,40 @@ public class LdAiClientTest
 
         Assert.Throws<ArgumentException>(() => client.CreateTracker(token, context));
     }
+
+    [Fact]
+    public void CreateTrackerFromTokenWithoutVariationKeyHandlesAbsence()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var context = Context.New("user-key");
+
+        // Token without variationKey
+        var payload = JsonSerializer.Serialize(new
+        {
+            runId = "test-run-id",
+            configKey = "test-key",
+            version = 3,
+        });
+        var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+        var token = base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        var client = new LdAiClient(mockClient.Object);
+        var tracker = client.CreateTracker(token, context);
+
+        Assert.NotNull(tracker);
+
+        // Track and verify variationKey is null in the track data
+        tracker.TrackSuccess();
+
+        mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+            It.Is<LdValue>(d =>
+                d.Get("runId").AsString == "test-run-id" &&
+                d.Get("configKey").AsString == "test-key" &&
+                d.Get("variationKey").IsNull &&
+                d.Get("version").AsInt == 3),
+            1.0f), Times.Once);
+    }
 }

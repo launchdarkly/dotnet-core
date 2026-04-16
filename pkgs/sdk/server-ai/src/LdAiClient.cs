@@ -168,15 +168,8 @@ public sealed class LdAiClient : ILdAiClient
                 nameof(resumptionToken));
         }
 
-        var config = new LdAiConfig(
-            true,
-            null,
-            new Meta { VariationKey = payload.VariationKey ?? "", Version = payload.Version },
-            null,
-            null
-        );
-
-        return new LdAiConfigTracker(_client, payload.ConfigKey, config, context, payload.RunId);
+        return new LdAiConfigTracker(_client, payload.RunId, payload.ConfigKey,
+            payload.VariationKey, payload.Version, context, "", "");
     }
 
     private class ResumptionPayload

@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
@@ -142,49 +140,7 @@ public sealed class LdAiClient : ILdAiClient
     /// <inheritdoc/>
     public ILdAiConfigTracker CreateTracker(string resumptionToken, Context context)
     {
-        if (resumptionToken == null) throw new ArgumentNullException(nameof(resumptionToken));
-
-        var base64 = resumptionToken.Replace('-', '+').Replace('_', '/');
-        switch (base64.Length % 4)
-        {
-            case 2: base64 += "=="; break;
-            case 3: base64 += "="; break;
-        }
-
-        ResumptionPayload payload;
-        try
-        {
-            var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
-            payload = JsonSerializer.Deserialize<ResumptionPayload>(json);
-        }
-        catch (Exception e) when (e is FormatException || e is JsonException)
-        {
-            throw new ArgumentException("Invalid resumption token", nameof(resumptionToken), e);
-        }
-
-        if (string.IsNullOrEmpty(payload.RunId) || string.IsNullOrEmpty(payload.ConfigKey))
-        {
-            throw new ArgumentException("Resumption token is missing required fields (runId, configKey)",
-                nameof(resumptionToken));
-        }
-
-        return new LdAiConfigTracker(_client, payload.RunId, payload.ConfigKey,
-            payload.VariationKey, payload.Version, context, "", "");
-    }
-
-    private class ResumptionPayload
-    {
-        [JsonPropertyName("runId")]
-        public string RunId { get; set; }
-
-        [JsonPropertyName("configKey")]
-        public string ConfigKey { get; set; }
-
-        [JsonPropertyName("variationKey")]
-        public string VariationKey { get; set; }
-
-        [JsonPropertyName("version")]
-        public int Version { get; set; }
+        return LdAiConfigTracker.FromResumptionToken(resumptionToken, _client, context);
     }
 
 

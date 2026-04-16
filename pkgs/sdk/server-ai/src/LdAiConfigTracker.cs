@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
@@ -263,5 +264,67 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             _variationKey, _version, _context, _modelName, _providerName, Config);
     }
 
+    /// <summary>
+    /// Reconstructs a tracker from a resumption token. This enables cross-process scenarios
+    /// such as deferred feedback, where a tracker's runId needs to be reused in a different
+    /// process or at a later time.
+    ///
+    /// The reconstructed tracker will have empty model and provider names, as these are not
+    /// included in the resumption token.
+    /// </summary>
+    /// <param name="token">the resumption token obtained from <see cref="ResumptionToken"/></param>
+    /// <param name="client">the LaunchDarkly client</param>
+    /// <param name="context">the context to use for track events</param>
+    /// <returns>a new tracker associated with the original run</returns>
+    /// <exception cref="ArgumentNullException">thrown if token or client is null</exception>
+    /// <exception cref="ArgumentException">thrown if the token is malformed or missing required fields</exception>
+    public static LdAiConfigTracker FromResumptionToken(string token, ILaunchDarklyClient client, Context context)
+    {
+        if (token == null) throw new ArgumentNullException(nameof(token));
+        if (client == null) throw new ArgumentNullException(nameof(client));
+
+        var base64 = token.Replace('-', '+').Replace('_', '/');
+        switch (base64.Length % 4)
+        {
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
+        }
+
+        ResumptionPayload payload;
+        try
+        {
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+            payload = JsonSerializer.Deserialize<ResumptionPayload>(json);
+        }
+        catch (Exception e) when (e is FormatException || e is JsonException)
+        {
+            throw new ArgumentException("Invalid resumption token", nameof(token), e);
+        }
+
+        if (string.IsNullOrEmpty(payload.RunId) || string.IsNullOrEmpty(payload.ConfigKey))
+        {
+            throw new ArgumentException("Resumption token is missing required fields (runId, configKey)",
+                nameof(token));
+        }
+
+        return new LdAiConfigTracker(client, payload.RunId, payload.ConfigKey,
+            payload.VariationKey, payload.Version, context, "", "");
+    }
+
     private static string GenerateRunId() => Guid.NewGuid().ToString();
+
+    private class ResumptionPayload
+    {
+        [JsonPropertyName("runId")]
+        public string RunId { get; set; }
+
+        [JsonPropertyName("configKey")]
+        public string ConfigKey { get; set; }
+
+        [JsonPropertyName("variationKey")]
+        public string VariationKey { get; set; }
+
+        [JsonPropertyName("version")]
+        public int Version { get; set; }
+    }
 }

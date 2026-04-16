@@ -652,5 +652,54 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             Assert.Equal("my-variation", doc.RootElement.GetProperty("variationKey").GetString());
         }
+
+        [Fact]
+        public void FromResumptionTokenReconstructsTrackerWithOriginalRunId()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+            var config = LdAiConfig.New().Enable().Build();
+
+            var original = new LdAiConfigTracker(mockClient.Object, "my-key", config, context);
+            var token = original.ResumptionToken;
+
+            var newContext = Context.New("other-key");
+            var resumed = LdAiConfigTracker.FromResumptionToken(token, mockClient.Object, newContext);
+
+            // Both should track with the same runId
+            original.TrackDuration(10);
+            resumed.TrackDuration(20);
+
+            string originalRunId = null;
+            string resumedRunId = null;
+            foreach (var call in mockClient.Invocations)
+            {
+                if (call.Method.Name == "Track" && (string)call.Arguments[0] == "$ld:ai:duration:total")
+                {
+                    var data = (LdValue)call.Arguments[2];
+                    if (originalRunId == null) originalRunId = data.Get("runId").AsString;
+                    else resumedRunId = data.Get("runId").AsString;
+                }
+            }
+
+            Assert.NotNull(originalRunId);
+            Assert.Equal(originalRunId, resumedRunId);
+        }
+
+        [Fact]
+        public void FromResumptionTokenThrowsOnNullToken()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            Assert.Throws<ArgumentNullException>(() =>
+                LdAiConfigTracker.FromResumptionToken(null, mockClient.Object, Context.New("key")));
+        }
+
+        [Fact]
+        public void FromResumptionTokenThrowsOnInvalidToken()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            Assert.Throws<ArgumentException>(() =>
+                LdAiConfigTracker.FromResumptionToken("not-valid!!!", mockClient.Object, Context.New("key")));
+        }
     }
 }

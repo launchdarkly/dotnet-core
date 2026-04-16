@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.12.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.2...LaunchDarkly.ServerSdk-v8.12.0) (2026-04-16)
+
+
+### Features
+
+* Make Status ToString() methods format consistent  ([#247](https://github.com/launchdarkly/dotnet-core/issues/247)) ([6373f98](https://github.com/launchdarkly/dotnet-core/commit/6373f987f27f479aa256e94ab472037623e1febc))
+
 ## [8.11.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.1...LaunchDarkly.ServerSdk-v8.11.2) (2026-04-09)
 
 

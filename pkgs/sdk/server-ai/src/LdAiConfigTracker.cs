@@ -121,7 +121,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     {
         if (_durationMs.HasValue)
         {
-            _logger?.Warn("Duration has already been tracked for this operation.");
+            _logger?.Warn("Duration has already been tracked for this operation. [{0}]", _trackData.ToJsonString());
             return;
         }
         _durationMs = durationMs;
@@ -146,7 +146,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     {
         if (_timeToFirstTokenMs.HasValue)
         {
-            _logger?.Warn("Time to first token has already been tracked for this operation.");
+            _logger?.Warn("Time to first token has already been tracked for this operation. [{0}]", _trackData.ToJsonString());
             return;
         }
         _timeToFirstTokenMs = timeToFirstTokenMs;
@@ -158,7 +158,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     {
         if (_feedback.HasValue)
         {
-            _logger?.Warn("Feedback has already been tracked for this operation.");
+            _logger?.Warn("Feedback has already been tracked for this operation. [{0}]", _trackData.ToJsonString());
             return;
         }
         _feedback = feedback;
@@ -180,7 +180,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     {
         if (_trackedSuccess.HasValue)
         {
-            _logger?.Warn("Generation result has already been tracked for this operation.");
+            _logger?.Warn("Generation result has already been tracked for this operation. [{0}]", _trackData.ToJsonString());
             return;
         }
         _trackedSuccess = true;
@@ -192,7 +192,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     {
         if (_trackedSuccess.HasValue)
         {
-            _logger?.Warn("Generation result has already been tracked for this operation.");
+            _logger?.Warn("Generation result has already been tracked for this operation. [{0}]", _trackData.ToJsonString());
             return;
         }
         _trackedSuccess = false;
@@ -233,7 +233,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     {
         if (_tokens.HasValue)
         {
-            _logger?.Warn("Tokens have already been tracked for this operation.");
+            _logger?.Warn("Tokens have already been tracked for this operation. [{0}]", _trackData.ToJsonString());
             return;
         }
         _tokens = usage;

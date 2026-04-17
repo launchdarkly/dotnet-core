@@ -259,10 +259,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public ILdAiConfigTracker CreateTracker()
     {
-        if (!Config.Enabled)
-        {
-            return null;
-        }
         var runId = GenerateRunId();
         return new LdAiConfigTracker(_client, runId, _configKey,
             _variationKey, _version, _context, _modelName, _providerName, Config);

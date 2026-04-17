@@ -114,9 +114,7 @@ public interface ILdAiConfigTracker
     /// Creates a new tracker with a fresh runId for tracking a new execution.
     /// Each call returns a tracker with independent at-most-once tracking state,
     /// allowing multiple executions to be tracked separately against the same config.
-    ///
-    /// Returns null if the config is disabled.
     /// </summary>
-    /// <returns>a new tracker, or null if the config is disabled</returns>
+    /// <returns>a new tracker</returns>
     public ILdAiConfigTracker CreateTracker();
 }

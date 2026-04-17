@@ -438,15 +438,18 @@ namespace LaunchDarkly.Sdk.Server.Ai
         }
 
         [Fact]
-        public void CreateTrackerReturnsNullWhenDisabled()
+        public void CreateTrackerReturnsTrackerWhenDisabled()
         {
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             var config = LdAiConfig.Disabled;
 
             var tracker = new LdAiConfigTracker(mockClient.Object, "key", config, context);
+            var newTracker = tracker.CreateTracker();
 
-            Assert.Null(tracker.CreateTracker());
+            Assert.NotNull(newTracker);
+            Assert.NotSame(tracker, newTracker);
+            Assert.Equal(tracker.Config, newTracker.Config);
         }
 
         [Fact]

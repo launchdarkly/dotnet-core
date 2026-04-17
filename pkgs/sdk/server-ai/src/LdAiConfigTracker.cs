@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
 
@@ -46,39 +45,29 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private const string TimeToFirstToken = "$ld:ai:tokens:ttf";
 
     /// <summary>
-    /// Constructs a new AI Config tracker. The tracker is associated with a configuration,
-    /// a context, and a key which identifies the configuration.
+    /// Constructs a new AI Config tracker. The tracker is associated with a run, a config key,
+    /// and a context. The runId should be a unique identifier (UUID v4) for each execution.
     /// </summary>
     /// <param name="client">the LaunchDarkly client</param>
+    /// <param name="runId">the unique run identifier</param>
     /// <param name="configKey">key of the AI Config</param>
-    /// <param name="config">the AI Config</param>
+    /// <param name="variationKey">the variation key</param>
+    /// <param name="version">the config version</param>
     /// <param name="context">the context</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context)
-        : this(client, GenerateRunId(), configKey,
-            (config ?? throw new ArgumentNullException(nameof(config))).VariationKey,
-            config.Version, context, config.Model?.Name ?? "", config.Provider?.Name ?? "", config)
+    /// <param name="modelName">the model name</param>
+    /// <param name="providerName">the provider name</param>
+    public LdAiConfigTracker(ILaunchDarklyClient client, string runId, string configKey,
+        string variationKey, int version, Context context, string modelName, string providerName)
     {
-    }
-
-    internal LdAiConfigTracker(ILaunchDarklyClient client, string runId, string configKey,
-        string variationKey, int version, Context context, string modelName, string providerName,
-        LdAiConfig config = null)
-    {
-        _client = client ?? throw new ArgumentNullException(nameof(client));
-        _runId = runId ?? throw new ArgumentNullException(nameof(runId));
-        _configKey = configKey ?? throw new ArgumentNullException(nameof(configKey));
+        _client = client;
+        _runId = runId ?? "";
+        _configKey = configKey ?? "";
         _variationKey = variationKey;
         _version = version;
         _context = context;
         _modelName = modelName ?? "";
         _providerName = providerName ?? "";
-        _logger = client.GetLogger();
-
-        Config = config ?? new LdAiConfig(true, null,
-            new Meta { VariationKey = _variationKey ?? "", Version = _version },
-            new Model { Name = _modelName },
-            new Provider { Name = _providerName });
+        _logger = client?.GetLogger();
 
         var trackDataBuilder = new Dictionary<string, LdValue>
         {
@@ -95,31 +84,37 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         _trackData = LdValue.ObjectFrom(trackDataBuilder);
     }
 
-
-    /// <inheritdoc/>
-    public LdAiConfig Config { get; }
-
     /// <inheritdoc/>
     public string ResumptionToken
     {
         get
         {
-            var dict = new Dictionary<string, object>
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream))
             {
-                { "runId", _runId },
-                { "configKey", _configKey },
-            };
-            if (!string.IsNullOrEmpty(_variationKey))
-            {
-                dict.Add("variationKey", _variationKey);
+                writer.WriteStartObject();
+                writer.WriteString("runId", _runId);
+                writer.WriteString("configKey", _configKey);
+                if (!string.IsNullOrEmpty(_variationKey))
+                {
+                    writer.WriteString("variationKey", _variationKey);
+                }
+                writer.WriteNumber("version", _version);
+                writer.WriteEndObject();
             }
-            dict.Add("version", _version);
-
-            var json = JsonSerializer.Serialize(dict);
-            var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+            var base64 = Convert.ToBase64String(stream.ToArray());
             return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
         }
     }
+
+    /// <inheritdoc/>
+    public MetricSummary Summary => new MetricSummary(
+        _durationMs,
+        _feedback,
+        _tokens,
+        _trackedSuccess,
+        _timeToFirstTokenMs
+    );
 
     /// <inheritdoc/>
     public void TrackDuration(float durationMs)
@@ -256,14 +251,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
     }
 
-    /// <inheritdoc/>
-    public ILdAiConfigTracker CreateTracker()
-    {
-        var runId = GenerateRunId();
-        return new LdAiConfigTracker(_client, runId, _configKey,
-            _variationKey, _version, _context, _modelName, _providerName, Config);
-    }
-
     /// <summary>
     /// Reconstructs a tracker from a resumption token. This enables cross-process scenarios
     /// such as deferred feedback, where a tracker's runId needs to be reused in a different
@@ -310,8 +297,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         return new LdAiConfigTracker(client, payload.RunId, payload.ConfigKey,
             payload.VariationKey, payload.Version, context, "", "");
     }
-
-    private static string GenerateRunId() => Guid.NewGuid().ToString();
 
     private class ResumptionPayload
     {

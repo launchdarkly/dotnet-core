@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
+using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
@@ -217,7 +219,8 @@ public record LdAiConfig
     /// </summary>
     public readonly ModelProvider Provider;
 
-    internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider)
+    internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider,
+        Func<ILdAiConfigTracker> createTracker = null)
     {
         Model = new ModelConfiguration(model?.Name ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
             model?.Custom ?? new Dictionary<string, LdValue>());
@@ -226,6 +229,18 @@ public record LdAiConfig
         Version = meta?.Version ?? 1;
         Enabled = enabled;
         Provider = new ModelProvider(provider?.Name ?? "");
+        CreateTracker = createTracker;
+    }
+
+    internal LdAiConfig(LdAiConfig source, Func<ILdAiConfigTracker> createTracker)
+    {
+        Model = source.Model;
+        Messages = source.Messages;
+        VariationKey = source.VariationKey;
+        Version = source.Version;
+        Enabled = source.Enabled;
+        Provider = source.Provider;
+        CreateTracker = createTracker;
     }
     internal LdValue ToLdValue()
     {
@@ -277,6 +292,14 @@ public record LdAiConfig
     /// This field meant for internal LaunchDarkly usage.
     /// </summary>
     public int Version { get; }
+
+    /// <summary>
+    /// A factory that creates a new <see cref="ILdAiConfigTracker"/> with a fresh runId.
+    /// Each invocation returns a tracker with independent at-most-once tracking state.
+    /// This property is set when the config is returned by <see cref="LdAiClient.CompletionConfig"/>.
+    /// It will be null for configs created directly via the builder.
+    /// </summary>
+    public Func<ILdAiConfigTracker> CreateTracker { get; }
 
     /// <summary>
     /// Convenient helper that returns a disabled LdAiConfig.

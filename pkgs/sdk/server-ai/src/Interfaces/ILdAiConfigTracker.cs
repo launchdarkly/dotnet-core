@@ -12,17 +12,17 @@ namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 public interface ILdAiConfigTracker
 {
     /// <summary>
-    /// The AI model configuration retrieved from LaunchDarkly, or a default value if unable to retrieve.
-    /// </summary>
-    public LdAiConfig Config { get; }
-
-    /// <summary>
     /// A URL-safe Base64-encoded token that can be used to reconstruct this tracker in a different
     /// process or at a later time. The token contains the runId, configKey, variationKey, and version.
     ///
     /// Use <see cref="ILdAiClient.CreateTracker"/> to reconstruct a tracker from this token.
     /// </summary>
     public string ResumptionToken { get; }
+
+    /// <summary>
+    /// A summary of the metrics tracked by this tracker.
+    /// </summary>
+    public MetricSummary Summary { get; }
 
     /// <summary>
     /// Tracks a duration metric related to this config. For example, if a particular operation
@@ -44,7 +44,7 @@ public interface ILdAiConfigTracker
     /// <typeparam name="T">type of the task's result</typeparam>
     /// <returns>the task</returns>
     public Task<T> TrackDurationOfTask<T>(Task<T> task);
-    
+
     /// <summary>
     /// Tracks the time it takes for the first token to be generated.
     /// </summary>
@@ -109,12 +109,4 @@ public interface ILdAiConfigTracker
     /// </summary>
     /// <param name="usage">the token usage</param>
     public void TrackTokens(Usage usage);
-
-    /// <summary>
-    /// Creates a new tracker with a fresh runId for tracking a new execution.
-    /// Each call returns a tracker with independent at-most-once tracking state,
-    /// allowing multiple executions to be tracked separately against the same config.
-    /// </summary>
-    /// <returns>a new tracker</returns>
-    public ILdAiConfigTracker CreateTracker();
 }

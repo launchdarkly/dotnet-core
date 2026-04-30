@@ -35,13 +35,29 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             
             // Here we make a combined composite source, with the initializer source first which switches or falls back to the 
             // synchronizer source when the initializer succeeds or when the initializer source reports Off (all initializers failed)
+            // Shared latch: once the FDv1 fallback applier has fired for any entry, all other
+            // appliers attached at this level become no-ops. This prevents the existing
+            // initializer-exhaustion or synchronizer-exhaustion appliers from firing afterwards
+            // and blocking the FDv1 fallback entry that was just selected.
+            var fdv1FallbackTriggered = new FDv1FallbackLatch();
+
             ActionApplierFactory blacklistWhenSuccessOrOff =
-                (actionable) => new ActionApplierBlacklistWhenSuccessOrOff(actionable);
+                (actionable) => new GatedObserver(
+                    new ActionApplierBlacklistWhenSuccessOrOff(actionable), fdv1FallbackTriggered);
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
-                (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable, sublogger);
+                (actionable) => new GatedObserver(
+                    new ActionApplierTimedFallbackAndRecovery(actionable, sublogger), fdv1FallbackTriggered);
 
-            ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
+            // From the synchronizers entry, the FDv1 fallback entry is the next entry in the
+            // outer list, so no extra entries to skip.
+            ActionApplierFactory fdv1FallbackApplierFactory =
+                (actionable) => new FDv1FallbackActionApplier(actionable, fdv1FallbackTriggered);
+            // From the initializers entry, the FDv1 fallback entry is two ahead when synchronizers
+            // are configured (skip past synchronizers), or one ahead when they are not.
+            var initializerFdv1FallbackExtraSkips = (synchronizers != null && synchronizers.Count > 0) ? 1 : 0;
+            ActionApplierFactory initializerFdv1FallbackApplierFactory =
+                (actionable) => new FDv1FallbackActionApplier(actionable, fdv1FallbackTriggered, initializerFdv1FallbackExtraSkips);
 
             var initializationTracker =
                 new InitializationTracker(Any(initializers), Any(synchronizers));
@@ -71,8 +87,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
                         return new CompositeSource("Initializers", sink, initializerFactory, sublogger, circular: false);
                     },
-                    (actionable) => new CompositeObserver(
-                        initializationObserver, blacklistWhenSuccessOrOff(actionable))
+                    (actionable) =>
+                    {
+                        // Honor the FDv1 fallback directive in the initializer phase too. When the
+                        // server returns x-ld-fd-fallback during init, skip the FDv2 synchronizer
+                        // chain entirely and switch directly to the FDv1 fallback synchronizer.
+                        if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
+                        {
+                            return new CompositeObserver(
+                                initializationObserver,
+                                blacklistWhenSuccessOrOff(actionable),
+                                initializerFdv1FallbackApplierFactory(actionable));
+                        }
+
+                        return new CompositeObserver(
+                            initializationObserver, blacklistWhenSuccessOrOff(actionable));
+                    }
                 ));
             }
 
@@ -400,24 +430,98 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
         }
 
-        private class FDv1FallbackActionApplier : IDataSourceObserver
+        /// <summary>
+        /// Single-shot latch shared between the FDv1 fallback applier and the surrounding
+        /// fallback/recovery appliers. Once the FDv1 fallback directive is observed at any entry,
+        /// other appliers stop reacting -- they would otherwise observe the now-unwanted Off
+        /// signals from previously running data sources and try to advance the composite again.
+        /// </summary>
+        internal sealed class FDv1FallbackLatch
         {
-            private readonly ICompositeSourceActionable _actionable;
+            private int _triggered;
 
-            public FDv1FallbackActionApplier(ICompositeSourceActionable actionable)
+            /// <summary>
+            /// Returns whether the latch has already been triggered.
+            /// </summary>
+            public bool IsTriggered => System.Threading.Volatile.Read(ref _triggered) != 0;
+
+            /// <summary>
+            /// Atomically sets the latch. Returns true if this call was the one that set it.
+            /// </summary>
+            public bool TryTrigger() => System.Threading.Interlocked.CompareExchange(ref _triggered, 1, 0) == 0;
+        }
+
+        /// <summary>
+        /// Wraps another observer and suppresses both Apply and UpdateStatus calls once the FDv1
+        /// fallback latch has been triggered. The latch is set by <see cref="FDv1FallbackActionApplier"/>
+        /// when it observes the FDv1 fallback directive.
+        /// </summary>
+        internal sealed class GatedObserver : IDataSourceObserver
+        {
+            private readonly IDataSourceObserver _inner;
+            private readonly FDv1FallbackLatch _latch;
+
+            public GatedObserver(IDataSourceObserver inner, FDv1FallbackLatch latch)
             {
-                _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+                _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+                _latch = latch ?? throw new ArgumentNullException(nameof(latch));
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
-                if (newError != null && newError.Value.FDv1Fallback)
+                if (_latch.IsTriggered) return;
+                _inner.UpdateStatus(newState, newError);
+            }
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                if (_latch.IsTriggered) return;
+                _inner.Apply(changeSet);
+            }
+        }
+
+        /// <summary>
+        /// Action applier that observes an FDv1 fallback signal and advances the outer composite
+        /// to the FDv1 fallback synchronizer entry, blocking the current entry and any number of
+        /// intermediate entries that should also be skipped.
+        /// </summary>
+        /// <remarks>
+        /// When attached to the synchronizers entry of the outer FDv2 composite, the FDv1 fallback
+        /// entry is the next one in the list, so <c>extraEntriesToSkip</c> is 0. When attached to
+        /// the initializers entry and the synchronizers entry is also configured, we have to skip
+        /// past it, so <c>extraEntriesToSkip</c> is 1.
+        /// </remarks>
+        internal class FDv1FallbackActionApplier : IDataSourceObserver
+        {
+            private readonly ICompositeSourceActionable _actionable;
+            private readonly FDv1FallbackLatch _latch;
+            private readonly int _extraEntriesToSkip;
+
+            public FDv1FallbackActionApplier(ICompositeSourceActionable actionable, FDv1FallbackLatch latch = null, int extraEntriesToSkip = 0)
+            {
+                _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+                if (extraEntriesToSkip < 0)
                 {
-                    _actionable.BlockCurrent(); // blacklist the synchronizers altogether
-                    _actionable.DisposeCurrent(); // dispose the synchronizers
-                    _actionable.GoToNext(); // go to the FDv1 fallback synchronizer
-                    _actionable.StartCurrent(); // start the FDv1 fallback synchronizer
+                    throw new ArgumentOutOfRangeException(nameof(extraEntriesToSkip));
                 }
+                _latch = latch ?? new FDv1FallbackLatch();
+                _extraEntriesToSkip = extraEntriesToSkip;
+            }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+            {
+                if (newError == null || !newError.Value.FDv1Fallback) return;
+                if (!_latch.TryTrigger()) return;
+
+                _actionable.BlockCurrent(); // blacklist the current entry
+                _actionable.DisposeCurrent(); // dispose the current data source
+                for (var i = 0; i < _extraEntriesToSkip; i++)
+                {
+                    _actionable.GoToNext();   // advance to the entry we are skipping past
+                    _actionable.BlockCurrent(); // remove that entry from the list too
+                }
+                _actionable.GoToNext(); // go to the FDv1 fallback synchronizer entry
+                _actionable.StartCurrent(); // start the FDv1 fallback synchronizer
             }
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)

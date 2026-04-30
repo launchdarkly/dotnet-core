@@ -264,7 +264,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         {
                             DetermineState(Action.FallingBack);
                         }
-                        
+
                         DetermineState(Action.SynchronizersExhausted);
 
                         break;

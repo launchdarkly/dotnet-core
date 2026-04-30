@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -100,12 +101,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 }
 
                 ProcessPollingResponse(response.Value);
+
+                // The server can ask the SDK to fall back to FDv1 even on a successful response.
+                // Apply the payload first (above), then signal the fallback so the action applier
+                // can switch to the FDv1 fallback synchronizer.
+                if (HasFDv1FallbackHeader(response.Value.Headers))
+                {
+                    _log.Info("LaunchDarkly polling response indicates fallback to FDv1");
+                    var fallbackError = new DataSourceStatus.ErrorInfo
+                    {
+                        Kind = DataSourceStatus.ErrorKind.Unknown,
+                        Time = DateTime.Now,
+                        FDv1Fallback = true
+                    };
+                    Shutdown(fallbackError);
+                    return;
+                }
             }
             catch (UnsuccessfulResponseException ex)
             {
                 var recoverable = HttpErrors.IsRecoverable(ex.StatusCode);
                 var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(ex.StatusCode, recoverable);
-                
+
                 // Check for LD fallback header
                 if (ex.Headers != null)
                 {
@@ -265,6 +282,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             _canceler?.Cancel();
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
+        }
+
+        internal static bool HasFDv1FallbackHeader(
+            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            if (headers == null) return false;
+            return headers
+                .Where(h => string.Equals(h.Key, "x-ld-fd-fallback", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(h => h.Value)
+                .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

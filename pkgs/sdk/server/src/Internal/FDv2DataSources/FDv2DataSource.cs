@@ -89,19 +89,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     },
                     (actionable) =>
                     {
-                        // Honor the FDv1 fallback directive in the initializer phase too. When the
-                        // server returns x-ld-fd-fallback during init, skip the FDv2 synchronizer
-                        // chain entirely and switch directly to the FDv1 fallback synchronizer.
-                        if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
-                        {
-                            return new CompositeObserver(
-                                initializationObserver,
-                                blacklistWhenSuccessOrOff(actionable),
-                                initializerFdv1FallbackApplierFactory(actionable));
-                        }
-
+                        // Honor the FDv1 fallback directive in the initializer phase too. The
+                        // applier is attached unconditionally: when an FDv1 fallback entry is
+                        // configured the applier advances to it; when one is not, the applier's
+                        // BlockCurrent + DisposeCurrent + GoToNext sequence exhausts the outer
+                        // list and halts the data system per Requirement 1.6.3(4).
                         return new CompositeObserver(
-                            initializationObserver, blacklistWhenSuccessOrOff(actionable));
+                            initializationObserver,
+                            blacklistWhenSuccessOrOff(actionable),
+                            initializerFdv1FallbackApplierFactory(actionable));
                     }
                 ));
             }
@@ -125,13 +121,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     },
                     (actionable) =>
                     {
-                        // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
-                        if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
-                        {
-                            return new CompositeObserver(synchronizationObserver, fdv1FallbackApplierFactory(actionable));
-                        }
-
-                        return synchronizationObserver;
+                        // The FDv1 fallback applier is attached unconditionally: when an FDv1
+                        // fallback entry exists in the outer list the applier advances to it;
+                        // when one does not, BlockCurrent + DisposeCurrent + GoToNext exhausts
+                        // the outer list and halts the data system per Requirement 1.6.3(4).
+                        // Disposing the current synchronizer is what stops the streaming source
+                        // from reconnecting.
+                        return new CompositeObserver(synchronizationObserver, fdv1FallbackApplierFactory(actionable));
                     }
                 ));
             }

@@ -1777,6 +1777,92 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        // End-to-end test: synchronizer reports the FDv1 fallback directive but no FDv1
+        // fallback is configured. The SDK must HALT (Requirement 1.6.3(4)) -- which in
+        // practice means the synchronizer's underlying data source must be disposed so it
+        // stops trying to reconnect. The data system reaches Off via outer composite
+        // exhaustion. Mirrors the harness suite "directive without FDv1 fallback configured
+        // halts the data system".
+        [Fact]
+        public void SynchronizerFDv1FallbackWithoutFallbackConfiguredHaltsDataSystem()
+        {
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+
+            var synchronizerDisposed = false;
+            SourceFactory synchronizerFactory = (updatesSink) =>
+                new HaltMockDataSource(
+                    onStart: async () =>
+                    {
+                        // 500 + directive: a recoverable status that would normally drive retries.
+                        // The directive must take precedence and halt those retries.
+                        updatesSink.UpdateStatus(
+                            DataSourceState.Interrupted,
+                            new DataSourceStatus.ErrorInfo
+                            {
+                                Kind = DataSourceStatus.ErrorKind.ErrorResponse,
+                                StatusCode = 500,
+                                FDv1Fallback = true,
+                                Recoverable = true,
+                                Time = DateTime.Now
+                            });
+                        await Task.Yield();
+                    },
+                    onDispose: () => synchronizerDisposed = true);
+
+            // No FDv1 fallback configured (empty list).
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                new List<SourceFactory>(),
+                new List<SourceFactory> { synchronizerFactory },
+                new List<SourceFactory>(),
+                TestLogger);
+
+            try
+            {
+                _ = dataSource.Start();
+
+                // The data system must transition to Off via outer composite exhaustion. Wait a
+                // few status updates -- intermediate Interrupted statuses come first.
+                var statuses = capturingSink.WaitForStatusUpdates(2, TimeSpan.FromSeconds(5));
+                Assert.Contains(statuses, s => s.State == DataSourceState.Off);
+
+                // Critically, the synchronizer must have been disposed -- this is what stops the
+                // streaming source from reconnecting in the harness scenario.
+                Assert.True(synchronizerDisposed,
+                    "synchronizer source must be disposed so the streaming source stops reconnecting");
+            }
+            finally
+            {
+                dataSource.Dispose();
+            }
+        }
+
+        // Mock data source that reports its disposal -- used to verify that the FDv1 fallback
+        // applier disposes the current synchronizer when no fallback is configured.
+        private class HaltMockDataSource : IDataSource
+        {
+            private readonly Func<Task> _onStart;
+            private readonly Action _onDispose;
+            private bool _initialized;
+
+            public HaltMockDataSource(Func<Task> onStart, Action onDispose)
+            {
+                _onStart = onStart;
+                _onDispose = onDispose;
+            }
+
+            public async Task<bool> Start()
+            {
+                await _onStart();
+                _initialized = true;
+                return true;
+            }
+
+            public bool Initialized => _initialized;
+
+            public void Dispose() => _onDispose();
+        }
+
         // End-to-end test using the REAL FDv2StreamingDataSource (with a mock IEventSource so we
         // can drive synthetic SSE events). This catches harness-style regressions in the
         // streaming source's interaction with the FDv2DataSource composite that the simpler

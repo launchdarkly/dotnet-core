@@ -1418,32 +1418,42 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool GoToFirstCalled { get; private set; }
             public bool StartCurrentCalled { get; private set; }
             public bool BlockCurrentCalled { get; private set; }
+            public int GoToNextCallCount { get; private set; }
+            public int BlockCurrentCallCount { get; private set; }
+            public List<string> CallSequence { get; } = new List<string>();
             private bool _isAtFirst = false;
 
             public void DisposeCurrent()
             {
                 DisposeCurrentCalled = true;
+                CallSequence.Add(nameof(DisposeCurrent));
             }
 
             public void GoToNext()
             {
                 GoToNextCalled = true;
+                GoToNextCallCount++;
+                CallSequence.Add(nameof(GoToNext));
             }
 
             public void GoToFirst()
             {
                 GoToFirstCalled = true;
+                CallSequence.Add(nameof(GoToFirst));
             }
 
             public Task<bool> StartCurrent()
             {
                 StartCurrentCalled = true;
+                CallSequence.Add(nameof(StartCurrent));
                 return Task.FromResult(true);
             }
 
             public void BlockCurrent()
             {
                 BlockCurrentCalled = true;
+                BlockCurrentCallCount++;
+                CallSequence.Add(nameof(BlockCurrent));
             }
 
             public bool IsAtFirst()
@@ -1463,8 +1473,101 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 GoToFirstCalled = false;
                 StartCurrentCalled = false;
                 BlockCurrentCalled = false;
+                GoToNextCallCount = 0;
+                BlockCurrentCallCount = 0;
+                CallSequence.Clear();
                 _isAtFirst = false;
             }
+        }
+
+        [Fact]
+        public void FDv1FallbackActionApplierIgnoresStatusWithoutFDv1Fallback()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
+
+            // Status updates without an FDv1Fallback error must not advance the composite.
+            applier.UpdateStatus(DataSourceState.Off, null);
+            applier.UpdateStatus(DataSourceState.Interrupted,
+                new DataSourceStatus.ErrorInfo { Kind = DataSourceStatus.ErrorKind.NetworkError });
+            applier.UpdateStatus(DataSourceState.Valid,
+                new DataSourceStatus.ErrorInfo { FDv1Fallback = false });
+
+            Assert.False(mockActionable.BlockCurrentCalled);
+            Assert.False(mockActionable.GoToNextCalled);
+            Assert.False(mockActionable.StartCurrentCalled);
+        }
+
+        [Fact]
+        public void FDv1FallbackActionApplierWithDefaultSkipMovesToNextEntry()
+        {
+            // Default behavior (synchronizers entry): block current, dispose, go to next, start.
+            var mockActionable = new MockCompositeSourceActionable();
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
+
+            applier.UpdateStatus(
+                DataSourceState.Off,
+                new DataSourceStatus.ErrorInfo { FDv1Fallback = true });
+
+            Assert.Equal(
+                new List<string> { "BlockCurrent", "DisposeCurrent", "GoToNext", "StartCurrent" },
+                mockActionable.CallSequence);
+        }
+
+        [Fact]
+        public void FDv1FallbackActionApplierWithExtraSkipsAdvancesPastIntermediateEntries()
+        {
+            // From the initializers entry with synchronizers configured, the applier must skip
+            // past the synchronizers entry to land on the FDv1 fallback entry.
+            var mockActionable = new MockCompositeSourceActionable();
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, extraEntriesToSkip: 1);
+
+            applier.UpdateStatus(
+                DataSourceState.Interrupted,
+                new DataSourceStatus.ErrorInfo { FDv1Fallback = true });
+
+            Assert.Equal(
+                new List<string> { "BlockCurrent", "DisposeCurrent", "GoToNext", "BlockCurrent", "GoToNext", "StartCurrent" },
+                mockActionable.CallSequence);
+            Assert.Equal(2, mockActionable.GoToNextCallCount);
+            Assert.Equal(2, mockActionable.BlockCurrentCallCount);
+        }
+
+        [Fact]
+        public void GatedObserverSuppressesEventsAfterLatchTriggered()
+        {
+            // The latch coordinates the FDv1 fallback applier with the surrounding fallback /
+            // recovery appliers: once one entry's applier has triggered the fallback, others must
+            // not respond to the now-stale Off signals from disposed entries.
+            var inner = new CapturingObserver();
+            var latch = new FDv2DataSource.FDv1FallbackLatch();
+            var gated = new FDv2DataSource.GatedObserver(inner, latch);
+
+            // Before triggering: events flow through.
+            gated.UpdateStatus(DataSourceState.Off, new DataSourceStatus.ErrorInfo());
+            Assert.Equal(1, inner.UpdateStatusCallCount);
+
+            // Trigger the latch (e.g. FDv1FallbackActionApplier observed the directive).
+            Assert.True(latch.TryTrigger());
+
+            // After triggering: events are suppressed.
+            gated.UpdateStatus(DataSourceState.Off, new DataSourceStatus.ErrorInfo());
+            gated.Apply(new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full, Selector.Empty,
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>(), null));
+            Assert.Equal(1, inner.UpdateStatusCallCount);
+            Assert.Equal(0, inner.ApplyCallCount);
+        }
+
+        private class CapturingObserver : IDataSourceObserver
+        {
+            public int UpdateStatusCallCount { get; private set; }
+            public int ApplyCallCount { get; private set; }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+                => UpdateStatusCallCount++;
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet) => ApplyCallCount++;
         }
     }
 }

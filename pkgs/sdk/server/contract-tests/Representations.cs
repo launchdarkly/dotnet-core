@@ -153,6 +153,10 @@ namespace TestService
         public int? StoreMode { get; set; }
         public SdkConfigDataInitializerParams[] Initializers { get; set; }
         public SdkConfigDataSynchronizerParams[] Synchronizers { get; set; }
+        // FDv1Fallback configures the SDK's FDv1 Fallback Synchronizer, which is engaged only when
+        // the LaunchDarkly server returns the FDv1 fallback directive. It is distinct from the FDv2
+        // Primary/Fallback Synchronizers above.
+        public SdkConfigPollingParams FDv1Fallback { get; set; }
         public string PayloadFilter { get; set; }
     }
 

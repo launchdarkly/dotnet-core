@@ -1876,6 +1876,90 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        // End-to-end test using the REAL FDv2StreamingDataSource: 403 error response with the
+        // x-ld-fd-fallback header. Mirrors the harness suite "directive on streaming error
+        // engages FDv1 fallback".
+        [Fact]
+        public async Task RealStreamingSource403WithFallbackHeaderEngagesFDv1Fallback()
+        {
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+            var fdv1Data = new FullDataSet<ItemDescriptor>(
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            var streamingMock = new IntegrationMockEventSource();
+            var streamingReady = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            SourceFactory streamingFactory = (updatesSink) =>
+            {
+                var context = BasicContext.WithDataSourceUpdates(
+                    new LaunchDarkly.Sdk.Server.Internal.DataSystem.DataSourceUpdatesV2ToV1Adapter(updatesSink));
+                var source = new FDv2StreamingDataSource(
+                    context,
+                    context.DataSourceUpdates,
+                    new Uri("http://example.com"),
+                    TimeSpan.FromMilliseconds(10),
+                    () => Selector.Empty,
+                    (uri, http) => streamingMock);
+                streamingReady.TrySetResult(true);
+                return source;
+            };
+
+            var fdv1Started = false;
+            SourceFactory fdv1Factory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    fdv1Started = true;
+                    updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                        ChangeSetType.Full,
+                        Selector.Empty,
+                        fdv1Data.Data,
+                        null));
+                    updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                    await Task.Yield();
+                });
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                new List<SourceFactory>(),
+                new List<SourceFactory> { streamingFactory },
+                new List<SourceFactory> { fdv1Factory },
+                TestLogger);
+
+            try
+            {
+                var startTask = dataSource.Start();
+
+                Assert.True(await Task.WhenAny(streamingReady.Task, Task.Delay(TimeSpan.FromSeconds(2)))
+                    == streamingReady.Task,
+                    "streaming source should be constructed within 2s of dataSource.Start()");
+
+                // The streaming source receives a 403 with the FDv1 fallback header. This is the
+                // exact exception the EventSource library throws on a non-2xx response carrying
+                // the directive (see EventSourceServiceUnsuccessfulResponseException in 5.3.0+).
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+                {
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" })
+                };
+                var ex = new LaunchDarkly.EventSource.EventSourceServiceUnsuccessfulResponseException(
+                    403, headers);
+                streamingMock.TriggerError(ex);
+
+                var startResult = await startTask;
+                Assert.True(startResult,
+                    "Start should complete: tracker reaches Initialized via FDv1 fallback Apply");
+
+                var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(2));
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+                Assert.True(fdv1Started,
+                    "FDv1 fallback synchronizer should be engaged on a 403 + directive response");
+            }
+            finally
+            {
+                dataSource.Dispose();
+            }
+        }
+
         // Mock EventSource for integration tests -- duplicates the helper from
         // FDv2StreamingDataSourceTest to keep the integration test contained in this file.
         // Suppress unused-event warnings: we only use Opened/MessageReceived/Error here.
@@ -1907,6 +1991,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             public void TriggerMessage(LaunchDarkly.EventSource.MessageReceivedEventArgs args) =>
                 MessageReceived?.Invoke(this, args);
+
+            public void TriggerError(Exception exception) =>
+                Error?.Invoke(this, new LaunchDarkly.EventSource.ExceptionEventArgs(exception));
         }
 #pragma warning restore 67
 

@@ -1777,6 +1777,139 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        // End-to-end test using the REAL FDv2StreamingDataSource (with a mock IEventSource so we
+        // can drive synthetic SSE events). This catches harness-style regressions in the
+        // streaming source's interaction with the FDv2DataSource composite that the simpler
+        // mock-based tests above cannot reach. Mirrors the harness suite "directive on streaming
+        // success applies payload then engages FDv1".
+        [Fact]
+        public async Task RealStreamingSourceWithFallbackHeaderEngagesFDv1FallbackAfterApply()
+        {
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+            var fdv1Data = new FullDataSet<ItemDescriptor>(
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            // The streaming factory is invoked asynchronously by the OUTER composite's queue
+            // processor. Use a TCS to know when the streaming source has been constructed and
+            // its event handlers wired to the mock event source -- otherwise the test thread can
+            // race ahead and trigger the mock before the streaming source is listening.
+            var streamingMock = new IntegrationMockEventSource();
+            var streamingReady = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            SourceFactory streamingFactory = (updatesSink) =>
+            {
+                var context = BasicContext.WithDataSourceUpdates(
+                    new LaunchDarkly.Sdk.Server.Internal.DataSystem.DataSourceUpdatesV2ToV1Adapter(updatesSink));
+                var source = new FDv2StreamingDataSource(
+                    context,
+                    context.DataSourceUpdates,
+                    new Uri("http://example.com"),
+                    TimeSpan.FromMilliseconds(10),
+                    () => Selector.Empty,
+                    (uri, http) => streamingMock);
+                streamingReady.TrySetResult(true);
+                return source;
+            };
+
+            var fdv1Started = false;
+            SourceFactory fdv1Factory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    fdv1Started = true;
+                    updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                        ChangeSetType.Full,
+                        Selector.Make(2, "fdv1-state"),
+                        fdv1Data.Data,
+                        null));
+                    updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                    await Task.Yield();
+                });
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                new List<SourceFactory>(),
+                new List<SourceFactory> { streamingFactory },
+                new List<SourceFactory> { fdv1Factory },
+                TestLogger);
+
+            try
+            {
+                var startTask = dataSource.Start();
+
+                // Wait for the streaming factory to wire up before triggering events on the mock.
+                Assert.True(await Task.WhenAny(streamingReady.Task, Task.Delay(TimeSpan.FromSeconds(2)))
+                    == streamingReady.Task,
+                    "streaming source should be constructed within 2s of dataSource.Start()");
+
+                // Drive the mock event source with the headers + a complete xfer-full payload.
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+                {
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" })
+                };
+                streamingMock.TriggerOpen(headers);
+                streamingMock.TriggerMessage(new LaunchDarkly.EventSource.MessageReceivedEventArgs(
+                    new LaunchDarkly.EventSource.MessageEvent("server-intent",
+                        @"{""payloads"":[{""id"":""p1"",""target"":1,""intentCode"":""xfer-full"",""reason"":""r""}]}",
+                        null)));
+                streamingMock.TriggerMessage(new LaunchDarkly.EventSource.MessageReceivedEventArgs(
+                    new LaunchDarkly.EventSource.MessageEvent("payload-transferred",
+                        @"{""state"":""(p:p1:1)"",""version"":1}",
+                        null)));
+
+                var startResult = await startTask;
+                Assert.True(startResult, "Start should complete via the streaming Apply");
+
+                // Two Applies expected: streaming xfer-full (non-empty selector), then FDv1.
+                var firstApply = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+                Assert.Equal(ChangeSetType.Full, firstApply.Type);
+                var secondApply = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(2));
+                Assert.Equal("fdv1-state", secondApply.Selector.State);
+
+                Assert.True(fdv1Started,
+                    "FDv1 fallback synchronizer should be engaged when streaming success carries the FDv1 directive");
+                Assert.True(streamingMock.IsClosed,
+                    "Streaming event source should be closed after the directive is applied");
+            }
+            finally
+            {
+                dataSource.Dispose();
+            }
+        }
+
+        // Mock EventSource for integration tests -- duplicates the helper from
+        // FDv2StreamingDataSourceTest to keep the integration test contained in this file.
+        // Suppress unused-event warnings: we only use Opened/MessageReceived/Error here.
+#pragma warning disable 67
+        private class IntegrationMockEventSource : LaunchDarkly.EventSource.IEventSource
+        {
+            public event EventHandler<LaunchDarkly.EventSource.StateChangedEventArgs> Opened;
+            public event EventHandler<LaunchDarkly.EventSource.StateChangedEventArgs> Closed;
+            public event EventHandler<LaunchDarkly.EventSource.MessageReceivedEventArgs> MessageReceived;
+            public event EventHandler<LaunchDarkly.EventSource.ExceptionEventArgs> Error;
+            public event EventHandler<LaunchDarkly.EventSource.CommentReceivedEventArgs> CommentReceived;
+
+            public bool IsClosed { get; private set; }
+            public LaunchDarkly.EventSource.ReadyState ReadyState { get; private set; } =
+                LaunchDarkly.EventSource.ReadyState.Closed;
+
+            public Task StartAsync()
+            {
+                ReadyState = LaunchDarkly.EventSource.ReadyState.Open;
+                return Task.CompletedTask;
+            }
+
+            public void Close() => IsClosed = true;
+            public void Restart(bool forceNewConnection = false) { }
+
+            public void TriggerOpen(IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) =>
+                Opened?.Invoke(this, new LaunchDarkly.EventSource.StateChangedEventArgs(
+                    LaunchDarkly.EventSource.ReadyState.Open, headers));
+
+            public void TriggerMessage(LaunchDarkly.EventSource.MessageReceivedEventArgs args) =>
+                MessageReceived?.Invoke(this, args);
+        }
+#pragma warning restore 67
+
         private class CapturingObserver : IDataSourceObserver
         {
             public int UpdateStatusCallCount { get; private set; }

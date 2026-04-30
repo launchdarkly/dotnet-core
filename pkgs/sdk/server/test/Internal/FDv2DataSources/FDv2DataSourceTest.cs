@@ -1559,6 +1559,224 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Equal(0, inner.ApplyCallCount);
         }
 
+        // End-to-end test: synchronizer reports Off+FDv1Fallback (mirrors the FDv2 streaming
+        // source's Shutdown path on a 403 + x-ld-fd-fallback header). The SDK must engage the
+        // FDv1 fallback synchronizer and reach Initialized via that path. The harness suite
+        // "directive on streaming error engages FDv1 fallback" exercises this.
+        [Fact]
+        public async Task SynchronizerOffWithFDv1FallbackErrorEngagesFDv1FallbackSynchronizer()
+        {
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+            var fdv1Data = new FullDataSet<ItemDescriptor>(
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            // Synchronizer reports Off (unrecoverable HTTP error) with the FDv1 fallback flag set
+            // -- the same error the FDv2 streaming source emits for a 403+directive response.
+            var synchronizerStartCount = 0;
+            SourceFactory synchronizerFactory = (updatesSink) =>
+            {
+                synchronizerStartCount++;
+                return new MockDataSourceWithInit(async () =>
+                {
+                    updatesSink.UpdateStatus(
+                        DataSourceState.Off,
+                        new DataSourceStatus.ErrorInfo
+                        {
+                            Kind = DataSourceStatus.ErrorKind.ErrorResponse,
+                            StatusCode = 403,
+                            FDv1Fallback = true,
+                            Recoverable = false,
+                            Time = DateTime.Now
+                        });
+                    await Task.Yield();
+                });
+            };
+
+            // FDv1 fallback synchronizer applies a payload and reaches Valid -- the SDK must
+            // reach Initialized via this path (not via the FDv2 sync, which failed).
+            var fdv1Started = false;
+            SourceFactory fdv1Factory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    fdv1Started = true;
+                    updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                        ChangeSetType.Full, Selector.Empty, fdv1Data.Data, null));
+                    updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                    await Task.Yield();
+                });
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                new List<SourceFactory>(),
+                new List<SourceFactory> { synchronizerFactory },
+                new List<SourceFactory> { fdv1Factory },
+                TestLogger);
+
+            try
+            {
+                var startResult = await dataSource.Start();
+                Assert.True(startResult, "Start should complete via the FDv1 fallback path");
+                Assert.True(fdv1Started, "FDv1 fallback synchronizer should have been started");
+
+                // The Apply from FDv1 reached the data store -- this is the load-bearing
+                // observation that proves the FDv1 fallback engaged.
+                var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+            }
+            finally
+            {
+                dataSource.Dispose();
+            }
+        }
+
+        // End-to-end test: synchronizer applies a payload first, then reports Off+FDv1Fallback
+        // (mirrors the streaming success path with x-ld-fd-fallback header). The SDK must apply
+        // the initial payload AND then engage FDv1 fallback. Harness suite "directive on
+        // streaming success applies payload then engages FDv1" exercises this.
+        [Fact]
+        public async Task SynchronizerSuccessThenFDv1FallbackEngagesFDv1FallbackSynchronizer()
+        {
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+            var syncData = new FullDataSet<ItemDescriptor>(
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+            var fdv1Data = new FullDataSet<ItemDescriptor>(
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            SourceFactory synchronizerFactory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    // Apply a payload (the SDK's first observable side effect).
+                    updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                        ChangeSetType.Full,
+                        Selector.Make(1, "synchronizer-state"),
+                        syncData.Data,
+                        null));
+                    // Then signal Off+FDv1Fallback. The action applier must engage FDv1 even
+                    // though the data system is already Initialized via the payload above.
+                    updatesSink.UpdateStatus(
+                        DataSourceState.Off,
+                        new DataSourceStatus.ErrorInfo
+                        {
+                            Kind = DataSourceStatus.ErrorKind.Unknown,
+                            FDv1Fallback = true,
+                            Time = DateTime.Now
+                        });
+                    await Task.Yield();
+                });
+
+            var fdv1Started = false;
+            SourceFactory fdv1Factory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    fdv1Started = true;
+                    updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                        ChangeSetType.Full,
+                        Selector.Make(2, "fdv1-state"),
+                        fdv1Data.Data,
+                        null));
+                    await Task.Yield();
+                });
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                new List<SourceFactory>(),
+                new List<SourceFactory> { synchronizerFactory },
+                new List<SourceFactory> { fdv1Factory },
+                TestLogger);
+
+            try
+            {
+                var startResult = await dataSource.Start();
+                Assert.True(startResult);
+
+                // Two Applies: first from the synchronizer's initial payload, then from FDv1.
+                var firstChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(1));
+                Assert.Equal("synchronizer-state", firstChangeSet.Selector.State);
+                var secondChangeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(2));
+                Assert.Equal("fdv1-state", secondChangeSet.Selector.State);
+
+                Assert.True(fdv1Started, "FDv1 fallback synchronizer should have been started");
+            }
+            finally
+            {
+                dataSource.Dispose();
+            }
+        }
+
+        // End-to-end test: an initializer reports Off+FDv1Fallback. The SDK must skip the FDv2
+        // synchronizer chain entirely and engage the FDv1 fallback synchronizer. Harness suite
+        // "directive on polling initializer skips FDv2 synchronizers" exercises this.
+        [Fact]
+        public async Task InitializerOffWithFDv1FallbackErrorSkipsSynchronizersAndEngagesFDv1()
+        {
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+            var fdv1Data = new FullDataSet<ItemDescriptor>(
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
+
+            SourceFactory initializerFactory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    updatesSink.UpdateStatus(
+                        DataSourceState.Off,
+                        new DataSourceStatus.ErrorInfo
+                        {
+                            Kind = DataSourceStatus.ErrorKind.ErrorResponse,
+                            StatusCode = 403,
+                            FDv1Fallback = true,
+                            Recoverable = false,
+                            Time = DateTime.Now
+                        });
+                    await Task.Yield();
+                });
+
+            // Synchronizer must NOT have its underlying data source's Start called. The composite
+            // may call the factory while walking past the entry, but the action applier must
+            // not start it.
+            var synchronizerStarted = false;
+            SourceFactory synchronizerFactory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    synchronizerStarted = true;
+                    updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                    await Task.Yield();
+                });
+
+            var fdv1Started = false;
+            SourceFactory fdv1Factory = (updatesSink) =>
+                new MockDataSourceWithInit(async () =>
+                {
+                    fdv1Started = true;
+                    updatesSink.Apply(new ChangeSet<ItemDescriptor>(
+                        ChangeSetType.Full, Selector.Empty, fdv1Data.Data, null));
+                    updatesSink.UpdateStatus(DataSourceState.Valid, null);
+                    await Task.Yield();
+                });
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                new List<SourceFactory> { initializerFactory },
+                new List<SourceFactory> { synchronizerFactory },
+                new List<SourceFactory> { fdv1Factory },
+                TestLogger);
+
+            try
+            {
+                var startResult = await dataSource.Start();
+                Assert.True(startResult, "Start should complete via the FDv1 fallback path");
+
+                var changeSet = capturingSink.Applies.ExpectValue(TimeSpan.FromSeconds(2));
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+                Assert.True(fdv1Started, "FDv1 fallback synchronizer should have been started");
+                Assert.False(synchronizerStarted,
+                    "FDv2 synchronizer must not be started when the initializer signals FDv1 fallback");
+            }
+            finally
+            {
+                dataSource.Dispose();
+            }
+        }
+
         private class CapturingObserver : IDataSourceObserver
         {
             public int UpdateStatusCallCount { get; private set; }

@@ -77,3 +77,12 @@ runs:
         ./test-harness -url http://localhost:8000 -debug -status-timeout=360 --skip-from=testharness-suppressions-fdv2.txt --stop-service-at-end
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
+
+    - name: Upload test service log on failure
+      if: failure() && inputs.run_fdv2_tests == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: contract-test-service-log-${{ runner.os }}-${{ runner.arch }}
+        path: test-service.log
+        if-no-files-found: warn
+        retention-days: 7

@@ -451,6 +451,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             });
         }
 
+        // Explicit interface implementation forwards to the private EnqueueAction so callers using the
+        // ICompositeSourceActionable abstraction can defer arbitrary work onto the same serialized
+        // action queue. This allows observers to interleave their advancement decisions with other
+        // queued actions, while keeping the underlying queue plumbing private.
+        void ICompositeSourceActionable.EnqueueAction(Action action)
+        {
+            if (action == null) return;
+            EnqueueAction(action);
+        }
+
         private void logTransition(String previousDescription, String currentDescription) {
             if (previousDescription != null && currentDescription != null) {
                 _log.Debug("{0} transitioned from {1} to {2}.", _compositeDescription, previousDescription, currentDescription);

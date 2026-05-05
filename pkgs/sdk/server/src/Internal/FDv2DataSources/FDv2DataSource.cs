@@ -42,8 +42,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var fdv1FallbackTriggered = new FDv1FallbackLatch();
 
             ActionApplierFactory blacklistWhenSuccessOrOff =
-                (actionable) => new GatedObserver(
-                    new ActionApplierBlacklistWhenSuccessOrOff(actionable), fdv1FallbackTriggered);
+                (actionable) => new ActionApplierBlacklistWhenSuccessOrOff(actionable, fdv1FallbackTriggered);
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new GatedObserver(
@@ -94,10 +93,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         // configured the applier advances to it; when one is not, the applier's
                         // BlockCurrent + DisposeCurrent + GoToNext sequence exhausts the outer
                         // list and halts the data system per Requirement 1.6.3(4).
+                        //
+                        // Observer order is significant: the FDv1 fallback applier MUST run before
+                        // the blacklist applier so that it has a chance to set the FDv1 fallback
+                        // latch when the source emits UpdateStatus(Off, FDv1Fallback). The
+                        // blacklist applier's UpdateStatus path consults the latch and no-ops when
+                        // it is set, preventing it from concurrently advancing the outer composite
+                        // toward the FDv2 synchronizer entry. (See ActionApplierBlacklistWhenSuccessOrOff
+                        // for the corresponding Apply-path handling, which defers advancement onto
+                        // the actionable's queue so the latch can be checked at execution time.)
                         return new CompositeObserver(
                             initializationObserver,
-                            blacklistWhenSuccessOrOff(actionable),
-                            initializerFdv1FallbackApplierFactory(actionable));
+                            initializerFdv1FallbackApplierFactory(actionable),
+                            blacklistWhenSuccessOrOff(actionable));
                     }
                 ));
             }
@@ -127,6 +135,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         // the outer list and halts the data system per Requirement 1.6.3(4).
                         // Disposing the current synchronizer is what stops the streaming source
                         // from reconnecting.
+                        //
+                        // Note: the synchronizers entry attaches only the FDv1 fallback applier
+                        // (no blacklist applier), so observer ordering relative to blacklist is
+                        // not a concern here.
                         return new CompositeObserver(synchronizationObserver, fdv1FallbackApplierFactory(actionable));
                     }
                 ));
@@ -390,39 +402,96 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// Action applier that blacklists the current datasource when init occurs or when Off status is seen,
         /// then disposes the current datasource, goes to the next datasource, and starts it.
         /// </summary>
-        private class ActionApplierBlacklistWhenSuccessOrOff : IDataSourceObserver
+        /// <remarks>
+        /// When the optional <see cref="FDv1FallbackLatch"/> is supplied, this applier defers the
+        /// Apply-driven advancement onto the actionable's serialized queue and re-checks the latch
+        /// at queue-processing time. This is necessary because, on a successful FDv2 initializer
+        /// response that also carries the FDv1 fallback directive, the polling/streaming source
+        /// fires Apply (this applier) and then UpdateStatus(Off, FDv1Fallback) (the FDv1 fallback
+        /// applier) on the same propagation chain. Without the deferral, both appliers enqueue
+        /// independent advancement sequences and the outer composite double-advances past the
+        /// FDv1 fallback entry. By deferring and consulting the latch when the queued action runs,
+        /// the FDv1 fallback applier's UpdateStatus has had a chance to set the latch and we
+        /// no-op, leaving the FDv1 fallback applier as the sole driver of the transition.
+        /// </remarks>
+        internal class ActionApplierBlacklistWhenSuccessOrOff : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
+            private readonly FDv1FallbackLatch _latch;
 
             public ActionApplierBlacklistWhenSuccessOrOff(ICompositeSourceActionable actionable)
+                : this(actionable, null) { }
+
+            public ActionApplierBlacklistWhenSuccessOrOff(ICompositeSourceActionable actionable, FDv1FallbackLatch latch)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+                _latch = latch;
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
-                // When Off status is seen, blacklist current, dispose current, go to next, and start current
-                if (newState == DataSourceState.Off)
-                {
-                    _actionable.BlockCurrent();
-                    _actionable.DisposeCurrent();
-                    _actionable.GoToNext();
-                    _actionable.StartCurrent();
-                }
+                // When Off status is seen, blacklist current, dispose current, go to next, and start current.
+                // Skip when the FDv1 fallback latch is set: the FDv1 fallback applier will perform
+                // the advancement to the FDv1 fallback entry, and we must not double-advance.
+                if (newState != DataSourceState.Off) return;
+                if (_latch != null && _latch.IsTriggered) return;
+
+                _actionable.BlockCurrent();
+                _actionable.DisposeCurrent();
+                _actionable.GoToNext();
+                _actionable.StartCurrent();
             }
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 // If this change has a selector, then we know we can move out of the current phase.
                 // This doesn't look at the type of the changeset (Full, Partial, None), because having
-                // a selector means that we have some payload. 
+                // a selector means that we have some payload.
                 // From a forward development perspective this could be because we had a local stale selector which was
                 // persisted in some way, and we are getting up to date via an initializer.
                 if (changeSet.Selector.IsEmpty) return;
-                _actionable.BlockCurrent();
-                _actionable.DisposeCurrent();
-                _actionable.GoToNext();
-                _actionable.StartCurrent();
+
+                if (_latch == null)
+                {
+                    // No FDv1 fallback coordination -- run advancement inline as before.
+                    _actionable.BlockCurrent();
+                    _actionable.DisposeCurrent();
+                    _actionable.GoToNext();
+                    _actionable.StartCurrent();
+                    return;
+                }
+
+                // Defer advancement onto the actionable's serialized queue. Any sibling applier
+                // observing the same propagation chain (e.g. FDv1FallbackActionApplier reacting to
+                // a subsequent UpdateStatus call from the same source) gets a chance to run and
+                // set the latch before the queued action executes. At execution time, if the latch
+                // has been triggered we skip our advancement and let the FDv1 fallback applier own
+                // the transition.
+                //
+                // Bounded re-enqueue: the first time the deferred action runs, if the latch is not
+                // yet set, we re-enqueue ourselves once before checking again. This closes the
+                // narrow timing window in which the queue's background processor could pick up the
+                // deferred action before the source thread has finished its synchronous propagation
+                // (and called UpdateStatus + set the latch). After the second pass, if the latch is
+                // still unset, no FDv1 fallback signal is coming on this propagation, and we
+                // proceed with the normal advancement.
+                var retried = false;
+                Action deferred = null;
+                deferred = () =>
+                {
+                    if (_latch.IsTriggered) return;
+                    if (!retried)
+                    {
+                        retried = true;
+                        _actionable.EnqueueAction(deferred);
+                        return;
+                    }
+                    _actionable.BlockCurrent();
+                    _actionable.DisposeCurrent();
+                    _actionable.GoToNext();
+                    _actionable.StartCurrent();
+                };
+                _actionable.EnqueueAction(deferred);
             }
         }
 

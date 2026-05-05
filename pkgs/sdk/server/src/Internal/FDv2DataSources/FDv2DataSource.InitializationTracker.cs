@@ -248,6 +248,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError,
                 DataSourceCategory category)
             {
+                // The FDv1 fallback directive is the SDK's signal that the initializer or
+                // synchronizer phase is being terminated and the FDv1 fallback synchronizer is
+                // taking over. This can ride on Interrupted (recoverable error or success +
+                // header) or Off (unrecoverable error + header) -- transition to FallingBack
+                // regardless of which state we observe so the tracker can complete via the
+                // fallback path.
+                var fdv1FallbackSignaled = newError.HasValue && newError.Value.FDv1Fallback;
+                if (fdv1FallbackSignaled
+                    && (category == DataSourceCategory.Initializers
+                        || category == DataSourceCategory.Synchronizers))
+                {
+                    DetermineState(Action.FallingBack);
+                }
+
                 switch (category)
                 {
                     case DataSourceCategory.Initializers when newState == DataSourceState.Off:
@@ -257,14 +271,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     }
                     case DataSourceCategory.Synchronizers when newState == DataSourceState.Off:
                     {
-                        // Currently, FDv1 fallback happens in the synchronizers group. If something from that group
-                        // reports Off, with a reason indicating that it should fallback to v1, then we can
-                        // transition to that state.
-                        if (newError.HasValue && newError.Value.FDv1Fallback)
-                        {
-                            DetermineState(Action.FallingBack);
-                        }
-                        
                         DetermineState(Action.SynchronizersExhausted);
 
                         break;

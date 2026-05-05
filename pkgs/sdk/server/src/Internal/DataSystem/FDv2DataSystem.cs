@@ -79,14 +79,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
             var contextWithSelectorSource =
                 clientContext.WithSelectorSource(new SelectorSourceFacade(writeThroughStore));
+            // FDv1 fallback synchronizer is optional; only build a list entry when one is
+            // configured. An always-present list entry that captured a null configurer would
+            // throw NRE the moment the action applier advanced to the FDv1 fallback entry.
+            var fdv1FallbackFactories = dataSystemConfiguration.FDv1FallbackSynchronizer == null
+                ? new List<SourceFactory>()
+                : new List<SourceFactory>
+                {
+                    FactoryWithContext(clientContext)(dataSystemConfiguration.FDv1FallbackSynchronizer)
+                };
             var compositeDataSource = configuration.Offline ? Components.ExternalUpdatesOnly.Build(contextWithSelectorSource) : FDv2DataSource.CreateFDv2DataSource(
                 dataSourceUpdates,
                 dataSystemConfiguration.Initializers.Select(FactoryWithContext(contextWithSelectorSource)).ToList(),
                 dataSystemConfiguration.Synchronizers.Select(FactoryWithContext(contextWithSelectorSource)).ToList(),
-                new List<SourceFactory>
-                {
-                    FactoryWithContext(clientContext)(dataSystemConfiguration.FDv1FallbackSynchronizer)
-                },
+                fdv1FallbackFactories,
                 logger
             );
 

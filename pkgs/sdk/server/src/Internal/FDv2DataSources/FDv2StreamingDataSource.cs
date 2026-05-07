@@ -223,19 +223,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 case FDv2ActionChangeset changeAction:
                 {
                     var changeset = changeAction.Changeset;
+                    var fdv1Fallback = _fdv1FallbackRequested;
                     var storeError = !_transactionalDataSourceUpdates.Apply(
-                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId));
+                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId, fdv1Fallback));
 
                     if (!storeError)
                     {
                         _lastStoreUpdateFailed.GetAndSet(false);
                         MaybeMarkInitialized();
 
-                        // The server may include the FDv1 fallback header on a successful
-                        // streaming response. Apply the payload first (above), then shut the
-                        // stream down with FDv1Fallback=true so the action applier swaps to the
-                        // FDv1 fallback synchronizer.
-                        if (_fdv1FallbackRequested)
+                        // On a successful response carrying the FDv1 directive, the changeset
+                        // above already rode the FDv1Fallback flag through to the appliers, which
+                        // trigger the fallback transition. Tear down the stream here so we stop
+                        // reconnecting.
+                        if (fdv1Fallback)
                         {
                             _log.Info("LaunchDarkly streaming response indicates fallback to FDv1");
                             var fallbackError = new DataSourceStatus.ErrorInfo

@@ -1418,8 +1418,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public bool GoToFirstCalled { get; private set; }
             public bool StartCurrentCalled { get; private set; }
             public bool BlockCurrentCalled { get; private set; }
+            public bool BlockAllCalled { get; private set; }
             public int GoToNextCallCount { get; private set; }
             public int BlockCurrentCallCount { get; private set; }
+            public int BlockAllCallCount { get; private set; }
+            public Predicate<CompositeEntryKind> LastBlockAllPredicate { get; private set; }
             public List<string> CallSequence { get; } = new List<string>();
             private bool _isAtFirst = false;
 
@@ -1466,12 +1469,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _isAtFirst = value;
             }
 
-            public void EnqueueAction(Action action)
+            public void BlockAll(Predicate<CompositeEntryKind> kindMatches)
             {
-                // For unit-test mocks we run enqueued actions inline so existing tests that
-                // assert observable side effects of the action sequence continue to work.
-                CallSequence.Add(nameof(EnqueueAction));
-                action?.Invoke();
+                BlockAllCalled = true;
+                BlockAllCallCount++;
+                LastBlockAllPredicate = kindMatches;
+                CallSequence.Add(nameof(BlockAll));
             }
 
             public void Reset()
@@ -1481,8 +1484,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 GoToFirstCalled = false;
                 StartCurrentCalled = false;
                 BlockCurrentCalled = false;
+                BlockAllCalled = false;
                 GoToNextCallCount = 0;
                 BlockCurrentCallCount = 0;
+                BlockAllCallCount = 0;
+                LastBlockAllPredicate = null;
                 CallSequence.Clear();
                 _isAtFirst = false;
             }
@@ -1507,9 +1513,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public void FDv1FallbackActionApplierWithDefaultSkipMovesToNextEntry()
+        public void FDv1FallbackActionApplierUsesBlockAllAndAdvances()
         {
-            // Default behavior (synchronizers entry): block current, dispose, go to next, start.
+            // The applier blocks every FDv2 entry from the outer list (so the FDv1 fallback
+            // entry is the next stop), then advances to it. No skip-counting -- the entry list
+            // mutation handles both initializer-phase and synchronizer-phase wirings uniformly.
             var mockActionable = new MockCompositeSourceActionable();
             var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
 
@@ -1518,53 +1526,54 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 new DataSourceStatus.ErrorInfo { FDv1Fallback = true });
 
             Assert.Equal(
-                new List<string> { "BlockCurrent", "DisposeCurrent", "GoToNext", "StartCurrent" },
+                new List<string> { "BlockAll", "GoToNext", "StartCurrent" },
                 mockActionable.CallSequence);
+            Assert.NotNull(mockActionable.LastBlockAllPredicate);
+            Assert.True(mockActionable.LastBlockAllPredicate(CompositeEntryKind.FDv2));
+            Assert.False(mockActionable.LastBlockAllPredicate(CompositeEntryKind.FDv1Fallback));
         }
 
         [Fact]
-        public void FDv1FallbackActionApplierWithExtraSkipsAdvancesPastIntermediateEntries()
+        public void FDv1FallbackActionApplierTriggersOnApplyCarryingDirective()
         {
-            // From the initializers entry with synchronizers configured, the applier must skip
-            // past the synchronizers entry to land on the FDv1 fallback entry.
+            // Successful FDv2 responses that also carry the directive ride the flag on the
+            // ChangeSet rather than UpdateStatus. The applier must trigger from either path.
             var mockActionable = new MockCompositeSourceActionable();
-            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, extraEntriesToSkip: 1);
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
 
-            applier.UpdateStatus(
-                DataSourceState.Interrupted,
-                new DataSourceStatus.ErrorInfo { FDv1Fallback = true });
+            applier.Apply(new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full,
+                Selector.Make(1, "init-state"),
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>(),
+                null,
+                fdv1Fallback: true));
 
             Assert.Equal(
-                new List<string> { "BlockCurrent", "DisposeCurrent", "GoToNext", "BlockCurrent", "GoToNext", "StartCurrent" },
+                new List<string> { "BlockAll", "GoToNext", "StartCurrent" },
                 mockActionable.CallSequence);
-            Assert.Equal(2, mockActionable.GoToNextCallCount);
-            Assert.Equal(2, mockActionable.BlockCurrentCallCount);
         }
 
         [Fact]
-        public void GatedObserverSuppressesEventsAfterLatchTriggered()
+        public void FDv1FallbackActionApplierIsIdempotent()
         {
-            // The latch coordinates the FDv1 fallback applier with the surrounding fallback /
-            // recovery appliers: once one entry's applier has triggered the fallback, others must
-            // not respond to the now-stale Off signals from disposed entries.
-            var inner = new CapturingObserver();
-            var latch = new FDv2DataSource.FDv1FallbackLatch();
-            var gated = new FDv2DataSource.GatedObserver(inner, latch);
+            // On a successful response the source emits Apply(directive) and then
+            // UpdateStatus(Off, FDv1Fallback) during shutdown. The applier must trigger only
+            // once; the second event is a no-op so we don't double-advance off the FDv1 entry.
+            var mockActionable = new MockCompositeSourceActionable();
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
 
-            // Before triggering: events flow through.
-            gated.UpdateStatus(DataSourceState.Off, new DataSourceStatus.ErrorInfo());
-            Assert.Equal(1, inner.UpdateStatusCallCount);
+            applier.Apply(new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full,
+                Selector.Make(1, "init-state"),
+                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>(),
+                null,
+                fdv1Fallback: true));
+            applier.UpdateStatus(
+                DataSourceState.Off,
+                new DataSourceStatus.ErrorInfo { FDv1Fallback = true });
 
-            // Trigger the latch (e.g. FDv1FallbackActionApplier observed the directive).
-            Assert.True(latch.TryTrigger());
-
-            // After triggering: events are suppressed.
-            gated.UpdateStatus(DataSourceState.Off, new DataSourceStatus.ErrorInfo());
-            gated.Apply(new ChangeSet<ItemDescriptor>(
-                ChangeSetType.Full, Selector.Empty,
-                new Dictionary<DataKind, KeyedItems<ItemDescriptor>>(), null));
-            Assert.Equal(1, inner.UpdateStatusCallCount);
-            Assert.Equal(0, inner.ApplyCallCount);
+            Assert.Equal(1, mockActionable.BlockAllCallCount);
+            Assert.Equal(1, mockActionable.GoToNextCallCount);
         }
 
         // End-to-end test: synchronizer reports Off+FDv1Fallback (mirrors the FDv2 streaming
@@ -1970,14 +1979,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        // Regression test for the Bugbot-flagged double-advance bug: when an initializer applies
-        // a non-empty changeset (success path) and then reports Off + FDv1Fallback on the same
-        // propagation chain (mirrors FDv2PollingDataSource handling a 200 response that carries
-        // the x-ld-fd-fallback header), the outer composite must NOT start the FDv2 synchronizer
-        // and MUST start the FDv1 fallback synchronizer. The pre-fix behavior had both
-        // ActionApplierBlacklistWhenSuccessOrOff (via Apply) and FDv1FallbackActionApplier (via
-        // UpdateStatus) independently enqueue advancement on the outer composite, over-advancing
-        // past the FDv1 fallback entry.
+        // Regression test for the Bugbot-flagged double-advance bug. The polling source on a
+        // successful response with the x-ld-fd-fallback header now rides the directive on the
+        // ChangeSet (see FDv2PollingDataSource), so the blacklist applier and the FDv1 fallback
+        // applier both observe it inline: the blacklist bails and the FDv1 fallback applier
+        // calls BlockAll(FDv2) before advancing. The outer composite must NOT start the FDv2
+        // synchronizer and MUST start the FDv1 fallback synchronizer.
         [Fact]
         public async Task InitializerSuccessWithFDv1FallbackDirectiveDoesNotOverAdvance()
         {
@@ -2046,11 +2053,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 var startTask = dataSource.Start();
 
-                // The initializer's Apply propagates first; then UpdateStatus(Off, FDv1Fallback)
-                // sets the latch. The blacklist applier defers its Apply-driven advancement onto
-                // the actionable's queue; by the time the queued action runs, the latch is set
-                // and the deferred advancement is suppressed. Only the FDv1 fallback applier
-                // drives the transition to the FDv1 fallback entry.
+                // The initializer's Apply rides the FDv1Fallback flag on the ChangeSet, so the
+                // blacklist applier sees it inline and bails. The FDv1 fallback applier triggers
+                // off the same Apply, calls BlockAll(FDv2) to remove the synchronizers entry,
+                // then advances to the FDv1 fallback entry uncontested.
                 var startResult = await startTask;
                 Assert.True(startResult,
                     "Start should complete via the FDv1 fallback synchronizer's Apply");

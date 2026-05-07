@@ -30,17 +30,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private readonly IDataSourceUpdatesV2 _originalUpdateSink;
         private readonly IDataSourceUpdatesV2 _sanitizedUpdateSink;
-        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> _sourcesList;
+        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)> _sourcesList;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
         // Tracks the entry from the sources list that was used to create the current
         // data source instance. This allows operations such as blacklist to remove
         // the correct factory/action-applier-factory tuple from the list.
-        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory) _currentEntry;
+        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind) _currentEntry;
         private IDataSource _currentDataSource;
 
         /// <summary>
-        /// Creates a new <see cref="CompositeSource"/>.
+        /// Creates a new <see cref="CompositeSource"/>. Every entry is treated as kind
+        /// <see cref="CompositeEntryKind.FDv2"/>.
         /// </summary>
         /// <param name="compositeDescription">description of the composite source for logging purposes</param>
         /// <param name="updatesSink">the sink that receives updates from the active source</param>
@@ -51,6 +52,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             string compositeDescription,
             IDataSourceUpdatesV2 updatesSink,
             IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
+            Logger logger,
+            bool circular = true)
+            : this(compositeDescription, updatesSink, WithDefaultKind(factoryTuples), logger, circular)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="CompositeSource"/> with explicit per-entry kinds. The kind is
+        /// surfaced to <see cref="ICompositeSourceActionable.BlockAll"/> so appliers can express
+        /// "block every FDv2 entry" without needing to know list positions.
+        /// </summary>
+        public CompositeSource(
+            string compositeDescription,
+            IDataSourceUpdatesV2 updatesSink,
+            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)> factoryTuples,
             Logger logger,
             bool circular = true)
         {
@@ -72,10 +88,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
 
-            _sourcesList = new SourcesList<(SourceFactory SourceFactory, ActionApplierFactory ActionApplierFactory)>(
+            _sourcesList = new SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>(
                 circular: circular,
                 initialList: factoryTuples
             );
+        }
+
+        private static IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>
+            WithDefaultKind(IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> tuples)
+        {
+            if (tuples is null) return null;
+            var result = new List<(SourceFactory, ActionApplierFactory, CompositeEntryKind)>(tuples.Count);
+            foreach (var t in tuples)
+            {
+                result.Add((t.Factory, t.ActionApplierFactory, CompositeEntryKind.FDv2));
+            }
+            return result;
         }
 
         /// <summary>
@@ -451,14 +479,36 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             });
         }
 
-        // Explicit interface implementation forwards to the private EnqueueAction so callers using the
-        // ICompositeSourceActionable abstraction can defer arbitrary work onto the same serialized
-        // action queue. This allows observers to interleave their advancement decisions with other
-        // queued actions, while keeping the underlying queue plumbing private.
-        void ICompositeSourceActionable.EnqueueAction(Action action)
+        public void BlockAll(Predicate<CompositeEntryKind> kindMatches)
         {
-            if (action == null) return;
-            EnqueueAction(action);
+            if (kindMatches is null) throw new ArgumentNullException(nameof(kindMatches));
+            if (_disposed)
+            {
+                return;
+            }
+
+            EnqueueAction(() =>
+            {
+                lock (_lock)
+                {
+                    var removed = _sourcesList.RemoveAll(entry => kindMatches(entry.Kind));
+                    if (removed == 0)
+                    {
+                        return;
+                    }
+
+                    // If the current entry was removed, clear the reference so a subsequent
+                    // BlockCurrent doesn't accidentally remove a remaining entry. The current
+                    // data source is left running -- callers are expected to follow BlockAll
+                    // with DisposeCurrent / GoToNext when they want it torn down.
+                    if (_currentEntry != default && kindMatches(_currentEntry.Kind))
+                    {
+                        _currentEntry = default;
+                    }
+
+                    _log.Debug("{0} blocked {1} entries by kind predicate.", _compositeDescription, removed);
+                }
+            });
         }
 
         private void logTransition(String previousDescription, String currentDescription) {

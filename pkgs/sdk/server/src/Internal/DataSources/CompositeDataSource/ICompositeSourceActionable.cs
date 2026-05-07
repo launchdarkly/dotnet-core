@@ -41,17 +41,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         void BlockCurrent();
 
         /// <summary>
-        /// Enqueues an arbitrary action to run on the composite's serialized action queue.
+        /// Removes every entry whose kind matches the predicate from the source list, regardless
+        /// of its position. The current data source is not disposed -- callers that want the
+        /// current source torn down should follow this with <see cref="DisposeCurrent"/> or
+        /// <see cref="GoToNext"/>. If the current entry was removed, the internal "current entry"
+        /// reference is cleared so subsequent block operations don't accidentally remove a
+        /// remaining entry.
         /// </summary>
-        /// <remarks>
-        /// The action runs at queue-processing time, after any actions enqueued earlier on the
-        /// same queue. Observers can use this to defer advancement decisions until after the
-        /// current synchronous propagation chain has completed -- for example, an applier that
-        /// wants to check a latch that is set by a sibling applier in the same propagation.
-        /// </remarks>
-        /// <param name="action">the action to enqueue</param>
-        void EnqueueAction(Action action);
+        /// <param name="kindMatches">predicate selecting which kinds to remove</param>
+        void BlockAll(Predicate<CompositeEntryKind> kindMatches);
     }
 }
-
-

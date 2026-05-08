@@ -1526,7 +1526,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 new DataSourceStatus.ErrorInfo { FDv1Fallback = true });
 
             Assert.Equal(
-                new List<string> { "BlockAll", "GoToNext", "StartCurrent" },
+                new List<string> { "BlockAll", "DisposeCurrent", "GoToNext", "StartCurrent" },
                 mockActionable.CallSequence);
             Assert.NotNull(mockActionable.LastBlockAllPredicate);
             Assert.True(mockActionable.LastBlockAllPredicate(CompositeEntryKind.FDv2));
@@ -1549,7 +1549,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 fdv1Fallback: true));
 
             Assert.Equal(
-                new List<string> { "BlockAll", "GoToNext", "StartCurrent" },
+                new List<string> { "BlockAll", "DisposeCurrent", "GoToNext", "StartCurrent" },
                 mockActionable.CallSequence);
         }
 
@@ -1994,10 +1994,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var fdv1Data = new FullDataSet<ItemDescriptor>(
                 new Dictionary<DataKind, KeyedItems<ItemDescriptor>>());
 
-            // The polling-style initializer: applies a non-empty changeset (selector populated)
-            // and then reports Off + FDv1Fallback on the same Start() invocation. This mirrors
+            // The polling-style initializer: applies a non-empty changeset with the FDv1
+            // directive flag set, then reports Off + FDv1Fallback during shutdown. This mirrors
             // FDv2PollingDataSource.UpdateTaskAsync when a successful 200 response carries the
-            // x-ld-fd-fallback header.
+            // x-ld-fd-fallback header. The flag on the changeset is what makes the blacklist
+            // applier bail synchronously; without it the test would exercise the old race-prone
+            // path instead of the new bail path.
             SourceFactory pollingInitializerFactory = (updatesSink) =>
                 new MockDataSourceWithInit(async () =>
                 {
@@ -2005,7 +2007,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         ChangeSetType.Full,
                         Selector.Make(1, "init-state"),
                         initializerData.Data,
-                        null));
+                        null,
+                        fdv1Fallback: true));
                     updatesSink.UpdateStatus(
                         DataSourceState.Off,
                         new DataSourceStatus.ErrorInfo

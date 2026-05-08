@@ -119,7 +119,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         public int RemoveAll(Predicate<T> match)
         {
-            if (match is null) throw new ArgumentNullException(nameof(match));
+            if (match is null) return 0;
             // Walk back-to-front so a removal never shifts an unvisited index. Adjust _pos as we go
             // by mirroring SourcesList.Remove's "if removed index is before head, head moves left".
             var removed = 0;

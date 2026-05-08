@@ -40,29 +40,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private IDataSource _currentDataSource;
 
         /// <summary>
-        /// Creates a new <see cref="CompositeSource"/>. Every entry is treated as kind
-        /// <see cref="CompositeEntryKind.FDv2"/>.
+        /// Creates a new <see cref="CompositeSource"/>. Each entry carries an explicit
+        /// <see cref="CompositeEntryKind"/> so appliers can express "block every FDv2 entry"
+        /// via <see cref="ICompositeSourceActionable.BlockAll"/> without needing to know list
+        /// positions. For inner sub-composites whose entries never participate in cross-kind
+        /// blocking, callers should pass <see cref="CompositeEntryKind.FDv2"/> uniformly.
         /// </summary>
         /// <param name="compositeDescription">description of the composite source for logging purposes</param>
         /// <param name="updatesSink">the sink that receives updates from the active source</param>
-        /// <param name="factoryTuples">the ordered list of source factories and their associated action applier factories</param>
+        /// <param name="factoryTuples">the ordered list of source factories, action applier factories, and entry kinds</param>
         /// <param name="logger">the logger instance to use</param>
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
-        public CompositeSource(
-            string compositeDescription,
-            IDataSourceUpdatesV2 updatesSink,
-            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
-            Logger logger,
-            bool circular = true)
-            : this(compositeDescription, updatesSink, WithDefaultKind(factoryTuples), logger, circular)
-        {
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="CompositeSource"/> with explicit per-entry kinds. The kind is
-        /// surfaced to <see cref="ICompositeSourceActionable.BlockAll"/> so appliers can express
-        /// "block every FDv2 entry" without needing to know list positions.
-        /// </summary>
         public CompositeSource(
             string compositeDescription,
             IDataSourceUpdatesV2 updatesSink,
@@ -92,18 +80,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 circular: circular,
                 initialList: factoryTuples
             );
-        }
-
-        private static IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>
-            WithDefaultKind(IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> tuples)
-        {
-            if (tuples is null) return null;
-            var result = new List<(SourceFactory, ActionApplierFactory, CompositeEntryKind)>(tuples.Count);
-            foreach (var t in tuples)
-            {
-                result.Add((t.Factory, t.ActionApplierFactory, CompositeEntryKind.FDv2));
-            }
-            return result;
         }
 
         /// <summary>

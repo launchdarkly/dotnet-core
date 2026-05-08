@@ -10,8 +10,7 @@ using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
-    using FactoryList = List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>;
-    using OuterFactoryList = List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>;
+    using FactoryList = List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>;
 
 
     internal static partial class FDv2DataSource
@@ -60,7 +59,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var fallbackSynchronizationObserver =
                 new InitializationObserver(initializationTracker, DataSourceCategory.FallbackSynchronizers);
 
-            var underlyingComposites = new OuterFactoryList();
+            var underlyingComposites = new FactoryList();
 
             // Only create the initializers composite if initializers are provided
             if (initializers != null && initializers.Count > 0)
@@ -73,7 +72,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         for (int i = 0; i < initializers.Count; i++)
                         {
                             initializerFactory.Add((initializers[i],
-                                fastFallbackApplierFactory));
+                                fastFallbackApplierFactory,
+                                CompositeEntryKind.FDv2));
                         }
 
                         // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
@@ -99,7 +99,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         for (int i = 0; i < synchronizers.Count; i++)
                         {
                             synchronizersFactoryTuples.Add((synchronizers[i],
-                                timedFallbackAndRecoveryApplierFactory));
+                                timedFallbackAndRecoveryApplierFactory,
+                                CompositeEntryKind.FDv2));
                         }
 
                         return new CompositeSource("Synchronizers", sink, synchronizersFactoryTuples, sublogger);
@@ -120,8 +121,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             new FactoryList();
                         for (int i = 0; i < fdv1Synchronizers.Count; i++)
                         {
+                            // The Kind is irrelevant inside this inner sub-composite (its
+                            // appliers never call BlockAll); FDv2 is the inert default.
                             fdv1SynchronizersFactoryTuples.Add((fdv1Synchronizers[i],
-                                timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
+                                timedFallbackAndRecoveryApplierFactory,
+                                CompositeEntryKind.FDv2));
                         }
 
                         return new CompositeSource("FDv1FallbackSynchronizers", sink, fdv1SynchronizersFactoryTuples, sublogger);
@@ -403,6 +407,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 if (newState != DataSourceState.Off) return;
                 if (newError?.FDv1Fallback == true) return;
 
+                // When Off status is seen, blacklist current, dispose current, go to next, and start current
                 _actionable.BlockCurrent();
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
@@ -471,6 +476,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 if (Interlocked.CompareExchange(ref _triggered, 1, 0) != 0) return;
 
                 _actionable.BlockAll(kind => kind == CompositeEntryKind.FDv2);
+                // DisposeCurrent is defensive: a well-behaved source will have already shut
+                // itself down by the time the directive is observed, but DisposeCurrent is
+                // idempotent and guards against sources that don't.
+                _actionable.DisposeCurrent();
                 _actionable.GoToNext();
                 _actionable.StartCurrent();
             }

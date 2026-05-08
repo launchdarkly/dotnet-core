@@ -245,7 +245,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                 Time = DateTime.Now,
                                 FDv1Fallback = true
                             };
-                            _initTask.TrySetResult(true);
                             Shutdown(fallbackError);
                             return;
                         }

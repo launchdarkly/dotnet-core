@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Client.Hooks;
 
@@ -6,9 +7,6 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces
 {
     /// <summary>
     /// An IHookExecutor is responsible for executing the logic contained in a series of hook stages.
-    ///
-    /// The purpose of this interface is to allow the SDK to swap out the executor based on having any hooks
-    /// configured or not. If there are no hooks, the interface methods can be no-ops.
     /// </summary>
     internal interface IHookExecutor : IDisposable
     {
@@ -34,5 +32,13 @@ namespace LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces
         /// <param name="identify">async function that performs the identify operation</param>
         /// <returns>the result of the identify operation</returns>
         Task<bool> IdentifySeries(Context context, TimeSpan maxWaitTime, Func<Task<bool>> identify);
+
+        /// <summary>
+        /// Adds additional hooks to the executor so that subsequent <see cref="EvaluationSeries{T}"/> and
+        /// <see cref="IdentifySeries"/> calls invoke them. The implementation is responsible for
+        /// synchronizing concurrent calls.
+        /// </summary>
+        /// <param name="hooks">the hooks to add; may be empty or null (no-op in either case)</param>
+        void AddHooks(IEnumerable<Hook> hooks);
     }
 }

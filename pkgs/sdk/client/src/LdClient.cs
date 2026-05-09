@@ -15,6 +15,7 @@ using LaunchDarkly.Sdk.Client.Internal.DataStores;
 using LaunchDarkly.Sdk.Client.Internal.Events;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
 using LaunchDarkly.Sdk.Client.PlatformSpecific;
+using LaunchDarkly.Sdk.Client.Plugins;
 using LaunchDarkly.Sdk.Client.Subsystems;
 using LaunchDarkly.Sdk.Integrations.Plugins;
 using LaunchDarkly.Sdk.Internal;
@@ -72,6 +73,7 @@ namespace LaunchDarkly.Sdk.Client
         readonly TaskExecutor _taskExecutor;
         readonly AnonymousKeyContextDecorator _anonymousKeyContextDecorator;
         private readonly AutoEnvContextDecorator _autoEnvContextDecorator;
+        private readonly EnvironmentMetadata _environmentMetadata;
         private readonly IHookExecutor _hookExecutor;
 
         private readonly Logger _log;
@@ -224,16 +226,14 @@ namespace LaunchDarkly.Sdk.Client
 
             // Build the plugin config and environment metadata
             var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
-            var environmentMetadata = pluginConfig.Plugins.Any() ? CreateEnvironmentMetadata() : null;
+            _environmentMetadata = CreateEnvironmentMetadata();
             var hooks = pluginConfig.Plugins.Any()
-                ? this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log)
+                ? this.GetPluginHooks(pluginConfig.Plugins, _environmentMetadata, _log)
                 : new List<Hook>();
 
-            _hookExecutor = hooks.Any()
-                ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), hooks)
-                : new NoopExecutor();
+            _hookExecutor = new Executor(_log.SubLogger(LogNames.HooksSubLog), hooks);
 
-            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
+            this.RegisterPlugins(pluginConfig.Plugins, _environmentMetadata, _log);
 
             // Start the background mode manager
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
@@ -901,6 +901,55 @@ namespace LaunchDarkly.Sdk.Client
         /// <inheritdoc/>
         public Task<bool> FlushAndWaitAsync(TimeSpan timeout) =>
             _eventProcessor.FlushAndWaitAsync(timeout);
+
+        /// <summary>
+        /// Registers a single <see cref="Plugin"/> with this client after construction.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Calls the plugin's <c>Register</c> method (the same as is done at construction time
+        /// for plugins configured via <see cref="ConfigurationBuilder.Plugins"/>) and merges any
+        /// hooks it returns from <c>GetHooks</c> into the live hook pipeline so that subsequent
+        /// flag evaluations and identify calls invoke them.
+        /// </para>
+        /// <para>
+        /// Exceptions thrown by the plugin's <c>Register</c> or <c>GetHooks</c> are caught and
+        /// logged; they do not propagate to the caller.
+        /// </para>
+        /// </remarks>
+        /// <param name="plugin">the plugin to register; must not be null</param>
+        /// <exception cref="ArgumentNullException">if <paramref name="plugin"/> is null</exception>
+        public void RegisterPlugin(Plugin plugin)
+        {
+            if (plugin == null) throw new ArgumentNullException(nameof(plugin));
+
+            // Match the constructor order: collect hooks first, then call Register. This way the
+            // plugin's own hooks are already active by the time its Register method runs.
+            IList<Hook> pluginHooks = null;
+            try
+            {
+                pluginHooks = plugin.GetHooks(_environmentMetadata);
+            }
+            catch (Exception ex)
+            {
+                _log.Error("Error getting hooks from plugin {0}: {1}",
+                    plugin.Metadata.Name ?? "unknown", ex);
+            }
+            if (pluginHooks != null && pluginHooks.Count > 0)
+            {
+                _hookExecutor.AddHooks(pluginHooks);
+            }
+
+            try
+            {
+                plugin.Register(this, _environmentMetadata);
+            }
+            catch (Exception ex)
+            {
+                _log.Error("Error registering plugin {0}: {1}",
+                    plugin.Metadata.Name ?? "unknown", ex);
+            }
+        }
 
         /// <inheritdoc/>
         public bool Identify(Context context, TimeSpan maxWaitTime)

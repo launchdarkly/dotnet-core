@@ -29,6 +29,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             private bool _initializersRemain;
             private bool _synchronizersRemain;
+            private readonly bool _hasFdv1Fallback;
 
             private enum State
             {
@@ -96,8 +97,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 FallingBack,
             }
 
-            public InitializationTracker(bool hasInitializers, bool hasSynchronizers)
+            public InitializationTracker(bool hasInitializers, bool hasSynchronizers, bool hasFdv1Fallback)
             {
+                _hasFdv1Fallback = hasFdv1Fallback;
+
                 if (!(hasInitializers || hasSynchronizers))
                 {
                     // If we have no data sources, then we are immediately initialized.
@@ -114,6 +117,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     DetermineState(Action.InitializersExhausted);
                 }
             }
+
+            /// <summary>
+            /// Resolves the target state for a transition that would otherwise enter
+            /// <see cref="State.FallingBack"/>. When no FDv1 fallback synchronizer is configured,
+            /// there is no entry left to drive the tracker out of <see cref="State.FallingBack"/>
+            /// (the outer composite's exhaustion-driven Off goes directly to the external sink,
+            /// bypassing the tracker's observers), so we transition straight to
+            /// <see cref="State.Failed"/> and complete the task with false.
+            /// </summary>
+            private State FallingBackOrFailed() => _hasFdv1Fallback ? State.FallingBack : State.Failed;
 
             public Task<bool> Task => _taskCompletionSource.Task;
 
@@ -143,7 +156,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                     _state = State.Data;
                                     break;
                                 case Action.FallingBack:
-                                    _state = State.FallingBack;
+                                    _state = FallingBackOrFailed();
                                     break;
                                 case Action.InitializersExhausted:
                                     _initializersRemain = false;
@@ -196,7 +209,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                     break;
 
                                 case Action.FallingBack:
-                                    _state = State.FallingBack;
+                                    _state = FallingBackOrFailed();
                                     break;
                                 case Action.DataReceived:
                                 case Action.SelectorReceived:

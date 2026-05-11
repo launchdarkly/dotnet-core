@@ -1836,12 +1836,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             try
             {
-                _ = dataSource.Start();
+                var startTask = dataSource.Start();
 
                 // The data system must transition to Off via outer composite exhaustion. Wait a
                 // few status updates -- intermediate Interrupted statuses come first.
                 var statuses = capturingSink.WaitForStatusUpdates(2, TimeSpan.FromSeconds(5));
                 Assert.Contains(statuses, s => s.State == DataSourceState.Off);
+
+                // Start() must resolve (with false) rather than hang. Without the
+                // InitializationTracker's no-fallback shortcut, the tracker would stay in
+                // FallingBack forever because the outer composite's exhaustion-driven Off goes
+                // directly to the external sink, bypassing the tracker's observers.
+                Assert.True(startTask.Wait(TimeSpan.FromSeconds(5)),
+                    "Start() must resolve when FDv1 directive arrives but no fallback is configured");
+                Assert.False(startTask.Result,
+                    "Start() should resolve with false when no FDv1 fallback is configured to take over");
 
                 // Critically, the synchronizer must have been disposed -- this is what stops the
                 // streaming source from reconnecting in the harness scenario.

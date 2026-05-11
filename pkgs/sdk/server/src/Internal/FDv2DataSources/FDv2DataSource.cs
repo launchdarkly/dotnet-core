@@ -51,7 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 (actionable) => new FDv1FallbackActionApplier(actionable);
 
             var initializationTracker =
-                new InitializationTracker(Any(initializers), Any(synchronizers));
+                new InitializationTracker(Any(initializers), Any(synchronizers), Any(fdv1Synchronizers));
             var initializationObserver =
                 new InitializationObserver(initializationTracker, DataSourceCategory.Initializers);
             var synchronizationObserver =

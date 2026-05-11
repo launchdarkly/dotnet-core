@@ -115,6 +115,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         Time = DateTime.Now,
                         FDv1Fallback = true
                     };
+                    // Resolve _initTask so the polling source's Start() task doesn't leak when
+                    // ProcessChangeSet failed (e.g. transient data store error): Shutdown below
+                    // permanently cancels the poll loop, so the task would otherwise never
+                    // complete. TrySet is a no-op if ProcessChangeSet already set it to true.
+                    _initTask.TrySetResult(false);
                     Shutdown(fallbackError);
                     return;
                 }

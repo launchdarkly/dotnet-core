@@ -46,6 +46,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         private volatile string _environmentId;
 
+        // _fdv1FallbackRequested is set to true when the streaming response carries the
+        // x-ld-fd-fallback: true header. Once any payload is successfully applied while this is set,
+        // the SDK shuts the stream down and signals the FDv1 fallback action applier.
+        private volatile bool _fdv1FallbackRequested;
+
         /// <summary>
         /// When the store enters a failed state, and we don't have "data source monitoring", we want to log
         /// a message that we are restarting the event source. We don't want to log this message on multiple
@@ -218,13 +223,31 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 case FDv2ActionChangeset changeAction:
                 {
                     var changeset = changeAction.Changeset;
+                    var fdv1Fallback = _fdv1FallbackRequested;
                     var storeError = !_transactionalDataSourceUpdates.Apply(
-                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId));
+                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId, fdv1Fallback));
 
                     if (!storeError)
                     {
                         _lastStoreUpdateFailed.GetAndSet(false);
                         MaybeMarkInitialized();
+
+                        // On a successful response carrying the FDv1 directive, the changeset
+                        // above already rode the FDv1Fallback flag through to the appliers, which
+                        // trigger the fallback transition. Tear down the stream here so we stop
+                        // reconnecting.
+                        if (fdv1Fallback)
+                        {
+                            _log.Info("LaunchDarkly streaming response indicates fallback to FDv1");
+                            var fallbackError = new DataSourceStatus.ErrorInfo
+                            {
+                                Kind = DataSourceStatus.ErrorKind.Unknown,
+                                Time = DateTime.Now,
+                                FDv1Fallback = true
+                            };
+                            Shutdown(fallbackError);
+                            return;
+                        }
                     }
                     else
                     {
@@ -341,6 +364,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _environmentId = e.Headers?.FirstOrDefault((item) =>
                     item.Key.ToLower() == HeaderConstants.EnvironmentId).Value
                 ?.FirstOrDefault();
+
+            // Capture the FDv1 fallback header from the connection-open response. The SDK applies
+            // any payload that arrives on this stream and then shuts the stream down so the action
+            // applier can switch to the FDv1 fallback synchronizer.
+            _fdv1FallbackRequested = FDv2PollingDataSource.HasFDv1FallbackHeader(e.Headers);
+
             _log.Debug("EventSource Opened");
             RecordStreamInit(false);
         }

@@ -436,13 +436,23 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// </summary>
             public IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> Data { get; }
 
+            /// <summary>
+            /// Whether the response that produced this changeset also carried the FDv1 fallback
+            /// directive. When true, the data system applies the payload but should hand control
+            /// to the FDv1 fallback synchronizer instead of continuing the FDv2 protocol. Defaults
+            /// to false.
+            /// </summary>
+            public bool FDv1Fallback { get; }
+
             internal ChangeSet(ChangeSetType type, Selector selector,
-                IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> data, string environmentId)
+                IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> data, string environmentId,
+                bool fdv1Fallback = false)
             {
                 Type = type;
                 Selector = selector;
                 Data = data;
                 EnvironmentId = environmentId;
+                FDv1Fallback = fdv1Fallback;
             }
         }
     }

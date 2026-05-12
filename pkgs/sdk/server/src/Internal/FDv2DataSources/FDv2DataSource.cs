@@ -10,7 +10,7 @@ using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
-    using FactoryList = List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>;
+    using FactoryList = List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>;
 
 
     internal static partial class FDv2DataSource
@@ -32,19 +32,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             Logger logger)
         {
             var sublogger = logger.SubLogger(LogNames.FDv2DataSourceSubLog);
-            
-            // Here we make a combined composite source, with the initializer source first which switches or falls back to the 
-            // synchronizer source when the initializer succeeds or when the initializer source reports Off (all initializers failed)
+
+            // The flow-control appliers (fast-fallback, blacklist, timed-fallback-and-recovery)
+            // each watch for the FDv1 directive on their inputs and bail when it is set, so the
+            // FDv1 fallback applier owns the transition uncontested. The directive arrives either
+            // on UpdateStatus (errorInfo.FDv1Fallback) or on Apply (changeSet.FDv1Fallback) when
+            // the response was a successful FDv2 payload that also carried the directive header.
             ActionApplierFactory blacklistWhenSuccessOrOff =
                 (actionable) => new ActionApplierBlacklistWhenSuccessOrOff(actionable);
             ActionApplierFactory fastFallbackApplierFactory = (actionable) => new ActionApplierFastFallback(actionable);
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable, sublogger);
 
-            ActionApplierFactory fdv1FallbackApplierFactory = (actionable) => new FDv1FallbackActionApplier(actionable);
+            // The FDv1 fallback applier is phase-agnostic: when the directive is observed it
+            // calls BlockAll(FDv2) to remove every FDv2 entry from the outer list, then GoToNext
+            // lands on the FDv1 fallback entry (or on exhaustion when none was configured).
+            ActionApplierFactory fdv1FallbackApplierFactory =
+                (actionable) => new FDv1FallbackActionApplier(actionable);
 
             var initializationTracker =
-                new InitializationTracker(Any(initializers), Any(synchronizers));
+                new InitializationTracker(Any(initializers), Any(synchronizers), Any(fdv1Synchronizers));
             var initializationObserver =
                 new InitializationObserver(initializationTracker, DataSourceCategory.Initializers);
             var synchronizationObserver =
@@ -65,14 +72,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         for (int i = 0; i < initializers.Count; i++)
                         {
                             initializerFactory.Add((initializers[i],
-                                fastFallbackApplierFactory));
+                                fastFallbackApplierFactory,
+                                CompositeEntryKind.FDv2));
                         }
 
                         // The common data source updates implements both IDataSourceUpdates and IDataSourceUpdatesV2.
                         return new CompositeSource("Initializers", sink, initializerFactory, sublogger, circular: false);
                     },
                     (actionable) => new CompositeObserver(
-                        initializationObserver, blacklistWhenSuccessOrOff(actionable))
+                        initializationObserver,
+                        fdv1FallbackApplierFactory(actionable),
+                        blacklistWhenSuccessOrOff(actionable)),
+                    CompositeEntryKind.FDv2
                 ));
             }
 
@@ -88,21 +99,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         for (int i = 0; i < synchronizers.Count; i++)
                         {
                             synchronizersFactoryTuples.Add((synchronizers[i],
-                                timedFallbackAndRecoveryApplierFactory));
+                                timedFallbackAndRecoveryApplierFactory,
+                                CompositeEntryKind.FDv2));
                         }
 
                         return new CompositeSource("Synchronizers", sink, synchronizersFactoryTuples, sublogger);
                     },
-                    (actionable) =>
-                    {
-                        // Only attach FDv1 fallback applier if FDv1 synchronizers are actually provided
-                        if (fdv1Synchronizers != null && fdv1Synchronizers.Count > 0)
-                        {
-                            return new CompositeObserver(synchronizationObserver, fdv1FallbackApplierFactory(actionable));
-                        }
-
-                        return synchronizationObserver;
-                    }
+                    (actionable) => new CompositeObserver(synchronizationObserver, fdv1FallbackApplierFactory(actionable)),
+                    CompositeEntryKind.FDv2
                 ));
             }
 
@@ -117,12 +121,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             new FactoryList();
                         for (int i = 0; i < fdv1Synchronizers.Count; i++)
                         {
+                            // The Kind is irrelevant inside this inner sub-composite (its
+                            // appliers never call BlockAll); FDv2 is the inert default.
                             fdv1SynchronizersFactoryTuples.Add((fdv1Synchronizers[i],
-                                timedFallbackAndRecoveryApplierFactory)); // fdv1 synchronizers behave same as synchronizers
+                                timedFallbackAndRecoveryApplierFactory,
+                                CompositeEntryKind.FDv2));
                         }
 
                         return new CompositeSource("FDv1FallbackSynchronizers", sink, fdv1SynchronizersFactoryTuples, sublogger);
-                    }, (applier) => fallbackSynchronizationObserver
+                    },
+                    (applier) => fallbackSynchronizationObserver,
+                    CompositeEntryKind.FDv1Fallback
                 ));
             }
 
@@ -144,6 +153,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
+                // When the FDv1 directive rides on the status, the FDv1 fallback applier owns the
+                // transition. Bail so we don't double-advance the inner initializers list.
+                if (newError?.FDv1Fallback == true) return;
+
                 // when an initializer has an issue, fall back
                 if (newState == DataSourceState.Interrupted || newState == DataSourceState.Off || newError != null)
                 {
@@ -162,6 +175,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     // trigger an error, which will then initiate the transition.
                     return;
                 }
+
+                // Empty selector with directive: still defer to the FDv1 fallback applier.
+                if (changeSet.FDv1Fallback) return;
 
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
@@ -201,6 +217,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
+                // When the FDv1 directive rides on the status, the FDv1 fallback applier owns the
+                // transition. Bail before scheduling timers or advancing within the inner sync
+                // list -- otherwise we'd briefly start the next sync before the outer composite
+                // disposes us.
+                if (newError?.FDv1Fallback == true)
+                {
+                    return;
+                }
+
                 lock (_lock)
                 {
                     // If there's a pending fallback task and status is not Interrupted, cancel it
@@ -364,7 +389,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// Action applier that blacklists the current datasource when init occurs or when Off status is seen,
         /// then disposes the current datasource, goes to the next datasource, and starts it.
         /// </summary>
-        private class ActionApplierBlacklistWhenSuccessOrOff : IDataSourceObserver
+        /// <remarks>
+        /// When the FDv1 directive rides on the input (changeset or error info), this applier
+        /// bails so the FDv1 fallback applier can drive the transition uncontested.
+        /// </remarks>
+        internal class ActionApplierBlacklistWhenSuccessOrOff : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
 
@@ -375,24 +404,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
+                if (newState != DataSourceState.Off) return;
+                if (newError?.FDv1Fallback == true) return;
+
                 // When Off status is seen, blacklist current, dispose current, go to next, and start current
-                if (newState == DataSourceState.Off)
-                {
-                    _actionable.BlockCurrent();
-                    _actionable.DisposeCurrent();
-                    _actionable.GoToNext();
-                    _actionable.StartCurrent();
-                }
+                _actionable.BlockCurrent();
+                _actionable.DisposeCurrent();
+                _actionable.GoToNext();
+                _actionable.StartCurrent();
             }
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 // If this change has a selector, then we know we can move out of the current phase.
                 // This doesn't look at the type of the changeset (Full, Partial, None), because having
-                // a selector means that we have some payload. 
+                // a selector means that we have some payload.
                 // From a forward development perspective this could be because we had a local stale selector which was
                 // persisted in some way, and we are getting up to date via an initializer.
                 if (changeSet.Selector.IsEmpty) return;
+                if (changeSet.FDv1Fallback) return;
+
                 _actionable.BlockCurrent();
                 _actionable.DisposeCurrent();
                 _actionable.GoToNext();
@@ -400,9 +431,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
         }
 
-        private class FDv1FallbackActionApplier : IDataSourceObserver
+        /// <summary>
+        /// Action applier that observes an FDv1 fallback signal and advances the outer composite
+        /// to the FDv1 fallback synchronizer entry. The directive may arrive either on
+        /// <see cref="UpdateStatus"/> (errorInfo.FDv1Fallback) or on <see cref="Apply"/>
+        /// (changeSet.FDv1Fallback) when a successful payload also carried the directive header.
+        /// </summary>
+        /// <remarks>
+        /// Phase-agnostic: when attached to either the initializers entry or the synchronizers
+        /// entry of the outer FDv2 composite, <see cref="ICompositeSourceActionable.BlockAll"/>
+        /// removes every FDv2 entry in one shot, leaving the FDv1 fallback entry (if configured)
+        /// as the next stop. When no FDv1 fallback entry was configured the outer list is exhausted
+        /// and the composite halts the data system.
+        ///
+        /// The single-shot _triggered flag makes this applier idempotent in case the directive
+        /// arrives more than once on the same propagation chain (for example, on a successful FDv2
+        /// response the source emits Apply with the flag and then UpdateStatus(Off, FDv1Fallback)
+        /// during shutdown).
+        /// </remarks>
+        internal class FDv1FallbackActionApplier : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
+            private int _triggered;
 
             public FDv1FallbackActionApplier(ICompositeSourceActionable actionable)
             {
@@ -411,18 +461,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
-                if (newError != null && newError.Value.FDv1Fallback)
-                {
-                    _actionable.BlockCurrent(); // blacklist the synchronizers altogether
-                    _actionable.DisposeCurrent(); // dispose the synchronizers
-                    _actionable.GoToNext(); // go to the FDv1 fallback synchronizer
-                    _actionable.StartCurrent(); // start the FDv1 fallback synchronizer
-                }
+                if (newError?.FDv1Fallback != true) return;
+                Trigger();
             }
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                // this FDv1 fallback action applier doesn't care about apply, it only looks for the FDv1Fallback flag in the errors
+                if (!changeSet.FDv1Fallback) return;
+                Trigger();
+            }
+
+            private void Trigger()
+            {
+                if (Interlocked.CompareExchange(ref _triggered, 1, 0) != 0) return;
+
+                _actionable.BlockAll(kind => kind == CompositeEntryKind.FDv2);
+                // DisposeCurrent is defensive: a well-behaved source will have already shut
+                // itself down by the time the directive is observed, but DisposeCurrent is
+                // idempotent and guards against sources that don't.
+                _actionable.DisposeCurrent();
+                _actionable.GoToNext();
+                _actionable.StartCurrent();
             }
         }
 

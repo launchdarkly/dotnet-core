@@ -978,6 +978,71 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
+        public async Task SuccessfulResponseWithFallbackHeaderAppliesPayloadThenSignalsFDv1Fallback()
+        {
+            // The server can include x-ld-fd-fallback: true on a successful 200 response. The SDK
+            // must apply the payload first (so evaluations see the freshest data the server is
+            // willing to give us) and then emit Off + FDv1Fallback so the action applier hands off
+            // to the FDv1 fallback synchronizer.
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+            {
+                new KeyValuePair<string, IEnumerable<string>>(
+                    "x-ld-fd-fallback", new[] { "true" })
+            };
+
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(CreatePollingResponseWithHeaders(
+                    new[] { CreateServerIntentEvent("none", "test-payload", 1) },
+                    headers));
+
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                // The payload must be applied -- the SDK's first observable side effect is the
+                // ChangeSet reaching the data store.
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.None, changeSet.Type);
+
+                // After the payload, the data source emits Off with FDv1Fallback=true so the action
+                // applier can swap to FDv1.
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.True(
+                    status.LastError.Value.FDv1Fallback,
+                    "FDv1Fallback should be set when the success response carried the fallback header");
+
+                // Init task completes successfully because the payload was applied.
+                var result = await startTask;
+                Assert.True(result);
+            }
+        }
+
+        [Fact]
+        public async Task SuccessfulResponseWithoutFallbackHeaderDoesNotSignalFDv1Fallback()
+        {
+            // Sanity check: a successful response with no fallback header must NOT trigger fallback.
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(CreatePollingResponse(
+                    CreateServerIntentEvent("none", "test-payload", 1)));
+
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+                var result = await startTask;
+                Assert.True(result);
+
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.None, changeSet.Type);
+
+                // No status update should appear -- the data source remains active and would simply
+                // poll again on the next tick without falling back.
+                _updateSink.StatusUpdates.ExpectNoValue(TimeSpan.FromMilliseconds(50));
+            }
+        }
+
+        [Fact]
         public async Task UnrecoverableHttpError403ReportsOffStatusWithRecoverableFalse()
         {
             _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))

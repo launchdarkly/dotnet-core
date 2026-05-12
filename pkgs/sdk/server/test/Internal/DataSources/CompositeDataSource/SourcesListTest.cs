@@ -184,6 +184,121 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Null(underTest.Next());
             Assert.Null(underTest.Next());
         }
+
+        [Fact]
+        public void RemoveAllNullPredicateRemovesNothing()
+        {
+            var underTest = new SourcesList<string>(false, new[] { "1", "2", "3" });
+            Assert.Equal(0, underTest.RemoveAll(null));
+            Assert.Equal(3, underTest.Length);
+            Assert.Equal("1", underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllOnEmptyListIsNoOp()
+        {
+            var underTest = new SourcesList<string>(false);
+            Assert.Equal(0, underTest.RemoveAll(_ => true));
+            Assert.Equal(0, underTest.Length);
+            Assert.Null(underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllPredicateMatchesNoneLeavesListIntact()
+        {
+            var underTest = new SourcesList<string>(false, new[] { "1", "2", "3" });
+            Assert.Equal("1", underTest.Next()); // head -> 1 (pos = 1 after Next)
+
+            Assert.Equal(0, underTest.RemoveAll(s => s == "missing"));
+            Assert.Equal(3, underTest.Length);
+
+            // Head is unchanged: next yields the previous next ("2").
+            Assert.Equal("2", underTest.Next());
+            Assert.Equal("3", underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllPredicateMatchesEverythingClearsListAndResetsHead()
+        {
+            var underTest = new SourcesList<string>(true, new[] { "1", "2", "3" });
+            Assert.Equal("1", underTest.Next());
+            Assert.Equal("2", underTest.Next());
+
+            Assert.Equal(3, underTest.RemoveAll(_ => true));
+            Assert.Equal(0, underTest.Length);
+            Assert.Equal(0, underTest.Pos);
+            Assert.Null(underTest.Next());
+            Assert.Null(underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllPredicateMatchesOnlyEntriesBeforeHeadAdjustsPos()
+        {
+            // After consuming "1" and "2", head is at index 2 ("3"). Remove "1" and "2": list
+            // becomes ["3"] and head must point at "3" (pos = 0) so the next Next() returns "3".
+            var underTest = new SourcesList<string>(false, new[] { "1", "2", "3" });
+            Assert.Equal("1", underTest.Next());
+            Assert.Equal("2", underTest.Next());
+
+            Assert.Equal(2, underTest.RemoveAll(s => s == "1" || s == "2"));
+            Assert.Equal(1, underTest.Length);
+            Assert.Equal(0, underTest.Pos);
+            Assert.Equal("3", underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllPredicateMatchesOnlyEntriesAfterHeadLeavesPosUnchanged()
+        {
+            // Head at index 1 ("2"). Removing entries that all live at indices > pos must not
+            // shift pos -- the next Next() should still return "2".
+            var underTest = new SourcesList<string>(false, new[] { "1", "2", "3", "4" });
+            Assert.Equal("1", underTest.Next()); // pos = 1
+
+            Assert.Equal(2, underTest.RemoveAll(s => s == "3" || s == "4"));
+            Assert.Equal(2, underTest.Length);
+            Assert.Equal(1, underTest.Pos);
+            Assert.Equal("2", underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllPredicateMatchesHeadButNotPosIndex()
+        {
+            // Head at index 1 ("2"). Removing "2" itself: pos was 1; removed index 1 is NOT
+            // before pos, so pos stays at 1, but the list shrinks so pos lands on the element
+            // that used to be at index 2 ("3"). Subsequent Next() returns "3".
+            var underTest = new SourcesList<string>(false, new[] { "1", "2", "3" });
+            Assert.Equal("1", underTest.Next()); // pos = 1, head -> "2"
+
+            Assert.Equal(1, underTest.RemoveAll(s => s == "2"));
+            Assert.Equal(2, underTest.Length);
+            Assert.Equal("3", underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllCircularResetsPosWhenListShrinksBelowOldPos()
+        {
+            // Circular list, all positions consumed; pos has wrapped. After RemoveAll leaves a
+            // single element, pos must be reset to 0 so Next() returns it.
+            var underTest = new SourcesList<string>(true, new[] { "1", "2", "3", "4" });
+            Assert.Equal("1", underTest.Next());
+            Assert.Equal("2", underTest.Next());
+            Assert.Equal("3", underTest.Next());
+            Assert.Equal("4", underTest.Next()); // circular: pos wraps back to 0
+
+            Assert.Equal(3, underTest.RemoveAll(s => s != "2"));
+            Assert.Equal(1, underTest.Length);
+            Assert.Equal("2", underTest.Next());
+        }
+
+        [Fact]
+        public void RemoveAllReturnsCountOfMatchedEntries()
+        {
+            var underTest = new SourcesList<string>(false, new[] { "a", "b", "a", "c", "a" });
+            Assert.Equal(3, underTest.RemoveAll(s => s == "a"));
+            Assert.Equal(2, underTest.Length);
+            Assert.Equal("b", underTest.Next());
+            Assert.Equal("c", underTest.Next());
+        }
     }
 }
 

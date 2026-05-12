@@ -30,27 +30,31 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private readonly IDataSourceUpdatesV2 _originalUpdateSink;
         private readonly IDataSourceUpdatesV2 _sanitizedUpdateSink;
-        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> _sourcesList;
+        private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)> _sourcesList;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
         // Tracks the entry from the sources list that was used to create the current
         // data source instance. This allows operations such as blacklist to remove
         // the correct factory/action-applier-factory tuple from the list.
-        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory) _currentEntry;
+        private (SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind) _currentEntry;
         private IDataSource _currentDataSource;
 
         /// <summary>
-        /// Creates a new <see cref="CompositeSource"/>.
+        /// Creates a new <see cref="CompositeSource"/>. Each entry carries an explicit
+        /// <see cref="CompositeEntryKind"/> so appliers can express "block every FDv2 entry"
+        /// via <see cref="ICompositeSourceActionable.BlockAll"/> without needing to know list
+        /// positions. For inner sub-composites whose entries never participate in cross-kind
+        /// blocking, callers should pass <see cref="CompositeEntryKind.FDv2"/> uniformly.
         /// </summary>
         /// <param name="compositeDescription">description of the composite source for logging purposes</param>
         /// <param name="updatesSink">the sink that receives updates from the active source</param>
-        /// <param name="factoryTuples">the ordered list of source factories and their associated action applier factories</param>
+        /// <param name="factoryTuples">the ordered list of source factories, action applier factories, and entry kinds</param>
         /// <param name="logger">the logger instance to use</param>
         /// <param name="circular">whether to loop off the end of the list back to the start when fallback occurs</param>
         public CompositeSource(
             string compositeDescription,
             IDataSourceUpdatesV2 updatesSink,
-            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)> factoryTuples,
+            IList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)> factoryTuples,
             Logger logger,
             bool circular = true)
         {
@@ -72,7 +76,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
 
-            _sourcesList = new SourcesList<(SourceFactory SourceFactory, ActionApplierFactory ActionApplierFactory)>(
+            _sourcesList = new SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>(
                 circular: circular,
                 initialList: factoryTuples
             );
@@ -447,6 +451,38 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _currentEntry = default;
 
                     _log.Debug("{0} has blocked factory used to create {1} from being used again.", _compositeDescription, currentDescription);
+                }
+            });
+        }
+
+        public void BlockAll(Predicate<CompositeEntryKind> kindMatches)
+        {
+            if (kindMatches is null) throw new ArgumentNullException(nameof(kindMatches));
+            if (_disposed)
+            {
+                return;
+            }
+
+            EnqueueAction(() =>
+            {
+                lock (_lock)
+                {
+                    var removed = _sourcesList.RemoveAll(entry => kindMatches(entry.Kind));
+                    if (removed == 0)
+                    {
+                        return;
+                    }
+
+                    // If the current entry was removed, clear the reference so a subsequent
+                    // BlockCurrent doesn't accidentally remove a remaining entry. The current
+                    // data source is left running -- callers are expected to follow BlockAll
+                    // with DisposeCurrent / GoToNext when they want it torn down.
+                    if (_currentEntry != default && kindMatches(_currentEntry.Kind))
+                    {
+                        _currentEntry = default;
+                    }
+
+                    _log.Debug("{0} blocked {1} entries by kind predicate.", _compositeDescription, removed);
                 }
             });
         }

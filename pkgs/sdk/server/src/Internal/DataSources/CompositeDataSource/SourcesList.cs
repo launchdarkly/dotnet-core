@@ -113,6 +113,38 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         /// <summary>
+        /// Removes every element that matches the predicate, adjusting the head position so it
+        /// continues to point at whichever element followed the previous head. Returns the number
+        /// of elements removed.
+        /// </summary>
+        public int RemoveAll(Predicate<T> match)
+        {
+            if (match is null) return 0;
+            // Walk back-to-front so a removal never shifts an unvisited index. Adjust _pos as we go
+            // by mirroring SourcesList.Remove's "if removed index is before head, head moves left".
+            var removed = 0;
+            for (var i = _list.Count - 1; i >= 0; i--)
+            {
+                if (!match(_list[i])) continue;
+                _list.RemoveAt(i);
+                removed++;
+                if (i < _pos)
+                {
+                    _pos -= 1;
+                }
+            }
+            if (_list.Count == 0)
+            {
+                _pos = 0;
+            }
+            else if (_circular && _pos > _list.Count - 1)
+            {
+                _pos = 0;
+            }
+            return removed;
+        }
+
+        /// <summary>
         /// Reset the head position to the start of the list.
         /// </summary>
         public void Reset()

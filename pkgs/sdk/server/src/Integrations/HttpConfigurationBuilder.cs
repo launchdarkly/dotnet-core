@@ -34,6 +34,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     public sealed class HttpConfigurationBuilder : IComponentConfigurer<HttpConfiguration>, IDiagnosticDescription
     {
         /// <summary>
+        /// The HTTP header used to identify this SDK instance for the purpose of estimating
+        /// server-connection-minutes when polling. It contains a v4 UUID that is generated once
+        /// per SDK instance and remains constant for the lifetime of the client.
+        /// </summary>
+        /// <remarks>
+        /// See: sdk-specs / SCMP-server-connection-minutes-polling.
+        /// </remarks>
+        internal const string InstanceIdHeader = "X-LaunchDarkly-Instance-Id";
+
+        /// <summary>
         /// The default value for <see cref="ConnectTimeout(TimeSpan)"/>: two seconds.
         /// </summary>
         public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(2);
@@ -256,8 +266,17 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 .WithReadTimeout(_readTimeout)
                 .WithUserAgent("DotNetClient/" + AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)))
                 .WithApplicationTags(context.ApplicationInfo)
-                .WithWrapper(wrapperName, wrapperVersion);
+                .WithWrapper(wrapperName, wrapperVersion)
+                // Per SCMP-server-connection-minutes-polling, every polling request must carry a
+                // per-instance GUID v4. We attach it to the default headers (rather than only on
+                // the poller) so that it is also present on streaming and event requests; this
+                // matches the cross-SDK contract tests and keeps the GUID stable for the lifetime
+                // of the SDK instance, since the headers are built once and never modified after
+                // construction. Guid.NewGuid() produces a v4 (random) UUID on .NET.
+                .WithHeader(InstanceIdHeader, Guid.NewGuid().ToString());
 
+            // For consistency with other SDKs, custom headers are allowed to overwrite headers
+            // such as User-Agent, Authorization, and the instance id.
             return _customHeaders.Aggregate(httpProperties, (current, kv)
                 => current.WithHeader(kv.Key, kv.Value));
         }

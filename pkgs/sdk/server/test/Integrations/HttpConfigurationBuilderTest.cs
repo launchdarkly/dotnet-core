@@ -158,6 +158,50 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             Assert.Equal("my-wrapper/3.14", HeadersAsMap(config.DefaultHeaders)["x-launchdarkly-wrapper"]);
         }
 
+        [Fact]
+        public void InstanceIdHeaderIsPresentAndIsUuidV4()
+        {
+            var config = Components.HttpConfiguration().Build(basicConfig);
+            var headers = HeadersAsMap(config.DefaultHeaders);
+            Assert.True(headers.ContainsKey("x-launchdarkly-instance-id"),
+                "X-LaunchDarkly-Instance-Id header must be set");
+
+            var raw = headers["x-launchdarkly-instance-id"];
+            Assert.True(Guid.TryParse(raw, out var parsed),
+                $"instance id '{raw}' must be a parseable GUID");
+
+            // The "M" (version) nibble of a v4 UUID is 0x4. In the canonical 8-4-4-4-12 form,
+            // that is the first character of the third group.
+            var groups = raw.Split('-');
+            Assert.Equal(5, groups.Length);
+            Assert.Equal('4', groups[2][0]);
+        }
+
+        [Fact]
+        public void InstanceIdHeaderIsUniquePerSdkInstance()
+        {
+            // Each call to Build represents a new SDK instance; each must get its own GUID.
+            var config1 = Components.HttpConfiguration().Build(basicConfig);
+            var config2 = Components.HttpConfiguration().Build(basicConfig);
+            var id1 = HeadersAsMap(config1.DefaultHeaders)["x-launchdarkly-instance-id"];
+            var id2 = HeadersAsMap(config2.DefaultHeaders)["x-launchdarkly-instance-id"];
+            Assert.False(string.IsNullOrEmpty(id1));
+            Assert.False(string.IsNullOrEmpty(id2));
+            Assert.NotEqual(id1, id2);
+        }
+
+        [Fact]
+        public void CustomHeaderCanOverrideInstanceIdHeader()
+        {
+            // Consistent with User-Agent / Authorization: a user-supplied custom header for the
+            // same name takes precedence. This mirrors the behavior in other SDKs.
+            var config = Components.HttpConfiguration()
+                .CustomHeader("X-LaunchDarkly-Instance-Id", "custom-override")
+                .Build(basicConfig);
+            Assert.Equal("custom-override",
+                HeadersAsMap(config.DefaultHeaders)["x-launchdarkly-instance-id"]);
+        }
+
         private Dictionary<string, string> HeadersAsMap(IEnumerable<KeyValuePair<string, string>> headers)
         {
             return headers.ToDictionary(kv => kv.Key.ToLower(), kv => kv.Value);

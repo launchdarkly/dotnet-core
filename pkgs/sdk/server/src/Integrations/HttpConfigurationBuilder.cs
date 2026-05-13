@@ -34,13 +34,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     public sealed class HttpConfigurationBuilder : IComponentConfigurer<HttpConfiguration>, IDiagnosticDescription
     {
         /// <summary>
-        /// The HTTP header used to identify this SDK instance for the purpose of estimating
-        /// server-connection-minutes when polling. It contains a v4 UUID that is generated once
-        /// per SDK instance and remains constant for the lifetime of the client.
+        /// The HTTP header used to identify this SDK instance. Its value is a v4 UUID that is
+        /// generated once per SDK instance and remains constant for the lifetime of the client,
+        /// and is sent on polling, streaming, and event requests.
         /// </summary>
-        /// <remarks>
-        /// See: sdk-specs / SCMP-server-connection-minutes-polling.
-        /// </remarks>
         internal const string InstanceIdHeader = "X-LaunchDarkly-Instance-Id";
 
         /// <summary>
@@ -66,6 +63,11 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         internal TimeSpan _responseStartTimeout = DefaultResponseStartTimeout;
         internal string _wrapperName = null;
         internal string _wrapperVersion = null;
+
+        // Generated once when the builder is constructed so that Build() and DescribeConfiguration()
+        // -- which both call MakeHttpProperties on the same builder -- agree on the value sent in
+        // HTTP headers and reported in diagnostic events. Guid.NewGuid() produces a v4 UUID.
+        private readonly string _instanceId = Guid.NewGuid().ToString();
 
         /// <summary>
         /// Sets the network connection timeout.
@@ -267,13 +269,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 .WithUserAgent("DotNetClient/" + AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)))
                 .WithApplicationTags(context.ApplicationInfo)
                 .WithWrapper(wrapperName, wrapperVersion)
-                // Per SCMP-server-connection-minutes-polling, every polling request must carry a
-                // per-instance GUID v4. We attach it to the default headers (rather than only on
-                // the poller) so that it is also present on streaming and event requests; this
-                // matches the cross-SDK contract tests and keeps the GUID stable for the lifetime
-                // of the SDK instance, since the headers are built once and never modified after
-                // construction. Guid.NewGuid() produces a v4 (random) UUID on .NET.
-                .WithHeader(InstanceIdHeader, Guid.NewGuid().ToString());
+                .WithHeader(InstanceIdHeader, _instanceId);
 
             // For consistency with other SDKs, custom headers are allowed to overwrite headers
             // such as User-Agent, Authorization, and the instance id.

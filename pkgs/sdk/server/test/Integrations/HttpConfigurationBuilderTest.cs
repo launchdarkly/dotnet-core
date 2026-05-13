@@ -191,6 +191,18 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
+        public void InstanceIdHeaderIsStableAcrossBuildsOnSameBuilder()
+        {
+            // A single builder is reused by both Build() and DescribeConfiguration() against the
+            // same SDK instance, so the generated GUID must be fixed at construction rather than
+            // regenerated on each call.
+            var builder = Components.HttpConfiguration();
+            var id1 = HeadersAsMap(builder.Build(basicConfig).DefaultHeaders)["x-launchdarkly-instance-id"];
+            var id2 = HeadersAsMap(builder.Build(basicConfig).DefaultHeaders)["x-launchdarkly-instance-id"];
+            Assert.Equal(id1, id2);
+        }
+
+        [Fact]
         public void CustomHeaderCanOverrideInstanceIdHeader()
         {
             // Consistent with User-Agent / Authorization: a user-supplied custom header for the

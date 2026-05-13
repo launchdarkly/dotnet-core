@@ -20,7 +20,7 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 /// them in metrics views. See individual track methods for their specific semantics.
 /// Call <c>CreateTracker</c> on the AI Config to start a new run. A
 /// <see cref="ResumptionToken"/> preserves the runId, so events emitted by a tracker
-/// reconstructed in another process correlate with the original run.
+/// reconstructed in another process correlate with the original tracker's runId.
 /// </remarks>
 public class LdAiConfigTracker : ILdAiConfigTracker
 {
@@ -269,7 +269,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <param name="token">the resumption token obtained from <see cref="ResumptionToken"/></param>
     /// <param name="client">the LaunchDarkly client</param>
     /// <param name="context">the context to use for track events</param>
-    /// <returns>a new tracker associated with the original run</returns>
+    /// <returns>a new tracker associated with the original tracker's runId</returns>
     /// <exception cref="ArgumentNullException">thrown if token or client is null</exception>
     /// <exception cref="ArgumentException">thrown if the token is malformed or missing required fields</exception>
     public static LdAiConfigTracker FromResumptionToken(string token, ILaunchDarklyClient client, Context context)

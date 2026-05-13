@@ -13,7 +13,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 /// them in metrics views. See individual track methods for their specific semantics.
 /// Call <c>CreateTracker</c> on the AI Config to start a new run. A
 /// <see cref="ResumptionToken"/> preserves the runId, so events emitted by a tracker
-/// reconstructed in another process correlate with the original run.
+/// reconstructed in another process correlate with the original tracker's runId.
 /// </remarks>
 public interface ILdAiConfigTracker
 {

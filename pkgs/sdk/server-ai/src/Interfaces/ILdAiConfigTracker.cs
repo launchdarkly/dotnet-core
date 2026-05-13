@@ -6,9 +6,15 @@ using LaunchDarkly.Sdk.Server.Ai.Tracking;
 namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 /// <summary>
-/// A utility capable of generating events related to a specific AI model
-/// configuration.
+/// Records metrics for a single AI run.
 /// </summary>
+/// <remarks>
+/// All events a tracker emits share a runId (a UUIDv4) so LaunchDarkly can correlate
+/// them in metrics views. See individual track methods for their specific semantics.
+/// Call <c>CreateTracker</c> on the AI Config to start a new run. A
+/// <see cref="ResumptionToken"/> preserves the runId, so events emitted by a tracker
+/// reconstructed in another process correlate with the original run.
+/// </remarks>
 public interface ILdAiConfigTracker
 {
     /// <summary>
@@ -29,6 +35,7 @@ public interface ILdAiConfigTracker
     /// related to usage of the AI model takes 100ms, this can be tracked and made available in
     /// LaunchDarkly.
     /// </summary>
+    /// <remarks>Records at most once per Tracker; further calls are ignored.</remarks>
     /// <param name="durationMs">the duration in milliseconds</param>
     public void TrackDuration(float durationMs);
 
@@ -48,12 +55,14 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// Tracks the time it takes for the first token to be generated.
     /// </summary>
+    /// <remarks>Records at most once per Tracker; further calls are ignored.</remarks>
     /// <param name="timeToFirstTokenMs">the duration in milliseconds</param>
     public void TrackTimeToFirstToken(float timeToFirstTokenMs);
 
     /// <summary>
     /// Tracks feedback (positive or negative) related to the output of the model.
     /// </summary>
+    /// <remarks>Records at most once per Tracker; further calls are ignored.</remarks>
     /// <param name="feedback">the feedback</param>
     /// <exception cref="ArgumentOutOfRangeException">thrown if the feedback value is not <see cref="Feedback.Positive"/> or <see cref="Feedback.Negative"/></exception>
     public void TrackFeedback(Feedback feedback);
@@ -61,11 +70,19 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// Tracks a generation event related to this config.
     /// </summary>
+    /// <remarks>
+    /// Records at most once per Tracker. TrackSuccess and TrackError share state; only
+    /// one of the two can record per Tracker, and subsequent calls are ignored.
+    /// </remarks>
     public void TrackSuccess();
 
     /// <summary>
     /// Tracks an unsuccessful generation event related to this config.
     /// </summary>
+    /// <remarks>
+    /// Records at most once per Tracker. TrackSuccess and TrackError share state; only
+    /// one of the two can record per Tracker, and subsequent calls are ignored.
+    /// </remarks>
     public void TrackError();
 
     /// <summary>
@@ -100,6 +117,10 @@ public interface ILdAiConfigTracker
     /// Task is automatically measured and recorded as the latency metric associated with this request.
     ///
     /// </summary>
+    /// <remarks>
+    /// Because each inner metric is at-most-once per Tracker, calling TrackRequest twice
+    /// on the same Tracker will run the task again but produce no additional metric events.
+    /// </remarks>
     /// <param name="request">a task representing the request</param>
     /// <returns>the task</returns>
     public Task<Response> TrackRequest(Task<Response> request);
@@ -107,6 +128,7 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// Tracks token usage related to this config.
     /// </summary>
+    /// <remarks>Records at most once per Tracker; further calls are ignored.</remarks>
     /// <param name="usage">the token usage</param>
     public void TrackTokens(Usage usage);
 }

@@ -294,11 +294,14 @@ public record LdAiConfig
     public int Version { get; }
 
     /// <summary>
-    /// A factory that creates a new <see cref="ILdAiConfigTracker"/> with a fresh runId.
-    /// Each invocation returns a tracker with independent at-most-once tracking state.
+    /// Returns a new tracker for a fresh AI run. Each call mints a new runId (a UUIDv4)
+    /// that LaunchDarkly uses to correlate the run's events in metrics views. Call this
+    /// once per AI run; metrics from different runIds cannot be combined.
+    /// </summary>
+    /// <remarks>
     /// This property is set when the config is returned by <see cref="LdAiClient.CompletionConfig"/>.
     /// It will be null for configs created directly via the builder.
-    /// </summary>
+    /// </remarks>
     public Func<ILdAiConfigTracker> CreateTracker { get; }
 
     /// <summary>

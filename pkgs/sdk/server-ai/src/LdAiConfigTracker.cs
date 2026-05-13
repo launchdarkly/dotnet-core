@@ -13,8 +13,15 @@ using LaunchDarkly.Sdk.Server.Ai.Tracking;
 namespace LaunchDarkly.Sdk.Server.Ai;
 
 /// <summary>
-/// A tracker capable of reporting events related to a particular AI Config.
+/// Records metrics for a single AI run.
 /// </summary>
+/// <remarks>
+/// All events a tracker emits share a runId (a UUIDv4) so LaunchDarkly can correlate
+/// them in metrics views. See individual track methods for their specific semantics.
+/// Call <c>CreateTracker</c> on the AI Config to start a new run. A
+/// <see cref="ResumptionToken"/> preserves the runId, so events emitted by a tracker
+/// reconstructed in another process correlate with the original run.
+/// </remarks>
 public class LdAiConfigTracker : ILdAiConfigTracker
 {
     private readonly ILaunchDarklyClient _client;
@@ -46,7 +53,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
 
     /// <summary>
     /// Constructs a new AI Config tracker. The tracker is associated with a run, a config key,
-    /// and a context. The runId should be a unique identifier (UUID v4) for each execution.
+    /// and a context. The runId should be a unique identifier (UUID v4) for each AI run.
     /// </summary>
     /// <param name="client">the LaunchDarkly client</param>
     /// <param name="runId">the unique run identifier</param>

@@ -118,8 +118,8 @@ public interface ILdAiConfigTracker
     ///
     /// </summary>
     /// <remarks>
-    /// Because each inner metric is at-most-once per Tracker, calling TrackRequest twice
-    /// on the same Tracker will run the task again but produce no additional metric events.
+    /// Subsequent calls re-run the task but emit only metrics not already recorded on this Tracker.
+    /// Call <c>CreateTracker</c> on the AI Config to start a new run.
     /// </remarks>
     /// <param name="request">a task representing the request</param>
     /// <returns>the task</returns>

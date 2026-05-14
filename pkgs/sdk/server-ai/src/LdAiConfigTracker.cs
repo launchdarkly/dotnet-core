@@ -168,7 +168,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             _logger?.Warn("Skipping TrackFeedback: feedback already recorded on this tracker. Call CreateTracker on the AI Config for a new run. {0}", _trackData.ToJsonString());
             return;
         }
-        _feedback = feedback;
         switch (feedback)
         {
             case Feedback.Positive:
@@ -180,6 +179,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             default:
                 throw new ArgumentOutOfRangeException(nameof(feedback), feedback, null);
         }
+        _feedback = feedback;
     }
 
     /// <inheritdoc/>

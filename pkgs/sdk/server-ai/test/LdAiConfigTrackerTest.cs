@@ -344,6 +344,32 @@ namespace LaunchDarkly.Sdk.Server.Ai
         }
 
         [Fact]
+        public void TrackFeedbackWithInvalidValueDoesNotConsumeAtMostOnceSlot()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+            const string flagKey = "key";
+
+            var tracker = MakeTracker(mockClient, flagKey, context);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => tracker.TrackFeedback((Feedback)42));
+
+            // No event emitted by the invalid call.
+            mockClient.Verify(x => x.Track("$ld:ai:feedback:user:positive", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+            mockClient.Verify(x => x.Track("$ld:ai:feedback:user:negative", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+
+            // A subsequent valid call should record normally.
+            tracker.TrackFeedback(Feedback.Positive);
+            mockClient.Verify(x => x.Track("$ld:ai:feedback:user:positive", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
+
+            // And the slot is now consumed.
+            Assert.Equal(Feedback.Positive, tracker.Summary.Feedback);
+        }
+
+        [Fact]
         public void DuplicateTrackSuccessIsIgnored()
         {
             var mockClient = new Mock<ILaunchDarklyClient>();

@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.12.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.0...LaunchDarkly.ServerSdk-v8.12.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* Honor x-ld-fd-fallback header in FDv2 initializer phase and on successful responses ([#251](https://github.com/launchdarkly/dotnet-core/issues/251)) ([4bb667d](https://github.com/launchdarkly/dotnet-core/commit/4bb667dc6ca7560a45c6b43cb2b02e2744a0f466))
+
 ## [8.12.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.2...LaunchDarkly.ServerSdk-v8.12.0) (2026-04-16)
 
 

@@ -641,6 +641,19 @@ namespace LaunchDarkly.Sdk.Server.Ai
         }
 
         [Fact]
+        public void FromResumptionTokenRejectsNullJsonPayload()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+
+            // Base64-encode the JSON literal "null" so deserialization succeeds and yields a null payload.
+            var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes("null"));
+            var token = base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+            Assert.Throws<ArgumentException>(() =>
+                LdAiConfigTracker.FromResumptionToken(token, mockClient.Object, Context.New("key")));
+        }
+
+        [Fact]
         public void SummaryReflectsTrackedMetrics()
         {
             var mockClient = new Mock<ILaunchDarklyClient>();

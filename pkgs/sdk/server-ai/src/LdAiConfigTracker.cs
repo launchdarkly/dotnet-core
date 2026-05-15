@@ -302,7 +302,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             throw new ArgumentException("Invalid resumption token", nameof(token), e);
         }
 
-        if (string.IsNullOrEmpty(payload.RunId) || string.IsNullOrEmpty(payload.ConfigKey))
+        if (payload == null || string.IsNullOrEmpty(payload.RunId) || string.IsNullOrEmpty(payload.ConfigKey))
         {
             throw new ArgumentException("Resumption token is missing required fields (runId, configKey)",
                 nameof(token));

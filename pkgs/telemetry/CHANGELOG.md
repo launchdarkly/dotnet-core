@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.4.0...LaunchDarkly.ServerSdk.Telemetry-v1.5.0) (2026-05-15)
+
+
+### Features
+
+* Support System.Diagnostics.DiagnosticSource version 10.* ([#254](https://github.com/launchdarkly/dotnet-core/issues/254)) ([034538e](https://github.com/launchdarkly/dotnet-core/commit/034538e737ca7ac06fc5fc23a32d98d83b6df4e5))
+
 ## [1.4.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.3.0...LaunchDarkly.ServerSdk.Telemetry-v1.4.0) (2025-10-06)
 
 

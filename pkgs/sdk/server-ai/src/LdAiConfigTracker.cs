@@ -243,18 +243,25 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             _logger?.Warn("Skipping TrackTokens: tokens already recorded on this tracker. Call CreateTracker on the AI Config for a new run. {0}", _trackData.ToJsonString());
             return;
         }
-        _tokens = usage;
+        var emitted = false;
         if (usage.Total is > 0)
         {
             _client.Track(TokenTotal, _context, _trackData, usage.Total.Value);
+            emitted = true;
         }
         if (usage.Input is > 0)
         {
             _client.Track(TokenInput, _context, _trackData, usage.Input.Value);
+            emitted = true;
         }
         if (usage.Output is > 0)
         {
             _client.Track(TokenOutput, _context, _trackData, usage.Output.Value);
+            emitted = true;
+        }
+        if (emitted)
+        {
+            _tokens = usage;
         }
     }
 

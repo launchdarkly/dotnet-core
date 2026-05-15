@@ -326,6 +326,41 @@ namespace LaunchDarkly.Sdk.Server.Ai
         }
 
         [Fact]
+        public void TrackTokensWithEmptyUsageDoesNotConsumeAtMostOnceSlot()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+            const string flagKey = "key";
+
+            var tracker = MakeTracker(mockClient, flagKey, context);
+
+            // Empty usage emits no events.
+            tracker.TrackTokens(default(Usage));
+
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:total", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:input", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:output", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+            Assert.Null(tracker.Summary.Tokens);
+
+            // A subsequent call with positive values should still record.
+            var realUsage = new Usage { Total = 100, Input = 40, Output = 60 };
+            tracker.TrackTokens(realUsage);
+
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:total", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:input", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:output", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
+
+            // And the slot is now consumed.
+            Assert.Equal(realUsage, tracker.Summary.Tokens);
+        }
+
+        [Fact]
         public void DuplicateTrackFeedbackIsIgnored()
         {
             var mockClient = new Mock<ILaunchDarklyClient>();

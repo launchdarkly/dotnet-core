@@ -18,8 +18,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 {
     internal sealed class FDv2PollingRequestor : IFDv2PollingRequestor
     {
-        private const string VersionQueryParam = "version";
-        private const string StateQueryParam = "state";
+        private const string BasisQueryParam = "basis";
 
         private readonly Uri _baseUri;
         private readonly HttpClient _httpClient;
@@ -54,18 +53,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             var uri = _baseUri.AddPath(StandardEndpoints.FDv2PollingRequestPath);
 
-            // Add selector query parameters
+            // Add basis query parameter when the selector has state
             var uriBuilder = new UriBuilder(uri);
             var query = new List<string>();
 
-            if (selector.Version > 0)
+            if (!selector.IsEmpty && !string.IsNullOrEmpty(selector.State))
             {
-                query.Add($"{VersionQueryParam}={selector.Version}");
-            }
-
-            if (!string.IsNullOrEmpty(selector.State))
-            {
-                query.Add($"{StateQueryParam}={Uri.EscapeDataString(selector.State)}");
+                query.Add($"{BasisQueryParam}={Uri.EscapeDataString(selector.State)}");
             }
 
             if (query.Count > 0)

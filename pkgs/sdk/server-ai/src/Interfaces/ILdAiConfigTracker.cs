@@ -9,8 +9,8 @@ namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 /// Records metrics for a single AI run.
 /// </summary>
 /// <remarks>
-/// All events a tracker emits share a runId (a UUIDv4) so LaunchDarkly can correlate
-/// them in metrics views. See individual track methods for their specific semantics.
+/// All events emitted by a tracker share a runId (a UUIDv4) so LaunchDarkly can correlate
+/// them. See individual track methods for their specific semantics.
 /// Call <c>CreateTracker</c> on the AI Config to start a new run. A
 /// <see cref="ResumptionToken"/> preserves the runId, so events emitted by a tracker
 /// reconstructed in another process correlate with the original tracker's runId.

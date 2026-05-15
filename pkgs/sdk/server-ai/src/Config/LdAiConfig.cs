@@ -1,13 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Ai.DataModel;
+using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
 /// <summary>
 /// Represents an AI Config, which contains model parameters and prompt messages.
 /// </summary>
-public record LdAiConfig
+public class LdAiConfig
 {
 
     /// <summary>
@@ -217,7 +219,10 @@ public record LdAiConfig
     /// </summary>
     public readonly ModelProvider Provider;
 
-    internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider)
+    private readonly Func<ILdAiConfigTracker> _trackerFactory;
+
+    internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider,
+        Func<ILdAiConfigTracker> createTracker = null)
     {
         Model = new ModelConfiguration(model?.Name ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
             model?.Custom ?? new Dictionary<string, LdValue>());
@@ -226,7 +231,20 @@ public record LdAiConfig
         Version = meta?.Version ?? 1;
         Enabled = enabled;
         Provider = new ModelProvider(provider?.Name ?? "");
+        _trackerFactory = createTracker;
     }
+
+    internal LdAiConfig(LdAiConfig source, Func<ILdAiConfigTracker> createTracker)
+    {
+        Model = source.Model;
+        Messages = source.Messages;
+        VariationKey = source.VariationKey;
+        Version = source.Version;
+        Enabled = source.Enabled;
+        Provider = source.Provider;
+        _trackerFactory = createTracker;
+    }
+
     internal LdValue ToLdValue()
     {
         return LdValue.ObjectFrom(new Dictionary<string, LdValue>
@@ -277,6 +295,17 @@ public record LdAiConfig
     /// This field meant for internal LaunchDarkly usage.
     /// </summary>
     public int Version { get; }
+
+    /// <summary>
+    /// Returns a new tracker for a fresh AI run. Each call mints a new runId (a UUIDv4)
+    /// that LaunchDarkly uses to correlate the run's events in metrics views. Call this
+    /// once per AI run; metrics from different runIds cannot be combined.
+    /// </summary>
+    /// <remarks>
+    /// Returns null for configs created directly via the builder; only configs returned by
+    /// <see cref="LdAiClient.CompletionConfig"/> have a factory wired in.
+    /// </remarks>
+    public ILdAiConfigTracker CreateTracker() => _trackerFactory?.Invoke();
 
     /// <summary>
     /// Convenient helper that returns a disabled LdAiConfig.

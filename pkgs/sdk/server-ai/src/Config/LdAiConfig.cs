@@ -9,7 +9,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// <summary>
 /// Represents an AI Config, which contains model parameters and prompt messages.
 /// </summary>
-public record LdAiConfig
+public class LdAiConfig
 {
 
     /// <summary>
@@ -219,6 +219,8 @@ public record LdAiConfig
     /// </summary>
     public readonly ModelProvider Provider;
 
+    private readonly Func<ILdAiConfigTracker> _trackerFactory;
+
     internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider,
         Func<ILdAiConfigTracker> createTracker = null)
     {
@@ -229,7 +231,7 @@ public record LdAiConfig
         Version = meta?.Version ?? 1;
         Enabled = enabled;
         Provider = new ModelProvider(provider?.Name ?? "");
-        CreateTracker = createTracker;
+        _trackerFactory = createTracker;
     }
 
     internal LdAiConfig(LdAiConfig source, Func<ILdAiConfigTracker> createTracker)
@@ -240,8 +242,9 @@ public record LdAiConfig
         Version = source.Version;
         Enabled = source.Enabled;
         Provider = source.Provider;
-        CreateTracker = createTracker;
+        _trackerFactory = createTracker;
     }
+
     internal LdValue ToLdValue()
     {
         return LdValue.ObjectFrom(new Dictionary<string, LdValue>
@@ -299,10 +302,10 @@ public record LdAiConfig
     /// once per AI run; metrics from different runIds cannot be combined.
     /// </summary>
     /// <remarks>
-    /// This property is set when the config is returned by <see cref="LdAiClient.CompletionConfig"/>.
-    /// It will be null for configs created directly via the builder.
+    /// Returns null for configs created directly via the builder; only configs returned by
+    /// <see cref="LdAiClient.CompletionConfig"/> have a factory wired in.
     /// </remarks>
-    public Func<ILdAiConfigTracker> CreateTracker { get; }
+    public ILdAiConfigTracker CreateTracker() => _trackerFactory?.Invoke();
 
     /// <summary>
     /// Convenient helper that returns a disabled LdAiConfig.

@@ -394,8 +394,6 @@ public class LdAiClientTest
         var client = new LdAiClient(mockClient.Object);
         var config = client.CompletionConfig(configKey, context);
 
-        Assert.NotNull(config.CreateTracker);
-
         var tracker = config.CreateTracker();
         Assert.NotNull(tracker);
     }
@@ -500,8 +498,6 @@ public class LdAiClientTest
 
         var client = new LdAiClient(mockClient.Object);
         var config = client.CompletionConfig("foo", Context.New("key"));
-
-        Assert.NotNull(config.CreateTracker);
 
         var tracker = config.CreateTracker();
         Assert.NotNull(tracker);

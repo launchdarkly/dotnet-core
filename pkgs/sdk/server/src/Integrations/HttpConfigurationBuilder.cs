@@ -64,11 +64,6 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         internal string _wrapperName = null;
         internal string _wrapperVersion = null;
 
-        // Generated once when the builder is constructed so that Build() and DescribeConfiguration()
-        // -- which both call MakeHttpProperties on the same builder -- agree on the value sent in
-        // HTTP headers and reported in diagnostic events. Guid.NewGuid() produces a v4 UUID.
-        private readonly string _instanceId = Guid.NewGuid().ToString();
-
         /// <summary>
         /// Sets the network connection timeout.
         /// </summary>
@@ -268,8 +263,14 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 .WithReadTimeout(_readTimeout)
                 .WithUserAgent("DotNetClient/" + AssemblyVersions.GetAssemblyVersionStringForType(typeof(LdClient)))
                 .WithApplicationTags(context.ApplicationInfo)
-                .WithWrapper(wrapperName, wrapperVersion)
-                .WithHeader(InstanceIdHeader, _instanceId);
+                .WithWrapper(wrapperName, wrapperVersion);
+
+            // The instance id originates on LdClientContext (generated once per LDClient), so
+            // every subsystem built from the same context emits a consistent value.
+            if (!string.IsNullOrEmpty(context.InstanceId))
+            {
+                httpProperties = httpProperties.WithHeader(InstanceIdHeader, context.InstanceId);
+            }
 
             // For consistency with other SDKs, custom headers are allowed to overwrite headers
             // such as User-Agent, Authorization, and the instance id.

@@ -1,4 +1,5 @@
-﻿using LaunchDarkly.Logging;
+﻿using System;
+using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Internal.Events;
 using LaunchDarkly.Sdk.Server.Integrations;
@@ -87,6 +88,13 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         public string SdkKey { get; }
 
         /// <summary>
+        /// A v4 UUID that uniquely identifies this SDK client instance, sent on every outbound
+        /// request in the X-LaunchDarkly-Instance-Id header (per SCMP-server-connection-minutes-polling).
+        /// Generated once at LdClientContext construction and stable for the lifetime of the client.
+        /// </summary>
+        public string InstanceId { get; }
+
+        /// <summary>
         /// Defines the base service URIs used by SDK components.
         /// </summary>
         public ServiceEndpoints ServiceEndpoints { get; }
@@ -157,7 +165,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             TaskExecutor taskExecutor,
             ApplicationInfo applicationInfo,
             WrapperInfo wrapperInfo,
-            ISelectorSource selectorSource
+            ISelectorSource selectorSource,
+            string instanceId = null
         )
         {
             SdkKey = sdkKey;
@@ -172,6 +181,11 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             ApplicationInfo = applicationInfo;
             WrapperInfo = wrapperInfo;
             SelectorSource = selectorSource;
+            // Generate a fresh instance id when the first LdClientContext for an LDClient is
+            // constructed; downstream With*() copies thread it through unchanged so every
+            // subsystem built from this context observes the same value for the client's
+            // lifetime. Direct callers (LdClient and tests) may pass an explicit id.
+            InstanceId = instanceId ?? Guid.NewGuid().ToString();
         }
 
         internal LdClientContext WithDataSourceUpdates(IDataSourceUpdates newDataSourceUpdates) =>
@@ -187,7 +201,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 ApplicationInfo,
                 WrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
 
         internal LdClientContext WithDataStoreUpdates(IDataStoreUpdates newDataStoreUpdates) =>
@@ -203,7 +218,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 ApplicationInfo,
                 WrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
 
         internal LdClientContext WithDiagnosticStore(IDiagnosticStore newDiagnosticStore) =>
@@ -219,7 +235,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 ApplicationInfo,
                 WrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
 
         internal LdClientContext WithHttp(HttpConfiguration newHttp) =>
@@ -235,7 +252,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 ApplicationInfo,
                 WrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
 
         internal LdClientContext WithLogger(Logger newLogger) =>
@@ -251,7 +269,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 ApplicationInfo,
                 WrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
 
         internal LdClientContext WithTaskExecutor(TaskExecutor newTaskExecutor) =>
@@ -267,7 +286,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 newTaskExecutor,
                 ApplicationInfo,
                 WrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
 
         internal LdClientContext WithApplicationInfo(ApplicationInfo applicationInfo) =>
@@ -283,7 +303,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 applicationInfo,
                 WrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
 
         internal LdClientContext WithWrapperInfo(WrapperInfo wrapperInfo) =>
@@ -299,7 +320,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 ApplicationInfo,
                 wrapperInfo,
-                SelectorSource
+                SelectorSource,
+                InstanceId
             );
         
         internal LdClientContext WithSelectorSource(ISelectorSource selectorSource) =>
@@ -315,7 +337,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
                 TaskExecutor,
                 ApplicationInfo,
                 WrapperInfo,
-                selectorSource
+                selectorSource,
+                InstanceId
             );
 
         private static HttpConfiguration DefaultHttpConfiguration() =>

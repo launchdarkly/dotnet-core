@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.12.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.1...LaunchDarkly.ServerSdk-v8.12.2) (2026-05-19)
+
+
+### Bug Fixes
+
+* use basis query param for FDv2 polling selector ([#260](https://github.com/launchdarkly/dotnet-core/issues/260)) ([abaee9d](https://github.com/launchdarkly/dotnet-core/commit/abaee9dfc16634f4d5a952b68db06cd34e801e39))
+
 ## [8.12.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.0...LaunchDarkly.ServerSdk-v8.12.1) (2026-05-12)
 
 

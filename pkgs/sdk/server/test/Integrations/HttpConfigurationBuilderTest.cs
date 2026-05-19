@@ -158,6 +158,66 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             Assert.Equal("my-wrapper/3.14", HeadersAsMap(config.DefaultHeaders)["x-launchdarkly-wrapper"]);
         }
 
+        [Fact]
+        public void InstanceIdHeaderMirrorsClientContext()
+        {
+            // The HTTP builder emits whatever instance id LdClientContext provides; generation
+            // is the LDClient/LdClientContext's responsibility, not the builder's.
+            var config = Components.HttpConfiguration().Build(basicConfig);
+            var headers = HeadersAsMap(config.DefaultHeaders);
+            Assert.True(headers.ContainsKey("x-launchdarkly-instance-id"),
+                "X-LaunchDarkly-Instance-Id header must be set");
+            Assert.Equal(basicConfig.InstanceId, headers["x-launchdarkly-instance-id"]);
+
+            // The value LdClientContext generates is a v4 GUID -- verify the wire shape.
+            var raw = headers["x-launchdarkly-instance-id"];
+            Assert.True(Guid.TryParse(raw, out _),
+                $"instance id '{raw}' must be a parseable GUID");
+            var groups = raw.Split('-');
+            Assert.Equal(5, groups.Length);
+            Assert.Equal('4', groups[2][0]);
+        }
+
+        [Fact]
+        public void InstanceIdHeaderIsUniquePerClientContext()
+        {
+            // Each LdClientContext auto-generates its own instance id, so building
+            // HttpConfiguration from two distinct contexts produces distinct header values.
+            // This is the cross-SDK-instance uniqueness property the contract tests assert.
+            var context1 = new LdClientContext("sdk-key");
+            var context2 = new LdClientContext("sdk-key");
+            var id1 = HeadersAsMap(Components.HttpConfiguration().Build(context1).DefaultHeaders)["x-launchdarkly-instance-id"];
+            var id2 = HeadersAsMap(Components.HttpConfiguration().Build(context2).DefaultHeaders)["x-launchdarkly-instance-id"];
+            Assert.False(string.IsNullOrEmpty(id1));
+            Assert.False(string.IsNullOrEmpty(id2));
+            Assert.NotEqual(id1, id2);
+        }
+
+        [Fact]
+        public void InstanceIdHeaderIsStableAcrossBuildsFromSameContext()
+        {
+            // Build() and DescribeConfiguration() are both called against the same
+            // LdClientContext for one SDK instance; the value they see must agree, and must
+            // equal the context's InstanceId.
+            var builder = Components.HttpConfiguration();
+            var id1 = HeadersAsMap(builder.Build(basicConfig).DefaultHeaders)["x-launchdarkly-instance-id"];
+            var id2 = HeadersAsMap(builder.Build(basicConfig).DefaultHeaders)["x-launchdarkly-instance-id"];
+            Assert.Equal(id1, id2);
+            Assert.Equal(basicConfig.InstanceId, id1);
+        }
+
+        [Fact]
+        public void CustomHeaderCanOverrideInstanceIdHeader()
+        {
+            // Consistent with User-Agent / Authorization: a user-supplied custom header for the
+            // same name takes precedence. This mirrors the behavior in other SDKs.
+            var config = Components.HttpConfiguration()
+                .CustomHeader("X-LaunchDarkly-Instance-Id", "custom-override")
+                .Build(basicConfig);
+            Assert.Equal("custom-override",
+                HeadersAsMap(config.DefaultHeaders)["x-launchdarkly-instance-id"]);
+        }
+
         private Dictionary<string, string> HeadersAsMap(IEnumerable<KeyValuePair<string, string>> headers)
         {
             return headers.ToDictionary(kv => kv.Key.ToLower(), kv => kv.Value);

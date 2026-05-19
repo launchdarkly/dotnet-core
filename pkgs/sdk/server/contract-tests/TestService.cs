@@ -39,7 +39,8 @@ namespace TestService
             "anonymous-redaction",
             "evaluation-hooks",
             "client-prereq-events",
-            "fdv1-fallback"
+            "fdv1-fallback",
+            "instance-id"
         };
 
         public readonly Handler Handler;

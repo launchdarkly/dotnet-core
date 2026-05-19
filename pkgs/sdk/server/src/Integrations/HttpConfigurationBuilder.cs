@@ -34,6 +34,13 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     public sealed class HttpConfigurationBuilder : IComponentConfigurer<HttpConfiguration>, IDiagnosticDescription
     {
         /// <summary>
+        /// The HTTP header used to identify this SDK instance. Its value is a v4 UUID that is
+        /// generated once per SDK instance and remains constant for the lifetime of the client,
+        /// and is sent on polling, streaming, and event requests.
+        /// </summary>
+        internal const string InstanceIdHeader = "X-LaunchDarkly-Instance-Id";
+
+        /// <summary>
         /// The default value for <see cref="ConnectTimeout(TimeSpan)"/>: two seconds.
         /// </summary>
         public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(2);
@@ -258,6 +265,15 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 .WithApplicationTags(context.ApplicationInfo)
                 .WithWrapper(wrapperName, wrapperVersion);
 
+            // The instance id originates on LdClientContext (generated once per LDClient), so
+            // every subsystem built from the same context emits a consistent value.
+            if (!string.IsNullOrEmpty(context.InstanceId))
+            {
+                httpProperties = httpProperties.WithHeader(InstanceIdHeader, context.InstanceId);
+            }
+
+            // For consistency with other SDKs, custom headers are allowed to overwrite headers
+            // such as User-Agent, Authorization, and the instance id.
             return _customHeaders.Aggregate(httpProperties, (current, kv)
                 => current.WithHeader(kv.Key, kv.Value));
         }

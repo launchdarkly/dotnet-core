@@ -60,12 +60,15 @@
   <ItemGroup>
     <Content Include="..\CHANGELOG.md">
       <Link>CHANGELOG.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docfx.json">
       <Link>docfx.json</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\index.md">
       <Link>index.md</Link>
+      <Pack>false</Pack>
     </Content>
   </ItemGroup>
 

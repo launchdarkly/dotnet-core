@@ -60,39 +60,51 @@
   <ItemGroup>
     <Content Include="..\CHANGELOG.md">
       <Link>CHANGELOG.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\CONTRIBUTING.md">
       <Link>CONTRIBUTING.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docfx.json">
       <Link>docfx.json</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Json.md">
       <Link>docs-src\namespaces\LaunchDarkly.Sdk.Json.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.md">
       <Link>docs-src\namespaces\LaunchDarkly.Sdk.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Integrations.md">
       <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Integrations.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Interfaces.md">
       <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Interfaces.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.md">
       <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Subsystems.md">
       <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Subsystems.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\docs-src\README.md">
       <Link>docs-src\README.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\index.md">
       <Link>index.md</Link>
+      <Pack>false</Pack>
     </Content>
     <Content Include="..\README.md">
       <Link>README.md</Link>
+      <Pack>false</Pack>
     </Content>
   </ItemGroup>
 

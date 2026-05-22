@@ -127,18 +127,23 @@
     <ItemGroup>
       <Content Include="..\CHANGELOG.md">
         <Link>CHANGELOG.md</Link>
+        <Pack>false</Pack>
       </Content>
       <Content Include="..\CONTRIBUTING.md">
         <Link>CONTRIBUTING.md</Link>
+        <Pack>false</Pack>
       </Content>
       <Content Include="..\index.md">
         <Link>index.md</Link>
+        <Pack>false</Pack>
       </Content>
       <Content Include="..\README.md">
         <Link>README.md</Link>
+        <Pack>false</Pack>
       </Content>
       <Content Include="..\toc.yml">
         <Link>toc.yml</Link>
+        <Pack>false</Pack>
       </Content>
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

@@ -151,50 +151,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     file.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    AssertHelpers.ExpectPredicate(_updateSink.Inits, actual =>
-                        {
-                            var segments = actual.Data.First(item => item.Key == DataModel.Segments);
-                            var features = actual.Data.First(item => item.Key == DataModel.Features);
-                            if (!features.Value.Items.IsNullOrEmpty())
-                            {
-                                return false;
-                            }
-
-                            var segmentItems = segments.Value.Items.ToList();
-
-                            if (segmentItems.Count != 1)
-                            {
-                                return false;
-                            }
-
-                            var segmentDescriptor = segmentItems[0];
-                            if (segmentDescriptor.Key != "seg1")
-                            {
-                                return false;
-                            }
-
-                            if (segmentDescriptor.Value.Version == 1)
-                            {
-                                return false;
-                            }
-
-                            if (!(segmentDescriptor.Value.Item is Segment segment))
-                            {
-                                return false;
-                            }
-
-                            if (segment.Deleted)
-                            {
-                                return false;
-                            }
-
-                            if (segment.Included.Count != 1)
-                            {
-                                return false;
-                            }
-
-                            return segment.Included[0] == "user1";
-                        },
+                    AssertHelpers.ExpectPredicate(_updateSink.Inits, IsSegmentOnlyDataAfterReload,
                         "Did not receive expected update from the file data source.",
                         TimeSpan.FromSeconds(30));
                 }
@@ -270,16 +227,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     file1.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    // Use ExpectJsonValue to handle potential race conditions where the file watcher
-                    // may trigger multiple reload events. This keeps checking events until one matches
-                    // the expected JSON or the timeout expires.
-                    var newData = AssertHelpers.ExpectJsonValue(
-                        _updateSink.Inits,
-                        DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)),
-                        DataSetAsJson,
+                    AssertHelpers.ExpectPredicate(_updateSink.Inits, IsSegmentOnlyDataAfterReload,
+                        "Did not receive expected update from the file data source.",
                         TimeSpan.FromSeconds(30));
-
-                    AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)), DataSetAsJson(newData));
                 }
             }
         }
@@ -298,18 +248,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     file.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    // Use ExpectJsonValue to handle potential race conditions where the file watcher
-                    // may trigger multiple reload events. This keeps checking events until one matches
-                    // the expected JSON or the timeout expires.
-                    // Note that the expected version is 2 because we increment the version on each
-                    // *attempt* to load the files, not on each successful load.
-                    var newData = AssertHelpers.ExpectJsonValue(
-                        _updateSink.Inits,
-                        DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)),
-                        DataSetAsJson,
+                    AssertHelpers.ExpectPredicate(_updateSink.Inits, IsSegmentOnlyDataAfterReload,
+                        "Did not receive expected update from the file data source.",
                         TimeSpan.FromSeconds(30));
-
-                    AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(2)), DataSetAsJson(newData));
                 }
             }
         }
@@ -365,5 +306,38 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     new SegmentBuilder("seg1").Version(version).Included("user1").Build()
                 )
                 .Build();
+
+        // Predicate that matches the structure of segment-only.json reloaded after the initial load.
+        // We deliberately don't pin the exact version: with the file watcher firing on truncate-then-write
+        // and the JsonException retry, the version of the successful load is non-deterministic, so we
+        // only require that it isn't the initial version 1.
+        private static bool IsSegmentOnlyDataAfterReload(FullDataSet<ItemDescriptor> actual)
+        {
+            var features = actual.Data.First(item => item.Key == DataModel.Features);
+            if (!features.Value.Items.IsNullOrEmpty())
+            {
+                return false;
+            }
+
+            var segments = actual.Data.First(item => item.Key == DataModel.Segments);
+            var segmentItems = segments.Value.Items.ToList();
+            if (segmentItems.Count != 1)
+            {
+                return false;
+            }
+
+            var segmentDescriptor = segmentItems[0];
+            if (segmentDescriptor.Key != "seg1" || segmentDescriptor.Value.Version == 1)
+            {
+                return false;
+            }
+
+            if (!(segmentDescriptor.Value.Item is Segment segment) || segment.Deleted)
+            {
+                return false;
+            }
+
+            return segment.Included.Count == 1 && segment.Included[0] == "user1";
+        }
     }
 }

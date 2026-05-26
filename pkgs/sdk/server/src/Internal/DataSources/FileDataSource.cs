@@ -25,11 +25,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly Logger _logger;
         private volatile bool _started;
         private volatile bool _loadedValidData;
+        private volatile bool _disposed;
         private volatile int _lastVersion;
         private object _updateLock = new object();
 
         private const int MaxRetries = 5;
-        private readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(0.6);
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(600);
+        // Per-path JSON-parse retry counters. Only touched inside _updateLock.
         private readonly Dictionary<string, int> _retryCounts = new Dictionary<string, int>();
 
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
@@ -87,6 +89,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (disposing)
             {
+                _disposed = true;
                 _reloader?.Dispose();
             }
         }
@@ -95,6 +98,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             lock (_updateLock)
             {
+                if (_disposed)
+                {
+                    return;
+                }
                 var version = Interlocked.Increment(ref _lastVersion);
                 var flags = new Dictionary<string, ItemDescriptor>();
                 var segments = new Dictionary<string, ItemDescriptor>();
@@ -106,7 +113,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         _logger.Debug("file data: {0}", content);
                         var data = _parser.Parse(content, version);
                         _dataMerger.AddToData(data, flags, segments);
-                        // Remove any retry count associated with this path.
                         _retryCounts.Remove(path);
                     }
                     catch (FileNotFoundException) when (_skipMissingPaths)
@@ -115,10 +121,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     }
                     catch (System.Text.Json.JsonException)
                     {
-                        // We may have received the notification of a file change while the file was being written.
-                        // So we may read an empty or partially written file. So, when we encounter a JSON parsing issue
-                        // we will retry after a short delay.
-                        // We will retry up to MaxRetries times before giving up.
+                        // A file-change notification can fire while the file is mid-write, so we may read an
+                        // empty or partially written file. Retry up to MaxRetries times before giving up; the
+                        // counter is cleared on the next successful load.
                         if (!_retryCounts.ContainsKey(path))
                         {
                             _retryCounts[path] = 0;
@@ -127,16 +132,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                         if (_retryCounts[path] < MaxRetries)
                         {
-                            _logger.Warn("{0}: {1}", path, "Failed to parse file, retrying in " + RetryDelay.TotalMilliseconds + " milliseconds");
+                            _logger.Warn("{0}: Failed to parse file, retrying in {1} ms", path, RetryDelay.TotalMilliseconds);
                             Task.Run(async () =>
                             {
-                                await Task.Delay(RetryDelay);
+                                await Task.Delay(RetryDelay).ConfigureAwait(false);
+                                if (_disposed)
+                                {
+                                    return;
+                                }
                                 LoadAll();
                             });
                         }
                         else
                         {
-                            _logger.Error("{0}: {1}", path, "Failed to parse file after " + MaxRetries + " retries");
+                            _logger.Error("{0}: Failed to parse file after {1} retries", path, MaxRetries);
                         }
 
                         return;
@@ -147,10 +156,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         return;
                     }
                 }
-                
-                // If any files failed to load, from anything other than not existing, then that
-                // update would fail. This behavior is retained with the addition of the retry. But it should be
-                // examined.
 
                 var allData = new FullDataSet<ItemDescriptor>(
                     ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()

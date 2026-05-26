@@ -20,6 +20,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <RootNamespace>LaunchDarkly.Sdk.Server.Integrations</RootNamespace>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Configurations>Debug;Release;DebugLocalReferences</Configurations>
     <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
@@ -47,30 +48,31 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\CHANGELOG.md">
+    <None Include="..\CHANGELOG.md">
       <Link>CHANGELOG.md</Link>
       <Pack>false</Pack>
-    </Content>
-    <Content Include="..\CONTRIBUTING.md">
+    </None>
+    <None Include="..\CONTRIBUTING.md">
       <Link>CONTRIBUTING.md</Link>
       <Pack>false</Pack>
-    </Content>
-    <Content Include="..\docfx.json">
+    </None>
+    <None Include="..\docfx.json">
       <Link>docfx.json</Link>
       <Pack>false</Pack>
-    </Content>
-    <Content Include="..\index.md">
+    </None>
+    <None Include="..\index.md">
       <Link>index.md</Link>
       <Pack>false</Pack>
-    </Content>
-    <Content Include="..\README.md">
+    </None>
+    <None Include="..\README.md">
       <Link>README.md</Link>
-      <Pack>false</Pack>
-    </Content>
-    <Content Include="..\SECURITY.md">
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\SECURITY.md">
       <Link>SECURITY.md</Link>
       <Pack>false</Pack>
-    </Content>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>

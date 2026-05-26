@@ -37,6 +37,7 @@
 
         <!-- fail if XML comments are missing or invalid -->
         <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <Configurations>Debug;Release;DebugLocalReferences</Configurations>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
@@ -125,26 +126,27 @@
         </Compile>
     </ItemGroup>
     <ItemGroup>
-      <Content Include="..\CHANGELOG.md">
+      <None Include="..\CHANGELOG.md">
         <Link>CHANGELOG.md</Link>
         <Pack>false</Pack>
-      </Content>
-      <Content Include="..\CONTRIBUTING.md">
+      </None>
+      <None Include="..\CONTRIBUTING.md">
         <Link>CONTRIBUTING.md</Link>
         <Pack>false</Pack>
-      </Content>
-      <Content Include="..\index.md">
+      </None>
+      <None Include="..\index.md">
         <Link>index.md</Link>
         <Pack>false</Pack>
-      </Content>
-      <Content Include="..\README.md">
+      </None>
+      <None Include="..\README.md">
         <Link>README.md</Link>
-        <Pack>false</Pack>
-      </Content>
-      <Content Include="..\toc.yml">
+        <Pack>true</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+      <None Include="..\toc.yml">
         <Link>toc.yml</Link>
         <Pack>false</Pack>
-      </Content>
+      </None>
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.ClientSdk.snk</AssemblyOriginatorKeyFile>

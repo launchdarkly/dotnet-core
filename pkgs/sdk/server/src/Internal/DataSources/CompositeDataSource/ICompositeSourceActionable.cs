@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
@@ -34,11 +35,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         bool IsAtFirst();
 
         /// <summary>
-        /// Blocks the the current source's factory. This prevents the current source's factory from being used again. 
+        /// Blocks the the current source's factory. This prevents the current source's factory from being used again.
         /// Note that this does not tear down the current data source, it just prevents its factory from being used again.
         /// </summary>
         void BlockCurrent();
+
+        /// <summary>
+        /// Removes every entry whose kind matches the predicate from the source list, regardless
+        /// of its position. The current data source is not disposed -- callers that want the
+        /// current source torn down should follow this with <see cref="DisposeCurrent"/> or
+        /// <see cref="GoToNext"/>. If the current entry was removed, the internal "current entry"
+        /// reference is cleared so subsequent block operations don't accidentally remove a
+        /// remaining entry.
+        /// </summary>
+        /// <param name="kindMatches">predicate selecting which kinds to remove</param>
+        void BlockAll(Predicate<CompositeEntryKind> kindMatches);
     }
 }
-
-

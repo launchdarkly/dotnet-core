@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk;
 
 // Note, in order for System.Text.Json serialization/deserialization to work correctly, the members of
@@ -152,7 +153,13 @@ namespace TestService
         public SdkConfigDataStoreParams Store { get; set; }
         public int? StoreMode { get; set; }
         public SdkConfigDataInitializerParams[] Initializers { get; set; }
-        public SdkConfigSynchronizersParams Synchronizers { get; set; }
+        public SdkConfigDataSynchronizerParams[] Synchronizers { get; set; }
+        // FDv1Fallback configures the SDK's FDv1 Fallback Synchronizer, which is engaged only when
+        // the LaunchDarkly server returns the FDv1 fallback directive. It is distinct from the FDv2
+        // Primary/Fallback Synchronizers above. The harness sends this as "fdv1Fallback" (lowercase
+        // 'd'); we override the default CamelCase mapping (which would produce "fDv1Fallback").
+        [JsonPropertyName("fdv1Fallback")]
+        public SdkConfigPollingParams FDv1Fallback { get; set; }
         public string PayloadFilter { get; set; }
     }
 
@@ -185,13 +192,7 @@ namespace TestService
         public SdkConfigPollingParams Polling { get; set; }
     }
 
-    public class SdkConfigSynchronizersParams
-    {
-        public SdkConfigSynchronizerParams Primary { get; set; }
-        public SdkConfigSynchronizerParams Secondary { get; set; }
-    }
-
-    public class SdkConfigSynchronizerParams
+    public class SdkConfigDataSynchronizerParams
     {
         public SdkConfigStreamingParams Streaming { get; set; }
         public SdkConfigPollingParams Polling { get; set; }

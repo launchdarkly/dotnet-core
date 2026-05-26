@@ -1,5 +1,33 @@
 # Changelog
 
+## [8.12.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.0...LaunchDarkly.ServerSdk-v8.12.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* Honor x-ld-fd-fallback header in FDv2 initializer phase and on successful responses ([#251](https://github.com/launchdarkly/dotnet-core/issues/251)) ([4bb667d](https://github.com/launchdarkly/dotnet-core/commit/4bb667dc6ca7560a45c6b43cb2b02e2744a0f466))
+
+## [8.12.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.2...LaunchDarkly.ServerSdk-v8.12.0) (2026-04-16)
+
+
+### Features
+
+* Make Status ToString() methods format consistent  ([#247](https://github.com/launchdarkly/dotnet-core/issues/247)) ([6373f98](https://github.com/launchdarkly/dotnet-core/commit/6373f987f27f479aa256e94ab472037623e1febc))
+
+## [8.11.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.1...LaunchDarkly.ServerSdk-v8.11.2) (2026-04-09)
+
+
+### Bug Fixes
+
+* Update CommonSdk to 7.2.0 and InternalSdk to 3.6.1 ([#243](https://github.com/launchdarkly/dotnet-core/issues/243)) ([9e8e5ff](https://github.com/launchdarkly/dotnet-core/commit/9e8e5ff1734548462a681ab66147acc2bd2f2895))
+
+## [8.11.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.11.0...LaunchDarkly.ServerSdk-v8.11.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* IfMatchContext/AndMatchContext utilize context kind. ([#225](https://github.com/launchdarkly/dotnet-core/issues/225)) ([95bc949](https://github.com/launchdarkly/dotnet-core/commit/95bc9495984976833efd736f36fc4023c37eb663))
+
 ## [8.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.10.4...LaunchDarkly.ServerSdk-v8.11.0) (2026-01-12)
 
 

@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.CommonSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [7.2.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.1.1...LaunchDarkly.CommonSdk-v7.2.0) (2026-04-08)
+
+
+### Features
+
+* Make common sdk AOT safe ([#169](https://github.com/launchdarkly/dotnet-core/issues/169)) ([8c6948e](https://github.com/launchdarkly/dotnet-core/commit/8c6948ea89d3c71abc24e6e0284a5dde62bd54b3))
+
 ## [7.1.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.1.0...LaunchDarkly.CommonSdk-v7.1.1) (2025-09-26)
 
 

@@ -5,14 +5,18 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Client.Hooks;
 using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal;
 using LaunchDarkly.Sdk.Client.Internal.DataSources;
+using LaunchDarkly.Sdk.Client.Internal.Hooks.Executor;
+using LaunchDarkly.Sdk.Client.Internal.Hooks.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal.DataStores;
 using LaunchDarkly.Sdk.Client.Internal.Events;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
 using LaunchDarkly.Sdk.Client.PlatformSpecific;
 using LaunchDarkly.Sdk.Client.Subsystems;
+using LaunchDarkly.Sdk.Integrations.Plugins;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Internal.Concurrent;
 
@@ -68,6 +72,7 @@ namespace LaunchDarkly.Sdk.Client
         readonly TaskExecutor _taskExecutor;
         readonly AnonymousKeyContextDecorator _anonymousKeyContextDecorator;
         private readonly AutoEnvContextDecorator _autoEnvContextDecorator;
+        private readonly IHookExecutor _hookExecutor;
 
         private readonly Logger _log;
 
@@ -217,19 +222,23 @@ namespace LaunchDarkly.Sdk.Client
                 _ = _connectionManager.SetNetworkEnabled(networkAvailable); // do not await the result
             };
 
-            // Send an initial identify event, but only if we weren't explicitly set to be offline
+            // Build the plugin config and environment metadata
+            var pluginConfig = (_config.Plugins ?? Components.Plugins()).Build();
+            var environmentMetadata = pluginConfig.Plugins.Any() ? CreateEnvironmentMetadata() : null;
+            var hooks = pluginConfig.Plugins.Any()
+                ? this.GetPluginHooks(pluginConfig.Plugins, environmentMetadata, _log)
+                : new List<Hook>();
 
-            if (!_config.Offline)
-            {
-                _eventProcessor.RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
-                {
-                    Timestamp = UnixMillisecondTime.Now,
-                    Context = _context
-                });
-            }
+            _hookExecutor = hooks.Any()
+                ? (IHookExecutor)new Executor(_log.SubLogger(LogNames.HooksSubLog), hooks)
+                : new NoopExecutor();
 
+            this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
+
+            // Start the background mode manager
             _backgroundModeManager = _config.BackgroundModeManager ?? new DefaultBackgroundModeManager();
             _backgroundModeManager.BackgroundModeChanged += OnBackgroundModeChanged;
+
         }
 
         void Start(TimeSpan maxWaitTime)
@@ -239,7 +248,12 @@ namespace LaunchDarkly.Sdk.Client
                 _log.Warn(ExcessiveInitWaitTimeWarning, maxWaitTime, ExcessiveInitWaitTime);
             }
 
-            var success = AsyncUtils.WaitSafely(() => _connectionManager.Start(), maxWaitTime);
+            var success = AsyncUtils.WaitSafely(async () =>
+            {
+                await RecordIdentify(_context, maxWaitTime);
+                await _connectionManager.Start();
+            }, maxWaitTime);
+
             if (!success)
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
@@ -260,9 +274,14 @@ namespace LaunchDarkly.Sdk.Client
                     maxWaitTime, ExcessiveInitWaitTime);
             }
 
-            var startTask = _connectionManager.Start();
-            var completedTask = await Task.WhenAny(startTask, Task.Delay(maxWaitTime));
-            if (completedTask != startTask)
+            var combinedTask = Task.Run(async () =>
+            {
+                await RecordIdentify(_context, maxWaitTime);
+                await _connectionManager.Start();
+            });
+            
+            var completedTask = await Task.WhenAny(combinedTask, Task.Delay(maxWaitTime));
+            if (completedTask != combinedTask)
             {
                 _log.Warn(DidNotInitializeTimelyWarning, maxWaitTime.TotalMilliseconds);
             }
@@ -273,6 +292,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </summary>
         async Task StartAsync()
         {
+            await RecordIdentify(_context, TimeSpan.Zero);
             await _connectionManager.Start();
         }
 
@@ -728,6 +748,15 @@ namespace LaunchDarkly.Sdk.Client
         EvaluationDetail<T> VariationInternal<T>(string featureKey, LdValue defaultJson, LdValue.Converter<T> converter,
             bool checkType, EventFactory eventFactory)
         {
+            var evalSeriesContext = new EvaluationSeriesContext(featureKey, Context, defaultJson,
+                GetMethodName<T>(eventFactory));
+            return _hookExecutor.EvaluationSeries(evalSeriesContext, converter,
+                () => EvaluateInternal(featureKey, defaultJson, converter, checkType, eventFactory));
+        }
+
+        EvaluationDetail<T> EvaluateInternal<T>(string featureKey, LdValue defaultJson, LdValue.Converter<T> converter,
+            bool checkType, EventFactory eventFactory)
+        {
             T defaultValue = converter.ToType(defaultJson);
 
             EvaluationDetail<T> errorResult(EvaluationErrorKind kind) =>
@@ -761,22 +790,13 @@ namespace LaunchDarkly.Sdk.Client
                 }
             }
 
-            // The flag.Prerequisites array represents the evaluated prerequisites of this flag. We need to generate
-            // events for both this flag and its prerequisites (recursively), which is necessary to ensure LaunchDarkly
-            // analytics functions properly.
-            //
-            // We're using JsonVariationDetail because the type of the prerequisite is both unknown and irrelevant
-            // to emitting the events.
-            //
-            // We're passing LdValue.Null to match a server-side SDK's behavior when evaluating prerequisites.
-            //
-            // NOTE: if "hooks" functionality is implemented into this SDK, take care that evaluating prerequisites
-            // does not trigger hooks. This may require refactoring the code below to not use JsonVariationDetail.
+            // Prerequisites are evaluated directly via EvaluateInternal to avoid triggering hooks.
             if (flag.Prerequisites != null)
             {
                 foreach (var prerequisiteKey in flag.Prerequisites)
                 {
-                    JsonVariationDetail(prerequisiteKey, LdValue.Null);
+                    EvaluateInternal(prerequisiteKey, LdValue.Null, LdValue.Convert.Json, false,
+                        _eventFactoryWithReasons);
                 }
             }
 
@@ -809,6 +829,18 @@ namespace LaunchDarkly.Sdk.Client
                 defaultJson);
             SendEvaluationEventIfOnline(featureEvent);
             return result;
+        }
+
+        private string GetMethodName<T>(EventFactory eventFactory)
+        {
+            bool isDetail = eventFactory == _eventFactoryWithReasons;
+            var type = typeof(T);
+            if (type == typeof(bool)) return isDetail ? Method.BoolVariationDetail : Method.BoolVariation;
+            if (type == typeof(int)) return isDetail ? Method.IntVariationDetail : Method.IntVariation;
+            if (type == typeof(float)) return isDetail ? Method.FloatVariationDetail : Method.FloatVariation;
+            if (type == typeof(double)) return isDetail ? Method.DoubleVariationDetail : Method.DoubleVariation;
+            if (type == typeof(string)) return isDetail ? Method.StringVariationDetail : Method.StringVariation;
+            return isDetail ? Method.JsonVariationDetail : Method.JsonVariation;
         }
 
         private void SendEvaluationEventIfOnline(EventProcessorTypes.EvaluationEvent e)
@@ -873,11 +905,13 @@ namespace LaunchDarkly.Sdk.Client
         /// <inheritdoc/>
         public bool Identify(Context context, TimeSpan maxWaitTime)
         {
-            return AsyncUtils.WaitSafely(() => IdentifyAsync(context), maxWaitTime);
+            return AsyncUtils.WaitSafely(() => RecordIdentifyWithContextUpdate(context, maxWaitTime), maxWaitTime);
         }
 
         /// <inheritdoc/>
-        public async Task<bool> IdentifyAsync(Context context)
+        public Task<bool> IdentifyAsync(Context context) => RecordIdentifyWithContextUpdate(context, TimeSpan.Zero);
+
+        private async Task<bool> RecordIdentifyWithContextUpdate(Context context, TimeSpan maxWaitTime)
         {
             Context newContext = _anonymousKeyContextDecorator.DecorateContext(context);
             if (_config.AutoEnvAttributes)
@@ -885,44 +919,79 @@ namespace LaunchDarkly.Sdk.Client
                 newContext = _autoEnvContextDecorator.DecorateContext(newContext);
             }
 
-            Context
-                oldContext =
-                    newContext; // this initialization is overwritten below, it's only here to satisfy the compiler
-
-            LockUtils.WithWriteLock(_stateLock, () =>
+            return await _hookExecutor.IdentifySeries(newContext, maxWaitTime, async () =>
             {
-                oldContext = _context;
-                _context = newContext;
+                Context
+                    oldContext =
+                        newContext; // this initialization is overwritten below, it's only here to satisfy the compiler
+
+                LockUtils.WithWriteLock(_stateLock, () =>
+                {
+                    oldContext = _context;
+                    _context = newContext;
+                });
+
+                // If we had cached data for the new context, set the current in-memory flag data state to use
+                // that data, so that any Variation calls made before Identify has completed will use the
+                // last known values. If we did not have cached data, then we update the current in-memory
+                // state to reflect that there is no flag data, so that Variation calls done before completion
+                // will receive default values rather than the previous context's values. This does not modify
+                // any flags in persistent storage, and (currently) it does *not* trigger any FlagValueChanged
+                // events from FlagTracker.
+                var cachedData = _dataStore.GetCachedData(newContext);
+                if (cachedData != null)
+                {
+                    _log.Debug("Identify found cached flag data for the new context");
+                }
+
+                _dataStore.Init(
+                    newContext,
+                    cachedData ?? new DataStoreTypes.FullDataSet(null),
+                    false // false means "don't rewrite the flags to persistent storage"
+                );
+                
+                EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
+                {
+                    Timestamp = UnixMillisecondTime.Now,
+                    Context = newContext
+                });
+
+                return await _connectionManager.SetContext(newContext);
             });
-
-            // If we had cached data for the new context, set the current in-memory flag data state to use
-            // that data, so that any Variation calls made before Identify has completed will use the
-            // last known values. If we did not have cached data, then we update the current in-memory
-            // state to reflect that there is no flag data, so that Variation calls done before completion
-            // will receive default values rather than the previous context's values. This does not modify
-            // any flags in persistent storage, and (currently) it does *not* trigger any FlagValueChanged
-            // events from FlagTracker.
-            var cachedData = _dataStore.GetCachedData(newContext);
-            if (cachedData != null)
-            {
-                _log.Debug("Identify found cached flag data for the new context");
-            }
-
-            _dataStore.Init(
-                newContext,
-                cachedData ?? new DataStoreTypes.FullDataSet(null),
-                false // false means "don't rewrite the flags to persistent storage"
-            );
-
-            EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
-            {
-                Timestamp = UnixMillisecondTime.Now,
-                Context = newContext
-            });
-
-            return await _connectionManager.SetContext(newContext);
         }
 
+        private async Task RecordIdentify(Context newContext, TimeSpan maxWaitTime)
+        {
+            await _hookExecutor.IdentifySeries(newContext, maxWaitTime, () =>
+            {
+                EventProcessorIfEnabled().RecordIdentifyEvent(new EventProcessorTypes.IdentifyEvent
+                {
+                    Timestamp = UnixMillisecondTime.Now,
+                    Context = newContext
+                });
+                return Task.FromResult(true);
+            });
+        }
+
+        private EnvironmentMetadata CreateEnvironmentMetadata()
+        {
+            var applicationInfo = _config.ApplicationInfo?.Build() ?? new ApplicationInfo();
+
+            var sdkMetadata = new SdkMetadata(
+                SdkPackage.Name,
+                SdkPackage.Version
+            );
+
+            var applicationMetadata = new ApplicationMetadata(
+                applicationInfo.ApplicationId,
+                applicationInfo.ApplicationVersion,
+                applicationInfo.ApplicationName,
+                applicationInfo.ApplicationVersionName
+            );
+
+            return new EnvironmentMetadata(sdkMetadata, _config.MobileKey, CredentialType.MobileKey, applicationMetadata);
+        }
+ 
         /// <summary>
         /// Permanently shuts down the SDK client.
         /// </summary>
@@ -951,6 +1020,7 @@ namespace LaunchDarkly.Sdk.Client
                 _dataSourceUpdateSink.UpdateStatus(DataSourceState.Shutdown, null);
 
                 _backgroundModeManager.BackgroundModeChanged -= OnBackgroundModeChanged;
+                _hookExecutor.Dispose();
                 _connectionManager.Dispose();
                 _dataStore.Dispose();
                 _eventProcessor.Dispose();

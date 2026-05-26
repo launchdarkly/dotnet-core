@@ -29,6 +29,6 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
 
         /// <inheritdoc/>
         public override string ToString() =>
-            string.Format("DataStoreStatus({0},{1})", Available, RefreshNeeded);
+            string.Format("DataStoreStatus(Available={0},RefreshNeeded={1})", Available, RefreshNeeded);
     }
 }

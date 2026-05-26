@@ -1,7 +1,10 @@
-﻿using LaunchDarkly.Logging;
+using System.Collections.Generic;
+using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Client.Hooks;
 using LaunchDarkly.Sdk.Client.Integrations;
 using LaunchDarkly.Sdk.Client.Internal;
 using LaunchDarkly.Sdk.Client.Internal.DataStores;
+using LaunchDarkly.Sdk.Client.Plugins;
 using LaunchDarkly.Sdk.Client.Subsystems;
 
 namespace LaunchDarkly.Sdk.Client
@@ -31,7 +34,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(sdkKey)
+        ///     var config = Configuration.Builder(sdkKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Http(
         ///             Components.HttpConfiguration()
         ///                 .ConnectTimeout(TimeSpan.FromMilliseconds(3000))
@@ -60,7 +63,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Components.Logging().Level(LogLevel.Warn)))
         ///         .Build();
         /// </code>
@@ -96,7 +99,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Components.Logging(Logs.ToConsole))
         ///         .Build();
         /// </code>
@@ -120,7 +123,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Events(Components.NoEvents)
         ///         .Build();
         /// </code>
@@ -138,7 +141,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Components.NoLogging)
         ///         .Build();
         /// </code>
@@ -157,7 +160,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Persistence(Components.NoPersistence)
         ///         .Build();
         /// </code>
@@ -176,7 +179,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(sdkKey)
+        ///     var config = Configuration.Builder(sdkKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Persistence(
         ///             Components.Persistence().MaxCachedUsers(10)
         ///         )
@@ -217,7 +220,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .DataSource(Components.PollingDataSource()
         ///             .PollInterval(TimeSpan.FromSeconds(45)))
         ///         .Build();
@@ -245,7 +248,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Events(Components.SendEvents()
         ///             .Capacity(5000)
         ///             .FlushInterval(TimeSpan.FromSeconds(2)))
@@ -273,7 +276,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .ServiceEndpoints(Components.ServiceEndpoints().RelayProxy("http://my-relay-hostname:80"))
         ///         .Build();
         /// </code>
@@ -293,7 +296,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .ApplicationInfo(
         ///             Components.ApplicationInfo().ApplicationID("MyApplication").ApplicationVersion("version123abc")
         ///         )
@@ -325,7 +328,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder(mobileKey)
+        ///     var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .DataSource(Components.StreamingDataSource()
         ///             .InitialReconnectDelay(TimeSpan.FromMilliseconds(500)))
         ///         .Build();
@@ -336,5 +339,26 @@ namespace LaunchDarkly.Sdk.Client
         /// <see cref="ConfigurationBuilder.DataSource(IComponentConfigurer{IDataSource})"/>
         public static StreamingDataSourceBuilder StreamingDataSource() =>
             new StreamingDataSourceBuilder();
+
+        /// <summary>
+        /// Returns a configuration builder for the SDK's plugin configuration.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder(mobileKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
+        ///         .Plugins(Components.Plugins()
+        ///             .Add(new MyPlugin(...))
+        ///         ).Build();
+        /// </code>
+        /// </example>
+        /// <returns>a configuration builder</returns>
+        public static PluginConfigurationBuilder Plugins() => new PluginConfigurationBuilder();
+
+        /// <summary>
+        /// Returns a configuration builder for the SDK's plugin configuration, with an initial set of plugins.
+        /// </summary>
+        /// <param name="plugins">a collection of plugins</param>
+        /// <returns>a configuration builder</returns>
+        public static PluginConfigurationBuilder Plugins(IEnumerable<Plugin> plugins) => new PluginConfigurationBuilder(plugins);
     }
 }

@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Immutable;
 using LaunchDarkly.Sdk.Client.Integrations;
 using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
 using LaunchDarkly.Sdk.Client.PlatformSpecific;
+using LaunchDarkly.Sdk.Client.Plugins;
 using LaunchDarkly.Sdk.Client.Subsystems;
 
 namespace LaunchDarkly.Sdk.Client
@@ -126,6 +127,11 @@ namespace LaunchDarkly.Sdk.Client
         public PersistenceConfigurationBuilder PersistenceConfigurationBuilder { get; }
 
         /// <summary>
+        /// Contains methods for configuring the SDK's 'plugins' to extend or customize SDK behavior.
+        /// </summary>
+        public PluginConfigurationBuilder Plugins { get; }
+
+        /// <summary>
         /// Defines the base service URIs used by SDK components.
         /// </summary>
         /// <seealso cref="ConfigurationBuilder.ServiceEndpoints(ServiceEndpointsBuilder)"/>
@@ -159,7 +165,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </remarks>
         /// <example>
         /// <code>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .EventFlushInterval(TimeSpan.FromSeconds(90))
         ///         .StartWaitTime(TimeSpan.FromSeconds(5))
         ///         .Build();
@@ -210,6 +216,7 @@ namespace LaunchDarkly.Sdk.Client
             MobileKey = builder._mobileKey;
             Offline = builder._offline;
             PersistenceConfigurationBuilder = builder._persistenceConfigurationBuilder;
+            Plugins = builder._plugins;
             ServiceEndpoints = (builder._serviceEndpointsBuilder ?? Components.ServiceEndpoints()).Build();
             BackgroundModeManager = builder._backgroundModeManager;
             ConnectivityStateManager = builder._connectivityStateManager;

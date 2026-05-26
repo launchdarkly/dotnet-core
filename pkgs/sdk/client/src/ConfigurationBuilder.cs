@@ -1,7 +1,8 @@
-﻿using System.Net.Http;
+using System.Net.Http;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Client.Integrations;
 using LaunchDarkly.Sdk.Client.Internal.Interfaces;
+using LaunchDarkly.Sdk.Client.Plugins;
 using LaunchDarkly.Sdk.Client.Subsystems;
 using LaunchDarkly.Sdk.Helpers;
 
@@ -21,7 +22,7 @@ namespace LaunchDarkly.Sdk.Client
     /// </remarks>
     /// <example>
     /// <code>
-    ///     var config = Configuration.Builder("my-mobile-key").AllAttributesPrivate(true).EventCapacity(1000).Build();
+    ///     var config = Configuration.Builder("my-mobile-key", ConfigurationBuilder.AutoEnvAttributes.Enabled).AllAttributesPrivate(true).EventCapacity(1000).Build();
     /// </code>
     /// </example>
     public sealed class ConfigurationBuilder
@@ -70,6 +71,7 @@ namespace LaunchDarkly.Sdk.Client
         internal string _mobileKey;
         internal bool _offline = false;
         internal PersistenceConfigurationBuilder _persistenceConfigurationBuilder = null;
+        internal PluginConfigurationBuilder _plugins = null;
         internal ServiceEndpointsBuilder _serviceEndpointsBuilder = null;
 
         // Internal properties only settable for testing
@@ -108,6 +110,7 @@ namespace LaunchDarkly.Sdk.Client
             SetMobileKeyIfValid(copyFrom.MobileKey);
             _offline = copyFrom.Offline;
             _persistenceConfigurationBuilder = copyFrom.PersistenceConfigurationBuilder;
+            _plugins = copyFrom.Plugins;
             _serviceEndpointsBuilder = new ServiceEndpointsBuilder(copyFrom.ServiceEndpoints);
         }
 
@@ -328,7 +331,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Logs.ToWriter(Console.Out))
         ///         .Build();
         /// </example>
@@ -357,7 +360,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Logging(Components.Logging().Level(LogLevel.Warn)))
         ///         .Build();
         /// </example>
@@ -420,7 +423,7 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// </remarks>
         /// <example>
-        ///     var config = Configuration.Builder("my-sdk-key")
+        ///     var config = Configuration.Builder("my-sdk-key", ConfigurationBuilder.AutoEnvAttributes.Enabled)
         ///         .Persistence(Components.Persistence().MaxCachedUsers(10))
         ///         .Build();
         /// </example>
@@ -432,6 +435,17 @@ namespace LaunchDarkly.Sdk.Client
         public ConfigurationBuilder Persistence(PersistenceConfigurationBuilder persistenceConfigurationBuilder)
         {
             _persistenceConfigurationBuilder = persistenceConfigurationBuilder;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the SDK's plugin configuration.
+        /// </summary>
+        /// <param name="pluginsConfig">the plugin configuration</param>
+        /// <returns>the same builder</returns>
+        public ConfigurationBuilder Plugins(PluginConfigurationBuilder pluginsConfig)
+        {
+            _plugins = pluginsConfig;
             return this;
         }
 

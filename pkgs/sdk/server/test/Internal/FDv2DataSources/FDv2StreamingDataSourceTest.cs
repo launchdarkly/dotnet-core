@@ -711,6 +711,77 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
+        public async Task SuccessfulStreamWithFallbackHeaderAppliesPayloadThenSignalsFDv1Fallback()
+        {
+            // The server can ride x-ld-fd-fallback: true on a successful streaming connection. The
+            // SDK must apply any payload that arrives on the stream and then shut the stream down
+            // with FDv1Fallback=true so the action applier hands off to the FDv1 fallback
+            // synchronizer. Without this behavior the stream would stay open against FDv2 forever.
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+                {
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" })
+                };
+                _mockEventSource.TriggerOpen(headers);
+
+                // Send a complete xfer-full payload so the protocol applies a ChangeSet.
+                _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
+                    CreateServerIntentJson("xfer-full", "p1", 1)));
+                _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
+                    CreatePayloadTransferredJson("(p:p1:1)", 1)));
+
+                // The payload must be applied first.
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+                // Then the data source emits Off with FDv1Fallback=true so the action applier can
+                // swap to FDv1.
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.True(
+                    status.LastError.Value.FDv1Fallback,
+                    "FDv1Fallback should be set when the success response carried the fallback header");
+
+                // Init task completes successfully because the payload was applied.
+                var result = await startTask;
+                Assert.True(result);
+
+                // The event source is closed so the stream stops consuming events from FDv2.
+                Assert.True(_mockEventSource.IsClosed);
+            }
+        }
+
+        [Fact]
+        public async Task SuccessfulStreamWithoutFallbackHeaderDoesNotSignalFDv1Fallback()
+        {
+            // Sanity check: a normal successful streaming response must not produce a fallback
+            // signal nor close the stream.
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                _mockEventSource.TriggerOpen();
+                _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
+                    CreateServerIntentJson("xfer-full", "p1", 1)));
+                _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
+                    CreatePayloadTransferredJson("(p:p1:1)", 1)));
+
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+
+                var result = await startTask;
+                Assert.True(result);
+
+                _updateSink.StatusUpdates.ExpectNoValue(TimeSpan.FromMilliseconds(50));
+                Assert.False(_mockEventSource.IsClosed);
+            }
+        }
+
+        [Fact]
         public async Task UnrecoverableHttpError403ReportsOffStatusWithRecoverableFalse()
         {
             using (var dataSource = MakeDataSource())

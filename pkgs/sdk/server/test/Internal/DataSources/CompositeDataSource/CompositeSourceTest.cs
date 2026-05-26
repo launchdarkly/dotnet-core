@@ -65,11 +65,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Create CompositeSource with three factory tuples
-            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>
             {
-                (firstSourceFactory, actionApplierFactory),
-                (secondSourceFactory, actionApplierFactory),
-                (thirdSourceFactory, actionApplierFactory)
+                (firstSourceFactory, actionApplierFactory, CompositeEntryKind.FDv2),
+                (secondSourceFactory, actionApplierFactory, CompositeEntryKind.FDv2),
+                (thirdSourceFactory, actionApplierFactory, CompositeEntryKind.FDv2)
             };
 
             var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
@@ -147,10 +147,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Create CompositeSource with two factory tuples
-            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>
             {
-                (firstSourceFactory, firstActionApplierFactory),
-                (secondSourceFactory, secondActionApplierFactory)
+                (firstSourceFactory, firstActionApplierFactory, CompositeEntryKind.FDv2),
+                (secondSourceFactory, secondActionApplierFactory, CompositeEntryKind.FDv2)
             };
 
             var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger, circular: true);
@@ -261,10 +261,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Create CompositeSource with two factory tuples
-            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>
             {
-                (firstSourceFactory, firstActionApplierFactory),
-                (secondSourceFactory, secondActionApplierFactory)
+                (firstSourceFactory, firstActionApplierFactory, CompositeEntryKind.FDv2),
+                (secondSourceFactory, secondActionApplierFactory, CompositeEntryKind.FDv2)
             };
 
             var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger, circular: true);
@@ -339,9 +339,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             ActionApplierFactory actionApplierFactory = (actionable) => { return new MockActionApplier(actionable); };
 
             // Create CompositeSource with one factory tuple
-            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>
             {
-                (sourceFactory, actionApplierFactory)
+                (sourceFactory, actionApplierFactory, CompositeEntryKind.FDv2)
             };
 
             var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
@@ -416,11 +416,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             };
 
             // Create CompositeSource with three factory tuples
-            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>
             {
-                (firstSourceFactory, actionApplierFactory),
-                (secondSourceFactory, actionApplierFactory),
-                (thirdSourceFactory, actionApplierFactory)
+                (firstSourceFactory, actionApplierFactory, CompositeEntryKind.FDv2),
+                (secondSourceFactory, actionApplierFactory, CompositeEntryKind.FDv2),
+                (thirdSourceFactory, actionApplierFactory, CompositeEntryKind.FDv2)
             };
 
             var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
@@ -471,7 +471,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
             // Create CompositeSource with empty factory tuples list
-            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory)>();
+            var factoryTuples = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>();
 
             var compositeSource = new CompositeSource("test-composite", capturingSink, factoryTuples, TestLogger);
 

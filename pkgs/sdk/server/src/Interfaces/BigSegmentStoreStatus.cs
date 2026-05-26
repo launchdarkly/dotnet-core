@@ -40,6 +40,6 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
 
         /// <inheritdoc/>
         public override string ToString() =>
-            string.Format("(Available={0},Stale={1})", Available, Stale);
+            string.Format("BigSegmentStoreStatus(Available={0},Stale={1})", Available, Stale);
     }
 }

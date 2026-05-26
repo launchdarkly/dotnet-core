@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -99,13 +100,35 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         ?.FirstOrDefault();
                 }
 
-                ProcessPollingResponse(response.Value);
+                var fdv1Fallback = HasFDv1FallbackHeader(response.Value.Headers);
+                ProcessPollingResponse(response.Value, fdv1Fallback);
+
+                // On a successful response carrying the directive, the changeset above already
+                // rode the FDv1Fallback flag through to the appliers, which trigger the fallback
+                // transition. Tear down the polling loop here so we stop hitting the server.
+                if (fdv1Fallback)
+                {
+                    _log.Info("LaunchDarkly polling response indicates fallback to FDv1");
+                    var fallbackError = new DataSourceStatus.ErrorInfo
+                    {
+                        Kind = DataSourceStatus.ErrorKind.Unknown,
+                        Time = DateTime.Now,
+                        FDv1Fallback = true
+                    };
+                    // Resolve _initTask so the polling source's Start() task doesn't leak when
+                    // ProcessChangeSet failed (e.g. transient data store error): Shutdown below
+                    // permanently cancels the poll loop, so the task would otherwise never
+                    // complete. TrySet is a no-op if ProcessChangeSet already set it to true.
+                    _initTask.TrySetResult(false);
+                    Shutdown(fallbackError);
+                    return;
+                }
             }
             catch (UnsuccessfulResponseException ex)
             {
                 var recoverable = HttpErrors.IsRecoverable(ex.StatusCode);
                 var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(ex.StatusCode, recoverable);
-                
+
                 // Check for LD fallback header
                 if (ex.Headers != null)
                 {
@@ -157,7 +180,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
         }
 
-        private void ProcessPollingResponse(FDv2PollingResponse response)
+        private void ProcessPollingResponse(FDv2PollingResponse response, bool fdv1Fallback)
         {
             lock (_protocolLock)
             {
@@ -166,7 +189,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 foreach (var evt in response.Events)
                 {
                     var action = _protocolHandler.HandleEvent(evt);
-                    ProcessProtocolAction(action);
+                    ProcessProtocolAction(action, fdv1Fallback);
                 }
             }
         }
@@ -185,12 +208,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
         }
 
-        private void ProcessProtocolAction(IFDv2ProtocolAction action)
+        private void ProcessProtocolAction(IFDv2ProtocolAction action, bool fdv1Fallback)
         {
             switch (action)
             {
                 case FDv2ActionChangeset changesetAction:
-                    ProcessChangeSet(changesetAction.Changeset);
+                    ProcessChangeSet(changesetAction.Changeset, fdv1Fallback);
                     break;
                 case FDv2ActionError errorAction:
                     _log.Error("FDv2 error event: {0} - {1}", errorAction.Id, errorAction.Reason);
@@ -218,12 +241,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
         }
 
-        private void ProcessChangeSet(FDv2ChangeSet fdv2ChangeSet)
+        private void ProcessChangeSet(FDv2ChangeSet fdv2ChangeSet, bool fdv1Fallback)
         {
             if (!(_dataSourceUpdates is ITransactionalDataSourceUpdates transactionalDataSourceUpdates))
                 throw new InvalidOperationException("Cannot apply updates to non-transactional data source");
 
-            var dataStoreChangeSet = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, _log, _environmentId);
+            var dataStoreChangeSet = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, _log, _environmentId, fdv1Fallback);
 
             // If the update fails, then we wait until the next poll and try again.
             // This is different from a streaming data source, which will need to re-start to get an initial
@@ -265,6 +288,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             _canceler?.Cancel();
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
+        }
+
+        internal static bool HasFDv1FallbackHeader(
+            IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
+        {
+            if (headers == null) return false;
+            return headers
+                .Where(h => string.Equals(h.Key, "x-ld-fd-fallback", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(h => h.Value)
+                .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

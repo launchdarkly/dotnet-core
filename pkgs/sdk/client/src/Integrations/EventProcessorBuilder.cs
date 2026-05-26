@@ -23,7 +23,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     /// </remarks>
     /// <example>
     /// <code>
-    ///     var config = Configuration.Builder(sdkKey)
+    ///     var config = Configuration.Builder(sdkKey, ConfigurationBuilder.AutoEnvAttributes.Enabled)
     ///         .Events(
     ///             Components.SendEvents().Capacity(5000).FlushInterval(TimeSpan.FromSeconds(2))
     ///         )

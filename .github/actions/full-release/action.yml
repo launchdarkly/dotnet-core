@@ -40,11 +40,6 @@ inputs:
     description: 'Run an instance of Redis'
     required: false
     default: false
-outputs:
-  hashes:
-    description: sha256sum hashes of built artifacts
-    value: ${{ steps.publish.outputs.hashes }}
-
 runs:
   using: composite
   steps:

@@ -49,7 +49,7 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
 
         /// <inheritdoc/>
         public override string ToString() =>
-            string.Format("DataSourceStatus({0},{1},{2})", State, StateSince, LastError);
+            string.Format("DataSourceStatus(State={0},StateSince={1},LastError={2})", State, StateSince, LastError);
 
         /// <summary>
         /// A description of an error condition that the data source encountered.
@@ -127,7 +127,7 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
                 s.Append(Kind.Identifier());
                 if (StatusCode > 0 || !string.IsNullOrEmpty(Message))
                 {
-                    s.Append("(");
+                    s.Append('(');
                     if (StatusCode > 0)
                     {
                         s.Append(StatusCode);
@@ -136,13 +136,13 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
                     {
                         if (StatusCode > 0)
                         {
-                            s.Append(",");
+                            s.Append(',');
                         }
                         s.Append(Message);
                     }
-                    s.Append(")");
+                    s.Append(')');
                 }
-                s.Append("@");
+                s.Append('@');
                 s.Append(Time);
                 return s.ToString();
             }

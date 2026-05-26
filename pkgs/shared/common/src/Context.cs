@@ -922,7 +922,11 @@ namespace LaunchDarkly.Sdk
             {
                 return "(invalid Context: " + Error + ")";
             }
+#if NET7_0_OR_GREATER
+            return System.Text.Json.JsonSerializer.Serialize(this, LdJsonSerializerContext.Default.Context);
+#else
             return LdJsonSerialization.SerializeObject(this);
+#endif
         }
 
         private LdValue GetTopLevelAddressableAttributeSingleKind(string name)

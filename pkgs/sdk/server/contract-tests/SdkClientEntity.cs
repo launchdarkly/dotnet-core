@@ -487,73 +487,43 @@ namespace TestService
                 }
 
                 // Configure synchronizers
-                if (sdkParams.DataSystem.Synchronizers != null)
+                if (sdkParams.DataSystem.Synchronizers != null && sdkParams.DataSystem.Synchronizers.Length > 0)
                 {
                     var synchronizers = new List<IComponentConfigurer<IDataSource>>();
 
-                    // Primary synchronizer
-                    if (sdkParams.DataSystem.Synchronizers.Primary != null)
+                    foreach (var synchronizerParams in sdkParams.DataSystem.Synchronizers)
                     {
-                        var primary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Primary, sdkParams.DataSystem.PayloadFilter);
-                        if (primary != null)
+                        var synchronizer = CreateSynchronizer(synchronizerParams, sdkParams.DataSystem.PayloadFilter);
+                        if (synchronizer != null)
                         {
-                            synchronizers.Add(primary);
-                        }
-                    }
-
-                    // Secondary synchronizer (optional)
-                    if (sdkParams.DataSystem.Synchronizers.Secondary != null)
-                    {
-                        var secondary = CreateSynchronizer(sdkParams.DataSystem.Synchronizers.Secondary, sdkParams.DataSystem.PayloadFilter);
-                        if (secondary != null)
-                        {
-                            synchronizers.Add(secondary);
+                            synchronizers.Add(synchronizer);
                         }
                     }
 
                     if (synchronizers.Count > 0)
                     {
                         dataSystemBuilder.Synchronizers(synchronizers.ToArray());
-                        
-                        // Find the best synchronizer to use for FDv1 fallback configuration
-                        // Prefer polling synchronizers since FDv1 fallback is polling-based
-                        SdkConfigSynchronizerParams synchronizerForFallback = null;
-                        
-                        // First, try to find a polling synchronizer (check secondary first, then primary)
-                        if (sdkParams.DataSystem.Synchronizers.Secondary != null && 
-                            sdkParams.DataSystem.Synchronizers.Secondary.Polling != null)
-                        {
-                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Secondary;
-                        }
-                        else if (sdkParams.DataSystem.Synchronizers.Primary != null && 
-                                 sdkParams.DataSystem.Synchronizers.Primary.Polling != null)
-                        {
-                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Primary;
-                        }
-                        // If no polling synchronizer found, use primary synchronizer (could be streaming)
-                        else if (sdkParams.DataSystem.Synchronizers.Primary != null)
-                        {
-                            synchronizerForFallback = sdkParams.DataSystem.Synchronizers.Primary;
-                        }
-                        
-                        if (synchronizerForFallback != null)
-                        {
-                            // Only configure global polling endpoints if we have a polling synchronizer with a custom base URI
-                            // This ensures the FDv1 fallback synchronizer uses the same base URI without overwriting
-                            // existing polling endpoint configuration
-                            if (synchronizerForFallback.Polling != null && 
-                                synchronizerForFallback.Polling.BaseUri != null)
-                            {
-                                endpoints.Polling(synchronizerForFallback.Polling.BaseUri);
-                            }
-                            
-                            var fdv1Fallback = CreateFDv1FallbackSynchronizer(synchronizerForFallback);
-                            if (fdv1Fallback != null)
-                            {
-                                dataSystemBuilder.FDv1FallbackSynchronizer(fdv1Fallback);
-                            }
-                        }
                     }
+                }
+
+                // Configure the FDv1 Fallback Synchronizer directly from dataSystem.fdv1Fallback,
+                // separate from the FDv2 Primary/Fallback synchronizer chain. This is engaged only
+                // in response to a server-directed FDv1 Fallback Directive.
+                if (sdkParams.DataSystem.FDv1Fallback != null)
+                {
+                    if (sdkParams.DataSystem.FDv1Fallback.BaseUri != null)
+                    {
+                        endpoints.Polling(sdkParams.DataSystem.FDv1Fallback.BaseUri);
+                    }
+
+                    var fdv1FallbackBuilder = DataSystemComponents.FDv1Polling();
+                    if (sdkParams.DataSystem.FDv1Fallback.PollIntervalMs.HasValue)
+                    {
+                        fdv1FallbackBuilder.PollInterval(
+                            TimeSpan.FromMilliseconds(sdkParams.DataSystem.FDv1Fallback.PollIntervalMs.Value));
+                    }
+
+                    dataSystemBuilder.FDv1FallbackSynchronizer(fdv1FallbackBuilder);
                 }
 
                 builder.DataSystem(dataSystemBuilder);
@@ -563,7 +533,7 @@ namespace TestService
         }
 
         private static IComponentConfigurer<IDataSource> CreateSynchronizer(
-            SdkConfigSynchronizerParams synchronizer,
+            SdkConfigDataSynchronizerParams synchronizer,
             string payloadFilter)
         {
             if (synchronizer.Polling != null)
@@ -605,33 +575,6 @@ namespace TestService
                 return streamingBuilder;
             }
             return null;
-        }
-
-        private static IComponentConfigurer<IDataSource> CreateFDv1FallbackSynchronizer(
-            SdkConfigSynchronizerParams synchronizer)
-        {
-            // FDv1 fallback synchronizer is always polling-based
-            var fdv1PollingBuilder = DataSystemComponents.FDv1Polling();
-            
-            // Configure polling interval if the synchronizer has polling configuration
-            if (synchronizer.Polling != null)
-            {
-                if (synchronizer.Polling.PollIntervalMs.HasValue)
-                {
-                    fdv1PollingBuilder.PollInterval(TimeSpan.FromMilliseconds(synchronizer.Polling.PollIntervalMs.Value));
-                }
-                // Note: FDv1 polling doesn't support ServiceEndpointsOverride, so base URI
-                // will use the global service endpoints configuration
-            }
-            else if (synchronizer.Streaming != null)
-            {
-                // For streaming synchronizers, we still create a polling fallback
-                // Use default polling interval since streaming doesn't have a poll interval
-                // Note: FDv1 polling doesn't support ServiceEndpointsOverride, so base URI
-                // will use the global service endpoints configuration
-            }
-            
-            return fdv1PollingBuilder;
         }
 
         private MigrationVariationResponse DoMigrationVariation(MigrationVariationParams migrationVariation)

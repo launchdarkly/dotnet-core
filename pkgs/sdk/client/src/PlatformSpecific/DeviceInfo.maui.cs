@@ -5,18 +5,36 @@ namespace LaunchDarkly.Sdk.Client.PlatformSpecific
 {
     internal static partial class DeviceInfo
     {
-        internal static OsInfo? GetOsInfo() =>
-            new OsInfo(
-                PlatformToFamilyString(Devices.DeviceInfo.Current.Platform),
-                Devices.DeviceInfo.Current.Platform.ToString(),
-                Devices.DeviceInfo.Current.VersionString
-            );
+        internal static OsInfo? GetOsInfo()
+        {
+            try
+            {
+                return new OsInfo(
+                    PlatformToFamilyString(Devices.DeviceInfo.Current.Platform),
+                    Devices.DeviceInfo.Current.Platform.ToString(),
+                    Devices.DeviceInfo.Current.VersionString
+                );
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
-        internal static LaunchDarkly.Sdk.EnvReporting.LayerModels.DeviceInfo? GetDeviceInfo() =>
-            new EnvReporting.LayerModels.DeviceInfo(
-                Devices.DeviceInfo.Current.Manufacturer,
-                Devices.DeviceInfo.Current.Model
-            );
+        internal static LaunchDarkly.Sdk.EnvReporting.LayerModels.DeviceInfo? GetDeviceInfo()
+        {
+            try
+            {
+                return new EnvReporting.LayerModels.DeviceInfo(
+                    Devices.DeviceInfo.Current.Manufacturer,
+                    Devices.DeviceInfo.Current.Model
+                );
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         private static string PlatformToFamilyString(Devices.DevicePlatform platform) {
             if (platform == Devices.DevicePlatform.Android)

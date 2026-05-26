@@ -38,7 +38,8 @@ namespace TestService
             "inline-context-all",
             "anonymous-redaction",
             "evaluation-hooks",
-            "client-prereq-events"
+            "client-prereq-events",
+            "fdv1-fallback"
         };
 
         public readonly Handler Handler;

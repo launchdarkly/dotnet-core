@@ -1,4 +1,4 @@
-﻿
+
 namespace LaunchDarkly.Sdk.Client.Internal
 {
     internal static class LogNames
@@ -10,5 +10,7 @@ namespace LaunchDarkly.Sdk.Client.Internal
         internal const string DataStoreSubLog = "DataStore";
 
         internal const string EventsSubLog = "Events";
+
+        internal const string HooksSubLog = "Hooks";
     }
 }

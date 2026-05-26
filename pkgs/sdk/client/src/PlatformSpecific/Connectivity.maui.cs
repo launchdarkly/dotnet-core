@@ -7,20 +7,34 @@ namespace LaunchDarkly.Sdk.Client.PlatformSpecific
 {
     internal static partial class PlatformConnectivity
     {
+        private static readonly bool _mauiAvailable;
+
         static PlatformConnectivity()
         {
-            Connectivity.Current.ConnectivityChanged += (sender, args) => ConnectivityChanged?.Invoke(sender, EventArgs.Empty);
+            try
+            {
+                Connectivity.Current.ConnectivityChanged += (sender, args) => ConnectivityChanged?.Invoke(sender, EventArgs.Empty);
+                _mauiAvailable = true;
+            }
+            catch
+            {
+                _mauiAvailable = false;
+            }
         }
 
         /// <summary>
         /// Gets the current state of network access.
         /// </summary>
-        public static LdNetworkAccess LdNetworkAccess => Convert(Connectivity.Current.NetworkAccess);
+        public static LdNetworkAccess LdNetworkAccess =>
+            _mauiAvailable ? Convert(Connectivity.Current.NetworkAccess) : LdNetworkAccess.Internet;
 
         /// <summary>
         /// Gets the active connectivity types for the device.
         /// </summary>
-        public static IEnumerable<LdConnectionProfile> LdConnectionProfiles => Connectivity.Current.ConnectionProfiles.Distinct().Select(Convert);
+        public static IEnumerable<LdConnectionProfile> LdConnectionProfiles =>
+            _mauiAvailable
+                ? Connectivity.Current.ConnectionProfiles.Distinct().Select(Convert)
+                : Enumerable.Empty<LdConnectionProfile>();
 
         /// <summary>
         /// Occurs when network access or profile has changed.  This is just a signal and the

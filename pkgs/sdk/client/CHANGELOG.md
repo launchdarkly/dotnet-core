@@ -3,6 +3,13 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.7.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.7.1...LaunchDarkly.ClientSdk-v5.7.2) (2026-05-26)
+
+
+### Bug Fixes
+
+* gracefully handle MAUI unavailability in non-MAUI Windows apps ([#264](https://github.com/launchdarkly/dotnet-core/issues/264)) ([f51a123](https://github.com/launchdarkly/dotnet-core/commit/f51a123e9437348e517d8c5e34a8cce3106d7d78))
+
 ## [5.7.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.7.0...LaunchDarkly.ClientSdk-v5.7.1) (2026-04-09)
 
 

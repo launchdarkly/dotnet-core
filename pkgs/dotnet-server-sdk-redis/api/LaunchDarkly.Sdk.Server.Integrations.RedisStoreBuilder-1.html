@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class RedisStoreBuilder&lt;T&gt; | Redis integration for the LaunchDarkly SDK for Server-side .NET  </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class RedisStoreBuilder&lt;T&gt; | Redis integration for the LaunchDarkly SDK for Server-side .NET  ">
+    
+    <meta name="description" content="A builder for configuring the Redis-based persistent data store.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly.ServerSdk.Redis">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1" class="text-break">Class RedisStoreBuilder&lt;T&gt;</h1>
+  <div class="markdown level0 summary"><p>A <a href="http://en.wikipedia.org/wiki/Builder_pattern">builder</a> for configuring the
+Redis-based persistent data store.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">RedisStoreBuilder&lt;T&gt;</span></div>
+  </div>
+  <div class="implements">
+    <h5>Implements</h5>
+    <div><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer-1.html">IComponentConfigurer</a>&lt;T&gt;</div>
+    <div><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription.html">IDiagnosticDescription</a></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a>.<a class="xref" href="LaunchDarkly.Sdk.Server.html">Server</a>.<a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.html">Integrations</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.ServerSdk.Redis.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract class RedisStoreBuilder&lt;T&gt; : IComponentConfigurer&lt;T&gt;, IDiagnosticDescription</code></pre>
+  </div>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">T</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>
+This can be used either for the main data store that holds feature flag data, or for the big
+segment store, or both. If you are using both, they do not have to have the same parameters. For
+instance, in this example the main data store uses a Redis host called "host1" and the big
+segment store uses a Redis host called "host2":
+</p>
+<pre><code class="lang-csharp">var config = Configuration.Builder("sdk-key")
+    .DataStore(
+        Components.PersistentDataStore(
+            Redis.DataStore().Uri("redis://host1:6379")
+        )
+    )
+    .BigSegments(
+        Components.BigSegments(
+            Redis.DataStore().Uri("redis://host2:6379")
+        )
+    )
+    .Build();</code></pre>
+<p>
+Note that the builder is passed to one of two methods,
+<a class="xref" href="LaunchDarkly.Sdk.Server.Components.html#LaunchDarkly_Sdk_Server_Components_PersistentDataStore_LaunchDarkly_Sdk_Server_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Server_Subsystems_IPersistentDataStore__">PersistentDataStore(IComponentConfigurer&lt;IPersistentDataStore&gt;)</a> or
+<a class="xref" href="LaunchDarkly.Sdk.Server.Components.html#LaunchDarkly_Sdk_Server_Components_BigSegments_LaunchDarkly_Sdk_Server_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Server_Subsystems_IBigSegmentStore__">BigSegments(IComponentConfigurer&lt;IBigSegmentStore&gt;)</a>, depending on the context in
+which it is being used. This is because each of those contexts has its own additional
+configuration options that are unrelated to the Redis options.
+</p>
+<p>
+Builder calls can be chained, for example:
+</p>
+<pre><code class="lang-csharp">var config = Configuration.Builder("sdk-key")
+    .DataStore(
+        Components.PersistentDataStore(
+            Redis.DataStore()
+                .Uri("redis://my-redis-host")
+                .Database(1)
+            )
+            .CacheSeconds(15)
+        )
+    .Build();</code></pre>
+</div>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Build_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.Build(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L258">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Build_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Build*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Build_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Build(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)">Build(LdClientContext)</h4>
+  <div class="markdown level1 summary"><p>Called internally by the SDK to create an implementation instance. Applications should not need
+to call this method.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract T Build(LdClientContext context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.LdClientContext.html">LdClientContext</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>provides configuration properties and other components from the current
+SDK client instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">T</span></td>
+        <td><p>a instance of the component type</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_ConnectTimeout_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.ConnectTimeout(System.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L176">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_ConnectTimeout_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.ConnectTimeout*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_ConnectTimeout_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.ConnectTimeout(System.TimeSpan)">ConnectTimeout(TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Specifies the maximum time to wait for a connection to the Redis server.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; ConnectTimeout(TimeSpan timeout)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">timeout</span></td>
+        <td><p>the timeout interval</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Connection_StackExchange_Redis_IConnectionMultiplexer_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.Connection(StackExchange.Redis.IConnectionMultiplexer)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L235">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Connection_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Connection*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Connection_StackExchange_Redis_IConnectionMultiplexer_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Connection(StackExchange.Redis.IConnectionMultiplexer)">Connection(IConnectionMultiplexer)</h4>
+  <div class="markdown level1 summary"><p>Specifies a pre-configured Redis connection multiplexer to use and will ignore
+all other redis configuration options. Once you provide a multiplexer the SDK
+will own it and will dispose it.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; Connection(IConnectionMultiplexer connection)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">IConnectionMultiplexer</span></td>
+        <td><span class="parametername">connection</span></td>
+        <td><p>the pre-configured connection multiplexer</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_ConnectionMultiplexerFactory.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.ConnectionMultiplexerFactory%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L246">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_ConnectionMultiplexerFactory_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.ConnectionMultiplexerFactory*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_ConnectionMultiplexerFactory" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.ConnectionMultiplexerFactory">ConnectionMultiplexerFactory()</h4>
+  <div class="markdown level1 summary"><p>Gets the connection to use - either the externally provided one or creates a new one
+from configuration.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected IConnectionMultiplexer ConnectionMultiplexerFactory()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">IConnectionMultiplexer</span></td>
+        <td><p>the Redis connection multiplexer to use</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_DatabaseIndex_System_Int32_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.DatabaseIndex(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L165">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_DatabaseIndex_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.DatabaseIndex*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_DatabaseIndex_System_Int32_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.DatabaseIndex(System.Int32)">DatabaseIndex(int)</h4>
+  <div class="markdown level1 summary"><p>Specifies which database to use within the Redis server. The default is 0.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; DatabaseIndex(int database)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">database</span></td>
+        <td><p>index of the database to use</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_DescribeConfiguration_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.DescribeConfiguration(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L261">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_DescribeConfiguration_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.DescribeConfiguration*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_DescribeConfiguration_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.DescribeConfiguration(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)">DescribeConfiguration(LdClientContext)</h4>
+  <div class="markdown level1 summary"><p>Called internally by the SDK to inspect the configuration. Applications do not need to call
+this method.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public LdValue DescribeConfiguration(LdClientContext context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.LdClientContext.html">LdClientContext</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>SDK configuration/component information</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a></td>
+        <td><p>a JSON value</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_EndPoint_System_Net_EndPoint_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.EndPoint(System.Net.EndPoint)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L94">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_EndPoint_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.EndPoint*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_EndPoint_System_Net_EndPoint_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.EndPoint(System.Net.EndPoint)">EndPoint(EndPoint)</h4>
+  <div class="markdown level1 summary"><p>Specifies a single Redis server as an EndPoint.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; EndPoint(EndPoint endPoint)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.net.endpoint">EndPoint</a></td>
+        <td><span class="parametername">endPoint</span></td>
+        <td><p>location of the Redis server</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_EndPoints_System_Collections_Generic_IList_System_Net_EndPoint__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.EndPoints(System.Collections.Generic.IList%7BSystem.Net.EndPoint%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L150">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_EndPoints_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.EndPoints*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_EndPoints_System_Collections_Generic_IList_System_Net_EndPoint__" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.EndPoints(System.Collections.Generic.IList{System.Net.EndPoint})">EndPoints(IList&lt;EndPoint&gt;)</h4>
+  <div class="markdown level1 summary"><p>Specifies multiple Redis servers as a list of EndPoints.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; EndPoints(IList&lt;EndPoint&gt; endPoints)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ilist-1">IList</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.net.endpoint">EndPoint</a>&gt;</td>
+        <td><span class="parametername">endPoints</span></td>
+        <td><p>locations of the Redis servers</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_HostAndPort_System_String_System_Int32_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.HostAndPort(System.String%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L86">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_HostAndPort_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.HostAndPort*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_HostAndPort_System_String_System_Int32_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.HostAndPort(System.String,System.Int32)">HostAndPort(string, int)</h4>
+  <div class="markdown level1 summary"><p>Specifies a single Redis server by hostname and port.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; HostAndPort(string host, int port)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">host</span></td>
+        <td><p>hostname of the Redis server</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">port</span></td>
+        <td><p>port of the Redis server</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_OperationTimeout_System_TimeSpan_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.OperationTimeout(System.TimeSpan)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L190">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_OperationTimeout_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.OperationTimeout*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_OperationTimeout_System_TimeSpan_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.OperationTimeout(System.TimeSpan)">OperationTimeout(TimeSpan)</h4>
+  <div class="markdown level1 summary"><p>Specifies the maximum time to wait for each synchronous Redis operation to complete.
+If you are seeing timeout errors - which could result from either an overburdened
+Redis server, or an unusually large operation such as storing a very large feature
+flag - you may want to increase this setting.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; OperationTimeout(TimeSpan timeout)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">timeout</span></td>
+        <td><p>the timeout interval</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Prefix_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.Prefix(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L201">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Prefix_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Prefix*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Prefix_System_String_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Prefix(System.String)">Prefix(string)</h4>
+  <div class="markdown level1 summary"><p>Specifies the namespace prefix for all keys stored in Redis.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; Prefix(string prefix)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">prefix</span></td>
+        <td><p>the namespace prefix, or null to use <a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.Redis.html#LaunchDarkly_Sdk_Server_Integrations_Redis_DefaultPrefix">DefaultPrefix</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_RedisConfigChanges_System_Action_StackExchange_Redis_ConfigurationOptions__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.RedisConfigChanges(System.Action%7BStackExchange.Redis.ConfigurationOptions%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L222">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_RedisConfigChanges_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.RedisConfigChanges*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_RedisConfigChanges_System_Action_StackExchange_Redis_ConfigurationOptions__" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.RedisConfigChanges(System.Action{StackExchange.Redis.ConfigurationOptions})">RedisConfigChanges(Action&lt;ConfigurationOptions&gt;)</h4>
+  <div class="markdown level1 summary"><p>Allows you to modify any of the configuration options supported by StackExchange.Redis
+directly. The current configuration will be passed to your Action, which can modify it
+in any way.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; RedisConfigChanges(Action&lt;ConfigurationOptions&gt; modifyConfig)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<span class="xref">ConfigurationOptions</span>&gt;</td>
+        <td><span class="parametername">modifyConfig</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_RedisConfigChanges_System_Action_StackExchange_Redis_ConfigurationOptions___examples">Examples</h5>
+  <pre><code class="lang-csharp">Redis.DataStore()
+    .RedisConfigChanges((config) =&gt; {
+        config.Ssl = true;
+    })</code></pre>
+
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_RedisConfiguration_StackExchange_Redis_ConfigurationOptions_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.RedisConfiguration(StackExchange.Redis.ConfigurationOptions)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L74">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_RedisConfiguration_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.RedisConfiguration*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_RedisConfiguration_StackExchange_Redis_ConfigurationOptions_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.RedisConfiguration(StackExchange.Redis.ConfigurationOptions)">RedisConfiguration(ConfigurationOptions)</h4>
+  <div class="markdown level1 summary"><p>Specifies all Redis configuration options at once.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; RedisConfiguration(ConfigurationOptions config)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">ConfigurationOptions</span></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>a <span class="xref">StackExchange.Redis.ConfigurationOptions</span> instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.Uri(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L103">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Uri*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_String_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Uri(System.String)">Uri(string)</h4>
+  <div class="markdown level1 summary"><p>Shortcut for calling <a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html#LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_Uri_">Uri(Uri)</a> with a string.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; Uri(string uri)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">uri</span></td>
+        <td><p>the Redis server URI as a string</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_String__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html#LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_Uri_">Uri(Uri)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_Uri_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601.Uri(System.Uri)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L112">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Uri*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_Uri_" data-uid="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder`1.Uri(System.Uri)">Uri(Uri)</h4>
+  <div class="markdown level1 summary"><p>Specifies a Redis server - and, optionally, other properties including
+credentials and database number - using a URI.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RedisStoreBuilder&lt;T&gt; Uri(Uri uri)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.uri">Uri</a></td>
+        <td><span class="parametername">uri</span></td>
+        <td><p>the Redis server URI</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html">RedisStoreBuilder</a>&lt;T&gt;</td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_Uri__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder-1.html#LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1_Uri_System_String_">Uri(string)</a></div>
+  </div>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer-1.html">IComponentConfigurer&lt;T&gt;</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription.html">IDiagnosticDescription</a>
+  </div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_RedisStoreBuilder_1.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.RedisStoreBuilder%601%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-redis/src/RedisStoreBuilder.cs/#L57" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

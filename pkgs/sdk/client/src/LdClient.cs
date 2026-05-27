@@ -915,7 +915,8 @@ namespace LaunchDarkly.Sdk.Client
         /// <para>
         /// Exceptions thrown by the plugin's <c>Register</c> or <c>GetHooks</c> are caught and
         /// logged; they do not propagate to the caller. If either throws, the plugin is not
-        /// registered and its hooks are not added to the live pipeline.
+        /// registered and its hooks are not added to the live pipeline. Hooks returned by
+        /// <c>GetHooks</c> are disposed if <c>Register</c> fails.
         /// </para>
         /// </remarks>
         /// <param name="plugin">the plugin to register; must not be null</param>
@@ -944,12 +945,31 @@ namespace LaunchDarkly.Sdk.Client
             {
                 _log.Error("Error registering plugin {0}: {1}",
                     plugin.Metadata.Name ?? "unknown", ex);
+                DisposePluginHooks(pluginHooks);
                 return;
             }
 
             if (pluginHooks != null && pluginHooks.Count > 0)
             {
                 _hookExecutor.AddHooks(pluginHooks);
+            }
+        }
+
+        private void DisposePluginHooks(IList<Hook> pluginHooks)
+        {
+            if (pluginHooks == null) return;
+
+            foreach (var hook in pluginHooks)
+            {
+                try
+                {
+                    hook?.Dispose();
+                }
+                catch (Exception e)
+                {
+                    _log.Error("During disposal of hook \"{0}\" reported error: {1}",
+                        hook?.Metadata.Name, e.Message);
+                }
             }
         }
 

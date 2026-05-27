@@ -127,6 +127,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             lock (_activeStoreLock)
             {
                 _activeReadStore = _memoryStore;
+                if (_persistentStore is IDisableableCache disableable)
+                {
+                    disableable.DisableCache();
+                }
             }
         }
 

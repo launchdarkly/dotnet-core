@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using LaunchDarkly.Cache;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
@@ -22,15 +23,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
     /// class adds the caching behavior that we normally want for any persistent data store.
     /// </para>
     /// </remarks>
-    internal sealed class PersistentStoreWrapper : IDataStore, ISettableCache
+    internal sealed class PersistentStoreWrapper : IDataStore, ISettableCache, IDisableableCache
     {
         private readonly IPersistentDataStore _core;
         private readonly DataStoreCacheConfig _caching;
         private readonly IDataStoreUpdates _dataStoreUpdates;
         private readonly Logger _log;
-        private readonly ICache<CacheKey, ItemDescriptor?> _itemCache;
-        private readonly ICache<DataKind, ImmutableDictionary<string, ItemDescriptor>> _allCache;
-        private readonly ISingleValueCache<bool> _initCache;
+        private ICache<CacheKey, ItemDescriptor?> _itemCache;
+        private ICache<DataKind, ImmutableDictionary<string, ItemDescriptor>> _allCache;
+        private ISingleValueCache<bool> _initCache;
         private readonly bool _cacheIndefinitely;
         private readonly List<DataKind> _cachedDataKinds = new List<DataKind>();
         private readonly PersistentDataStoreStatusManager _statusManager;
@@ -315,6 +316,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             return updated;
         }
         
+        /// <summary>
+        /// Disables the internal cache. After this call, reads and writes go straight
+        /// to the underlying persistent store; subsequent invocations are no-ops.
+        /// </summary>
+        public void DisableCache()
+        {
+            var item = Interlocked.Exchange(ref _itemCache, null);
+            var all = Interlocked.Exchange(ref _allCache, null);
+            var init = Interlocked.Exchange(ref _initCache, null);
+            item?.Clear();
+            all?.Clear();
+            item?.Dispose();
+            all?.Dispose();
+            init?.Dispose();
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -326,9 +343,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             if (disposing)
             {
                 _core.Dispose();
-                _itemCache?.Dispose();
-                _allCache?.Dispose();
-                _initCache?.Dispose();
+                DisableCache();
                 _statusManager.Dispose();
             }
         }

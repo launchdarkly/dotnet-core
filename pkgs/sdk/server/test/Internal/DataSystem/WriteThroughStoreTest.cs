@@ -497,6 +497,115 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         #endregion
 
+        #region Cache Disable Tests
+
+        [Fact]
+        public void Apply_FirstBasis_CallsDisableCacheOnPersistentStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockDisableableCachePersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet());
+
+                Assert.Equal(1, persistentStore.DisableCacheCallCount);
+            }
+        }
+
+        [Fact]
+        public void Apply_SubsequentApply_DoesNotCallDisableCacheAgain()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockDisableableCachePersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet());
+
+                // Build a delta changeset to apply on top.
+                var item3 = new TestItem("item3");
+                var deltaData = ImmutableList.Create(
+                    new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                        TestDataKind,
+                        new KeyedItems<ItemDescriptor>(ImmutableDictionary<string, ItemDescriptor>.Empty
+                            .Add("key3", new ItemDescriptor(30, item3)))
+                    )
+                );
+                var delta = new ChangeSet<ItemDescriptor>(
+                    ChangeSetType.Partial,
+                    Selector.Make(2, "state2"),
+                    deltaData,
+                    null);
+                store.Apply(delta);
+
+                Assert.Equal(1, persistentStore.DisableCacheCallCount);
+            }
+        }
+
+        [Fact]
+        public void Init_FirstCall_CallsDisableCacheOnPersistentStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockDisableableCachePersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Init(CreateTestDataSet());
+
+                Assert.Equal(1, persistentStore.DisableCacheCallCount);
+            }
+        }
+
+        [Fact]
+        public void Apply_ReadOnlyMode_StillCallsDisableCache()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockDisableableCachePersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadOnly))
+            {
+                store.Apply(CreateFullChangeSet());
+
+                // Reads bypass the persistent store in both modes post-switch,
+                // so the cache is dead weight regardless of mode.
+                Assert.Equal(1, persistentStore.DisableCacheCallCount);
+            }
+        }
+
+        [Fact]
+        public void Apply_NonDisablerStore_DoesNotThrow()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore(); // does not implement IDisableableCache
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                // The probe must be a no-op for stores that don't implement the interface.
+                store.Apply(CreateFullChangeSet());
+                Assert.True(persistentStore.WasInitCalled);
+            }
+        }
+
+        [Fact]
+        public void Apply_WithoutPersistence_DoesNotThrow()
+        {
+            var memoryStore = new InMemoryDataStore();
+
+            using (var store = new WriteThroughStore(memoryStore, null,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet()); // null _persistentStore -- probe must short-circuit
+            }
+        }
+
+        #endregion
+
         #region Selector Tests
 
         [Fact]
@@ -956,6 +1065,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             public void Dispose()
             {
                 WasDisposeCalled = true;
+            }
+        }
+
+        private class MockDisableableCachePersistentStore : MockTransactionalPersistentStore, IDisableableCache
+        {
+            public int DisableCacheCallCount { get; private set; }
+
+            public void DisableCache()
+            {
+                DisableCacheCallCount++;
             }
         }
 

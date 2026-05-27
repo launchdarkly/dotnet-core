@@ -907,10 +907,13 @@ namespace LaunchDarkly.Sdk.Client
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Calls the plugin's <c>Register</c> method (the same as is done at construction time
-        /// for plugins configured via <see cref="ConfigurationBuilder.Plugins"/>) and merges any
-        /// hooks it returns from <c>GetHooks</c> into the live hook pipeline so that subsequent
-        /// flag evaluations and identify calls invoke them.
+        /// Retrieves hooks via <c>GetHooks</c>, calls <c>Register</c>, then merges the hooks into
+        /// the live pipeline. This ordering differs from construction-time registration for plugins
+        /// configured via <see cref="ConfigurationBuilder.Plugins"/>, where hooks are added to the
+        /// executor before <c>Register</c> is called: here, hooks are not active during
+        /// <c>Register</c>, so flag evaluations or identify calls made inside <c>Register</c> will
+        /// not invoke this plugin's hooks. After this method returns successfully, subsequent
+        /// evaluations and identify calls will invoke them.
         /// </para>
         /// <para>
         /// Exceptions thrown by the plugin's <c>Register</c> or <c>GetHooks</c> are caught and

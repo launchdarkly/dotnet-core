@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class ConsulDataStoreBuilder | Consul integration for the LaunchDarkly SDK for Server-side .NET </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class ConsulDataStoreBuilder | Consul integration for the LaunchDarkly SDK for Server-side .NET ">
+    
+    <meta name="description" content="A builder for configuring the Consul-based persistent data store.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly.ServerSdk.Consul">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder" class="text-break">Class ConsulDataStoreBuilder</h1>
+  <div class="markdown level0 summary"><p>A builder for configuring the Consul-based persistent data store.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">ConsulDataStoreBuilder</span></div>
+  </div>
+  <div class="implements">
+    <h5>Implements</h5>
+    <div><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer-1.html">IComponentConfigurer</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStoreAsync.html">IPersistentDataStoreAsync</a>&gt;</div>
+    <div><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription.html">IDiagnosticDescription</a></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a>.<a class="xref" href="LaunchDarkly.Sdk.Server.html">Server</a>.<a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.html">Integrations</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.ServerSdk.Consul.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class ConsulDataStoreBuilder : IComponentConfigurer&lt;IPersistentDataStoreAsync&gt;, IDiagnosticDescription</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>
+Obtain an instance of this class by calling <a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.Consul.html#LaunchDarkly_Sdk_Server_Integrations_Consul_DataStore">DataStore()</a>. After calling its methods
+to specify any desired custom settings, wrap it in a <a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.PersistentDataStoreBuilder.html">PersistentDataStoreBuilder</a>
+by calling <a class="xref" href="LaunchDarkly.Sdk.Server.Components.html#LaunchDarkly_Sdk_Server_Components_PersistentDataStore_LaunchDarkly_Sdk_Server_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Server_Subsystems_IPersistentDataStoreAsync__">PersistentDataStore(IComponentConfigurer&lt;IPersistentDataStoreAsync&gt;)</a>, then pass
+the result into the SDK configuration with <a class="xref" href="LaunchDarkly.Sdk.Server.ConfigurationBuilder.html#LaunchDarkly_Sdk_Server_ConfigurationBuilder_DataStore_LaunchDarkly_Sdk_Server_Subsystems_IComponentConfigurer_LaunchDarkly_Sdk_Server_Subsystems_IDataStore__">DataStore(IComponentConfigurer&lt;IDataStore&gt;)</a>.
+You do not need to call <a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html#LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Build_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_">Build(LdClientContext)</a> yourself to build
+the actual data store; that will be done by the SDK.
+</p>
+<p>
+The Consul client has many configuration options. This class has shortcut methods for
+some of them, but if you need more sophisticated control over the Consul client, use
+<a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html#LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ConsulConfigChanges_System_Action_Consul_ConsulClientConfiguration__">ConsulConfigChanges(Action&lt;ConsulClientConfiguration&gt;)</a> or
+<a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html#LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ExistingClient_Consul_ConsulClient_">ExistingClient(ConsulClient)</a>.
+</p>
+<p>
+Builder calls can be chained, for example:
+</p>
+<pre><code class="lang-csharp">var config = Configuration.Builder("sdk-key")
+    .DataStore(
+        Components.PersistentDataStore(
+            Consul.DataStore()
+                .Address("http://my-consul-host:8500")
+                .Prefix("app1")
+            )
+            .CacheSeconds(15)
+        )
+    .Build();</code></pre>
+</div>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Address(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L58">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Address*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_String_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Address(System.String)">Address(string)</h4>
+  <div class="markdown level1 summary"><p>Shortcut for calling <a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html#LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_Uri_">Address(Uri)</a> with a string.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ConsulDataStoreBuilder Address(string address)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">address</span></td>
+        <td><p>the URI of the Consul host as a string</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html">ConsulDataStoreBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_String__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html#LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_Uri_">Address(Uri)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_Uri_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Address(System.Uri)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L66">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Address*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_Uri_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Address(System.Uri)">Address(Uri)</h4>
+  <div class="markdown level1 summary"><p>Specifies the Consul agent's location.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ConsulDataStoreBuilder Address(Uri address)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.uri">Uri</a></td>
+        <td><span class="parametername">address</span></td>
+        <td><p>the URI of the Consul host</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html">ConsulDataStoreBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_Uri__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html#LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Address_System_String_">Address(string)</a></div>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Build_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Build(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L127">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Build_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Build*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Build_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Build(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)">Build(LdClientContext)</h4>
+  <div class="markdown level1 summary"><p>Called internally by the SDK to create an implementation instance. Applications should not need
+to call this method.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IPersistentDataStoreAsync Build(LdClientContext context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.LdClientContext.html">LdClientContext</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>provides configuration properties and other components from the current
+SDK client instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IPersistentDataStoreAsync.html">IPersistentDataStoreAsync</a></td>
+        <td><p>a instance of the component type</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ConsulConfigChanges_System_Action_Consul_ConsulClientConfiguration__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.ConsulConfigChanges(System.Action%7BConsul.ConsulClientConfiguration%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L78">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ConsulConfigChanges_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.ConsulConfigChanges*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ConsulConfigChanges_System_Action_Consul_ConsulClientConfiguration__" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.ConsulConfigChanges(System.Action{Consul.ConsulClientConfiguration})">ConsulConfigChanges(Action&lt;ConsulClientConfiguration&gt;)</h4>
+  <div class="markdown level1 summary"><p>Specifies custom steps for configuring the Consul client. Your action may modify the
+<span class="xref">Consul.ConsulClientConfiguration</span> object in any way.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ConsulDataStoreBuilder ConsulConfigChanges(Action&lt;ConsulClientConfiguration&gt; configAction)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<span class="xref">ConsulClientConfiguration</span>&gt;</td>
+        <td><span class="parametername">configAction</span></td>
+        <td><p>an action for modifying the configuration</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html">ConsulDataStoreBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_DescribeConfiguration_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.DescribeConfiguration(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L154">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_DescribeConfiguration_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.DescribeConfiguration*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_DescribeConfiguration_LaunchDarkly_Sdk_Server_Subsystems_LdClientContext_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.DescribeConfiguration(LaunchDarkly.Sdk.Server.Subsystems.LdClientContext)">DescribeConfiguration(LdClientContext)</h4>
+  <div class="markdown level1 summary"><p>Called internally by the SDK to inspect the configuration. Applications do not need to call
+this method.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public LdValue DescribeConfiguration(LdClientContext context)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.LdClientContext.html">LdClientContext</a></td>
+        <td><span class="parametername">context</span></td>
+        <td><p>SDK configuration/component information</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a></td>
+        <td><p>a JSON value</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ExistingClient_Consul_ConsulClient_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.ExistingClient(Consul.ConsulClient)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L105">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ExistingClient_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.ExistingClient*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ExistingClient_Consul_ConsulClient_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.ExistingClient(Consul.ConsulClient)">ExistingClient(ConsulClient)</h4>
+  <div class="markdown level1 summary"><p>Specifies an existing, already-configured Consul client instance that the data store
+should use rather than creating one of its own.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ConsulDataStoreBuilder ExistingClient(ConsulClient client)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">ConsulClient</span></td>
+        <td><span class="parametername">client</span></td>
+        <td><p>an existing Consul client instance</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html">ConsulDataStoreBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_ExistingClient_Consul_ConsulClient__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+If you specify an existing client, then the other builder methods for configuring Consul are ignored.
+</p>
+<p>
+Note that the LaunchDarkly code will <i>not</i> take ownership of the lifecycle of this
+object: in other words, it will not call <code>Dispose()</code> on the <code>ConsulClient</code> when
+you dispose of the SDK client, as it would if it had created the <code>ConsulClient</code> itself.
+It is your responsibility to call <code>Dispose()</code> on the <code>ConsulClient</code> when you are
+done with it.
+</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Prefix_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Prefix(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L120">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Prefix_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Prefix*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Prefix_System_String_" data-uid="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.Prefix(System.String)">Prefix(string)</h4>
+  <div class="markdown level1 summary"><p>Sets an optional namespace prefix for all keys stored in Consul.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ConsulDataStoreBuilder Prefix(string prefix)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">prefix</span></td>
+        <td><p>the namespace prefix, or null to use <a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.Consul.html#LaunchDarkly_Sdk_Server_Integrations_Consul_DefaultPrefix">DefaultPrefix</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder.html">ConsulDataStoreBuilder</a></td>
+        <td><p>the builder</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder_Prefix_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Use this if you are sharing the same database table between multiple clients that are for
+different LaunchDarkly environments, to avoid key collisions.</p>
+</div>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IComponentConfigurer-1.html">IComponentConfigurer&lt;T&gt;</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Server.Subsystems.IDiagnosticDescription.html">IDiagnosticDescription</a>
+  </div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Integrations_ConsulDataStoreBuilder.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Integrations.ConsulDataStoreBuilder%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/dotnet-server-sdk-consul/src/ConsulDataStoreBuilder.cs/#L42" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

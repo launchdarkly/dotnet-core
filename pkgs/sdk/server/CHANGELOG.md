@@ -1,5 +1,13 @@
 # Changelog
 
+## [8.12.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.1...LaunchDarkly.ServerSdk-v8.12.2) (2026-05-27)
+
+
+### Bug Fixes
+
+* exclude documentation files from NuGet package builds ([#263](https://github.com/launchdarkly/dotnet-core/issues/263)) ([cc86ad6](https://github.com/launchdarkly/dotnet-core/commit/cc86ad6bd54d2201db5171971946368cde8f45f8))
+* use basis query param for FDv2 polling selector ([#260](https://github.com/launchdarkly/dotnet-core/issues/260)) ([abaee9d](https://github.com/launchdarkly/dotnet-core/commit/abaee9dfc16634f4d5a952b68db06cd34e801e39))
+
 ## [8.12.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.0...LaunchDarkly.ServerSdk-v8.12.1) (2026-05-12)
 
 

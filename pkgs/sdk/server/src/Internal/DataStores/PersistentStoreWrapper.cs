@@ -335,25 +335,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         public void DisableCache()
         {
             if (_cacheDisabled) return;
-            // Publish the bypass flag with release semantics before clearing the
-            // cache contents. Any reader that starts after this point observes
-            // _cacheDisabled == true and skips the cache call sites entirely,
-            // going straight to the core.
-            //
-            // An in-flight reader that already passed the flag check before this
-            // write may still call into the cache after our Clear() and, on a
-            // miss, fire the cache's loader -- which queries the core and then
-            // stores the fresh result back. Those leftover entries are unreachable
-            // from any subsequent read (every future caller bypasses) and hold
-            // fresh, correct values, so they don't cause stale reads or torn
-            // observations. They simply persist in the cache instance until
-            // Dispose() reclaims them. In practice the window is microseconds at
-            // FDv2 init and bounded by the number of concurrent readers in
-            // wrapper.Get/GetAll at that exact moment.
-            //
-            // The cache instances themselves stay alive (the fields are readonly);
-            // Dispose() handles their final teardown, so concurrent readers never
-            // observe a disposed cache.
             _cacheDisabled = true;
             _itemCache?.Clear();
             _allCache?.Clear();

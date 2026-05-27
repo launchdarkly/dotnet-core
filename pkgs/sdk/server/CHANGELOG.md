@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.13.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.2...LaunchDarkly.ServerSdk-v8.13.0) (2026-05-27)
+
+
+### Features
+
+* add X-LaunchDarkly-Instance-Id header ([#258](https://github.com/launchdarkly/dotnet-core/issues/258)) ([3c03ec4](https://github.com/launchdarkly/dotnet-core/commit/3c03ec4e3e73013cf5116af0583243605c561576))
+
 ## [8.12.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.1...LaunchDarkly.ServerSdk-v8.12.2) (2026-05-27)
 
 

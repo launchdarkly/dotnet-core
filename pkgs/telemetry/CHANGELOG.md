@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.5.0...LaunchDarkly.ServerSdk.Telemetry-v1.5.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* exclude documentation files from NuGet package builds ([#263](https://github.com/launchdarkly/dotnet-core/issues/263)) ([cc86ad6](https://github.com/launchdarkly/dotnet-core/commit/cc86ad6bd54d2201db5171971946368cde8f45f8))
+
 ## [1.5.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Telemetry-v1.4.0...LaunchDarkly.ServerSdk.Telemetry-v1.5.0) (2026-05-15)
 
 

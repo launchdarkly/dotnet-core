@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.3...LaunchDarkly.ServerSdk.Ai-v0.9.4) (2026-05-27)
+
+
+### Bug Fixes
+
+* exclude documentation files from NuGet package builds ([#263](https://github.com/launchdarkly/dotnet-core/issues/263)) ([cc86ad6](https://github.com/launchdarkly/dotnet-core/commit/cc86ad6bd54d2201db5171971946368cde8f45f8))
+
 ## [0.9.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.2...LaunchDarkly.ServerSdk.Ai-v0.9.3) (2026-03-05)
 
 

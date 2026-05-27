@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 using LaunchDarkly.Cache;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
@@ -29,9 +28,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         private readonly DataStoreCacheConfig _caching;
         private readonly IDataStoreUpdates _dataStoreUpdates;
         private readonly Logger _log;
-        private ICache<CacheKey, ItemDescriptor?> _itemCache;
-        private ICache<DataKind, ImmutableDictionary<string, ItemDescriptor>> _allCache;
-        private ISingleValueCache<bool> _initCache;
+        private readonly ICache<CacheKey, ItemDescriptor?> _itemCache;
+        private readonly ICache<DataKind, ImmutableDictionary<string, ItemDescriptor>> _allCache;
+        private readonly ISingleValueCache<bool> _initCache;
         private readonly bool _cacheIndefinitely;
         private readonly List<DataKind> _cachedDataKinds = new List<DataKind>();
         private readonly PersistentDataStoreStatusManager _statusManager;
@@ -40,6 +39,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         private ICacheExporter _externalCache;
 
         private volatile bool _inited;
+
+        // Once true, the cache is bypassed on reads and writes; entries already in
+        // the cache have been Clear()-ed by DisableCache(). The cache objects
+        // themselves remain alive until Dispose() so that any reader currently
+        // holding a reference does not observe a disposed cache. Volatile so the
+        // bypass becomes visible to other threads without an explicit lock.
+        private volatile bool _cacheDisabled;
         
         internal PersistentStoreWrapper(
             IPersistentDataStoreAsync coreAsync,
@@ -113,7 +119,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 return true;
             }
             bool result;
-            if (_initCache != null)
+            if (_initCache != null && !_cacheDisabled)
             {
                 result = _initCache.Get();
             }
@@ -164,7 +170,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 kindAndItems => PersistentDataStoreConverter.SerializeAll(kindAndItems.Key, kindAndItems.Value.Items)
             );
             Exception failure = InitCore(new FullDataSet<SerializedItemDescriptor>(serializedItems));
-            if (_itemCache != null && _allCache != null)
+            if (_itemCache != null && _allCache != null && !_cacheDisabled)
             {
                 _itemCache.Clear();
                 _allCache.Clear();
@@ -200,7 +206,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         {
             try
             {
-                var ret = _itemCache is null ? GetAndDeserializeItem(kind, key) :
+                var ret = (_itemCache is null || _cacheDisabled) ? GetAndDeserializeItem(kind, key) :
                     _itemCache.Get(new CacheKey(kind, key));
                 ProcessError(null);
                 return ret;
@@ -216,7 +222,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         {
             try
             {
-                var ret = new KeyedItems<ItemDescriptor>(_allCache is null ?
+                var ret = new KeyedItems<ItemDescriptor>((_allCache is null || _cacheDisabled) ?
                     GetAllAndDeserialize(kind) : _allCache.Get(kind));
                 ProcessError(null);
                 return ret;
@@ -251,7 +257,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 }
                 failure = e;
             }
-            if (_itemCache != null)
+            if (_itemCache != null && !_cacheDisabled)
             {
                 var cacheKey = new CacheKey(kind, key);
                 if (failure is null)
@@ -285,7 +291,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                     }
                 }
             }
-            if (_allCache != null)
+            if (_allCache != null && !_cacheDisabled)
             {
                 // If the cache has a finite TTL, then we should remove the "all items" cache entry to force
                 // a reread the next time All is called. However, if it's an infinite TTL, we need to just
@@ -320,16 +326,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         /// Disables the internal cache. After this call, reads and writes go straight
         /// to the underlying persistent store; subsequent invocations are no-ops.
         /// </summary>
+        /// <remarks>
+        /// At the time of writing, it is likely that the cache was disabled when 
+        /// another store took over as the active store and so reads may not even get
+        /// to this layer anymore.  If they do, they do go straight to persistence if
+        /// this layer's DisableCache method was called.
+        /// </remarks>
         public void DisableCache()
         {
-            var item = Interlocked.Exchange(ref _itemCache, null);
-            var all = Interlocked.Exchange(ref _allCache, null);
-            var init = Interlocked.Exchange(ref _initCache, null);
-            item?.Clear();
-            all?.Clear();
-            item?.Dispose();
-            all?.Dispose();
-            init?.Dispose();
+            if (_cacheDisabled) return;
+            // Volatile write publishes the bypass flag with release semantics
+            // before the cache contents are cleared. Any reader observing
+            // _cacheDisabled == true will skip the cache call sites entirely;
+            // any reader still in flight will complete against the cache and
+            // we will just clear it underneath them. The cache instances stay
+            // alive until Dispose so concurrent readers never observe a
+            // disposed cache.
+            _cacheDisabled = true;
+            _itemCache?.Clear();
+            _allCache?.Clear();
         }
 
         public void Dispose()
@@ -343,7 +358,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             if (disposing)
             {
                 _core.Dispose();
-                DisableCache();
+                _itemCache?.Dispose();
+                _allCache?.Dispose();
+                _initCache?.Dispose();
                 _statusManager.Dispose();
             }
         }
@@ -452,8 +469,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
 
             // Fall back to cache-based recovery if external store is not available/initialized
-            // and we're in infinite cache mode
-            if (_cacheIndefinitely && _allCache != null)
+            // and we're in infinite cache mode. Under FDv2 this branch is dead once
+            // DisableCache has run: the ICacheExporter path above supersedes it.
+            if (_cacheIndefinitely && _allCache != null && !_cacheDisabled)
             {
                 // If we're in infinite cache mode, then we can assume the cache has a full set of current
                 // flag data (since presumably the data source has still been running) and we can just

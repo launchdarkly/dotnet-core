@@ -914,7 +914,8 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// <para>
         /// Exceptions thrown by the plugin's <c>Register</c> or <c>GetHooks</c> are caught and
-        /// logged; they do not propagate to the caller.
+        /// logged; they do not propagate to the caller. If <c>GetHooks</c> throws, the plugin is
+        /// not registered.
         /// </para>
         /// </remarks>
         /// <param name="plugin">the plugin to register; must not be null</param>
@@ -934,6 +935,7 @@ namespace LaunchDarkly.Sdk.Client
             {
                 _log.Error("Error getting hooks from plugin {0}: {1}",
                     plugin.Metadata.Name ?? "unknown", ex);
+                return;
             }
             if (pluginHooks != null && pluginHooks.Count > 0)
             {

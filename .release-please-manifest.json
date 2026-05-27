@@ -1,7 +1,7 @@
 {
   "pkgs/dotnet-server-sdk-consul": "5.0.0",
   "pkgs/dotnet-server-sdk-dynamodb": "5.0.1",
-  "pkgs/dotnet-server-sdk-redis": "5.1.0",
+  "pkgs/dotnet-server-sdk-redis": "5.1.1",
   "pkgs/sdk/server": "8.12.2",
   "pkgs/sdk/client": "5.7.3",
   "pkgs/telemetry": "1.5.0",

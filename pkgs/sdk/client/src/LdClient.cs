@@ -914,8 +914,8 @@ namespace LaunchDarkly.Sdk.Client
         /// </para>
         /// <para>
         /// Exceptions thrown by the plugin's <c>Register</c> or <c>GetHooks</c> are caught and
-        /// logged; they do not propagate to the caller. If <c>GetHooks</c> throws, the plugin is
-        /// not registered.
+        /// logged; they do not propagate to the caller. If either throws, the plugin is not
+        /// registered and its hooks are not added to the live pipeline.
         /// </para>
         /// </remarks>
         /// <param name="plugin">the plugin to register; must not be null</param>
@@ -924,8 +924,6 @@ namespace LaunchDarkly.Sdk.Client
         {
             if (plugin == null) throw new ArgumentNullException(nameof(plugin));
 
-            // Match the constructor order: collect hooks first, then call Register. This way the
-            // plugin's own hooks are already active by the time its Register method runs.
             IList<Hook> pluginHooks = null;
             try
             {
@@ -937,10 +935,6 @@ namespace LaunchDarkly.Sdk.Client
                     plugin.Metadata.Name ?? "unknown", ex);
                 return;
             }
-            if (pluginHooks != null && pluginHooks.Count > 0)
-            {
-                _hookExecutor.AddHooks(pluginHooks);
-            }
 
             try
             {
@@ -950,6 +944,12 @@ namespace LaunchDarkly.Sdk.Client
             {
                 _log.Error("Error registering plugin {0}: {1}",
                     plugin.Metadata.Name ?? "unknown", ex);
+                return;
+            }
+
+            if (pluginHooks != null && pluginHooks.Count > 0)
+            {
+                _hookExecutor.AddHooks(pluginHooks);
             }
         }
 

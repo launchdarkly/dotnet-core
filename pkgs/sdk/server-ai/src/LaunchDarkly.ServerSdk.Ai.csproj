@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!--x-release-please-start-version-->
-    <Version>0.9.3</Version>
+    <Version>0.9.4</Version>
     <!--x-release-please-end-->
     <!-- The BUILDFRAMEWORKS variable allows us to override the target frameworks with a
          single framework that we are testing; this allows us to test with older SDK
@@ -35,6 +35,7 @@
 
     <!-- fail if XML comments are missing or invalid -->
     <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Configurations>Debug;Release;DebugLocalReferences</Configurations>
     <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
@@ -57,27 +58,35 @@
     <ProjectReference Include="../../server/src/LaunchDarkly.ServerSdk.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\CHANGELOG.md">
+    <None Include="..\CHANGELOG.md">
       <Link>CHANGELOG.md</Link>
-    </Content>
-    <Content Include="..\CONTRIBUTING.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\CONTRIBUTING.md">
       <Link>CONTRIBUTING.md</Link>
-    </Content>
-    <Content Include="..\docfx.json">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\docfx.json">
       <Link>docfx.json</Link>
-    </Content>
-    <Content Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Ai.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\docs-src\namespaces\LaunchDarkly.Sdk.Server.Ai.md">
       <Link>docs-src\namespaces\LaunchDarkly.Sdk.Server.Ai.md</Link>
-    </Content>
-    <Content Include="..\docs-src\README.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\docs-src\README.md">
       <Link>docs-src\README.md</Link>
-    </Content>
-    <Content Include="..\index.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\index.md">
       <Link>index.md</Link>
-    </Content>
-    <Content Include="..\README.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\README.md">
       <Link>README.md</Link>
-    </Content>
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

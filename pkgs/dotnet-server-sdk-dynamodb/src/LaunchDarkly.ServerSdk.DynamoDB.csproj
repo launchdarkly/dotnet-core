@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!--x-release-please-start-version-->
-    <Version>5.0.0</Version>
+    <Version>5.0.1</Version>
     <!--x-release-please-end-->
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <PackageId>LaunchDarkly.ServerSdk.DynamoDB</PackageId>
@@ -20,6 +20,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <RootNamespace>LaunchDarkly.Sdk.Server.Integrations</RootNamespace>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Configurations>Debug;Release;DebugLocalReferences</Configurations>
     <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
@@ -42,24 +43,31 @@
     <ProjectReference Include="../../sdk/server/src/LaunchDarkly.ServerSdk.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\CHANGELOG.md">
+    <None Include="..\CHANGELOG.md">
       <Link>CHANGELOG.md</Link>
-    </Content>
-    <Content Include="..\CONTRIBUTING.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\CONTRIBUTING.md">
       <Link>CONTRIBUTING.md</Link>
-    </Content>
-    <Content Include="..\docfx.json">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\docfx.json">
       <Link>docfx.json</Link>
-    </Content>
-    <Content Include="..\index.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\index.md">
       <Link>index.md</Link>
-    </Content>
-    <Content Include="..\README.md">
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\README.md">
       <Link>README.md</Link>
-    </Content>
-    <Content Include="..\SECURITY.md">
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\SECURITY.md">
       <Link>SECURITY.md</Link>
-    </Content>
+      <Pack>false</Pack>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>

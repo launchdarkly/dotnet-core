@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <!--x-release-please-start-version-->
-        <Version>5.7.2</Version>
+        <Version>5.7.3</Version>
         <!--x-release-please-end-->
         <!-- The BUILDFRAMEWORKS variable allows us to override the target frameworks in
              a situation where we need to build only the .NET Standard target and do not
@@ -37,6 +37,7 @@
 
         <!-- fail if XML comments are missing or invalid -->
         <WarningsAsErrors>1570,1571,1572,1573,1574,1580,1581,1584,1591,1710,1711,1712</WarningsAsErrors>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <Configurations>Debug;Release;DebugLocalReferences</Configurations>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
@@ -125,21 +126,27 @@
         </Compile>
     </ItemGroup>
     <ItemGroup>
-      <Content Include="..\CHANGELOG.md">
+      <None Include="..\CHANGELOG.md">
         <Link>CHANGELOG.md</Link>
-      </Content>
-      <Content Include="..\CONTRIBUTING.md">
+        <Pack>false</Pack>
+      </None>
+      <None Include="..\CONTRIBUTING.md">
         <Link>CONTRIBUTING.md</Link>
-      </Content>
-      <Content Include="..\index.md">
+        <Pack>false</Pack>
+      </None>
+      <None Include="..\index.md">
         <Link>index.md</Link>
-      </Content>
-      <Content Include="..\README.md">
+        <Pack>false</Pack>
+      </None>
+      <None Include="..\README.md">
         <Link>README.md</Link>
-      </Content>
-      <Content Include="..\toc.yml">
+        <Pack>true</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+      <None Include="..\toc.yml">
         <Link>toc.yml</Link>
-      </Content>
+        <Pack>false</Pack>
+      </None>
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AssemblyOriginatorKeyFile>../../../../LaunchDarkly.ClientSdk.snk</AssemblyOriginatorKeyFile>

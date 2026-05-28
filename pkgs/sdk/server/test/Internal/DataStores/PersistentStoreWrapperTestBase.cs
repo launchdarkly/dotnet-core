@@ -640,6 +640,109 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
         }
 
+        [Fact]
+        public void DisableCacheIsIdempotent()
+        {
+            var wrapper = MakeWrapper(Cached);
+            wrapper.DisableCache();
+            wrapper.DisableCache(); // second call must not throw
+        }
+
+        [Fact]
+        public void DisableCacheIsSafeOnUncachedWrapper()
+        {
+            var wrapper = MakeWrapper(Uncached);
+            wrapper.DisableCache(); // no caches to release, must not throw
+        }
+
+        [Fact]
+        public void GetAfterDisableCacheReturnsCurrentCoreState()
+        {
+            var wrapper = MakeWrapper(Cached);
+            var key = "flag";
+            var itemv1 = new TestItem("itemv1");
+            var itemv2 = new TestItem("itemv2");
+
+            _core.ForceSet(TestDataKind, key, 1, itemv1);
+            // Prime the cache.
+            Assert.Equal(itemv1.WithVersion(1), wrapper.Get(TestDataKind, key));
+
+            wrapper.DisableCache();
+
+            // Mutate the core behind the wrapper's back. If the cache is still
+            // serving reads we would see the stale itemv1.
+            _core.ForceSet(TestDataKind, key, 2, itemv2);
+            Assert.Equal(itemv2.WithVersion(2), wrapper.Get(TestDataKind, key));
+        }
+
+        [Fact]
+        public void GetAllAfterDisableCacheReturnsCurrentCoreState()
+        {
+            var wrapper = MakeWrapper(Cached);
+            var itemA = new TestItem("itemA");
+            var itemB = new TestItem("itemB");
+
+            _core.ForceSet(TestDataKind, "keyA", 1, itemA);
+            // Prime the cache.
+            var primed = wrapper.GetAll(TestDataKind);
+            Assert.Single(primed.Items);
+
+            wrapper.DisableCache();
+
+            _core.ForceSet(TestDataKind, "keyB", 1, itemB);
+            var afterDrop = wrapper.GetAll(TestDataKind);
+            Assert.Equal(2, afterDrop.Items.Count());
+        }
+
+        [Fact]
+        public void UpsertAfterDisableCacheWritesThroughToCoreOnly()
+        {
+            var wrapper = MakeWrapper(Cached);
+            var key = "flag";
+            var itemv1 = new TestItem("itemv1");
+
+            wrapper.DisableCache();
+
+            Assert.True(wrapper.Upsert(TestDataKind, key, itemv1.WithVersion(1)));
+            // The write must have landed in the core, and a subsequent Get
+            // must reach the core (not a repopulated cache).
+            Assert.True(_core.Data[TestDataKind].ContainsKey(key));
+            Assert.Equal(itemv1.WithVersion(1), wrapper.Get(TestDataKind, key));
+        }
+
+        [Fact]
+        public void InitAfterDisableCacheWritesThroughToCoreWithoutRepopulatingCache()
+        {
+            var wrapper = MakeWrapper(Cached);
+            var itemA = new TestItem("itemA");
+            var itemB = new TestItem("itemB");
+
+            wrapper.DisableCache();
+
+            var allData = new TestDataBuilder()
+                .Add(TestDataKind, "keyA", 1, itemA)
+                .Build();
+            wrapper.Init(allData);
+
+            // The init must have written to the core.
+            Assert.True(_core.Data[TestDataKind].ContainsKey("keyA"));
+
+            // If the cache had repopulated, the next ForceRemove behind the
+            // wrapper's back would still yield itemA on Get. With cache
+            // disabled, the new core state is what we observe.
+            _core.ForceRemove(TestDataKind, "keyA");
+            _core.ForceSet(TestDataKind, "keyA", 2, itemB);
+            Assert.Equal(itemB.WithVersion(2), wrapper.Get(TestDataKind, "keyA"));
+        }
+
+        [Fact]
+        public void DisposeIsSafeAfterDisableCache()
+        {
+            var wrapper = MakeWrapper(Cached);
+            wrapper.DisableCache();
+            wrapper.Dispose(); // must not throw, even though caches are already gone
+        }
+
         private PersistentStoreWrapper MakeWrapper(CacheMode cacheMode) =>
             MakeWrapper(new TestParams { CacheMode = cacheMode, PersistMode = PersistWithMetadata });
 

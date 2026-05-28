@@ -25,6 +25,17 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     ///         .DataStore(myStore)
     ///         .Build();
     /// </code>
+    /// <para>
+    /// Note: under the FDv2 data system, the cache settings configured here
+    /// (<see cref="CacheTime(TimeSpan)"/>, <see cref="CacheSeconds(int)"/>,
+    /// <see cref="CacheMillis(int)"/>, <see cref="CacheMaximumEntries(int?)"/>,
+    /// <see cref="CacheForever"/>, <see cref="NoCaching"/>) only govern the
+    /// brief bootstrap window before the in-memory store has received its
+    /// first full payload. Once the in-memory store takes over as the active
+    /// read source, the persistent-store cache is released and these settings
+    /// have no further effect. These options are kept for backward compatibility
+    /// and may be deprecated in a future major version.
+    /// </para>
     /// </remarks>
     public class PersistentDataStoreBuilder : IComponentConfigurer<IDataStore>, IDiagnosticDescription
     {

@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.14.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.13.0...LaunchDarkly.ServerSdk-v8.14.0) (2026-05-28)
+
+
+### Features
+
+* Drop persistent-store cache after FDv2 in-memory store init ([#274](https://github.com/launchdarkly/dotnet-core/issues/274)) ([76c3c23](https://github.com/launchdarkly/dotnet-core/commit/76c3c23b3eb3706fa504c49e5a9cbbd6b19d99c9))
+
 ## [8.13.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.12.2...LaunchDarkly.ServerSdk-v8.13.0) (2026-05-27)
 
 

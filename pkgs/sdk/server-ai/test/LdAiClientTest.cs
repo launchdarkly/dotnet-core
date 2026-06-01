@@ -170,8 +170,8 @@ public class LdAiClientTest
         var client = new LdAiClient(mockClient.Object);
 
         // All the JSON inputs here are considered disabled, either due to lack of the 'enabled' property,
-        // or if present, it is set to false. Therefore, if the default was returned, we'd see the assertion fail
-        // (since calling LdAiCompletionConfigDefault.New() constructs an enabled config by default.)
+        // or if present, it is set to false. LdAiCompletionConfigDefault.New() constructs a disabled config
+        // by default; call .Enable() to enable.
         var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
             LdAiCompletionConfigDefault.New().AddMessage("foo").Build());
 

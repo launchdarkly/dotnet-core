@@ -13,7 +13,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// Construct an instance via <see cref="New"/> and the nested <see cref="Builder"/>,
 /// or use <see cref="Disabled"/> for a disabled default.
 /// </summary>
-public record LdAiCompletionConfigDefault
+public sealed record LdAiCompletionConfigDefault : LdAiConfigDefaultBase
 {
     /// <summary>
     /// Builder for constructing an LdAiCompletionConfigDefault instance, which can be passed
@@ -22,7 +22,7 @@ public record LdAiCompletionConfigDefault
     public class Builder
     {
         private bool _enabled;
-        private readonly List<LdAiCompletionConfig.Message> _messages;
+        private readonly List<LdAiMessage> _messages;
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
         private string _providerName;
@@ -31,7 +31,7 @@ public record LdAiCompletionConfigDefault
         internal Builder()
         {
             _enabled = false;
-            _messages = new List<LdAiCompletionConfig.Message>();
+            _messages = new List<LdAiMessage>();
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
             _providerName = "";
@@ -46,7 +46,7 @@ public record LdAiCompletionConfigDefault
         /// <returns>a new builder</returns>
         public Builder AddMessage(string content, Role role = Role.User)
         {
-            _messages.Add(new LdAiCompletionConfig.Message(content, role));
+            _messages.Add(new LdAiMessage(content, role));
             return this;
         }
 
@@ -128,55 +128,40 @@ public record LdAiCompletionConfigDefault
             return new LdAiCompletionConfigDefault(
                 _enabled,
                 _messages,
-                new Meta(),
-                new Model
-                {
-                    Name = _modelName,
-                    Parameters = _modelParams,
-                    Custom = _customModelParams
-                },
-                new Provider { Name = _providerName }
-            );
+                _modelName,
+                _modelParams,
+                _customModelParams,
+                _providerName);
         }
     }
 
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public readonly IReadOnlyList<LdAiCompletionConfig.Message> Messages;
+    public IReadOnlyList<LdAiMessage> Messages { get; init; }
 
-    /// <summary>
-    /// The model parameters associated with the config.
-    /// </summary>
-    public readonly LdAiCompletionConfig.ModelConfiguration Model;
-
-    /// <summary>
-    /// Information about the model provider.
-    /// </summary>
-    public readonly LdAiCompletionConfig.ModelProvider Provider;
-
-    internal LdAiCompletionConfigDefault(bool enabled, IEnumerable<LdAiCompletionConfig.Message> messages, Meta meta, Model model, Provider provider)
+    internal LdAiCompletionConfigDefault(bool enabled, IEnumerable<LdAiMessage> messages, string modelName,
+        IReadOnlyDictionary<string, LdValue> modelParameters, IReadOnlyDictionary<string, LdValue> modelCustom,
+        string providerName)
     {
-        Model = new LdAiCompletionConfig.ModelConfiguration(model?.Name ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
-            model?.Custom ?? new Dictionary<string, LdValue>());
-        Messages = messages?.ToList() ?? new List<LdAiCompletionConfig.Message>();
-        VariationKey = meta?.VariationKey ?? "";
-        Version = meta?.Version ?? 1;
+        Model = new LdAiModel(modelName ?? "", modelParameters ?? new Dictionary<string, LdValue>(),
+            modelCustom ?? new Dictionary<string, LdValue>());
+        Messages = messages?.ToList() ?? new List<LdAiMessage>();
         Enabled = enabled;
-        Provider = new LdAiCompletionConfig.ModelProvider(provider?.Name ?? "");
+        Provider = new LdAiProvider(providerName ?? "");
     }
 
     internal LdValue ToLdValue()
     {
+        var metaFields = new Dictionary<string, LdValue>();
+        if (Enabled.HasValue)
+        {
+            metaFields["enabled"] = LdValue.Of(Enabled.Value);
+        }
+
         return LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
-            { "_ldMeta", LdValue.ObjectFrom(
-                new Dictionary<string, LdValue>
-                {
-                    { "variationKey", LdValue.Of(VariationKey) },
-                    { "version", LdValue.Of(Version) },
-                    { "enabled", LdValue.Of(Enabled) }
-                }) },
+            { "_ldMeta", LdValue.ObjectFrom(metaFields) },
             { "messages", LdValue.ArrayFrom(Messages.Select(m => LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "content", LdValue.Of(m.Content) },
@@ -188,10 +173,10 @@ public record LdAiCompletionConfigDefault
                 { "parameters", LdValue.ObjectFrom(Model.Parameters) },
                 { "custom", LdValue.ObjectFrom(Model.Custom) }
             }) },
-            {"provider", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            { "provider", LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
-                {"name", LdValue.Of(Provider.Name)}
-            })}
+                { "name", LdValue.Of(Provider.Name) }
+            }) }
         });
     }
 
@@ -200,22 +185,6 @@ public record LdAiCompletionConfigDefault
     /// </summary>
     /// <returns>a new builder</returns>
     public static Builder New() => new();
-
-    /// <summary>
-    /// Returns true if the config is enabled.
-    /// </summary>
-    /// <returns>true if enabled</returns>
-    public bool Enabled { get; }
-
-    /// <summary>
-    /// This field meant for internal LaunchDarkly usage.
-    /// </summary>
-    public string VariationKey { get; }
-
-    /// <summary>
-    /// This field meant for internal LaunchDarkly usage.
-    /// </summary>
-    public int Version { get; }
 
     /// <summary>
     /// Convenient helper that returns a disabled LdAiCompletionConfigDefault.

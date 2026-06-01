@@ -82,7 +82,7 @@ public sealed class LdAiClient : ILdAiClient
         if (parsed == null)
         {
             // ParseConfig already does logging.
-            return CompletionConfigFromDefault(defaultValue, trackerFactory);
+            return CompletionConfigFromDefault(key, defaultValue, trackerFactory);
         }
 
         var mergedVariables = new Dictionary<string, object> { { LdContextVariable, GetAllAttributes(context) } };
@@ -99,7 +99,7 @@ public sealed class LdAiClient : ILdAiClient
             }
         }
 
-        var prompt = new List<LdAiCompletionConfig.Message>();
+        var prompt = new List<LdAiMessage>();
 
         if (parsed.Messages != null)
         {
@@ -108,18 +108,18 @@ public sealed class LdAiClient : ILdAiClient
                 try
                 {
                     var content = InterpolateTemplate(parsed.Messages[i].Content, mergedVariables);
-                    prompt.Add(new LdAiCompletionConfig.Message(content, parsed.Messages[i].Role));
+                    prompt.Add(new LdAiMessage(content, parsed.Messages[i].Role));
                 }
                 catch (Exception ex)
                 {
                     _logger.Error(
                         $"AI model config prompt has malformed message at index {i}: {ex.Message} (returning default config, which will not contain interpolated prompt messages)");
-                    return CompletionConfigFromDefault(defaultValue, trackerFactory);
+                    return CompletionConfigFromDefault(key, defaultValue, trackerFactory);
                 }
             }
         }
 
-        return new LdAiCompletionConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider, trackerFactory);
+        return new LdAiCompletionConfig(key, parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider, trackerFactory);
     }
 
     private Func<LdAiCompletionConfig, ILdAiConfigTracker> TrackerFactoryFor(string key, Context context)
@@ -127,13 +127,16 @@ public sealed class LdAiClient : ILdAiClient
         return cfg => new LdAiConfigTracker(_client, key, cfg, context);
     }
 
-    private static LdAiCompletionConfig CompletionConfigFromDefault(LdAiCompletionConfigDefault defaultValue,
+    private static LdAiCompletionConfig CompletionConfigFromDefault(string key, LdAiCompletionConfigDefault defaultValue,
         Func<LdAiCompletionConfig, ILdAiConfigTracker> trackerFactory)
     {
+        // The default has no variation key or version of its own; the SDK synthesizes an empty Meta so
+        // the returned config carries the "" / 1 defaults that callers expect on the SDK-output side.
         return new LdAiCompletionConfig(
-            defaultValue.Enabled,
+            key,
+            defaultValue.Enabled ?? false,
             defaultValue.Messages,
-            new Meta { VariationKey = defaultValue.VariationKey, Version = defaultValue.Version, Enabled = defaultValue.Enabled },
+            new Meta(),
             new Model
             {
                 Name = defaultValue.Model.Name,

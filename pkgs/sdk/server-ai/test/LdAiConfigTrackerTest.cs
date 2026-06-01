@@ -17,8 +17,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
             // tracker under test. Using the internal constructor here is acceptable because the
             // SDK exposes its internals to this test assembly via InternalsVisibleTo.
             return new LdAiCompletionConfig(
+                key: configKey,
                 enabled: false,
-                messages: new List<LdAiCompletionConfig.Message>(),
+                messages: new List<LdAiMessage>(),
                 meta: new Meta(),
                 model: new Model(),
                 provider: new Provider(),

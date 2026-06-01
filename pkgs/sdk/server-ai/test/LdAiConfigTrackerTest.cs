@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
 using Moq;
@@ -10,11 +11,26 @@ namespace LaunchDarkly.Sdk.Server.Ai
 {
     public class LdAiTrackerTest
     {
+        private static LdAiCompletionConfig BuildConfig(ILaunchDarklyClient client, string configKey, Context context)
+        {
+            // Construct a disabled LdAiCompletionConfig with a tracker factory that produces the
+            // tracker under test. Using the internal constructor here is acceptable because the
+            // SDK exposes its internals to this test assembly via InternalsVisibleTo.
+            return new LdAiCompletionConfig(
+                enabled: false,
+                messages: new List<LdAiCompletionConfig.Message>(),
+                meta: new Meta(),
+                model: new Model(),
+                provider: new Provider(),
+                trackerFactory: cfg => new LdAiConfigTracker(client, configKey, cfg, context));
+        }
+
         [Fact]
         public void ThrowsIfClientIsNull()
         {
+            var config = BuildConfig(new Mock<ILaunchDarklyClient>().Object, "key", Context.New("key"));
             Assert.Throws<System.ArgumentNullException>(() =>
-                new LdAiConfigTracker(null, "key", LdAiConfig.Disabled,  Context.New("key")));
+                new LdAiConfigTracker(null, "key", config, Context.New("key")));
         }
 
         [Fact]
@@ -29,8 +45,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
         public void ThrowsIfKeyIsNull()
         {
             var mockClient = new Mock<ILaunchDarklyClient>();
+            var config = BuildConfig(mockClient.Object, "key", Context.New("key"));
             Assert.Throws<System.ArgumentNullException>(() =>
-                new LdAiConfigTracker(mockClient.Object, null,  LdAiConfig.Disabled,  Context.New("key")));
+                new LdAiConfigTracker(mockClient.Object, null, config, Context.New("key")));
         }
 
         [Fact]
@@ -39,7 +56,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -60,7 +77,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -81,7 +98,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -103,7 +120,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -125,7 +142,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -162,7 +179,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -186,7 +203,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -217,7 +234,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -262,7 +279,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },
@@ -299,7 +316,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
-            var config = LdAiConfig.Disabled;
+            var config = BuildConfig(mockClient.Object, flagKey, context);
             var data = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "variationKey", LdValue.Of(config.VariationKey) },

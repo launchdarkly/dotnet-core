@@ -58,11 +58,11 @@ public sealed class LdAiClient : ILdAiClient
     private const string LdContextVariable = "ldctx";
 
     /// <inheritdoc/>
-    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue = null,
+    public LdAiCompletionConfig CompletionConfig(string key, Context context, LdAiCompletionConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
         _client.Track(TrackUsageCompletionConfig, context, LdValue.Of(key), 1);
-        defaultValue ??= LdAiConfig.Disabled;
+        defaultValue ??= LdAiCompletionConfigDefault.Disabled;
 
         return Evaluate(key, context, defaultValue, variables);
     }
@@ -72,16 +72,17 @@ public sealed class LdAiClient : ILdAiClient
     /// This allows higher-level SDK entry methods to track their own usage events without
     /// double-counting.
     /// </summary>
-    private ILdAiConfigTracker Evaluate(string key, Context context, LdAiConfig defaultValue,
+    private LdAiCompletionConfig Evaluate(string key, Context context, LdAiCompletionConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> variables = null)
     {
+        var trackerFactory = TrackerFactoryFor(key, context);
         var result = _client.JsonVariation(key, context, defaultValue.ToLdValue());
 
         var parsed = ParseConfig(result, key);
         if (parsed == null)
         {
             // ParseConfig already does logging.
-            return new LdAiConfigTracker(_client, key, defaultValue, context);
+            return CompletionConfigFromDefault(defaultValue, trackerFactory);
         }
 
         var mergedVariables = new Dictionary<string, object> { { LdContextVariable, GetAllAttributes(context) } };
@@ -98,7 +99,7 @@ public sealed class LdAiClient : ILdAiClient
             }
         }
 
-        var prompt = new List<LdAiConfig.Message>();
+        var prompt = new List<LdAiCompletionConfig.Message>();
 
         if (parsed.Messages != null)
         {
@@ -107,18 +108,40 @@ public sealed class LdAiClient : ILdAiClient
                 try
                 {
                     var content = InterpolateTemplate(parsed.Messages[i].Content, mergedVariables);
-                    prompt.Add(new LdAiConfig.Message(content, parsed.Messages[i].Role));
+                    prompt.Add(new LdAiCompletionConfig.Message(content, parsed.Messages[i].Role));
                 }
                 catch (Exception ex)
                 {
                     _logger.Error(
                         $"AI model config prompt has malformed message at index {i}: {ex.Message} (returning default config, which will not contain interpolated prompt messages)");
-                    return new LdAiConfigTracker(_client, key, defaultValue, context);
+                    return CompletionConfigFromDefault(defaultValue, trackerFactory);
                 }
             }
         }
 
-        return new LdAiConfigTracker(_client, key, new LdAiConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider), context);
+        return new LdAiCompletionConfig(parsed.Meta?.Enabled ?? false, prompt, parsed.Meta, parsed.Model, parsed.Provider, trackerFactory);
+    }
+
+    private Func<LdAiCompletionConfig, ILdAiConfigTracker> TrackerFactoryFor(string key, Context context)
+    {
+        return cfg => new LdAiConfigTracker(_client, key, cfg, context);
+    }
+
+    private static LdAiCompletionConfig CompletionConfigFromDefault(LdAiCompletionConfigDefault defaultValue,
+        Func<LdAiCompletionConfig, ILdAiConfigTracker> trackerFactory)
+    {
+        return new LdAiCompletionConfig(
+            defaultValue.Enabled,
+            defaultValue.Messages,
+            new Meta { VariationKey = defaultValue.VariationKey, Version = defaultValue.Version, Enabled = defaultValue.Enabled },
+            new Model
+            {
+                Name = defaultValue.Model.Name,
+                Parameters = defaultValue.Model.Parameters.ToDictionary(kv => kv.Key, kv => kv.Value),
+                Custom = defaultValue.Model.Custom.ToDictionary(kv => kv.Key, kv => kv.Value)
+            },
+            new Provider { Name = defaultValue.Provider.Name },
+            trackerFactory);
     }
 
     /// <summary>
@@ -128,9 +151,9 @@ public sealed class LdAiClient : ILdAiClient
     /// <param name="context">the context</param>
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
-    /// <returns>an AI Completion Config tracker</returns>
+    /// <returns>an AI Completion Config</returns>
     [Obsolete("Use CompletionConfig instead.")]
-    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue = null,
+    public LdAiCompletionConfig Config(string key, Context context, LdAiCompletionConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
         return CompletionConfig(key, context, defaultValue, variables);

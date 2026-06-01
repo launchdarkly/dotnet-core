@@ -39,9 +39,9 @@ public class InterpolationTests
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
         var client = new LdAiClient(mockClient.Object);
-        var tracker = client.Config("foo", context, LdAiConfig.Disabled, variables);
+        var result = client.Config("foo", context, LdAiCompletionConfigDefault.Disabled, variables);
 
-        return tracker.Config.Messages[0].Content;
+        return result.Messages[0].Content;
     }
 
     [Theory]
@@ -146,8 +146,8 @@ public class InterpolationTests
         mockLogger.Setup(x => x.Error(It.IsAny<string>()));
 
         var client = new LdAiClient(mockClient.Object);
-        var tracker = client.Config("foo", Context.New("key"), LdAiConfig.Disabled);
-        Assert.False(tracker.Config.Enabled);
+        var result = client.Config("foo", Context.New("key"), LdAiCompletionConfigDefault.Disabled);
+        Assert.False(result.Enabled);
     }
 
     [Fact]

@@ -14,7 +14,7 @@ public interface ILdAiConfigTracker
     /// <summary>
     /// The AI model configuration retrieved from LaunchDarkly, or a default value if unable to retrieve.
     /// </summary>
-    public LdAiConfig Config { get; }
+    public LdAiCompletionConfig Config { get; }
 
     /// <summary>
     /// Tracks a duration metric related to this config. For example, if a particular operation

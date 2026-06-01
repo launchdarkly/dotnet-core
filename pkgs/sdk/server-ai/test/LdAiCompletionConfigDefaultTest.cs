@@ -4,34 +4,34 @@ using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Ai;
 
-public class LdAiConfigTest
+public class LdAiCompletionConfigDefaultTest
 {
     [Fact]
     public void CanDisableAndEnableConfig()
     {
-        var config1 = LdAiConfig.New().Enable().Disable().Build();
+        var config1 = LdAiCompletionConfigDefault.New().Enable().Disable().Build();
         Assert.False(config1.Enabled);
 
-        var config2 = LdAiConfig.New().Disable().Enable().Build();
+        var config2 = LdAiCompletionConfigDefault.New().Disable().Enable().Build();
         Assert.True(config2.Enabled);
 
-        var config3 = LdAiConfig.New().SetEnabled(true).SetEnabled(false).Build();
+        var config3 = LdAiCompletionConfigDefault.New().SetEnabled(true).SetEnabled(false).Build();
         Assert.False(config3.Enabled);
 
-        var config4 = LdAiConfig.New().SetEnabled(false).SetEnabled(true).Build();
+        var config4 = LdAiCompletionConfigDefault.New().SetEnabled(false).SetEnabled(true).Build();
         Assert.True(config4.Enabled);
 
-        var config5 = LdAiConfig.New().SetEnabled(true).Disable().Build();
+        var config5 = LdAiCompletionConfigDefault.New().SetEnabled(true).Disable().Build();
         Assert.False(config5.Enabled);
 
-        var config6 = LdAiConfig.New().SetEnabled(false).Enable().Build();
+        var config6 = LdAiCompletionConfigDefault.New().SetEnabled(false).Enable().Build();
         Assert.True(config6.Enabled);
     }
 
     [Fact]
     public void CanAddPromptMessages()
     {
-        var config = LdAiConfig.New()
+        var config = LdAiCompletionConfigDefault.New()
             .AddMessage("Hello")
             .AddMessage("World", Role.System)
             .AddMessage("!", Role.Assistant)
@@ -58,7 +58,7 @@ public class LdAiConfigTest
     [Fact]
     public void CanSetModelParams()
     {
-        var config = LdAiConfig.New()
+        var config = LdAiCompletionConfigDefault.New()
             .SetModelParam("foo", LdValue.Of("bar"))
             .SetModelParam("baz", LdValue.Of(42))
             .SetCustomModelParam("foo", LdValue.Of("baz"))
@@ -75,14 +75,14 @@ public class LdAiConfigTest
     [Fact]
     public void CanSetModelId()
     {
-        var config = LdAiConfig.New().SetModelName("awesome-model").Build();
+        var config = LdAiCompletionConfigDefault.New().SetModelName("awesome-model").Build();
         Assert.Equal("awesome-model", config.Model.Name);
     }
 
     [Fact]
     public void CanSetModelProviderId()
     {
-        var config = LdAiConfig.New()
+        var config = LdAiCompletionConfigDefault.New()
             .SetModelProviderName("amazing-provider")
             .Build();
 

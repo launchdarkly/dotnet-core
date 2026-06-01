@@ -37,7 +37,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <param name="config">the AI Config</param>
     /// <param name="context">the context</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context)
+    public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiCompletionConfig config, Context context)
     {
         Config = config ?? throw new ArgumentNullException(nameof(config));
         _client = client ?? throw new ArgumentNullException(nameof(client));
@@ -54,7 +54,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
 
 
     /// <inheritdoc/>
-    public LdAiConfig Config { get; }
+    public LdAiCompletionConfig Config { get; }
 
     /// <inheritdoc/>
     public void TrackDuration(float durationMs) =>

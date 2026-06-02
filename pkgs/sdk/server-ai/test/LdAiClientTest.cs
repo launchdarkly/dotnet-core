@@ -33,8 +33,12 @@ public class LdAiClientTest
 
         var mockLogger = new Mock<ILogger>();
 
+        // Mimic JsonVariation's real contract: when evaluation fails, the supplied
+        // defaultValue LdValue is returned. The AI SDK then tolerantly parses it as if
+        // it were a real server response.
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
+                x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
 
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
@@ -170,8 +174,9 @@ public class LdAiClientTest
         var client = new LdAiClient(mockClient.Object);
 
         // All the JSON inputs here are considered disabled, either due to lack of the 'enabled' property,
-        // or if present, it is set to false. LdAiCompletionConfigDefault.New() constructs a disabled config
-        // by default; call .Enable() to enable.
+        // or if present, it is set to false. Therefore, if the default was returned, we'd see the assertion fail
+        // (since calling LdAiCompletionConfigDefault.New() constructs an enabled config by default,
+        // per AISDK spec Requirement 1.3.2).
         var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
             LdAiCompletionConfigDefault.New().AddMessage("foo").Build());
 
@@ -185,8 +190,10 @@ public class LdAiClientTest
 
         var mockLogger = new Mock<ILogger>();
 
+        // Mimic JsonVariation's real contract: on eval failure, return the supplied default.
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
+                x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
@@ -361,5 +368,52 @@ public class LdAiClientTest
         var first = LdAiCompletionConfigDefault.Disabled;
         var second = LdAiCompletionConfigDefault.Disabled;
         Assert.NotSame(first, second);
+    }
+
+    [Fact]
+    public void CompletionConfigReturnsDisabledWhenFlagModeMismatch()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        // A flag whose _ldMeta.mode is "agent" should not be served via the completion entry point.
+        // The factory must log a warning and return a disabled config with a working tracker.
+        const string agentJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "1", "enabled": true, "mode": "agent"},
+                                     "model": { "name": "should-be-ignored" },
+                                     "provider": { "name": "should-be-ignored" },
+                                     "messages": [
+                                         { "content": "should be ignored", "role": "system" }
+                                     ]
+                                 }
+                                 """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(agentJson));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New("key"),
+            LdAiCompletionConfigDefault.New().AddMessage("default").Build());
+
+        Assert.False(result.Enabled);
+        Assert.Empty(result.Messages);
+        Assert.Equal("", result.Model.Name);
+        Assert.Equal("", result.Provider.Name);
+
+        // Tracker must still work — every config the SDK returns has a working tracker.
+        var tracker = result.CreateTracker();
+        Assert.NotNull(tracker);
+        tracker.TrackSuccess();
+        mockClient.Verify(x => x.Track("$ld:ai:generation:success", It.IsAny<Context>(), It.IsAny<LdValue>(), 1.0f), Times.Once);
+
+        // The mismatch should produce a single warning log line. Substrings pin the shape
+        // without locking surface rephrasings (quote style, exact punctuation).
+        mockLogger.Verify(x => x.Warn(It.Is<string>(s =>
+            s.Contains("AI Config mode mismatch for foo") &&
+            s.Contains("expected completion") &&
+            s.Contains("got agent") &&
+            s.Contains("Returning disabled config"))), Times.Once);
     }
 }

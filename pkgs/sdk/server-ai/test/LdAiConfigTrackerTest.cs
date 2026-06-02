@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
 using Moq;
@@ -19,11 +18,12 @@ namespace LaunchDarkly.Sdk.Server.Ai
             return new LdAiCompletionConfig(
                 key: configKey,
                 enabled: false,
-                messages: new List<LdAiMessage>(),
-                meta: new Meta(),
-                model: new Model(),
-                provider: new Provider(),
-                trackerFactory: cfg => new LdAiConfigTracker(client, configKey, cfg, context));
+                variationKey: "",
+                version: 1,
+                messages: new List<Message>(),
+                model: null,
+                provider: null,
+                trackerFactory: cfg => new LdAiConfigTracker(client, cfg, context));
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
         {
             var config = BuildConfig(new Mock<ILaunchDarklyClient>().Object, "key", Context.New("key"));
             Assert.Throws<System.ArgumentNullException>(() =>
-                new LdAiConfigTracker(null, "key", config, Context.New("key")));
+                new LdAiConfigTracker(null, config, Context.New("key")));
         }
 
         [Fact]
@@ -39,16 +39,28 @@ namespace LaunchDarkly.Sdk.Server.Ai
         {
             var mockClient = new Mock<ILaunchDarklyClient>();
             Assert.Throws<System.ArgumentNullException>(() =>
-                new LdAiConfigTracker(mockClient.Object, "key", null, Context.New("key")));
+                new LdAiConfigTracker(mockClient.Object, null, Context.New("key")));
         }
 
         [Fact]
-        public void ThrowsIfKeyIsNull()
+        public void AcceptsConfigViaBaseTypeForModeAgnosticConstruction()
         {
+            // The tracker takes LdAiConfigBase so future agent / judge config records
+            // can produce trackers via the same class. Verify that upcasting a concrete
+            // LdAiCompletionConfig to its base still flows through the tracker contract.
             var mockClient = new Mock<ILaunchDarklyClient>();
-            var config = BuildConfig(mockClient.Object, "key", Context.New("key"));
-            Assert.Throws<System.ArgumentNullException>(() =>
-                new LdAiConfigTracker(mockClient.Object, null, config, Context.New("key")));
+            var context = Context.New("key");
+            const string flagKey = "key";
+
+            LdAiConfigBase configAsBase = BuildConfig(mockClient.Object, flagKey, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, configAsBase, context);
+
+            tracker.TrackSuccess();
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:generation:success",
+                context,
+                It.Is<LdValue>(v => v.Get("configKey").AsString == flagKey),
+                1.0f), Times.Once);
         }
 
         [Fact]
@@ -66,7 +78,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "modelName", LdValue.Of(config.Model.Name) },
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
 
             tracker.TrackDuration(1.0f);
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context, data, 1.0f), Times.Once);
@@ -87,7 +99,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "modelName", LdValue.Of(config.Model.Name) },
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
 
             tracker.TrackTimeToFirstToken(1.0f);
             mockClient.Verify(x => x.Track("$ld:ai:tokens:ttf", context, data, 1.0f), Times.Once);
@@ -109,7 +121,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
             tracker.TrackSuccess();
             mockClient.Verify(x => x.Track("$ld:ai:generation:success", context, data, 1.0f), Times.Once);
         }
@@ -131,7 +143,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
             tracker.TrackError();
             mockClient.Verify(x => x.Track("$ld:ai:generation:error", context, data, 1.0f), Times.Once);
         }
@@ -153,7 +165,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
 
 
             const int waitMs = 10;
@@ -190,7 +202,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
             tracker.TrackFeedback(Feedback.Positive);
             tracker.TrackFeedback(Feedback.Negative);
 
@@ -214,7 +226,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
 
             var givenUsage = new Usage
             {
@@ -245,7 +257,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object,  flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
 
             var givenUsage = new Usage
             {
@@ -290,7 +302,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
 
             var givenUsage = new Usage
             {
@@ -327,7 +339,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 { "providerName", LdValue.Of(config.Provider.Name) }
             });
 
-            var tracker = new LdAiConfigTracker(mockClient.Object, flagKey, config, context);
+            var tracker = new LdAiConfigTracker(mockClient.Object, config, context);
 
             await Assert.ThrowsAsync<System.Exception>(() => tracker.TrackRequest(Task.FromException<Response>(new System.Exception("I am an exception"))));
 

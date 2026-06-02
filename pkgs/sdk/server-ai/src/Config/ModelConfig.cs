@@ -5,7 +5,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// <summary>
 /// Information about the model.
 /// </summary>
-public sealed record LdAiModel
+public sealed record ModelConfig
 {
     /// <summary>
     /// The name of the model.
@@ -22,7 +22,7 @@ public sealed record LdAiModel
     /// </summary>
     public readonly IReadOnlyDictionary<string, LdValue> Custom;
 
-    internal LdAiModel(string name, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
+    internal ModelConfig(string name, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
     {
         Name = name;
         Parameters = parameters;

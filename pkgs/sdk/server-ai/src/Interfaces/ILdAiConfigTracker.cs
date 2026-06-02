@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
@@ -11,11 +10,6 @@ namespace LaunchDarkly.Sdk.Server.Ai.Interfaces;
 /// </summary>
 public interface ILdAiConfigTracker
 {
-    /// <summary>
-    /// The AI model configuration retrieved from LaunchDarkly, or a default value if unable to retrieve.
-    /// </summary>
-    public LdAiCompletionConfig Config { get; }
-
     /// <summary>
     /// Tracks a duration metric related to this config. For example, if a particular operation
     /// related to usage of the AI model takes 100ms, this can be tracked and made available in

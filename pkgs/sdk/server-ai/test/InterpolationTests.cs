@@ -124,6 +124,7 @@ public class InterpolationTests
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
 
+        const string malformedTemplate = "This is a {{ malformed }]} prompt";
         const string configJson = """
                                   {
                                       "_ldMeta": {"variationKey": "1", "enabled": true},
@@ -143,11 +144,20 @@ public class InterpolationTests
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
-        mockLogger.Setup(x => x.Error(It.IsAny<string>()));
+        mockLogger.Setup(x => x.Warn(It.IsAny<string>()));
 
         var client = new LdAiClient(mockClient.Object);
         var result = client.Config("foo", Context.New("key"), LdAiCompletionConfigDefault.Disabled);
-        Assert.False(result.Enabled);
+
+        // Per-message interpolation: the rest of the config survives, and the bad message
+        // is preserved with its raw (un-interpolated) content.
+        Assert.True(result.Enabled);
+        Assert.Collection(result.Messages,
+            message =>
+            {
+                Assert.Equal(malformedTemplate, message.Content);
+                Assert.Equal(Role.System, message.Role);
+            });
     }
 
     [Fact]

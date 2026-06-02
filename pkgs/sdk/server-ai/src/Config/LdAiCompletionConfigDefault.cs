@@ -13,7 +13,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// Construct an instance via <see cref="New"/> and the nested <see cref="Builder"/>,
 /// or use <see cref="Disabled"/> for a disabled default.
 /// </summary>
-public sealed record LdAiCompletionConfigDefault : LdAiConfigDefaultBase
+public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
 {
     /// <summary>
     /// Builder for constructing an LdAiCompletionConfigDefault instance, which can be passed
@@ -22,7 +22,7 @@ public sealed record LdAiCompletionConfigDefault : LdAiConfigDefaultBase
     public class Builder
     {
         private bool _enabled;
-        private readonly List<LdAiMessage> _messages;
+        private readonly List<Message> _messages;
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
         private string _providerName;
@@ -30,8 +30,8 @@ public sealed record LdAiCompletionConfigDefault : LdAiConfigDefaultBase
 
         internal Builder()
         {
-            _enabled = false;
-            _messages = new List<LdAiMessage>();
+            _enabled = true;
+            _messages = new List<Message>();
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
             _providerName = "";
@@ -46,7 +46,7 @@ public sealed record LdAiCompletionConfigDefault : LdAiConfigDefaultBase
         /// <returns>a new builder</returns>
         public Builder AddMessage(string content, Role role = Role.User)
         {
-            _messages.Add(new LdAiMessage(content, role));
+            _messages.Add(new Message(content, role));
             return this;
         }
 
@@ -138,26 +138,26 @@ public sealed record LdAiCompletionConfigDefault : LdAiConfigDefaultBase
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<LdAiMessage> Messages { get; init; }
+    public IReadOnlyList<Message> Messages { get; init; }
 
-    internal LdAiCompletionConfigDefault(bool enabled, IEnumerable<LdAiMessage> messages, string modelName,
+    internal LdAiCompletionConfigDefault(bool enabled, IEnumerable<Message> messages, string modelName,
         IReadOnlyDictionary<string, LdValue> modelParameters, IReadOnlyDictionary<string, LdValue> modelCustom,
         string providerName)
     {
-        Model = new LdAiModel(modelName ?? "", modelParameters ?? new Dictionary<string, LdValue>(),
+        Model = new ModelConfig(modelName ?? "", modelParameters ?? new Dictionary<string, LdValue>(),
             modelCustom ?? new Dictionary<string, LdValue>());
-        Messages = messages?.ToList() ?? new List<LdAiMessage>();
+        Messages = messages?.ToList() ?? new List<Message>();
         Enabled = enabled;
-        Provider = new LdAiProvider(providerName ?? "");
+        Provider = new ProviderConfig(providerName ?? "");
     }
 
     internal LdValue ToLdValue()
     {
-        var metaFields = new Dictionary<string, LdValue>();
-        if (Enabled.HasValue)
+        var metaFields = new Dictionary<string, LdValue>
         {
-            metaFields["enabled"] = LdValue.Of(Enabled.Value);
-        }
+            ["enabled"] = LdValue.Of(Enabled ?? true),
+            ["mode"] = LdValue.Of("completion")
+        };
 
         return LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {

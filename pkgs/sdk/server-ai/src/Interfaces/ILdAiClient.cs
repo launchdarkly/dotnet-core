@@ -13,8 +13,8 @@ public interface ILdAiClient
     /// <summary>
     /// Retrieves a LaunchDarkly AI Completion Config identified by the given key. The return value
     /// is an <see cref="LdAiCompletionConfig"/>, which makes the configuration available and
-    /// provides a <see cref="LdAiCompletionConfig.CreateTracker"/> method for generating a tracker
-    /// that emits events related to model usage.
+    /// provides a <c>CreateTracker</c> method (inherited from <see cref="LdAiConfigBase"/>) for
+    /// generating a tracker that emits events related to model usage.
     ///
     /// Any variables provided will be interpolated into the prompt's messages.
     /// Additionally, the current LaunchDarkly context will be available as 'ldctx' within

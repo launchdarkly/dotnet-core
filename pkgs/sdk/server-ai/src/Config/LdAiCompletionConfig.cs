@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
@@ -15,29 +14,24 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// they are not constructed directly by users. To supply a fallback default to the
 /// client, use <see cref="LdAiCompletionConfigDefault"/>.
 /// </summary>
-public sealed record LdAiCompletionConfig : LdAiConfigBase
+public sealed class LdAiCompletionConfig : LdAiConfigBase
 {
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<LdAiMessage> Messages { get; init; }
+    public IReadOnlyList<Message> Messages { get; init; }
 
-    private readonly Func<LdAiCompletionConfig, ILdAiConfigTracker> _trackerFactory;
-
-    internal LdAiCompletionConfig(string key, bool enabled, IEnumerable<LdAiMessage> messages, Meta meta, Model model, Provider provider,
-        Func<LdAiCompletionConfig, ILdAiConfigTracker> trackerFactory)
+    internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
+        IEnumerable<Message> messages, ModelConfig model, ProviderConfig provider,
+        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        : base(trackerFactory)
     {
         Key = key;
-        Model = new LdAiModel(model?.Name ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
-            model?.Custom ?? new Dictionary<string, LdValue>());
-        Messages = messages?.ToList() ?? new List<LdAiMessage>();
-        VariationKey = meta?.VariationKey ?? "";
-        Version = meta?.Version ?? 1;
+        Model = model ?? new ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
+        Provider = provider ?? new ProviderConfig("");
+        Messages = messages?.ToList() ?? new List<Message>();
+        VariationKey = variationKey ?? "";
+        Version = version;
         Enabled = enabled;
-        Provider = new LdAiProvider(provider?.Name ?? "");
-        _trackerFactory = trackerFactory ?? throw new ArgumentNullException(nameof(trackerFactory));
     }
-
-    /// <inheritdoc/>
-    public override ILdAiConfigTracker CreateTracker() => _trackerFactory(this);
 }

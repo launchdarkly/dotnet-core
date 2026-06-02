@@ -20,13 +20,13 @@ public class LdAiCompletionConfigTest
     }
 
     [Fact]
-    public void CreateTrackerIsNonNullOnParseFailureFallback()
+    public void CreateTrackerIsNonNullWhenServerReturnsNullJson()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
 
-        // Returning LdValue.Null causes ParseConfig to fail, triggering the parse-failure
-        // fallback path in LdAiClient.Evaluate.
+        // Returning LdValue.Null forces the tolerant parse to fall through to typed defaults
+        // for every field. The returned config must still produce a working tracker.
         mockClient.Setup(x =>
             x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
@@ -44,13 +44,15 @@ public class LdAiCompletionConfigTest
     }
 
     [Fact]
-    public void CreateTrackerIsNonNullOnInterpolationFailureFallback()
+    public void CreateTrackerIsNonNullWhenMessageTemplateIsMalformed()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
 
         // A malformed Mustache template causes the template Compile step to throw inside the
-        // message loop, triggering the interpolation-failure fallback path in LdAiClient.Evaluate.
+        // message loop. The tolerant parse falls back to raw content for that one message and
+        // continues producing the rest of the config. The returned config must still produce
+        // a working tracker.
         const string malformedJson = """
                                      {
                                          "_ldMeta": {"variationKey": "1", "enabled": true},

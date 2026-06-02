@@ -5,7 +5,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// <summary>
 /// Represents a single message, which is part of a prompt.
 /// </summary>
-public sealed record LdAiMessage
+public sealed record Message
 {
     /// <summary>
     /// The content of the message, which may contain Mustache templates.
@@ -17,7 +17,7 @@ public sealed record LdAiMessage
     /// </summary>
     public readonly Role Role;
 
-    internal LdAiMessage(string content, Role role)
+    internal Message(string content, Role role)
     {
         Content = content;
         Role = role;

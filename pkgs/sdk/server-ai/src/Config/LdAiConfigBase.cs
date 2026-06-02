@@ -1,16 +1,13 @@
-using System.ComponentModel;
+using System;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
 /// <summary>
-/// Shared structure for AI Configs returned by the SDK. This base record exists only
-/// to factor out fields common to the public result types (such as
-/// <see cref="LdAiCompletionConfig"/>); it is not intended to be referenced directly
-/// by SDK consumers and is hidden from IDE autocomplete.
+/// Base type for AI Configs returned by the SDK. Carries common fields and the
+/// <see cref="CreateTracker"/> factory. Cannot be constructed or subclassed outside the SDK.
 /// </summary>
-[EditorBrowsable(EditorBrowsableState.Never)]
-public abstract record LdAiConfigBase
+public abstract class LdAiConfigBase
 {
     /// <summary>
     /// The key of the AI Config that was evaluated.
@@ -20,12 +17,12 @@ public abstract record LdAiConfigBase
     /// <summary>
     /// Information about the model.
     /// </summary>
-    public LdAiModel Model { get; init; }
+    public ModelConfig Model { get; init; }
 
     /// <summary>
     /// Information about the model provider.
     /// </summary>
-    public LdAiProvider Provider { get; init; }
+    public ProviderConfig Provider { get; init; }
 
     /// <summary>
     /// Whether the config is enabled.
@@ -43,14 +40,28 @@ public abstract record LdAiConfigBase
     public int Version { get; init; }
 
     /// <summary>
+    /// Factory that produces a tracker for the config. The factory is mode-agnostic — it
+    /// operates only on the shared base fields (<see cref="Key"/>, <see cref="Model"/>,
+    /// <see cref="Provider"/>, <see cref="VariationKey"/>, <see cref="Version"/>), so the
+    /// same tracker class serves all config modes.
+    /// </summary>
+    private readonly Func<LdAiConfigBase, ILdAiConfigTracker> _trackerFactory;
+
+    /// <summary>
     /// Creates a tracker that emits events related to this config. The returned tracker
     /// is always non-null.
     /// </summary>
     /// <returns>a tracker for this config</returns>
-    public abstract ILdAiConfigTracker CreateTracker();
+    public ILdAiConfigTracker CreateTracker() => _trackerFactory(this);
 
     /// <summary>
-    /// Only public derived types in this assembly are intended to extend this base record.
+    /// Constructs the base. Only public derived types in this assembly are intended
+    /// to extend this class.
     /// </summary>
-    private protected LdAiConfigBase() { }
+    /// <param name="trackerFactory">factory that produces a tracker for the eventual instance;
+    /// must be non-null</param>
+    private protected LdAiConfigBase(Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+    {
+        _trackerFactory = trackerFactory ?? throw new ArgumentNullException(nameof(trackerFactory));
+    }
 }

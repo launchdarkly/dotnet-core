@@ -125,30 +125,22 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
         /// <returns>a new LdAiCompletionConfigDefault</returns>
         public LdAiCompletionConfigDefault Build()
         {
-            return new LdAiCompletionConfigDefault(
-                _enabled,
-                _messages,
-                _modelName,
-                _modelParams,
-                _customModelParams,
-                _providerName);
+            var model = new ModelConfig(_modelName, _modelParams, _customModelParams);
+            var provider = new ProviderConfig(_providerName);
+            return new LdAiCompletionConfigDefault(_enabled, _messages, model, provider);
         }
     }
 
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<Message> Messages { get; init; }
+    public IReadOnlyList<Message> Messages { get; }
 
-    internal LdAiCompletionConfigDefault(bool enabled, IEnumerable<Message> messages, string modelName,
-        IReadOnlyDictionary<string, LdValue> modelParameters, IReadOnlyDictionary<string, LdValue> modelCustom,
-        string providerName)
+    internal LdAiCompletionConfigDefault(bool? enabled, IEnumerable<Message> messages,
+        ModelConfig model, ProviderConfig provider)
+        : base(enabled, model, provider)
     {
-        Model = new ModelConfig(modelName ?? "", modelParameters ?? new Dictionary<string, LdValue>(),
-            modelCustom ?? new Dictionary<string, LdValue>());
         Messages = messages?.ToList() ?? new List<Message>();
-        Enabled = enabled;
-        Provider = new ProviderConfig(providerName ?? "");
     }
 
     internal LdValue ToLdValue()
@@ -156,7 +148,7 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
         var metaFields = new Dictionary<string, LdValue>
         {
             ["enabled"] = LdValue.Of(Enabled ?? true),
-            ["mode"] = LdValue.Of("completion")
+            ["mode"] = LdValue.Of(LdAiCompletionConfig.Mode)
         };
 
         return LdValue.ObjectFrom(new Dictionary<string, LdValue>

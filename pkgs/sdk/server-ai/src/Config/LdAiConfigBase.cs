@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
@@ -12,32 +13,32 @@ public abstract class LdAiConfigBase
     /// <summary>
     /// The key of the AI Config that was evaluated.
     /// </summary>
-    public string Key { get; init; }
+    public string Key { get; }
 
     /// <summary>
     /// Information about the model.
     /// </summary>
-    public ModelConfig Model { get; init; }
+    public ModelConfig Model { get; }
 
     /// <summary>
     /// Information about the model provider.
     /// </summary>
-    public ProviderConfig Provider { get; init; }
+    public ProviderConfig Provider { get; }
 
     /// <summary>
     /// Whether the config is enabled.
     /// </summary>
-    public bool Enabled { get; init; }
+    public bool Enabled { get; }
 
     /// <summary>
     /// This field meant for internal LaunchDarkly usage.
     /// </summary>
-    public string VariationKey { get; init; }
+    public string VariationKey { get; }
 
     /// <summary>
     /// This field meant for internal LaunchDarkly usage.
     /// </summary>
-    public int Version { get; init; }
+    public int Version { get; }
 
     /// <summary>
     /// Factory that produces a tracker for the config. The factory is mode-agnostic — it
@@ -58,10 +59,21 @@ public abstract class LdAiConfigBase
     /// Constructs the base. Only public derived types in this assembly are intended
     /// to extend this class.
     /// </summary>
-    /// <param name="trackerFactory">factory that produces a tracker for the eventual instance;
-    /// must be non-null</param>
-    private protected LdAiConfigBase(Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+    private protected LdAiConfigBase(
+        string key,
+        bool enabled,
+        string variationKey,
+        int version,
+        ModelConfig model,
+        ProviderConfig provider,
+        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
     {
+        Key = key;
+        Enabled = enabled;
+        VariationKey = variationKey ?? "";
+        Version = version;
+        Model = model ?? new ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
+        Provider = provider ?? new ProviderConfig("");
         _trackerFactory = trackerFactory ?? throw new ArgumentNullException(nameof(trackerFactory));
     }
 }

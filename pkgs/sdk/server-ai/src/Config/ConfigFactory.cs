@@ -42,10 +42,10 @@ internal sealed class ConfigFactory
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
 
-        if (mode != "completion")
+        if (mode != LdAiCompletionConfig.Mode)
         {
             _logger.Warn(
-                $"AI Config mode mismatch for {key}: expected completion, got {mode}. Returning disabled config.");
+                $"AI Config mode mismatch for {key}: expected {LdAiCompletionConfig.Mode}, got {mode}. Returning disabled config.");
             return BuildDisabledCompletionConfig(key, variationKey, version, trackerFactory);
         }
 
@@ -92,10 +92,10 @@ internal sealed class ConfigFactory
         var enabled = meta.Get("enabled").AsBool;
         var variationKey = meta.Get("variationKey").AsString ?? "";
         var version = meta.Get("version").AsInt;
-        // Default to "completion" when _ldMeta.mode is missing or non-string: legacy flags
-        // predate the mode tag, so treating them as completion configs matches the existing
-        // shape on the wire.
-        var mode = meta.Get("mode").AsString ?? "completion";
+        // Default to the completion mode when _ldMeta.mode is missing or non-string: legacy
+        // flags predate the mode tag, so treating them as completion configs matches the
+        // existing shape on the wire.
+        var mode = meta.Get("mode").AsString ?? LdAiCompletionConfig.Mode;
         return (enabled, variationKey, version, mode);
     }
 

@@ -17,21 +17,21 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 public sealed class LdAiCompletionConfig : LdAiConfigBase
 {
     /// <summary>
+    /// The mode tag emitted in <c>_ldMeta.mode</c> for this config type. Future agent and
+    /// judge config types will own their own <c>Mode</c> constants ("agent", "judge").
+    /// </summary>
+    internal const string Mode = "completion";
+
+    /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<Message> Messages { get; init; }
+    public IReadOnlyList<Message> Messages { get; }
 
     internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
         IEnumerable<Message> messages, ModelConfig model, ProviderConfig provider,
         Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
-        : base(trackerFactory)
+        : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
-        Key = key;
-        Model = model ?? new ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
-        Provider = provider ?? new ProviderConfig("");
         Messages = messages?.ToList() ?? new List<Message>();
-        VariationKey = variationKey ?? "";
-        Version = version;
-        Enabled = enabled;
     }
 }

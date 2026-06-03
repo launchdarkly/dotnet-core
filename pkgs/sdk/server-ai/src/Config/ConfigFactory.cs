@@ -124,7 +124,15 @@ internal sealed class ConfigFactory
 
     private Func<LdAiConfigBase, ILdAiConfigTracker> TrackerFactoryFor(Context context)
     {
-        return cfg => new LdAiConfigTracker(_client, cfg, context);
+        return cfg => new LdAiConfigTracker(
+            _client,
+            Guid.NewGuid().ToString(),
+            cfg.Key,
+            cfg.VariationKey,
+            cfg.Version,
+            context,
+            cfg.Model?.Name,
+            cfg.Provider?.Name);
     }
 
     private static (bool Enabled, string VariationKey, int Version, string Mode) ParseMeta(LdValue value)

@@ -72,4 +72,11 @@ public sealed class LdAiClient : ILdAiClient
     {
         return CompletionConfig(key, context, defaultValue, variables);
     }
+
+
+    /// <inheritdoc/>
+    public ILdAiConfigTracker CreateTracker(string resumptionToken, Context context)
+    {
+        return LdAiConfigTracker.FromResumptionToken(resumptionToken, _client, context);
+    }
 }

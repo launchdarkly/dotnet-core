@@ -27,11 +27,18 @@ public sealed class LdAiCompletionConfig : LdAiConfigBase
     /// </summary>
     public IReadOnlyList<Message> Messages { get; }
 
+    /// <summary>
+    /// The tools available to the model, keyed by tool name.
+    /// </summary>
+    public IReadOnlyDictionary<string, ToolConfig> Tools { get; }
+
     internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
-        IEnumerable<Message> messages, ModelConfig model, ProviderConfig provider,
+        IEnumerable<Message> messages, IReadOnlyDictionary<string, ToolConfig> tools,
+        ModelConfig model, ProviderConfig provider,
         Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
         : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
         Messages = messages?.ToList() ?? new List<Message>();
+        Tools = tools ?? new Dictionary<string, ToolConfig>();
     }
 }

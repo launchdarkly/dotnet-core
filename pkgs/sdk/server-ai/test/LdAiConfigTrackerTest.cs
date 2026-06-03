@@ -21,6 +21,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 variationKey: "",
                 version: 1,
                 messages: new List<Message>(),
+                tools: new Dictionary<string, ToolConfig>(),
                 model: null,
                 provider: null,
                 trackerFactory: cfg => new LdAiConfigTracker(client, cfg, context));

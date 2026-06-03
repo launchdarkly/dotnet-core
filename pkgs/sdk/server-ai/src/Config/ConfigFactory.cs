@@ -59,6 +59,7 @@ internal sealed class ConfigFactory
         var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key);
+        var tools = ParseTools(ldValue.Get("tools"));
 
         return new LdAiCompletionConfig(
             key,
@@ -66,6 +67,7 @@ internal sealed class ConfigFactory
             variationKey,
             version,
             messages,
+            tools,
             model,
             provider,
             trackerFactory);
@@ -86,6 +88,7 @@ internal sealed class ConfigFactory
             variationKey: "",
             version: 0,
             messages,
+            tools: new Dictionary<string, ToolConfig>(),
             defaultValue.Model,
             defaultValue.Provider,
             trackerFactory);
@@ -388,25 +391,18 @@ internal sealed class ConfigFactory
         return Role.User;
     }
 
-    private IReadOnlyDictionary<string, object> MergeVariables(
+    private static IReadOnlyDictionary<string, object> MergeVariables(
         IReadOnlyDictionary<string, object> userVariables, Context context)
     {
-        // Seed with user variables; the special "ldctx" key is reserved for the LaunchDarkly
-        // context and always overrides any user-supplied value of that key.
         var merged = new Dictionary<string, object>();
         if (userVariables != null)
         {
             foreach (var kvp in userVariables)
             {
-                if (kvp.Key == LdContextVariable)
-                {
-                    _logger.Warn(
-                        "AI model config variables contains 'ldctx' key, which is reserved; this key will be the value of the LaunchDarkly context");
-                    continue;
-                }
                 merged[kvp.Key] = kvp.Value;
             }
         }
+        // ldctx is always added last, silently overriding any user-supplied value.
         merged[LdContextVariable] = GetAllAttributes(context);
         return merged;
     }

@@ -464,4 +464,106 @@ public class LdAiClientTest
                 (LdValueType)args[1] == LdValueType.Number)
         ), Times.Once);
     }
+
+    [Fact]
+    public void LdCtxOverrideIsSilent()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "messages": [{"content": "Hello {{ldctx.key}}", "role": "system"}]
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+
+        // Supply a user-provided ldctx that should be silently overridden by the SDK's context.
+        var variables = new Dictionary<string, object>
+        {
+            ["ldctx"] = new Dictionary<string, object> { ["key"] = "user-supplied-value" }
+        };
+
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "sdk-key"), null, variables);
+
+        // The SDK context's key ("sdk-key") wins, not the user-supplied one.
+        Assert.Collection(result.Messages,
+            m => Assert.Equal("Hello sdk-key", m.Content));
+
+        // No warning should be logged about the ldctx key.
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s => s.Contains("ldctx")),
+            It.IsAny<object[]>()
+        ), Times.Never);
+    }
+
+    [Fact]
+    public void ToolsPopulatedOnCompletionConfig()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": [],
+                              "tools": {
+                                "search": {
+                                  "name": "search",
+                                  "description": "Searches the web",
+                                  "type": "function",
+                                  "parameters": {"query": "string"},
+                                  "customParameters": {"timeout": 30}
+                                }
+                              }
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.Single(result.Tools);
+        Assert.True(result.Tools.ContainsKey("search"));
+        Assert.Equal("search", result.Tools["search"].Name);
+        Assert.Equal("Searches the web", result.Tools["search"].Description);
+        Assert.Equal(30, result.Tools["search"].CustomParameters["timeout"].AsInt);
+    }
+
+    [Fact]
+    public void ToolsEmptyWhenAbsentFromJson()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": []
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.NotNull(result.Tools);
+        Assert.Empty(result.Tools);
+    }
 }

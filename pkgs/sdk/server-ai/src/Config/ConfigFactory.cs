@@ -187,6 +187,52 @@ internal sealed class ConfigFactory
         return result;
     }
 
+    internal static string ParseInstructions(LdValue value)
+    {
+        var instructions = value.Get("instructions");
+        return instructions.Type == LdValueType.String ? instructions.AsString : null;
+    }
+
+    internal static IReadOnlyDictionary<string, ToolConfig> ParseTools(LdValue toolsValue)
+    {
+        if (toolsValue.Type != LdValueType.Object) return new Dictionary<string, ToolConfig>();
+        var result = new Dictionary<string, ToolConfig>();
+        foreach (var kv in toolsValue.Dictionary)
+        {
+            var tool = kv.Value;
+            result[kv.Key] = new ToolConfig(
+                tool.Get("name").AsString ?? "",
+                tool.Get("description").AsString,
+                tool.Get("type").AsString,
+                LdValueObjectToDictionary(tool.Get("parameters")),
+                LdValueObjectToDictionary(tool.Get("customParameters")));
+        }
+        return result;
+    }
+
+    internal static JudgeConfigurationData ParseJudgeConfiguration(LdValue value)
+    {
+        var jc = value.Get("judgeConfiguration");
+        if (jc.Type != LdValueType.Object) return null;
+        var judgesArray = jc.Get("judges");
+        if (judgesArray.Type != LdValueType.Array) return new JudgeConfigurationData(new List<JudgeEntry>());
+        var entries = new List<JudgeEntry>();
+        for (var i = 0; i < judgesArray.Count; i++)
+        {
+            var j = judgesArray.Get(i);
+            entries.Add(new JudgeEntry(
+                j.Get("key").AsString ?? "",
+                j.Get("samplingRate").AsDouble));
+        }
+        return new JudgeConfigurationData(entries);
+    }
+
+    internal static string ParseEvaluationMetricKey(LdValue value)
+    {
+        var emk = value.Get("evaluationMetricKey");
+        return emk.Type == LdValueType.String ? emk.AsString : null;
+    }
+
     private static Role ParseRole(string roleString)
     {
         // The wire format uses capitalized "User" / "System" / "Assistant"; Enum.TryParse with

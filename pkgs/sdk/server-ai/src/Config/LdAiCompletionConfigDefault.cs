@@ -1,85 +1,22 @@
 using System.Collections.Generic;
 using System.Linq;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
 /// <summary>
-/// Represents an AI Config, which contains model parameters and prompt messages.
+/// Represents a default AI Completion Config supplied by the user as a fallback to
+/// <see cref="LdAiClient.CompletionConfig"/>. This type contains the same data fields
+/// as <see cref="LdAiCompletionConfig"/> but has no tracker — it is purely an input
+/// to the client.
+///
+/// Construct an instance via <see cref="New"/> and the nested <see cref="Builder"/>,
+/// or use <see cref="Disabled"/> for a disabled default.
 /// </summary>
-public record LdAiConfig
+public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
 {
-
     /// <summary>
-    /// Represents a single message, which is part of a prompt.
-    /// </summary>
-    public record Message
-    {
-        /// <summary>
-        /// The content of the message, which may contain Mustache templates.
-        /// </summary>
-        public readonly string Content;
-
-        /// <summary>
-        /// The role of the message.
-        /// </summary>
-        public readonly Role Role;
-
-        internal Message(string content, Role role)
-        {
-            Content = content;
-            Role = role;
-        }
-    }
-
-
-    /// <summary>
-    /// Information about the model provider.
-    /// </summary>
-    public record ModelProvider
-    {
-        /// <summary>
-        /// The name of the model provider.
-        /// </summary>
-        public readonly string Name;
-
-        internal ModelProvider(string name)
-        {
-            Name = name;
-        }
-    }
-
-    /// <summary>
-    /// Information about the model.
-    /// </summary>
-    public record ModelConfiguration
-    {
-        /// <summary>
-        /// The name of the model.
-        /// </summary>
-        public readonly string Name;
-
-        /// <summary>
-        /// The model's built-in parameters provided by LaunchDarkly.
-        /// </summary>
-        public readonly IReadOnlyDictionary<string, LdValue> Parameters;
-
-        /// <summary>
-        /// The model's custom parameters provided by the user.
-        /// </summary>
-        public readonly IReadOnlyDictionary<string, LdValue> Custom;
-
-        internal ModelConfiguration(string name, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
-        {
-            Name = name;
-            Parameters = parameters;
-            Custom = custom;
-        }
-    }
-
-    /// <summary>
-    /// Builder for constructing an LdAiConfig instance, which can be passed as the default
-    /// value to the AI Client's <see cref="LdAiClient.CompletionConfig"/> method.
+    /// Builder for constructing an LdAiCompletionConfigDefault instance, which can be passed
+    /// as the default value to the AI Client's <see cref="LdAiClient.CompletionConfig"/> method.
     /// </summary>
     public class Builder
     {
@@ -92,7 +29,7 @@ public record LdAiConfig
 
         internal Builder()
         {
-            _enabled = false;
+            _enabled = true;
             _messages = new List<Message>();
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
@@ -182,62 +119,43 @@ public record LdAiConfig
         }
 
         /// <summary>
-        /// Builds the LdAiConfig instance.
+        /// Builds the LdAiCompletionConfigDefault instance.
         /// </summary>
-        /// <returns>a new LdAiConfig</returns>
-        public LdAiConfig Build()
+        /// <returns>a new LdAiCompletionConfigDefault</returns>
+        public LdAiCompletionConfigDefault Build()
         {
-            return new LdAiConfig(
-                _enabled,
-                _messages,
-                new Meta(),
-                new Model
-                {
-                    Name = _modelName,
-                    Parameters = _modelParams,
-                    Custom = _customModelParams
-                },
-                new Provider{ Name = _providerName }
-            );
+            var model = new ModelConfig(
+                _modelName,
+                new Dictionary<string, LdValue>(_modelParams),
+                new Dictionary<string, LdValue>(_customModelParams));
+            var provider = new ProviderConfig(_providerName);
+            return new LdAiCompletionConfigDefault(_enabled, _messages, model, provider);
         }
     }
 
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public readonly IReadOnlyList<Message> Messages;
+    public IReadOnlyList<Message> Messages { get; }
 
-    /// <summary>
-    /// The model parameters associated with the config.
-    /// </summary>
-    public readonly ModelConfiguration Model;
-
-    /// <summary>
-    /// Information about the model provider.
-    /// </summary>
-    public readonly ModelProvider Provider;
-
-    internal LdAiConfig(bool enabled, IEnumerable<Message> messages, Meta meta, Model model, Provider provider)
+    internal LdAiCompletionConfigDefault(bool? enabled, IEnumerable<Message> messages,
+        ModelConfig model, ProviderConfig provider)
+        : base(enabled, model, provider)
     {
-        Model = new ModelConfiguration(model?.Name ?? "", model?.Parameters ?? new Dictionary<string, LdValue>(),
-            model?.Custom ?? new Dictionary<string, LdValue>());
         Messages = messages?.ToList() ?? new List<Message>();
-        VariationKey = meta?.VariationKey ?? "";
-        Version = meta?.Version ?? 1;
-        Enabled = enabled;
-        Provider = new ModelProvider(provider?.Name ?? "");
     }
+
     internal LdValue ToLdValue()
     {
+        var metaFields = new Dictionary<string, LdValue>
+        {
+            ["enabled"] = LdValue.Of(Enabled ?? true),
+            ["mode"] = LdValue.Of(LdAiCompletionConfig.Mode)
+        };
+
         return LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
-            { "_ldMeta", LdValue.ObjectFrom(
-                new Dictionary<string, LdValue>
-                {
-                    { "variationKey", LdValue.Of(VariationKey) },
-                    { "version", LdValue.Of(Version) },
-                    { "enabled", LdValue.Of(Enabled) }
-                }) },
+            { "_ldMeta", LdValue.ObjectFrom(metaFields) },
             { "messages", LdValue.ArrayFrom(Messages.Select(m => LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "content", LdValue.Of(m.Content) },
@@ -249,37 +167,21 @@ public record LdAiConfig
                 { "parameters", LdValue.ObjectFrom(Model.Parameters) },
                 { "custom", LdValue.ObjectFrom(Model.Custom) }
             }) },
-            {"provider", LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            { "provider", LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
-                {"name", LdValue.Of(Provider.Name)}
-            })}
+                { "name", LdValue.Of(Provider.Name) }
+            }) }
         });
     }
 
     /// <summary>
-    /// Creates a new LdAiConfig builder.
+    /// Creates a new LdAiCompletionConfigDefault builder.
     /// </summary>
     /// <returns>a new builder</returns>
     public static Builder New() => new();
 
     /// <summary>
-    /// Returns true if the config is enabled.
+    /// Convenient helper that returns a disabled LdAiCompletionConfigDefault.
     /// </summary>
-    /// <returns>true if enabled</returns>
-    public bool Enabled { get; }
-
-    /// <summary>
-    /// This field meant for internal LaunchDarkly usage.
-    /// </summary>
-    public string VariationKey { get; }
-
-    /// <summary>
-    /// This field meant for internal LaunchDarkly usage.
-    /// </summary>
-    public int Version { get; }
-
-    /// <summary>
-    /// Convenient helper that returns a disabled LdAiConfig.
-    /// </summary>
-    public static LdAiConfig Disabled => New().Disable().Build();
+    public static LdAiCompletionConfigDefault Disabled => New().Disable().Build();
 }

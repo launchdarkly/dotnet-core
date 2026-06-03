@@ -12,8 +12,9 @@ public interface ILdAiClient
 
     /// <summary>
     /// Retrieves a LaunchDarkly AI Completion Config identified by the given key. The return value
-    /// is an <see cref="ILdAiConfigTracker"/>, which makes the configuration available and
-    /// provides convenience methods for generating events related to model usage.
+    /// is an <see cref="LdAiCompletionConfig"/>, which makes the configuration available and
+    /// provides a <c>CreateTracker</c> method (inherited from <see cref="LdAiConfigBase"/>) for
+    /// generating a tracker that emits events related to model usage.
     ///
     /// Any variables provided will be interpolated into the prompt's messages.
     /// Additionally, the current LaunchDarkly context will be available as 'ldctx' within
@@ -25,8 +26,8 @@ public interface ILdAiClient
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly. When not provided,
     /// a disabled config is used as the fallback.</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
-    /// <returns>an AI Completion Config tracker</returns>
-    public ILdAiConfigTracker CompletionConfig(string key, Context context, LdAiConfig defaultValue = null,
+    /// <returns>an AI Completion Config</returns>
+    public LdAiCompletionConfig CompletionConfig(string key, Context context, LdAiCompletionConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null);
 
     /// <summary>
@@ -36,8 +37,8 @@ public interface ILdAiClient
     /// <param name="context">the context</param>
     /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly</param>
     /// <param name="variables">the list of variables used when interpolating the prompt</param>
-    /// <returns>an AI Completion Config tracker</returns>
+    /// <returns>an AI Completion Config</returns>
     [Obsolete("Use CompletionConfig instead.")]
-    public ILdAiConfigTracker Config(string key, Context context, LdAiConfig defaultValue = null,
+    public LdAiCompletionConfig Config(string key, Context context, LdAiCompletionConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null);
 }

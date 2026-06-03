@@ -29,32 +29,27 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private const string TimeToFirstToken = "$ld:ai:tokens:ttf";
 
     /// <summary>
-    /// Constructs a new AI Config tracker. The tracker is associated with a configuration,
-    /// a context, and a key which identifies the configuration.
+    /// Constructs a new AI Config tracker. The tracker is associated with a configuration
+    /// and a context; the AI Config key is read from the config's <c>Key</c> property.
     /// </summary>
     /// <param name="client">the LaunchDarkly client</param>
-    /// <param name="configKey">key of the AI Config</param>
     /// <param name="config">the AI Config</param>
     /// <param name="context">the context</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public LdAiConfigTracker(ILaunchDarklyClient client, string configKey, LdAiConfig config, Context context)
+    internal LdAiConfigTracker(ILaunchDarklyClient client, LdAiConfigBase config, Context context)
     {
-        Config = config ?? throw new ArgumentNullException(nameof(config));
+        if (config == null) throw new ArgumentNullException(nameof(config));
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _context = context;
-        _trackData =  LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        _trackData = LdValue.ObjectFrom(new Dictionary<string, LdValue>
         {
-            { "variationKey", LdValue.Of(config.VariationKey)},
-            { "version", LdValue.Of(config.Version)},
-            { "configKey" , LdValue.Of(configKey ?? throw new ArgumentNullException(nameof(configKey))) },
+            { "variationKey", LdValue.Of(config.VariationKey) },
+            { "version", LdValue.Of(config.Version) },
+            { "configKey" , LdValue.Of(config.Key) },
             { "modelName", LdValue.Of(config.Model?.Name) },
             { "providerName", LdValue.Of(config.Provider?.Name) },
         });
     }
-
-
-    /// <inheritdoc/>
-    public LdAiConfig Config { get; }
 
     /// <inheritdoc/>
     public void TrackDuration(float durationMs) =>

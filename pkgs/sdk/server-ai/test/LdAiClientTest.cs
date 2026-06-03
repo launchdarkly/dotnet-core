@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Moq;
 using Xunit;
@@ -16,8 +15,8 @@ public class LdAiClientTest
     {
         var client = new LdClientAdapter(new LdClient(Configuration.Builder("key").Offline(true).Build()));
         var aiClient = new LdAiClient(client);
-        var result= aiClient.CompletionConfig("foo", Context.New("key"), LdAiConfig.Disabled);
-        Assert.False(result.Config.Enabled);
+        var result = aiClient.CompletionConfig("foo", Context.New("key"), LdAiCompletionConfigDefault.Disabled);
+        Assert.False(result.Enabled);
     }
 
     [Fact]
@@ -33,8 +32,12 @@ public class LdAiClientTest
 
         var mockLogger = new Mock<ILogger>();
 
+        // Mimic JsonVariation's real contract: when evaluation fails, the supplied
+        // defaultValue LdValue is returned. The AI SDK then tolerantly parses it as if
+        // it were a real server response.
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
+                x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
 
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
@@ -42,11 +45,17 @@ public class LdAiClientTest
 
         var client = new LdAiClient(mockClient.Object);
 
-        var defaultConfig = LdAiConfig.New().AddMessage("Hello").Build();
+        var defaultConfig = LdAiCompletionConfigDefault.New().AddMessage("Hello").Build();
 
-        var tracker = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
 
-        Assert.Equal(defaultConfig, tracker.Config);
+        Assert.Collection(result.Messages,
+            message =>
+            {
+                Assert.Equal("Hello", message.Content);
+                Assert.Equal(Role.User, message.Role);
+            });
+        Assert.Equal(defaultConfig.Enabled, result.Enabled);
     }
 
     [Fact]
@@ -83,9 +92,9 @@ public class LdAiClientTest
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
         var client = new LdAiClient(mockClient.Object);
-        var defaultConfig = LdAiConfig.New().Build();
+        var defaultConfig = LdAiCompletionConfigDefault.New().Build();
 
-        var tracker = client.CompletionConfig(configKey, context, defaultConfig);
+        var result = client.CompletionConfig(configKey, context, defaultConfig);
 
         mockClient.Verify(c => c.Track(
             "$ld:ai:usage:completion-config",
@@ -93,7 +102,8 @@ public class LdAiClientTest
             LdValue.Of(configKey),
             1), Times.Once);
 
-        Assert.NotNull(tracker);
+        Assert.NotNull(result);
+        Assert.NotNull(result.CreateTracker());
     }
 
     [Fact]
@@ -164,11 +174,12 @@ public class LdAiClientTest
 
         // All the JSON inputs here are considered disabled, either due to lack of the 'enabled' property,
         // or if present, it is set to false. Therefore, if the default was returned, we'd see the assertion fail
-        // (since calling LdAiConfig.New() constructs an enabled config by default.)
-        var tracker = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
-            LdAiConfig.New().AddMessage("foo").Build());
+        // (since calling LdAiCompletionConfigDefault.New() constructs an enabled config by default,
+        // per AISDK spec Requirement 1.3.2).
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.New().AddMessage("foo").Build());
 
-        Assert.False(tracker.Config.Enabled);
+        Assert.False(result.Enabled);
     }
 
     [Fact]
@@ -178,15 +189,17 @@ public class LdAiClientTest
 
         var mockLogger = new Mock<ILogger>();
 
+        // Mimic JsonVariation's real contract: on eval failure, return the supplied default.
         mockClient.Setup(x =>
-            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
+                x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
         var client = new LdAiClient(mockClient.Object);
 
-        var tracker = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
-            LdAiConfig.New().
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.New().
                 AddMessage("foo").
                 SetModelParam("foo", LdValue.Of("bar")).
                 SetModelName("awesome-model").
@@ -194,17 +207,17 @@ public class LdAiClientTest
                 SetModelProviderName("amazing-provider").
                 SetEnabled(true).Build());
 
-        Assert.True(tracker.Config.Enabled);
-        Assert.Collection(tracker.Config.Messages,
+        Assert.True(result.Enabled);
+        Assert.Collection(result.Messages,
             message =>
             {
                 Assert.Equal("foo", message.Content);
                 Assert.Equal(Role.User, message.Role);
             });
-        Assert.Equal("amazing-provider", tracker.Config.Provider.Name);
-        Assert.Equal("bar", tracker.Config.Model.Parameters["foo"].AsString);
-        Assert.Equal("baz", tracker.Config.Model.Custom["foo"].AsString);
-        Assert.Equal("awesome-model", tracker.Config.Model.Name);
+        Assert.Equal("amazing-provider", result.Provider.Name);
+        Assert.Equal("bar", result.Model.Parameters["foo"].AsString);
+        Assert.Equal("baz", result.Model.Custom["foo"].AsString);
+        Assert.Equal("awesome-model", result.Model.Name);
     }
 
     [Fact]
@@ -230,20 +243,20 @@ public class LdAiClientTest
         var client = new LdAiClient(mockClient.Object);
 
         // We shouldn't get this default.
-        var tracker = client.CompletionConfig("foo", context,
-            LdAiConfig.New().AddMessage("Goodbye!").Build());
+        var result = client.CompletionConfig("foo", context,
+            LdAiCompletionConfigDefault.New().AddMessage("Goodbye!").Build());
 
-        Assert.Collection(tracker.Config.Messages,
+        Assert.Collection(result.Messages,
             message =>
             {
                 Assert.Equal("Hello!", message.Content);
                 Assert.Equal(Role.System, message.Role);
             });
 
-        Assert.Equal("", tracker.Config.Provider.Name);
-        Assert.Equal("", tracker.Config.Model.Name);
-        Assert.Empty(tracker.Config.Model.Custom);
-        Assert.Empty(tracker.Config.Model.Parameters);
+        Assert.Equal("", result.Provider.Name);
+        Assert.Equal("", result.Model.Name);
+        Assert.Empty(result.Model.Custom);
+        Assert.Empty(result.Model.Parameters);
     }
 
 
@@ -282,14 +295,14 @@ public class LdAiClientTest
         var client = new LdAiClient(mockClient.Object);
 
         // We shouldn't get this default.
-        var tracker = client.CompletionConfig("foo", context,
-            LdAiConfig.New().AddMessage("Goodbye!").Build());
+        var result = client.CompletionConfig("foo", context,
+            LdAiCompletionConfigDefault.New().AddMessage("Goodbye!").Build());
 
-        Assert.Equal("model-foo", tracker.Config.Model.Name);
-        Assert.Equal("bar", tracker.Config.Model.Parameters["foo"].AsString);
-        Assert.Equal(42, tracker.Config.Model.Parameters["baz"].AsInt);
-        Assert.Equal("baz", tracker.Config.Model.Custom["foo"].AsString);
-        Assert.Equal(43, tracker.Config.Model.Custom["baz"].AsInt);
+        Assert.Equal("model-foo", result.Model.Name);
+        Assert.Equal("bar", result.Model.Parameters["foo"].AsString);
+        Assert.Equal(42, result.Model.Parameters["baz"].AsInt);
+        Assert.Equal("baz", result.Model.Custom["foo"].AsString);
+        Assert.Equal(43, result.Model.Custom["baz"].AsInt);
     }
 
     [Fact]
@@ -319,10 +332,10 @@ public class LdAiClientTest
         var client = new LdAiClient(mockClient.Object);
 
         // We shouldn't get this default.
-        var tracker = client.CompletionConfig("foo", context,
-            LdAiConfig.New().AddMessage("Goodbye!").Build());
+        var result = client.CompletionConfig("foo", context,
+            LdAiCompletionConfigDefault.New().AddMessage("Goodbye!").Build());
 
-        Assert.Equal("amazing-provider", tracker.Config.Provider.Name);
+        Assert.Equal("amazing-provider", result.Provider.Name);
     }
 
     [Fact]
@@ -336,23 +349,119 @@ public class LdAiClientTest
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
         var client = new LdAiClient(mockClient.Object);
-        var tracker = client.Config("foo", Context.New(ContextKind.Default, "key"));
+        var result = client.Config("foo", Context.New(ContextKind.Default, "key"));
 
-        Assert.False(tracker.Config.Enabled);
+        Assert.False(result.Enabled);
     }
 
     [Fact]
     public void DisabledMethodReturnsDisabledConfig()
     {
-        var config = LdAiConfig.Disabled;
+        var config = LdAiCompletionConfigDefault.Disabled;
         Assert.False(config.Enabled);
     }
 
     [Fact]
     public void DisabledMethodReturnsNewInstanceEachCall()
     {
-        var first = LdAiConfig.Disabled;
-        var second = LdAiConfig.Disabled;
+        var first = LdAiCompletionConfigDefault.Disabled;
+        var second = LdAiCompletionConfigDefault.Disabled;
         Assert.NotSame(first, second);
+    }
+
+    [Fact]
+    public void ReturnsCallerDefaultWhenFlagModeMismatch()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        // A flag whose _ldMeta.mode is "agent" should not be served via the completion entry
+        // point. The factory logs a warning and returns the caller's default with a working
+        // tracker (per sdk-specs PR #229).
+        const string agentJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "1", "enabled": true, "mode": "agent"},
+                                     "model": { "name": "should-be-ignored" },
+                                     "provider": { "name": "should-be-ignored" },
+                                     "messages": [
+                                         { "content": "should be ignored", "role": "system" }
+                                     ]
+                                 }
+                                 """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(agentJson));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var defaultConfig = LdAiCompletionConfigDefault.New().AddMessage("default").Build();
+        var result = client.CompletionConfig("foo", Context.New("key"), defaultConfig);
+
+        // Result reflects the caller's default rather than a synthetic disabled config.
+        Assert.True(result.Enabled);
+        Assert.Collection(result.Messages,
+            message =>
+            {
+                Assert.Equal("default", message.Content);
+                Assert.Equal(Role.User, message.Role);
+            });
+        Assert.Equal(defaultConfig.Model.Name, result.Model.Name);
+        Assert.Equal(defaultConfig.Provider.Name, result.Provider.Name);
+
+        // Tracker must still work — every config the SDK returns has a working tracker.
+        var tracker = result.CreateTracker();
+        Assert.NotNull(tracker);
+        tracker.TrackSuccess();
+        mockClient.Verify(x => x.Track("$ld:ai:generation:success", It.IsAny<Context>(), It.IsAny<LdValue>(), 1.0f), Times.Once);
+
+        // Format string carries the structural shape; positional args carry the values.
+        // We verify both so a regression in either piece is caught.
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s =>
+                s.Contains("AI Config mode mismatch") &&
+                s.Contains("Returning caller's default")),
+            It.Is<object[]>(args =>
+                args.Length == 3 &&
+                (string)args[0] == "foo" &&
+                (string)args[1] == "completion" &&
+                (string)args[2] == "agent")
+        ), Times.Once);
+    }
+
+    [Fact]
+    public void ReturnsDefaultConfigWhenFlagIsNotAnAiConfig()
+    {
+        // Spec Req 1.2.3.4 step 2: a non-object variation result must be replaced with
+        // the caller's default, with an error log. A flag mistyped as a bare number
+        // reaches the factory as a non-object LdValue.
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Of(42));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var defaultConfig = LdAiCompletionConfigDefault.New().AddMessage("Hello").Build();
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "user-key"), defaultConfig);
+
+        Assert.True(result.Enabled);
+        Assert.Collection(result.Messages,
+            message =>
+            {
+                Assert.Equal("Hello", message.Content);
+                Assert.Equal(Role.User, message.Role);
+            });
+
+        mockLogger.Verify(x => x.Error(
+            It.Is<string>(s =>
+                s.Contains("AI Config") &&
+                s.Contains("is not an object") &&
+                s.Contains("using caller's default")),
+            It.Is<object[]>(args =>
+                args.Length == 2 &&
+                (string)args[0] == "foo" &&
+                (LdValueType)args[1] == LdValueType.Number)
+        ), Times.Once);
     }
 }

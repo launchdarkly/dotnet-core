@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk.Server.Ai.Config;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Moq;
 using Xunit;
@@ -39,9 +38,9 @@ public class InterpolationTests
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
         var client = new LdAiClient(mockClient.Object);
-        var tracker = client.Config("foo", context, LdAiConfig.Disabled, variables);
+        var result = client.Config("foo", context, LdAiCompletionConfigDefault.Disabled, variables);
 
-        return tracker.Config.Messages[0].Content;
+        return result.Messages[0].Content;
     }
 
     [Theory]
@@ -124,6 +123,7 @@ public class InterpolationTests
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
 
+        const string malformedTemplate = "This is a {{ malformed }]} prompt";
         const string configJson = """
                                   {
                                       "_ldMeta": {"variationKey": "1", "enabled": true},
@@ -143,11 +143,20 @@ public class InterpolationTests
 
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
-        mockLogger.Setup(x => x.Error(It.IsAny<string>()));
+        mockLogger.Setup(x => x.Warn(It.IsAny<string>()));
 
         var client = new LdAiClient(mockClient.Object);
-        var tracker = client.Config("foo", Context.New("key"), LdAiConfig.Disabled);
-        Assert.False(tracker.Config.Enabled);
+        var result = client.Config("foo", Context.New("key"), LdAiCompletionConfigDefault.Disabled);
+
+        // Per-message interpolation: the rest of the config survives, and the bad message
+        // is preserved with its raw (un-interpolated) content.
+        Assert.True(result.Enabled);
+        Assert.Collection(result.Messages,
+            message =>
+            {
+                Assert.Equal(malformedTemplate, message.Content);
+                Assert.Equal(Role.System, message.Role);
+            });
     }
 
     [Fact]

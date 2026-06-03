@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using Xunit;
 
@@ -86,5 +88,26 @@ public class LdAiCompletionConfigDefaultTest
             .Build();
 
         Assert.Equal("amazing-provider", config.Provider.Name);
+    }
+
+    [Fact]
+    public void ModelParameterDictionariesCannotBeMutatedViaDowncast()
+    {
+        // ModelConfig.Parameters and .Custom are typed as IReadOnlyDictionary<>, so the
+        // public contract is "read-only". A consumer that downcasts to IDictionary<>
+        // must not be able to mutate the stored map. ImmutableDictionary<> satisfies
+        // both shapes: the cast still succeeds, but writes throw at runtime.
+        var config = LdAiCompletionConfigDefault.New()
+            .SetModelParam("temperature", LdValue.Of(0.7))
+            .SetCustomModelParam("flavor", LdValue.Of("spicy"))
+            .Build();
+
+        Assert.Throws<NotSupportedException>(() =>
+            ((IDictionary<string, LdValue>)config.Model.Parameters)["temperature"] = LdValue.Of(2.0));
+        Assert.Throws<NotSupportedException>(() =>
+            ((IDictionary<string, LdValue>)config.Model.Custom)["flavor"] = LdValue.Of("mild"));
+
+        Assert.Equal(0.7, config.Model.Parameters["temperature"].AsDouble);
+        Assert.Equal("spicy", config.Model.Custom["flavor"].AsString);
     }
 }

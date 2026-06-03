@@ -86,7 +86,7 @@ internal sealed class ConfigFactory
             key,
             defaultValue.Enabled ?? true,
             variationKey: "",
-            version: 0,
+            version: 1,
             messages,
             defaultValue.Model,
             defaultValue.Provider,
@@ -140,10 +140,10 @@ internal sealed class ConfigFactory
         var meta = value.Get("_ldMeta");
         var enabled = meta.Get("enabled").AsBool;
         var variationKey = meta.Get("variationKey").AsString ?? "";
-        var version = meta.Get("version").AsInt;
+        var versionValue = meta.Get("version");
+        var version = versionValue.IsNull ? 1 : versionValue.AsInt;
         // Default to the completion mode when _ldMeta.mode is missing or non-string: legacy
-        // flags predate the mode tag, so treating them as completion configs matches the
-        // existing shape on the wire.
+        // flags predate the mode tag and were always served as completion configs.
         var mode = meta.Get("mode").AsString ?? LdAiCompletionConfig.Mode;
         return (enabled, variationKey, version, mode);
     }

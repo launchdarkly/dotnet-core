@@ -72,7 +72,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _configKey = configKey ?? throw new ArgumentNullException(nameof(configKey));
         _runId = runId ?? "";
-        _variationKey = variationKey;
+        _variationKey = variationKey ?? "";
         _version = version;
         _context = context;
         _modelName = modelName ?? "";
@@ -335,6 +335,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         public string VariationKey { get; set; }
 
         [JsonPropertyName("version")]
-        public int Version { get; set; }
+        public int Version { get; set; } = 1;
     }
 }

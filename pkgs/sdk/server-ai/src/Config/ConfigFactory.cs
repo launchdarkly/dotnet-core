@@ -86,7 +86,7 @@ internal sealed class ConfigFactory
             key,
             defaultValue.Enabled ?? true,
             variationKey: "",
-            version: 0,
+            version: 1,
             messages,
             tools: new Dictionary<string, ToolConfig>(),
             defaultValue.Model,
@@ -271,7 +271,15 @@ internal sealed class ConfigFactory
 
     private Func<LdAiConfigBase, ILdAiConfigTracker> TrackerFactoryFor(Context context)
     {
-        return cfg => new LdAiConfigTracker(_client, cfg, context);
+        return cfg => new LdAiConfigTracker(
+            _client,
+            Guid.NewGuid().ToString(),
+            cfg.Key,
+            cfg.VariationKey,
+            cfg.Version,
+            context,
+            cfg.Model?.Name,
+            cfg.Provider?.Name);
     }
 
     private static (bool Enabled, string VariationKey, int Version, string Mode) ParseMeta(LdValue value)
@@ -279,10 +287,10 @@ internal sealed class ConfigFactory
         var meta = value.Get("_ldMeta");
         var enabled = meta.Get("enabled").AsBool;
         var variationKey = meta.Get("variationKey").AsString ?? "";
-        var version = meta.Get("version").AsInt;
+        var versionValue = meta.Get("version");
+        var version = versionValue.IsNull ? 1 : versionValue.AsInt;
         // Default to the completion mode when _ldMeta.mode is missing or non-string: legacy
-        // flags predate the mode tag, so treating them as completion configs matches the
-        // existing shape on the wire.
+        // flags predate the mode tag and were always served as completion configs.
         var mode = meta.Get("mode").AsString ?? LdAiCompletionConfig.Mode;
         return (enabled, variationKey, version, mode);
     }

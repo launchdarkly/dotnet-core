@@ -111,4 +111,10 @@ public sealed class LdAiClient : ILdAiClient
         var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
         return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables);
     }
+
+    /// <inheritdoc/>
+    public ILdAiConfigTracker CreateTracker(string resumptionToken, Context context)
+    {
+        return LdAiConfigTracker.FromResumptionToken(resumptionToken, _client, context);
+    }
 }

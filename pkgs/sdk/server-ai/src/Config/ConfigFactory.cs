@@ -43,7 +43,8 @@ internal sealed class ConfigFactory
         if (ldValue.Type != LdValueType.Object)
         {
             _logger.Error(
-                $"AI Config '{key}': variation result is not an object (got {ldValue.Type}); using caller's default.");
+                "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
+                key, ldValue.Type);
             return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory);
         }
 
@@ -52,7 +53,8 @@ internal sealed class ConfigFactory
         if (mode != LdAiCompletionConfig.Mode)
         {
             _logger.Warn(
-                $"AI Config mode mismatch for {key}: expected {LdAiCompletionConfig.Mode}, got {mode}. Returning caller's default.");
+                "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
+                key, LdAiCompletionConfig.Mode, mode);
             return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory);
         }
 

@@ -414,11 +414,18 @@ public class LdAiClientTest
         tracker.TrackSuccess();
         mockClient.Verify(x => x.Track("$ld:ai:generation:success", It.IsAny<Context>(), It.IsAny<LdValue>(), 1.0f), Times.Once);
 
-        mockLogger.Verify(x => x.Warn(It.Is<string>(s =>
-            s.Contains("AI Config mode mismatch for foo") &&
-            s.Contains("expected completion") &&
-            s.Contains("got agent") &&
-            s.Contains("Returning caller's default"))), Times.Once);
+        // Format string carries the structural shape; positional args carry the values.
+        // We verify both so a regression in either piece is caught.
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s =>
+                s.Contains("AI Config mode mismatch") &&
+                s.Contains("Returning caller's default")),
+            It.Is<object[]>(args =>
+                args.Length == 3 &&
+                (string)args[0] == "foo" &&
+                (string)args[1] == "completion" &&
+                (string)args[2] == "agent")
+        ), Times.Once);
     }
 
     [Fact]
@@ -446,9 +453,15 @@ public class LdAiClientTest
                 Assert.Equal(Role.User, message.Role);
             });
 
-        mockLogger.Verify(x => x.Error(It.Is<string>(s =>
-            s.Contains("AI Config 'foo'") &&
-            s.Contains("is not an object") &&
-            s.Contains("using caller's default"))), Times.Once);
+        mockLogger.Verify(x => x.Error(
+            It.Is<string>(s =>
+                s.Contains("AI Config") &&
+                s.Contains("is not an object") &&
+                s.Contains("using caller's default")),
+            It.Is<object[]>(args =>
+                args.Length == 2 &&
+                (string)args[0] == "foo" &&
+                (LdValueType)args[1] == LdValueType.Number)
+        ), Times.Once);
     }
 }

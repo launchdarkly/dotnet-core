@@ -124,7 +124,10 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
         /// <returns>a new LdAiCompletionConfigDefault</returns>
         public LdAiCompletionConfigDefault Build()
         {
-            var model = new ModelConfig(_modelName, _modelParams, _customModelParams);
+            var model = new ModelConfig(
+                _modelName,
+                new Dictionary<string, LdValue>(_modelParams),
+                new Dictionary<string, LdValue>(_customModelParams));
             var provider = new ProviderConfig(_providerName);
             return new LdAiCompletionConfigDefault(_enabled, _messages, model, provider);
         }

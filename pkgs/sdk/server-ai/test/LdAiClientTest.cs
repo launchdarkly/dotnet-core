@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Moq;
 using Xunit;
@@ -371,13 +370,14 @@ public class LdAiClientTest
     }
 
     [Fact]
-    public void CompletionConfigReturnsDisabledWhenFlagModeMismatch()
+    public void ReturnsCallerDefaultWhenFlagModeMismatch()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
 
-        // A flag whose _ldMeta.mode is "agent" should not be served via the completion entry point.
-        // The factory must log a warning and return a disabled config with a working tracker.
+        // A flag whose _ldMeta.mode is "agent" should not be served via the completion entry
+        // point. The factory logs a warning and returns the caller's default with a working
+        // tracker (per sdk-specs PR #229).
         const string agentJson = """
                                  {
                                      "_ldMeta": {"variationKey": "1", "enabled": true, "mode": "agent"},
@@ -394,13 +394,19 @@ public class LdAiClientTest
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
 
         var client = new LdAiClient(mockClient.Object);
-        var result = client.CompletionConfig("foo", Context.New("key"),
-            LdAiCompletionConfigDefault.New().AddMessage("default").Build());
+        var defaultConfig = LdAiCompletionConfigDefault.New().AddMessage("default").Build();
+        var result = client.CompletionConfig("foo", Context.New("key"), defaultConfig);
 
-        Assert.False(result.Enabled);
-        Assert.Empty(result.Messages);
-        Assert.Equal("", result.Model.Name);
-        Assert.Equal("", result.Provider.Name);
+        // Result reflects the caller's default rather than a synthetic disabled config.
+        Assert.True(result.Enabled);
+        Assert.Collection(result.Messages,
+            message =>
+            {
+                Assert.Equal("default", message.Content);
+                Assert.Equal(Role.User, message.Role);
+            });
+        Assert.Equal(defaultConfig.Model.Name, result.Model.Name);
+        Assert.Equal(defaultConfig.Provider.Name, result.Provider.Name);
 
         // Tracker must still work — every config the SDK returns has a working tracker.
         var tracker = result.CreateTracker();
@@ -408,12 +414,41 @@ public class LdAiClientTest
         tracker.TrackSuccess();
         mockClient.Verify(x => x.Track("$ld:ai:generation:success", It.IsAny<Context>(), It.IsAny<LdValue>(), 1.0f), Times.Once);
 
-        // The mismatch should produce a single warning log line. Substrings pin the shape
-        // without locking surface rephrasings (quote style, exact punctuation).
         mockLogger.Verify(x => x.Warn(It.Is<string>(s =>
             s.Contains("AI Config mode mismatch for foo") &&
             s.Contains("expected completion") &&
             s.Contains("got agent") &&
-            s.Contains("Returning disabled config"))), Times.Once);
+            s.Contains("Returning caller's default"))), Times.Once);
+    }
+
+    [Fact]
+    public void ReturnsDefaultConfigWhenFlagIsNotAnAiConfig()
+    {
+        // Spec Req 1.2.3.4 step 2: a non-object variation result must be replaced with
+        // the caller's default, with an error log. A flag mistyped as a bare number
+        // reaches the factory as a non-object LdValue.
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Of(42));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var defaultConfig = LdAiCompletionConfigDefault.New().AddMessage("Hello").Build();
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "user-key"), defaultConfig);
+
+        Assert.True(result.Enabled);
+        Assert.Collection(result.Messages,
+            message =>
+            {
+                Assert.Equal("Hello", message.Content);
+                Assert.Equal(Role.User, message.Role);
+            });
+
+        mockLogger.Verify(x => x.Error(It.Is<string>(s =>
+            s.Contains("AI Config 'foo'") &&
+            s.Contains("is not an object") &&
+            s.Contains("using caller's default"))), Times.Once);
     }
 }

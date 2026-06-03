@@ -1,5 +1,4 @@
 using LaunchDarkly.Sdk.Server.Ai.Config;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Ai;

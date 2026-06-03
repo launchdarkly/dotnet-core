@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 

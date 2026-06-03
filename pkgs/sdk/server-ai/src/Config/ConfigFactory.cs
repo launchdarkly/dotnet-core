@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Mustache;
 
@@ -35,23 +34,31 @@ internal sealed class ConfigFactory
         string key,
         LdValue ldValue,
         Context context,
+        LdAiCompletionConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> variables)
     {
         var mergedVars = MergeVariables(variables, context);
         var trackerFactory = TrackerFactoryFor(context);
+
+        if (ldValue.Type != LdValueType.Object)
+        {
+            _logger.Error(
+                $"AI Config '{key}': variation result is not an object (got {ldValue.Type}); using caller's default.");
+            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory);
+        }
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
 
         if (mode != LdAiCompletionConfig.Mode)
         {
             _logger.Warn(
-                $"AI Config mode mismatch for {key}: expected {LdAiCompletionConfig.Mode}, got {mode}. Returning disabled config.");
-            return BuildDisabledCompletionConfig(key, variationKey, version, trackerFactory);
+                $"AI Config mode mismatch for {key}: expected {LdAiCompletionConfig.Mode}, got {mode}. Returning caller's default.");
+            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory);
         }
 
         var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
-        var messages = ParseAndInterpolateMessages(ldValue.Get("messages"), mergedVars, key);
+        var messages = InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key);
 
         return new LdAiCompletionConfig(
             key,
@@ -64,21 +71,53 @@ internal sealed class ConfigFactory
             trackerFactory);
     }
 
-    private static LdAiCompletionConfig BuildDisabledCompletionConfig(
+    private LdAiCompletionConfig BuildCompletionFromDefault(
         string key,
-        string variationKey,
-        int version,
+        LdAiCompletionConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> mergedVars,
         Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
     {
+        // Caller-supplied default messages can contain Mustache templates too; interpolate
+        // with the same per-message fallback as server-returned configs.
+        var messages = InterpolateMessages(defaultValue.Messages, mergedVars, key);
         return new LdAiCompletionConfig(
             key,
-            enabled: false,
-            variationKey: variationKey,
-            version: version,
-            messages: new List<Message>(),
-            model: new ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>()),
-            provider: new ProviderConfig(""),
-            trackerFactory: trackerFactory);
+            defaultValue.Enabled ?? true,
+            variationKey: "",
+            version: 0,
+            messages,
+            defaultValue.Model,
+            defaultValue.Provider,
+            trackerFactory);
+    }
+
+    private IReadOnlyList<Message> InterpolateMessages(
+        IReadOnlyList<Message> messages,
+        IReadOnlyDictionary<string, object> mergedVars,
+        string key)
+    {
+        if (messages == null)
+        {
+            return new List<Message>();
+        }
+        var result = new List<Message>(messages.Count);
+        for (var i = 0; i < messages.Count; i++)
+        {
+            var msg = messages[i];
+            string interpolated;
+            try
+            {
+                interpolated = InterpolateTemplate(msg.Content, mergedVars);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(
+                    $"AI Config '{key}': skipping interpolation of malformed template in message {i}: {ex.Message}");
+                interpolated = msg.Content;
+            }
+            result.Add(new Message(interpolated, msg.Role));
+        }
+        return result;
     }
 
     private Func<LdAiConfigBase, ILdAiConfigTracker> TrackerFactoryFor(Context context)
@@ -124,10 +163,7 @@ internal sealed class ConfigFactory
         return value.Dictionary.ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
-    private IReadOnlyList<Message> ParseAndInterpolateMessages(
-        LdValue messagesValue,
-        IReadOnlyDictionary<string, object> mergedVars,
-        string key)
+    private static IReadOnlyList<Message> ParseMessages(LdValue messagesValue)
     {
         if (messagesValue.Type != LdValueType.Array)
         {
@@ -142,25 +178,10 @@ internal sealed class ConfigFactory
             {
                 continue;
             }
-
             var content = msg.Get("content").AsString ?? "";
             var role = ParseRole(msg.Get("role").AsString);
-
-            string interpolated;
-            try
-            {
-                interpolated = InterpolateTemplate(content, mergedVars);
-            }
-            catch (Exception ex)
-            {
-                _logger.Warn(
-                    $"AI Config '{key}': skipping interpolation of malformed template in message {i}: {ex.Message}");
-                interpolated = content;
-            }
-
-            result.Add(new Message(interpolated, role));
+            result.Add(new Message(content, role));
         }
-
         return result;
     }
 

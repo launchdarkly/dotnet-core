@@ -1,5 +1,3 @@
-using LaunchDarkly.Sdk.Server.Ai.DataModel;
-
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
 /// <summary>

@@ -55,7 +55,7 @@ public sealed class LdAiClient : ILdAiClient
         defaultValue ??= LdAiCompletionConfigDefault.Disabled;
 
         var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildCompletionConfig(key, ldValue, context, variables);
+        return _factory.BuildCompletionConfig(key, ldValue, context, defaultValue, variables);
     }
 
     /// <summary>

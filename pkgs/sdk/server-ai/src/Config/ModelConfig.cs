@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
@@ -25,7 +26,11 @@ public sealed record ModelConfig
     internal ModelConfig(string name, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
     {
         Name = name;
-        Parameters = parameters;
-        Custom = custom;
+        // Materialize into an ImmutableDictionary so a consumer that downcasts to
+        // IDictionary<> can't mutate the stored map. The cast still succeeds (the
+        // contract is still IReadOnlyDictionary<>) but write members throw
+        // NotSupportedException at runtime, matching the typed read-only promise.
+        Parameters = parameters?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
+        Custom = custom?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
     }
 }

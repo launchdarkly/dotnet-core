@@ -33,12 +33,12 @@ public abstract class LdAiConfigBase
     /// <summary>
     /// This field meant for internal LaunchDarkly usage.
     /// </summary>
-    public string VariationKey { get; }
+    internal string VariationKey { get; }
 
     /// <summary>
     /// This field meant for internal LaunchDarkly usage.
     /// </summary>
-    public int Version { get; }
+    internal int Version { get; }
 
     /// <summary>
     /// Factory that produces a tracker for the config. The factory is mode-agnostic — it

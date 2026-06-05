@@ -203,8 +203,8 @@ internal sealed class ConfigFactory
 
     internal static IReadOnlyDictionary<string, ToolConfig> ParseTools(LdValue toolsValue)
     {
-        if (toolsValue.Type != LdValueType.Object) return new Dictionary<string, ToolConfig>();
-        var result = new Dictionary<string, ToolConfig>();
+        if (toolsValue.Type != LdValueType.Object) return ImmutableDictionary<string, ToolConfig>.Empty;
+        var result = ImmutableDictionary.CreateBuilder<string, ToolConfig>();
         foreach (var kv in toolsValue.Dictionary)
         {
             var tool = kv.Value;
@@ -215,7 +215,7 @@ internal sealed class ConfigFactory
                 LdValueObjectToDictionary(tool.Get("parameters")),
                 LdValueObjectToDictionary(tool.Get("customParameters")));
         }
-        return result;
+        return result.ToImmutable();
     }
 
     internal static JudgeConfiguration ParseJudgeConfiguration(LdValue value)

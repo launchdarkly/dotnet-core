@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
@@ -42,7 +43,7 @@ public sealed record ToolConfig
         Name = name;
         Description = description;
         Type = type;
-        Parameters = parameters;
-        CustomParameters = customParameters;
+        Parameters = parameters?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
+        CustomParameters = customParameters?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
     }
 }

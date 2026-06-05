@@ -218,11 +218,10 @@ internal sealed class ConfigFactory
         return result.ToImmutable();
     }
 
-    internal static LdAiConfigTypes.JudgeConfiguration ParseJudgeConfiguration(LdValue value)
+    internal static LdAiConfigTypes.JudgeConfiguration ParseJudgeConfiguration(LdValue judgeConfigurationValue)
     {
-        var jc = value.Get("judgeConfiguration");
-        if (jc.Type != LdValueType.Object) return null;
-        var judgesArray = jc.Get("judges");
+        if (judgeConfigurationValue.Type != LdValueType.Object) return null;
+        var judgesArray = judgeConfigurationValue.Get("judges");
         if (judgesArray.Type != LdValueType.Array) return new LdAiConfigTypes.JudgeConfiguration(new List<LdAiConfigTypes.Judge>());
         var entries = new List<LdAiConfigTypes.Judge>();
         for (var i = 0; i < judgesArray.Count; i++)

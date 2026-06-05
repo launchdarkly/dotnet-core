@@ -195,6 +195,52 @@ internal sealed class ConfigFactory
         return result;
     }
 
+    internal static string ParseInstructions(LdValue instructionsValue)
+    {
+        return instructionsValue.Type == LdValueType.String ? instructionsValue.AsString : null;
+    }
+
+    internal static IReadOnlyDictionary<string, LdAiConfigTypes.Tool> ParseTools(LdValue toolsValue)
+    {
+        if (toolsValue.Type != LdValueType.Object) return ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;
+        var result = ImmutableDictionary.CreateBuilder<string, LdAiConfigTypes.Tool>();
+        foreach (var kv in toolsValue.Dictionary)
+        {
+            var tool = kv.Value;
+            if (tool.Type != LdValueType.Object) continue;
+            result[kv.Key] = new LdAiConfigTypes.Tool(
+                tool.Get("name").AsString ?? "",
+                tool.Get("description").AsString,
+                tool.Get("type").AsString,
+                LdValueObjectToDictionary(tool.Get("parameters")),
+                LdValueObjectToDictionary(tool.Get("customParameters")));
+        }
+        return result.ToImmutable();
+    }
+
+    internal static LdAiConfigTypes.JudgeConfiguration ParseJudgeConfiguration(LdValue judgeConfigurationValue)
+    {
+        if (judgeConfigurationValue.Type != LdValueType.Object) return null;
+        var judgesArray = judgeConfigurationValue.Get("judges");
+        if (judgesArray.Type != LdValueType.Array) return new LdAiConfigTypes.JudgeConfiguration(new List<LdAiConfigTypes.JudgeConfiguration.Judge>());
+        var entries = new List<LdAiConfigTypes.JudgeConfiguration.Judge>();
+        for (var i = 0; i < judgesArray.Count; i++)
+        {
+            var j = judgesArray.Get(i);
+            if (j.Type != LdValueType.Object) continue;
+            entries.Add(new LdAiConfigTypes.JudgeConfiguration.Judge(
+                j.Get("key").AsString ?? "",
+                j.Get("samplingRate").AsDouble));
+        }
+        return new LdAiConfigTypes.JudgeConfiguration(entries);
+    }
+
+    internal static string ParseEvaluationMetricKey(LdValue value)
+    {
+        var emk = value.Get("evaluationMetricKey");
+        return emk.Type == LdValueType.String ? emk.AsString : null;
+    }
+
     private static LdAiConfigTypes.Role ParseRole(string roleString)
     {
         // The wire format uses capitalized "User" / "System" / "Assistant"; Enum.TryParse with

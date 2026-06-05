@@ -122,7 +122,7 @@ internal sealed class ConfigFactory
         var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
         var tools = ParseTools(ldValue.Get("tools"));
-        var instructions = InterpolateInstructions(ParseInstructions(ldValue), mergedVars, key);
+        var instructions = InterpolateInstructions(ParseInstructions(ldValue.Get("instructions")), mergedVars, key);
 
         return new LdAiAgentConfig(
             key,
@@ -341,8 +341,7 @@ internal sealed class ConfigFactory
 
     internal static string ParseInstructions(LdValue value)
     {
-        var instructions = value.Get("instructions");
-        return instructions.Type == LdValueType.String ? instructions.AsString : null;
+        return value.Type == LdValueType.String ? value.AsString : null;
     }
 
     internal static IReadOnlyDictionary<string, LdAiConfigTypes.Tool> ParseTools(LdValue toolsValue)

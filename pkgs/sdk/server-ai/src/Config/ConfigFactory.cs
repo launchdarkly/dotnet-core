@@ -77,7 +77,7 @@ internal sealed class ConfigFactory
         string key,
         LdAiCompletionConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
     {
         // Caller-supplied default messages can contain Mustache templates too; interpolate
         // with the same per-message fallback as server-returned configs.
@@ -122,7 +122,7 @@ internal sealed class ConfigFactory
         return result;
     }
 
-    private Func<LdAiConfigBase, ILdAiConfigTracker> TrackerFactoryFor(Context context)
+    private Func<LdAiConfig, ILdAiConfigTracker> TrackerFactoryFor(Context context)
     {
         return cfg => new LdAiConfigTracker(
             _client,

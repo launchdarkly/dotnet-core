@@ -3,10 +3,10 @@ using System.Collections.Generic;
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
 /// <summary>
-/// Base type for user-supplied default AI Configs. Carries the data fields common to
-/// the public default config types. Cannot be constructed or subclassed outside the SDK.
+/// Shared type for user-supplied default AI Configs. Carries the data fields common to
+/// the mode-specific default config types. Cannot be constructed or subclassed outside the SDK.
 /// </summary>
-public abstract class LdAiConfigDefaultBase
+public abstract class LdAiConfigDefault
 {
     /// <summary>
     /// Information about the model.
@@ -24,10 +24,10 @@ public abstract class LdAiConfigDefaultBase
     public bool? Enabled { get; }
 
     /// <summary>
-    /// Constructs the base. Only public derived types in this assembly are intended
+    /// Constructs the default config. Only public derived types in this assembly are intended
     /// to extend this class.
     /// </summary>
-    private protected LdAiConfigDefaultBase(bool? enabled, LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider)
+    private protected LdAiConfigDefault(bool? enabled, LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider)
     {
         Enabled = enabled;
         Model = model ?? new LdAiConfigTypes.ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());

@@ -12,7 +12,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// Construct an instance via <see cref="New"/> and the nested <see cref="Builder"/>,
 /// or use <see cref="Disabled"/> for a disabled default.
 /// </summary>
-public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
+public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
 {
     /// <summary>
     /// Builder for constructing an LdAiCompletionConfigDefault instance, which can be passed

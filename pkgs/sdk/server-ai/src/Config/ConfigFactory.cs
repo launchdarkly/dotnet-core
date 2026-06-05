@@ -88,7 +88,7 @@ internal sealed class ConfigFactory
             variationKey: "",
             version: 1,
             messages,
-            tools: new Dictionary<string, ToolConfig>(),
+            tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
             defaultValue.Model,
             defaultValue.Provider,
             trackerFactory);

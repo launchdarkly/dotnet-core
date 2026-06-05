@@ -8,6 +8,7 @@ To get started, follow this pattern:
 ```csharp
 using LaunchDarkly.Sdk.Server.Ai;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
+using LaunchDarkly.Sdk.Server.Ai.Config;
 
 // This is a standard LaunchDarkly server-side .NET client instance.
 var baseClient = new LdClient(Configuration.Builder("sdk-key").Build());
@@ -17,5 +18,5 @@ var aiClient = new LdAiClient(new LdClientAdapter(baseClient));
 
 // Pass in the key of the AI Config, a context, and a default value in case the config can't be
 // retrieved from LaunchDarkly.
-var myModelConfig = aiClient.Config("my-model-config", Context.New("user-key"), LdAiConfig.Disabled);
+var myModelConfig = aiClient.CompletionConfig("my-model-config", Context.New("user-key"), LdAiCompletionConfigDefault.Disabled);
 ```

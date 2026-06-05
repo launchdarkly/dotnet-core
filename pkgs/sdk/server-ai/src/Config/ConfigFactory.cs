@@ -75,7 +75,7 @@ internal sealed class ConfigFactory
         string key,
         LdAiCompletionConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
     {
         // Caller-supplied default messages can contain Mustache templates too; interpolate
         // with the same per-message fallback as server-returned configs.
@@ -140,7 +140,7 @@ internal sealed class ConfigFactory
         string key,
         LdAiAgentConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
     {
         var instructions = InterpolateInstructions(defaultValue.Instructions, mergedVars, key);
         return new LdAiAgentConfig(
@@ -204,7 +204,7 @@ internal sealed class ConfigFactory
         string key,
         LdAiJudgeConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
     {
         var messages = InterpolateMessages(defaultValue.Messages, mergedVars, key);
         return new LdAiJudgeConfig(
@@ -237,16 +237,16 @@ internal sealed class ConfigFactory
         }
     }
 
-    private IReadOnlyList<Message> InterpolateMessages(
-        IReadOnlyList<Message> messages,
+    private IReadOnlyList<LdAiConfigTypes.Message> InterpolateMessages(
+        IReadOnlyList<LdAiConfigTypes.Message> messages,
         IReadOnlyDictionary<string, object> mergedVars,
         string key)
     {
         if (messages == null)
         {
-            return new List<Message>();
+            return new List<LdAiConfigTypes.Message>();
         }
-        var result = new List<Message>(messages.Count);
+        var result = new List<LdAiConfigTypes.Message>(messages.Count);
         for (var i = 0; i < messages.Count; i++)
         {
             var msg = messages[i];
@@ -261,12 +261,12 @@ internal sealed class ConfigFactory
                     $"AI Config '{key}': skipping interpolation of malformed template in message {i}: {ex.Message}");
                 interpolated = msg.Content;
             }
-            result.Add(new Message(interpolated, msg.Role));
+            result.Add(new LdAiConfigTypes.Message(interpolated, msg.Role));
         }
         return result;
     }
 
-    private Func<LdAiConfigBase, ILdAiConfigTracker> TrackerFactoryFor(Context context)
+    private Func<LdAiConfig, ILdAiConfigTracker> TrackerFactoryFor(Context context)
     {
         return cfg => new LdAiConfigTracker(
             _client,
@@ -292,18 +292,18 @@ internal sealed class ConfigFactory
         return (enabled, variationKey, version, mode);
     }
 
-    private static ModelConfig ParseModel(LdValue modelValue)
+    private static LdAiConfigTypes.ModelConfig ParseModel(LdValue modelValue)
     {
         var name = modelValue.Get("name").AsString ?? "";
         var parameters = LdValueObjectToDictionary(modelValue.Get("parameters"));
         var custom = LdValueObjectToDictionary(modelValue.Get("custom"));
-        return new ModelConfig(name, parameters, custom);
+        return new LdAiConfigTypes.ModelConfig(name, parameters, custom);
     }
 
-    private static ProviderConfig ParseProvider(LdValue providerValue)
+    private static LdAiConfigTypes.ProviderConfig ParseProvider(LdValue providerValue)
     {
         var name = providerValue.Get("name").AsString ?? "";
-        return new ProviderConfig(name);
+        return new LdAiConfigTypes.ProviderConfig(name);
     }
 
     private static IReadOnlyDictionary<string, LdValue> LdValueObjectToDictionary(LdValue value)
@@ -317,14 +317,14 @@ internal sealed class ConfigFactory
         return value.Dictionary.ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
-    private static IReadOnlyList<Message> ParseMessages(LdValue messagesValue)
+    private static IReadOnlyList<LdAiConfigTypes.Message> ParseMessages(LdValue messagesValue)
     {
         if (messagesValue.Type != LdValueType.Array)
         {
-            return new List<Message>();
+            return new List<LdAiConfigTypes.Message>();
         }
 
-        var result = new List<Message>(messagesValue.Count);
+        var result = new List<LdAiConfigTypes.Message>(messagesValue.Count);
         for (var i = 0; i < messagesValue.Count; i++)
         {
             var msg = messagesValue.Get(i);
@@ -334,7 +334,7 @@ internal sealed class ConfigFactory
             }
             var content = msg.Get("content").AsString ?? "";
             var role = ParseRole(msg.Get("role").AsString);
-            result.Add(new Message(content, role));
+            result.Add(new LdAiConfigTypes.Message(content, role));
         }
         return result;
     }
@@ -385,15 +385,15 @@ internal sealed class ConfigFactory
         return emk.Type == LdValueType.String ? emk.AsString : null;
     }
 
-    private static Role ParseRole(string roleString)
+    private static LdAiConfigTypes.Role ParseRole(string roleString)
     {
         // The wire format uses capitalized "User" / "System" / "Assistant"; Enum.TryParse with
         // ignoreCase = true is tolerant of casing variants. Unknown / null roles fall back to User.
-        if (!string.IsNullOrEmpty(roleString) && Enum.TryParse<Role>(roleString, ignoreCase: true, out var parsed))
+        if (!string.IsNullOrEmpty(roleString) && Enum.TryParse<LdAiConfigTypes.Role>(roleString, ignoreCase: true, out var parsed))
         {
             return parsed;
         }
-        return Role.User;
+        return LdAiConfigTypes.Role.User;
     }
 
     private IReadOnlyDictionary<string, object> MergeVariables(

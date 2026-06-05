@@ -14,7 +14,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// they are not constructed directly by users. To supply a fallback default to the
 /// client, use <see cref="LdAiCompletionConfigDefault"/>.
 /// </summary>
-public sealed class LdAiCompletionConfig : LdAiConfigBase
+public sealed class LdAiCompletionConfig : LdAiConfig
 {
     /// <summary>
     /// The mode tag emitted in <c>_ldMeta.mode</c> for this config type. Future agent and
@@ -25,13 +25,13 @@ public sealed class LdAiCompletionConfig : LdAiConfigBase
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<Message> Messages { get; }
+    public IReadOnlyList<LdAiConfigTypes.Message> Messages { get; }
 
     internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
-        IEnumerable<Message> messages, ModelConfig model, ProviderConfig provider,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        IEnumerable<LdAiConfigTypes.Message> messages, LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider,
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
         : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
-        Messages = messages?.ToList() ?? new List<Message>();
+        Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
     }
 }

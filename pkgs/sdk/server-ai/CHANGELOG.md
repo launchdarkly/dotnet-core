@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.4...LaunchDarkly.ServerSdk.Ai-v0.10.0) (2026-06-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Move Role from LaunchDarkly.Sdk.Server.Ai.DataModel into LdAiConfigTypes
+* Rename LdAiConfig.ModelConfiguration to LdAiConfigTypes.ModelConfig and LdAiConfig.ModelProvider to LdAiConfigTypes.ProviderConfig
+* Move shared types nested in LdAiConfig into static LdAiConfigTypes — Message, ModelConfiguration, and ModelProvider
+* Enforce at-most-once tracking — each metric type (duration, tokens, feedback, success/error, time-to-first-token) records once per tracker; duplicates are dropped with a warning
+* Add ResumptionToken on ILdAiConfigTracker and ILdAiClient.CreateTracker(resumptionToken, context) for cross-process tracker reconstruction with the original runId
+* Add per-execution runId on all AI track event payloads for billing isolation
+* Change CompletionConfig to return LdAiCompletionConfig instead of ILdAiConfigTracker — obtain a tracker via config.CreateTracker()
+* Default LdAiCompletionConfigDefault.Enabled to true per AISDK spec (was false on the LdAiConfig builder in 0.9.x)
+* Remove ILdAiConfigTracker.Config property — read config fields from the LdAiCompletionConfig the caller already holds
+* Make LdAiConfigTracker SDK-constructed only — the public constructor is removed; obtain trackers via config.CreateTracker() or ILdAiClient.CreateTracker(resumptionToken, context)
+* Convert LdAiCompletionConfig and LdAiCompletionConfigDefault from records to classes — equality is reference-based instead of structural
+* Remove LaunchDarkly.Sdk.Server.Ai.DataModel namespace — delete unused AiConfig, Meta, Model, Provider, and Message JSON DTO classes
+* Split unified LdAiConfig into LdAiCompletionConfig (SDK output) and LdAiCompletionConfigDefault (user input) — Builder, New(), and Disabled move to the Default type; introduce abstract LdAiConfig and LdAiConfigDefault base types for future agent/judge modes
+
+### Features
+
+* Add MetricSummary property on ILdAiConfigTracker summarizing recorded metrics ([44ff485](https://github.com/launchdarkly/dotnet-core/commit/44ff485fcc3095b3adea81d142bc865cd0904d12))
+* Add per-execution runId on all AI track event payloads for billing isolation ([44ff485](https://github.com/launchdarkly/dotnet-core/commit/44ff485fcc3095b3adea81d142bc865cd0904d12))
+* Add ResumptionToken on ILdAiConfigTracker and ILdAiClient.CreateTracker(resumptionToken, context) for cross-process tracker reconstruction with the original runId ([44ff485](https://github.com/launchdarkly/dotnet-core/commit/44ff485fcc3095b3adea81d142bc865cd0904d12))
+* Change CompletionConfig to return LdAiCompletionConfig instead of ILdAiConfigTracker — obtain a tracker via config.CreateTracker() ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Convert LdAiCompletionConfig and LdAiCompletionConfigDefault from records to classes — equality is reference-based instead of structural ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Default LdAiCompletionConfigDefault.Enabled to true per AISDK spec (was false on the LdAiConfig builder in 0.9.x) ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Enforce at-most-once tracking — each metric type (duration, tokens, feedback, success/error, time-to-first-token) records once per tracker; duplicates are dropped with a warning ([44ff485](https://github.com/launchdarkly/dotnet-core/commit/44ff485fcc3095b3adea81d142bc865cd0904d12))
+* Make LdAiConfigTracker SDK-constructed only — the public constructor is removed; obtain trackers via config.CreateTracker() or ILdAiClient.CreateTracker(resumptionToken, context) ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Mode-mismatch detection — log a warning and return the caller's default when the flag's _ldMeta.mode does not match the requested mode (per sdk-specs[#229](https://github.com/launchdarkly/dotnet-core/issues/229)) ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Move Role from LaunchDarkly.Sdk.Server.Ai.DataModel into LdAiConfigTypes ([ac7fd06](https://github.com/launchdarkly/dotnet-core/commit/ac7fd06ffa078b701f19b2eb16982103207633ff))
+* Move shared types nested in LdAiConfig into static LdAiConfigTypes — Message, ModelConfiguration, and ModelProvider ([ac7fd06](https://github.com/launchdarkly/dotnet-core/commit/ac7fd06ffa078b701f19b2eb16982103207633ff))
+* Non-object variation handling — log an error and return the caller's default when the variation result is not an object ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Per-message interpolation fallback — a malformed Mustache template keeps raw content for that message rather than discarding the entire config ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Remove ILdAiConfigTracker.Config property — read config fields from the LdAiCompletionConfig the caller already holds ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Remove LaunchDarkly.Sdk.Server.Ai.DataModel namespace — delete unused AiConfig, Meta, Model, Provider, and Message JSON DTO classes ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Rename LdAiConfig.ModelConfiguration to LdAiConfigTypes.ModelConfig and LdAiConfig.ModelProvider to LdAiConfigTypes.ProviderConfig ([ac7fd06](https://github.com/launchdarkly/dotnet-core/commit/ac7fd06ffa078b701f19b2eb16982103207633ff))
+* Split unified LdAiConfig into LdAiCompletionConfig (SDK output) and LdAiCompletionConfigDefault (user input) — Builder, New(), and Disabled move to the Default type; introduce abstract LdAiConfig and LdAiConfigDefault base types for future agent/judge modes ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+* Tolerant LdValue parsing — missing or wrong-typed fields degrade to typed defaults instead of discarding the whole config ([92f799f](https://github.com/launchdarkly/dotnet-core/commit/92f799f6681772eb1b34dd808517ce98845f70c6))
+
 ## [0.9.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.3...LaunchDarkly.ServerSdk.Ai-v0.9.4) (2026-05-27)
 
 

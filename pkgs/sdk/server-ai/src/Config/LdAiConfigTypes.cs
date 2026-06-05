@@ -145,32 +145,32 @@ public static class LdAiConfigTypes
     }
 
     /// <summary>
-    /// Represents a single judge entry within a <see cref="JudgeConfiguration"/>.
-    /// </summary>
-    public sealed class Judge
-    {
-        /// <summary>
-        /// The key identifying this judge.
-        /// </summary>
-        public string Key { get; }
-
-        /// <summary>
-        /// The fraction of requests that this judge evaluates, in the range [0, 1].
-        /// </summary>
-        public double SamplingRate { get; }
-
-        internal Judge(string key, double samplingRate)
-        {
-            Key = key;
-            SamplingRate = samplingRate;
-        }
-    }
-
-    /// <summary>
     /// Configuration for the judges associated with an AI Config.
     /// </summary>
     public sealed class JudgeConfiguration
     {
+        /// <summary>
+        /// Represents a single judge entry within a <see cref="JudgeConfiguration"/>.
+        /// </summary>
+        public sealed class Judge
+        {
+            /// <summary>
+            /// The key identifying this judge.
+            /// </summary>
+            public string Key { get; }
+
+            /// <summary>
+            /// The fraction of requests that this judge evaluates, in the range [0, 1].
+            /// </summary>
+            public double SamplingRate { get; }
+
+            internal Judge(string key, double samplingRate)
+            {
+                Key = key;
+                SamplingRate = samplingRate;
+            }
+        }
+
         /// <summary>
         /// The list of judges.
         /// </summary>

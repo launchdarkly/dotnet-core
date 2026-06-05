@@ -222,13 +222,13 @@ internal sealed class ConfigFactory
     {
         if (judgeConfigurationValue.Type != LdValueType.Object) return null;
         var judgesArray = judgeConfigurationValue.Get("judges");
-        if (judgesArray.Type != LdValueType.Array) return new LdAiConfigTypes.JudgeConfiguration(new List<LdAiConfigTypes.Judge>());
-        var entries = new List<LdAiConfigTypes.Judge>();
+        if (judgesArray.Type != LdValueType.Array) return new LdAiConfigTypes.JudgeConfiguration(new List<LdAiConfigTypes.JudgeConfiguration.Judge>());
+        var entries = new List<LdAiConfigTypes.JudgeConfiguration.Judge>();
         for (var i = 0; i < judgesArray.Count; i++)
         {
             var j = judgesArray.Get(i);
             if (j.Type != LdValueType.Object) continue;
-            entries.Add(new LdAiConfigTypes.Judge(
+            entries.Add(new LdAiConfigTypes.JudgeConfiguration.Judge(
                 j.Get("key").AsString ?? "",
                 j.Get("samplingRate").AsDouble));
         }

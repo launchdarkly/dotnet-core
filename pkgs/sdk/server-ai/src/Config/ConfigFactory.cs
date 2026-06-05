@@ -208,6 +208,7 @@ internal sealed class ConfigFactory
         foreach (var kv in toolsValue.Dictionary)
         {
             var tool = kv.Value;
+            if (tool.Type != LdValueType.Object) continue;
             result[kv.Key] = new ToolConfig(
                 tool.Get("name").AsString ?? "",
                 tool.Get("description").AsString,
@@ -228,6 +229,7 @@ internal sealed class ConfigFactory
         for (var i = 0; i < judgesArray.Count; i++)
         {
             var j = judgesArray.Get(i);
+            if (j.Type != LdValueType.Object) continue;
             entries.Add(new Judge(
                 j.Get("key").AsString ?? "",
                 j.Get("samplingRate").AsDouble));

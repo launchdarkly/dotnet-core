@@ -195,10 +195,9 @@ internal sealed class ConfigFactory
         return result;
     }
 
-    internal static string ParseInstructions(LdValue value)
+    internal static string ParseInstructions(LdValue instructionsValue)
     {
-        var instructions = value.Get("instructions");
-        return instructions.Type == LdValueType.String ? instructions.AsString : null;
+        return instructionsValue.Type == LdValueType.String ? instructionsValue.AsString : null;
     }
 
     internal static IReadOnlyDictionary<string, LdAiConfigTypes.Tool> ParseTools(LdValue toolsValue)

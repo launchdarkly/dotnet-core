@@ -121,7 +121,7 @@ public class ConfigFactoryParserTest
             ["instructions"] = LdValue.Of("You are a helpful assistant specializing in {{topic}}")
         });
 
-        var instructions = ConfigFactory.ParseInstructions(rootValue);
+        var instructions = ConfigFactory.ParseInstructions(rootValue.Get("instructions"));
 
         Assert.Equal("You are a helpful assistant specializing in {{topic}}", instructions);
     }
@@ -194,7 +194,7 @@ public class ConfigFactoryParserTest
             })
         });
 
-        var instructions = ConfigFactory.ParseInstructions(rootValue);
+        var instructions = ConfigFactory.ParseInstructions(rootValue.Get("instructions"));
         var tools = ConfigFactory.ParseTools(rootValue.Get("tools"));
         var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue);
         var evaluationMetricKey = ConfigFactory.ParseEvaluationMetricKey(rootValue);

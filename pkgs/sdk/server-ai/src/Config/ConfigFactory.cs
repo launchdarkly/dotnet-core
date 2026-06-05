@@ -123,6 +123,7 @@ internal sealed class ConfigFactory
         var provider = ParseProvider(ldValue.Get("provider"));
         var tools = ParseTools(ldValue.Get("tools"));
         var instructions = InterpolateInstructions(ParseInstructions(ldValue.Get("instructions")), mergedVars, key);
+        var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
 
         return new LdAiAgentConfig(
             key,
@@ -133,6 +134,7 @@ internal sealed class ConfigFactory
             tools,
             model,
             provider,
+            judgeConfiguration,
             trackerFactory);
     }
 
@@ -149,9 +151,10 @@ internal sealed class ConfigFactory
             variationKey: "",
             version: 1,
             instructions,
-            tools: ImmutableDictionary<string, ToolConfig>.Empty,
+            tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
             defaultValue.Model,
             defaultValue.Provider,
+            defaultValue.JudgeConfiguration,
             trackerFactory);
     }
 

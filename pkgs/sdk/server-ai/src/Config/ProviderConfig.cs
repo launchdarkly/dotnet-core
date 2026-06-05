@@ -1,17 +1,20 @@
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
-/// <summary>
-/// Information about the model provider.
-/// </summary>
-public sealed record ProviderConfig
+public static partial class LdAiConfigTypes
 {
     /// <summary>
-    /// The name of the model provider.
+    /// Information about the model provider.
     /// </summary>
-    public readonly string Name;
-
-    internal ProviderConfig(string name)
+    public sealed record ProviderConfig
     {
-        Name = name;
+        /// <summary>
+        /// The name of the model provider.
+        /// </summary>
+        public readonly string Name;
+
+        internal ProviderConfig(string name)
+        {
+            Name = name;
+        }
     }
 }

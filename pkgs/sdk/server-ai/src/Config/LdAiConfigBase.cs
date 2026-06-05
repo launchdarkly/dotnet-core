@@ -18,12 +18,12 @@ public abstract class LdAiConfigBase
     /// <summary>
     /// Information about the model.
     /// </summary>
-    public ModelConfig Model { get; }
+    public LdAiConfigTypes.ModelConfig Model { get; }
 
     /// <summary>
     /// Information about the model provider.
     /// </summary>
-    public ProviderConfig Provider { get; }
+    public LdAiConfigTypes.ProviderConfig Provider { get; }
 
     /// <summary>
     /// Whether the config is enabled.
@@ -64,16 +64,16 @@ public abstract class LdAiConfigBase
         bool enabled,
         string variationKey,
         int version,
-        ModelConfig model,
-        ProviderConfig provider,
+        LdAiConfigTypes.ModelConfig model,
+        LdAiConfigTypes.ProviderConfig provider,
         Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
     {
         Key = key;
         Enabled = enabled;
         VariationKey = variationKey ?? "";
         Version = version;
-        Model = model ?? new ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
-        Provider = provider ?? new ProviderConfig("");
+        Model = model ?? new LdAiConfigTypes.ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
+        Provider = provider ?? new LdAiConfigTypes.ProviderConfig("");
         _trackerFactory = trackerFactory ?? throw new ArgumentNullException(nameof(trackerFactory));
     }
 }

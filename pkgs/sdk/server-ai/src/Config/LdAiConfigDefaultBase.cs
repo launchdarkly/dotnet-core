@@ -11,12 +11,12 @@ public abstract class LdAiConfigDefaultBase
     /// <summary>
     /// Information about the model.
     /// </summary>
-    public ModelConfig Model { get; }
+    public LdAiConfigTypes.ModelConfig Model { get; }
 
     /// <summary>
     /// Information about the model provider.
     /// </summary>
-    public ProviderConfig Provider { get; }
+    public LdAiConfigTypes.ProviderConfig Provider { get; }
 
     /// <summary>
     /// Whether the config is enabled. Null indicates the user did not specify a value.
@@ -27,10 +27,10 @@ public abstract class LdAiConfigDefaultBase
     /// Constructs the base. Only public derived types in this assembly are intended
     /// to extend this class.
     /// </summary>
-    private protected LdAiConfigDefaultBase(bool? enabled, ModelConfig model, ProviderConfig provider)
+    private protected LdAiConfigDefaultBase(bool? enabled, LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider)
     {
         Enabled = enabled;
-        Model = model ?? new ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
-        Provider = provider ?? new ProviderConfig("");
+        Model = model ?? new LdAiConfigTypes.ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
+        Provider = provider ?? new LdAiConfigTypes.ProviderConfig("");
     }
 }

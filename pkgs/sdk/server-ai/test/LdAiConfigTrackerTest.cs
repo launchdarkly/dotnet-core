@@ -25,7 +25,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 enabled: false,
                 variationKey: "",
                 version: 1,
-                messages: new List<Message>(),
+                messages: new List<LdAiConfigTypes.Message>(),
                 model: null,
                 provider: null,
                 trackerFactory: cfg => new LdAiConfigTracker(

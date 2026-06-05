@@ -25,13 +25,13 @@ public sealed class LdAiCompletionConfig : LdAiConfigBase
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<Message> Messages { get; }
+    public IReadOnlyList<LdAiConfigTypes.Message> Messages { get; }
 
     internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
-        IEnumerable<Message> messages, ModelConfig model, ProviderConfig provider,
+        IEnumerable<LdAiConfigTypes.Message> messages, LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider,
         Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
         : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
-        Messages = messages?.ToList() ?? new List<Message>();
+        Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
     }
 }

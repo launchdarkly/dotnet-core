@@ -90,7 +90,7 @@ public class ConfigFactoryParserTest
             })
         });
 
-        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue);
+        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue.Get("judgeConfiguration"));
 
         Assert.NotNull(judgeConfig);
         Assert.Equal(2, judgeConfig.Judges.Count);
@@ -121,9 +121,61 @@ public class ConfigFactoryParserTest
             ["instructions"] = LdValue.Of("You are a helpful assistant specializing in {{topic}}")
         });
 
-        var instructions = ConfigFactory.ParseInstructions(rootValue);
+        var instructions = ConfigFactory.ParseInstructions(rootValue.Get("instructions"));
 
         Assert.Equal("You are a helpful assistant specializing in {{topic}}", instructions);
+    }
+
+    [Fact]
+    public void ParseTools_SkipsNonObjectValues()
+    {
+        var toolsValue = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        {
+            ["good"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["name"] = LdValue.Of("good"),
+                ["description"] = LdValue.Of("A valid tool"),
+                ["type"] = LdValue.Of("function"),
+                ["parameters"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>()),
+                ["customParameters"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>())
+            }),
+            ["bad-string"] = LdValue.Of("not-an-object"),
+            ["bad-number"] = LdValue.Of(42),
+            ["bad-array"] = LdValue.ArrayOf(LdValue.Of("x"))
+        });
+
+        var tools = ConfigFactory.ParseTools(toolsValue);
+
+        Assert.Single(tools);
+        Assert.True(tools.ContainsKey("good"));
+    }
+
+    [Fact]
+    public void ParseJudgeConfiguration_SkipsNonObjectElements()
+    {
+        var rootValue = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        {
+            ["judgeConfiguration"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["judges"] = LdValue.ArrayOf(
+                    LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                    {
+                        ["key"] = LdValue.Of("judge-relevance"),
+                        ["samplingRate"] = LdValue.Of(0.5)
+                    }),
+                    LdValue.Of("not-an-object"),
+                    LdValue.Of(99),
+                    LdValue.ArrayOf(LdValue.Of("nested"))
+                )
+            })
+        });
+
+        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue.Get("judgeConfiguration"));
+
+        Assert.NotNull(judgeConfig);
+        Assert.Single(judgeConfig.Judges);
+        Assert.Equal("judge-relevance", judgeConfig.Judges[0].Key);
+        Assert.Equal(0.5, judgeConfig.Judges[0].SamplingRate);
     }
 
     [Fact]
@@ -142,9 +194,9 @@ public class ConfigFactoryParserTest
             })
         });
 
-        var instructions = ConfigFactory.ParseInstructions(rootValue);
+        var instructions = ConfigFactory.ParseInstructions(rootValue.Get("instructions"));
         var tools = ConfigFactory.ParseTools(rootValue.Get("tools"));
-        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue);
+        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue.Get("judgeConfiguration"));
         var evaluationMetricKey = ConfigFactory.ParseEvaluationMetricKey(rootValue);
 
         Assert.Null(instructions);

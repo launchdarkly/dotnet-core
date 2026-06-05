@@ -56,7 +56,7 @@ public class LdAiClientTest
             message =>
             {
                 Assert.Equal("Hello", message.Content);
-                Assert.Equal(Role.User, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.User, message.Role);
             });
         Assert.Equal(defaultConfig.Enabled, result.Enabled);
     }
@@ -215,7 +215,7 @@ public class LdAiClientTest
             message =>
             {
                 Assert.Equal("foo", message.Content);
-                Assert.Equal(Role.User, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.User, message.Role);
             });
         Assert.Equal("amazing-provider", result.Provider.Name);
         Assert.Equal("bar", result.Model.Parameters["foo"].AsString);
@@ -253,7 +253,7 @@ public class LdAiClientTest
             message =>
             {
                 Assert.Equal("Hello!", message.Content);
-                Assert.Equal(Role.System, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.System, message.Role);
             });
 
         Assert.Equal("", result.Provider.Name);
@@ -406,7 +406,7 @@ public class LdAiClientTest
             message =>
             {
                 Assert.Equal("default", message.Content);
-                Assert.Equal(Role.User, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.User, message.Role);
             });
         Assert.Equal(defaultConfig.Model.Name, result.Model.Name);
         Assert.Equal(defaultConfig.Provider.Name, result.Provider.Name);
@@ -453,7 +453,7 @@ public class LdAiClientTest
             message =>
             {
                 Assert.Equal("Hello", message.Content);
-                Assert.Equal(Role.User, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.User, message.Role);
             });
 
         mockLogger.Verify(x => x.Error(

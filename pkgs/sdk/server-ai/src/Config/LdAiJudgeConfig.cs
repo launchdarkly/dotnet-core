@@ -14,7 +14,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// they are not constructed directly by users. To supply a fallback default to the
 /// client, use <see cref="LdAiJudgeConfigDefault"/>.
 /// </summary>
-public sealed class LdAiJudgeConfig : LdAiConfigBase
+public sealed class LdAiJudgeConfig : LdAiConfig
 {
     /// <summary>
     /// The mode tag emitted in <c>_ldMeta.mode</c> for this config type.
@@ -24,7 +24,7 @@ public sealed class LdAiJudgeConfig : LdAiConfigBase
     /// <summary>
     /// The prompts associated with the judge config.
     /// </summary>
-    public IReadOnlyList<Message> Messages { get; }
+    public IReadOnlyList<LdAiConfigTypes.Message> Messages { get; }
 
     /// <summary>
     /// The evaluation metric key used to identify this judge's metric.
@@ -36,14 +36,14 @@ public sealed class LdAiJudgeConfig : LdAiConfigBase
         bool enabled,
         string variationKey,
         int version,
-        IEnumerable<Message> messages,
+        IEnumerable<LdAiConfigTypes.Message> messages,
         string evaluationMetricKey,
-        ModelConfig model,
-        ProviderConfig provider,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        LdAiConfigTypes.ModelConfig model,
+        LdAiConfigTypes.ProviderConfig provider,
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
         : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
-        Messages = messages?.ToList() ?? new List<Message>();
+        Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
         EvaluationMetricKey = evaluationMetricKey;
     }
 }

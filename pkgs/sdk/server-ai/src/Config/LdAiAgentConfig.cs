@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
@@ -13,7 +14,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// they are not constructed directly by users. To supply a fallback default to the
 /// client, use <see cref="LdAiAgentConfigDefault"/>.
 /// </summary>
-public sealed class LdAiAgentConfig : LdAiConfigBase
+public sealed class LdAiAgentConfig : LdAiConfig
 {
     /// <summary>
     /// The mode tag emitted in <c>_ldMeta.mode</c> for this config type.
@@ -28,7 +29,12 @@ public sealed class LdAiAgentConfig : LdAiConfigBase
     /// <summary>
     /// The tools available to the agent, keyed by tool name.
     /// </summary>
-    public IReadOnlyDictionary<string, ToolConfig> Tools { get; }
+    public IReadOnlyDictionary<string, LdAiConfigTypes.Tool> Tools { get; }
+
+    /// <summary>
+    /// The judge configuration attached to this agent config, or <c>null</c> if none is configured.
+    /// </summary>
+    public LdAiConfigTypes.JudgeConfiguration JudgeConfiguration { get; }
 
     internal LdAiAgentConfig(
         string key,
@@ -36,13 +42,15 @@ public sealed class LdAiAgentConfig : LdAiConfigBase
         string variationKey,
         int version,
         string instructions,
-        IReadOnlyDictionary<string, ToolConfig> tools,
-        ModelConfig model,
-        ProviderConfig provider,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        IReadOnlyDictionary<string, LdAiConfigTypes.Tool> tools,
+        LdAiConfigTypes.ModelConfig model,
+        LdAiConfigTypes.ProviderConfig provider,
+        LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
         : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
         Instructions = instructions;
-        Tools = tools ?? new Dictionary<string, ToolConfig>();
+        Tools = tools?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;
+        JudgeConfiguration = judgeConfiguration;
     }
 }

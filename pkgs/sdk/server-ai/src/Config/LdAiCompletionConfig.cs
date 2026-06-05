@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
@@ -14,7 +15,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// they are not constructed directly by users. To supply a fallback default to the
 /// client, use <see cref="LdAiCompletionConfigDefault"/>.
 /// </summary>
-public sealed class LdAiCompletionConfig : LdAiConfigBase
+public sealed class LdAiCompletionConfig : LdAiConfig
 {
     /// <summary>
     /// The mode tag emitted in <c>_ldMeta.mode</c> for this config type. Future agent and
@@ -25,20 +26,20 @@ public sealed class LdAiCompletionConfig : LdAiConfigBase
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<Message> Messages { get; }
+    public IReadOnlyList<LdAiConfigTypes.Message> Messages { get; }
 
     /// <summary>
     /// The tools available to the model, keyed by tool name.
     /// </summary>
-    public IReadOnlyDictionary<string, ToolConfig> Tools { get; }
+    public IReadOnlyDictionary<string, LdAiConfigTypes.Tool> Tools { get; }
 
     internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
-        IEnumerable<Message> messages, IReadOnlyDictionary<string, ToolConfig> tools,
-        ModelConfig model, ProviderConfig provider,
-        Func<LdAiConfigBase, ILdAiConfigTracker> trackerFactory)
+        IEnumerable<LdAiConfigTypes.Message> messages, IReadOnlyDictionary<string, LdAiConfigTypes.Tool> tools,
+        LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider,
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
         : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
-        Messages = messages?.ToList() ?? new List<Message>();
-        Tools = tools ?? new Dictionary<string, ToolConfig>();
+        Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
+        Tools = tools ?? ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;
     }
 }

@@ -11,7 +11,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// Construct an instance via <see cref="New"/> and the nested <see cref="Builder"/>,
 /// or use <see cref="Disabled"/> for a disabled default.
 /// </summary>
-public sealed class LdAiAgentConfigDefault : LdAiConfigDefaultBase
+public sealed class LdAiAgentConfigDefault : LdAiConfigDefault
 {
     /// <summary>
     /// Builder for constructing an <see cref="LdAiAgentConfigDefault"/> instance.
@@ -20,6 +20,7 @@ public sealed class LdAiAgentConfigDefault : LdAiConfigDefaultBase
     {
         private bool _enabled;
         private string _instructions;
+        private LdAiConfigTypes.JudgeConfiguration _judgeConfiguration;
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
         private string _providerName;
@@ -29,6 +30,7 @@ public sealed class LdAiAgentConfigDefault : LdAiConfigDefaultBase
         {
             _enabled = true;
             _instructions = null;
+            _judgeConfiguration = null;
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
             _providerName = "";
@@ -66,6 +68,17 @@ public sealed class LdAiAgentConfigDefault : LdAiConfigDefaultBase
         public Builder SetInstructions(string instructions)
         {
             _instructions = instructions;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the judge configuration for this agent default.
+        /// </summary>
+        /// <param name="judgeConfiguration">the judge configuration</param>
+        /// <returns>the builder</returns>
+        public Builder SetJudgeConfiguration(LdAiConfigTypes.JudgeConfiguration judgeConfiguration)
+        {
+            _judgeConfiguration = judgeConfiguration;
             return this;
         }
 
@@ -121,12 +134,12 @@ public sealed class LdAiAgentConfigDefault : LdAiConfigDefaultBase
         /// <returns>a new LdAiAgentConfigDefault</returns>
         public LdAiAgentConfigDefault Build()
         {
-            var model = new ModelConfig(
+            var model = new LdAiConfigTypes.ModelConfig(
                 _modelName,
                 new Dictionary<string, LdValue>(_modelParams),
                 new Dictionary<string, LdValue>(_customModelParams));
-            var provider = new ProviderConfig(_providerName);
-            return new LdAiAgentConfigDefault(_enabled, _instructions, model, provider);
+            var provider = new LdAiConfigTypes.ProviderConfig(_providerName);
+            return new LdAiAgentConfigDefault(_enabled, _instructions, _judgeConfiguration, model, provider);
         }
     }
 
@@ -135,10 +148,18 @@ public sealed class LdAiAgentConfigDefault : LdAiConfigDefaultBase
     /// </summary>
     public string Instructions { get; }
 
-    internal LdAiAgentConfigDefault(bool? enabled, string instructions, ModelConfig model, ProviderConfig provider)
+    /// <summary>
+    /// The judge configuration for this agent default, or <c>null</c> if not specified.
+    /// </summary>
+    public LdAiConfigTypes.JudgeConfiguration JudgeConfiguration { get; }
+
+    internal LdAiAgentConfigDefault(bool? enabled, string instructions,
+        LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
+        LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider)
         : base(enabled, model, provider)
     {
         Instructions = instructions;
+        JudgeConfiguration = judgeConfiguration;
     }
 
     internal LdValue ToLdValue()

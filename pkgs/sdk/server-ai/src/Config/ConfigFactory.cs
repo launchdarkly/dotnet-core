@@ -218,21 +218,21 @@ internal sealed class ConfigFactory
         return result;
     }
 
-    internal static JudgeConfigurationData ParseJudgeConfiguration(LdValue value)
+    internal static JudgeConfiguration ParseJudgeConfiguration(LdValue value)
     {
         var jc = value.Get("judgeConfiguration");
         if (jc.Type != LdValueType.Object) return null;
         var judgesArray = jc.Get("judges");
-        if (judgesArray.Type != LdValueType.Array) return new JudgeConfigurationData(new List<JudgeEntry>());
-        var entries = new List<JudgeEntry>();
+        if (judgesArray.Type != LdValueType.Array) return new JudgeConfiguration(new List<Judge>());
+        var entries = new List<Judge>();
         for (var i = 0; i < judgesArray.Count; i++)
         {
             var j = judgesArray.Get(i);
-            entries.Add(new JudgeEntry(
+            entries.Add(new Judge(
                 j.Get("key").AsString ?? "",
                 j.Get("samplingRate").AsDouble));
         }
-        return new JudgeConfigurationData(entries);
+        return new JudgeConfiguration(entries);
     }
 
     internal static string ParseEvaluationMetricKey(LdValue value)

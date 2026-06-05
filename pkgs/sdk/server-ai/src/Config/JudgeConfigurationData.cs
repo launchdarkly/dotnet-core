@@ -2,23 +2,23 @@ using System.Collections.Generic;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
-internal sealed class JudgeEntry
+internal sealed class Judge
 {
     public string Key { get; }
     public double SamplingRate { get; }
 
-    internal JudgeEntry(string key, double samplingRate)
+    internal Judge(string key, double samplingRate)
     {
         Key = key;
         SamplingRate = samplingRate;
     }
 }
 
-internal sealed class JudgeConfigurationData
+internal sealed class JudgeConfiguration
 {
-    public IReadOnlyList<JudgeEntry> Judges { get; }
+    public IReadOnlyList<Judge> Judges { get; }
 
-    internal JudgeConfigurationData(IReadOnlyList<JudgeEntry> judges)
+    internal JudgeConfiguration(IReadOnlyList<Judge> judges)
     {
         Judges = judges;
     }

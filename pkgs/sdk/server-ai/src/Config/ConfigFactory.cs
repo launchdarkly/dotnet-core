@@ -149,7 +149,7 @@ internal sealed class ConfigFactory
             variationKey: "",
             version: 1,
             instructions,
-            tools: new Dictionary<string, ToolConfig>(),
+            tools: ImmutableDictionary<string, ToolConfig>.Empty,
             defaultValue.Model,
             defaultValue.Provider,
             trackerFactory);

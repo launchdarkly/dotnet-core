@@ -98,4 +98,87 @@ public static class LdAiConfigTypes
             Name = name;
         }
     }
+
+    /// <summary>
+    /// Represents a tool available to the model in agent mode.
+    /// </summary>
+    public sealed record Tool
+    {
+        /// <summary>
+        /// The name of the tool.
+        /// </summary>
+        public readonly string Name;
+
+        /// <summary>
+        /// A description of the tool.
+        /// </summary>
+        public readonly string Description;
+
+        /// <summary>
+        /// The type of the tool.
+        /// </summary>
+        public readonly string Type;
+
+        /// <summary>
+        /// The tool's built-in parameters provided by LaunchDarkly.
+        /// </summary>
+        public readonly IReadOnlyDictionary<string, LdValue> Parameters;
+
+        /// <summary>
+        /// The tool's custom parameters provided by the user.
+        /// </summary>
+        public readonly IReadOnlyDictionary<string, LdValue> CustomParameters;
+
+        internal Tool(
+            string name,
+            string description,
+            string type,
+            IReadOnlyDictionary<string, LdValue> parameters,
+            IReadOnlyDictionary<string, LdValue> customParameters)
+        {
+            Name = name;
+            Description = description;
+            Type = type;
+            Parameters = parameters?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
+            CustomParameters = customParameters?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Represents a single judge entry within a <see cref="JudgeConfiguration"/>.
+    /// </summary>
+    public sealed class Judge
+    {
+        /// <summary>
+        /// The key identifying this judge.
+        /// </summary>
+        public string Key { get; }
+
+        /// <summary>
+        /// The fraction of requests that this judge evaluates, in the range [0, 1].
+        /// </summary>
+        public double SamplingRate { get; }
+
+        internal Judge(string key, double samplingRate)
+        {
+            Key = key;
+            SamplingRate = samplingRate;
+        }
+    }
+
+    /// <summary>
+    /// Configuration for the judges associated with an AI Config.
+    /// </summary>
+    public sealed class JudgeConfiguration
+    {
+        /// <summary>
+        /// The list of judges.
+        /// </summary>
+        public IReadOnlyList<Judge> Judges { get; }
+
+        internal JudgeConfiguration(IReadOnlyList<Judge> judges)
+        {
+            Judges = judges;
+        }
+    }
 }

@@ -345,38 +345,40 @@ internal sealed class ConfigFactory
         return instructions.Type == LdValueType.String ? instructions.AsString : null;
     }
 
-    internal static IReadOnlyDictionary<string, ToolConfig> ParseTools(LdValue toolsValue)
+    internal static IReadOnlyDictionary<string, LdAiConfigTypes.Tool> ParseTools(LdValue toolsValue)
     {
-        if (toolsValue.Type != LdValueType.Object) return new Dictionary<string, ToolConfig>();
-        var result = new Dictionary<string, ToolConfig>();
+        if (toolsValue.Type != LdValueType.Object) return ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;
+        var result = ImmutableDictionary.CreateBuilder<string, LdAiConfigTypes.Tool>();
         foreach (var kv in toolsValue.Dictionary)
         {
             var tool = kv.Value;
-            result[kv.Key] = new ToolConfig(
+            if (tool.Type != LdValueType.Object) continue;
+            result[kv.Key] = new LdAiConfigTypes.Tool(
                 tool.Get("name").AsString ?? "",
                 tool.Get("description").AsString,
                 tool.Get("type").AsString,
                 LdValueObjectToDictionary(tool.Get("parameters")),
                 LdValueObjectToDictionary(tool.Get("customParameters")));
         }
-        return result;
+        return result.ToImmutable();
     }
 
-    internal static JudgeConfigurationData ParseJudgeConfiguration(LdValue value)
+    internal static LdAiConfigTypes.JudgeConfiguration ParseJudgeConfiguration(LdValue value)
     {
         var jc = value.Get("judgeConfiguration");
         if (jc.Type != LdValueType.Object) return null;
         var judgesArray = jc.Get("judges");
-        if (judgesArray.Type != LdValueType.Array) return new JudgeConfigurationData(new List<JudgeEntry>());
-        var entries = new List<JudgeEntry>();
+        if (judgesArray.Type != LdValueType.Array) return new LdAiConfigTypes.JudgeConfiguration(new List<LdAiConfigTypes.Judge>());
+        var entries = new List<LdAiConfigTypes.Judge>();
         for (var i = 0; i < judgesArray.Count; i++)
         {
             var j = judgesArray.Get(i);
-            entries.Add(new JudgeEntry(
+            if (j.Type != LdValueType.Object) continue;
+            entries.Add(new LdAiConfigTypes.Judge(
                 j.Get("key").AsString ?? "",
                 j.Get("samplingRate").AsDouble));
         }
-        return new JudgeConfigurationData(entries);
+        return new LdAiConfigTypes.JudgeConfiguration(entries);
     }
 
     internal static string ParseEvaluationMetricKey(LdValue value)

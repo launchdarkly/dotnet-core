@@ -339,9 +339,9 @@ internal sealed class ConfigFactory
         return result;
     }
 
-    internal static string ParseInstructions(LdValue value)
+    internal static string ParseInstructions(LdValue instructionsValue)
     {
-        return value.Type == LdValueType.String ? value.AsString : null;
+        return instructionsValue.Type == LdValueType.String ? instructionsValue.AsString : null;
     }
 
     internal static IReadOnlyDictionary<string, LdAiConfigTypes.Tool> ParseTools(LdValue toolsValue)
@@ -362,18 +362,17 @@ internal sealed class ConfigFactory
         return result.ToImmutable();
     }
 
-    internal static LdAiConfigTypes.JudgeConfiguration ParseJudgeConfiguration(LdValue value)
+    internal static LdAiConfigTypes.JudgeConfiguration ParseJudgeConfiguration(LdValue judgeConfigurationValue)
     {
-        var jc = value.Get("judgeConfiguration");
-        if (jc.Type != LdValueType.Object) return null;
-        var judgesArray = jc.Get("judges");
-        if (judgesArray.Type != LdValueType.Array) return new LdAiConfigTypes.JudgeConfiguration(new List<LdAiConfigTypes.Judge>());
-        var entries = new List<LdAiConfigTypes.Judge>();
+        if (judgeConfigurationValue.Type != LdValueType.Object) return null;
+        var judgesArray = judgeConfigurationValue.Get("judges");
+        if (judgesArray.Type != LdValueType.Array) return new LdAiConfigTypes.JudgeConfiguration(new List<LdAiConfigTypes.JudgeConfiguration.Judge>());
+        var entries = new List<LdAiConfigTypes.JudgeConfiguration.Judge>();
         for (var i = 0; i < judgesArray.Count; i++)
         {
             var j = judgesArray.Get(i);
             if (j.Type != LdValueType.Object) continue;
-            entries.Add(new LdAiConfigTypes.Judge(
+            entries.Add(new LdAiConfigTypes.JudgeConfiguration.Judge(
                 j.Get("key").AsString ?? "",
                 j.Get("samplingRate").AsDouble));
         }

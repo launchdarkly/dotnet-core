@@ -90,7 +90,7 @@ public class ConfigFactoryParserTest
             })
         });
 
-        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue);
+        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue.Get("judgeConfiguration"));
 
         Assert.NotNull(judgeConfig);
         Assert.Equal(2, judgeConfig.Judges.Count);
@@ -170,7 +170,7 @@ public class ConfigFactoryParserTest
             })
         });
 
-        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue);
+        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue.Get("judgeConfiguration"));
 
         Assert.NotNull(judgeConfig);
         Assert.Single(judgeConfig.Judges);
@@ -196,7 +196,7 @@ public class ConfigFactoryParserTest
 
         var instructions = ConfigFactory.ParseInstructions(rootValue.Get("instructions"));
         var tools = ConfigFactory.ParseTools(rootValue.Get("tools"));
-        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue);
+        var judgeConfig = ConfigFactory.ParseJudgeConfiguration(rootValue.Get("judgeConfiguration"));
         var evaluationMetricKey = ConfigFactory.ParseEvaluationMetricKey(rootValue);
 
         Assert.Null(instructions);

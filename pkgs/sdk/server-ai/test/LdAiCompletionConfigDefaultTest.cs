@@ -34,25 +34,25 @@ public class LdAiCompletionConfigDefaultTest
     {
         var config = LdAiCompletionConfigDefault.New()
             .AddMessage("Hello")
-            .AddMessage("World", Role.System)
-            .AddMessage("!", Role.Assistant)
+            .AddMessage("World", LdAiConfigTypes.Role.System)
+            .AddMessage("!", LdAiConfigTypes.Role.Assistant)
             .Build();
 
         Assert.Collection(config.Messages,
             message =>
             {
                 Assert.Equal("Hello", message.Content);
-                Assert.Equal(Role.User, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.User, message.Role);
             },
             message =>
             {
                 Assert.Equal("World", message.Content);
-                Assert.Equal(Role.System, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.System, message.Role);
             },
             message =>
             {
                 Assert.Equal("!", message.Content);
-                Assert.Equal(Role.Assistant, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.Assistant, message.Role);
             });
     }
 

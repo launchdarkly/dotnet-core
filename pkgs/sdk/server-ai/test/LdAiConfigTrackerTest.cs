@@ -25,8 +25,9 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 enabled: false,
                 variationKey: "",
                 version: 1,
-                messages: new List<Message>(),
-                tools: new Dictionary<string, ToolConfig>(),
+                messages: new List<LdAiConfigTypes.Message>(),
+                tools: new Dictionary<string, LdAiConfigTypes.Tool>(),
+                judgeConfiguration: null,
                 model: null,
                 provider: null,
                 trackerFactory: cfg => new LdAiConfigTracker(
@@ -45,7 +46,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
         // stable fields by value and asserts only that runId is a non-empty string.
         // variationKey is omitted from track data when empty, so the helper handles that
         // by comparing against LdValue.Null in that case.
-        private static bool MatchesTrackData(LdValue actual, string flagKey, LdAiConfigBase config)
+        private static bool MatchesTrackData(LdValue actual, string flagKey, LdAiConfig config)
         {
             var variationKeyMatch = string.IsNullOrEmpty(config.VariationKey)
                 ? actual.Get("variationKey").IsNull
@@ -84,14 +85,14 @@ namespace LaunchDarkly.Sdk.Server.Ai
         [Fact]
         public void AcceptsConfigViaBaseTypeForModeAgnosticConstruction()
         {
-            // The trackerFactory takes LdAiConfigBase so future agent / judge config types
+            // The trackerFactory takes LdAiConfig so future agent / judge config types
             // can produce trackers via the same factory. Verify that upcasting a concrete
             // LdAiCompletionConfig to its base still flows through to a working tracker.
             var mockClient = new Mock<ILaunchDarklyClient>();
             var context = Context.New("key");
             const string flagKey = "key";
 
-            LdAiConfigBase configAsBase = BuildConfig(mockClient.Object, flagKey, context);
+            LdAiConfig configAsBase = BuildConfig(mockClient.Object, flagKey, context);
             var tracker = configAsBase.CreateTracker();
 
             tracker.TrackSuccess();

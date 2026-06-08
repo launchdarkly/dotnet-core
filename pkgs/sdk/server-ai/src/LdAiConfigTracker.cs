@@ -62,7 +62,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
 
     /// <summary>
     /// Constructs a tracker from individual fields, ordered as defined by the AI SDK spec.
-    /// Trackers are produced via <see cref="LdAiConfigBase.CreateTracker"/> (server-side
+    /// Trackers are produced via <see cref="LdAiConfig.CreateTracker"/> (server-side
     /// evaluation) or <see cref="FromResumptionToken"/> (cross-process resumption); both
     /// funnel through this single constructor.
     /// </summary>

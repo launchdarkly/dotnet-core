@@ -51,7 +51,7 @@ public class LdAiJudgeConfigTest
             m =>
             {
                 Assert.Equal("Rate the response", m.Content);
-                Assert.Equal(Role.System, m.Role);
+                Assert.Equal(LdAiConfigTypes.Role.System, m.Role);
             });
         Assert.NotNull(result.CreateTracker());
     }
@@ -104,7 +104,7 @@ public class LdAiJudgeConfigTest
                             """;
 
         var defaultConfig = LdAiJudgeConfigDefault.New()
-            .AddMessage("default message", Role.System)
+            .AddMessage("default message", LdAiConfigTypes.Role.System)
             .SetEvaluationMetricKey("$ld:ai:judge:default")
             .Build();
 
@@ -187,7 +187,7 @@ public class LdAiJudgeConfigTest
         Assert.False(judgeDisabled.Enabled);
 
         var judgeEnabled = LdAiJudgeConfigDefault.New()
-            .AddMessage("Rate this", Role.System)
+            .AddMessage("Rate this", LdAiConfigTypes.Role.System)
             .SetEvaluationMetricKey("$ld:ai:judge:relevance")
             .SetModelName("judge-model")
             .Build();

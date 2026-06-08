@@ -22,9 +22,9 @@ public class LdAiAgentConfigTest
     {
         var (mockClient, mockLogger, factory) = MakeFactory();
 
-        var tools = new Dictionary<string, ToolConfig>
+        var tools = new Dictionary<string, LdAiConfigTypes.Tool>
         {
-            ["search"] = new ToolConfig("search", "Web search", "function",
+            ["search"] = new LdAiConfigTypes.Tool("search", "Web search", "function",
                 new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>())
         };
 
@@ -175,6 +175,65 @@ public class LdAiAgentConfigTest
                 (string)args[0] == "agent-key" &&
                 (LdValueType)args[1] == LdValueType.Number)
         ), Times.Once);
+    }
+
+    [Fact]
+    public void BuildAgentConfig_ParsesJudgeConfiguration()
+    {
+        var (_, _, factory) = MakeFactory();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                              "model": {},
+                              "provider": {},
+                              "instructions": "You are helpful",
+                              "judgeConfiguration": {
+                                "judges": [
+                                  {"key": "accuracy-judge", "samplingRate": 0.5},
+                                  {"key": "relevance-judge", "samplingRate": 1.0}
+                                ]
+                              }
+                            }
+                            """;
+
+        var result = factory.BuildAgentConfig(
+            "agent-key",
+            LdValue.Parse(json),
+            Context.New("user"),
+            LdAiAgentConfigDefault.Disabled,
+            null);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Equal(2, result.JudgeConfiguration.Judges.Count);
+        Assert.Equal("accuracy-judge", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.5, result.JudgeConfiguration.Judges[0].SamplingRate);
+        Assert.Equal("relevance-judge", result.JudgeConfiguration.Judges[1].Key);
+        Assert.Equal(1.0, result.JudgeConfiguration.Judges[1].SamplingRate);
+    }
+
+    [Fact]
+    public void BuildAgentConfig_NoJudgeConfiguration_IsNull()
+    {
+        var (_, _, factory) = MakeFactory();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                              "model": {},
+                              "provider": {},
+                              "instructions": "You are helpful"
+                            }
+                            """;
+
+        var result = factory.BuildAgentConfig(
+            "agent-key",
+            LdValue.Parse(json),
+            Context.New("user"),
+            LdAiAgentConfigDefault.Disabled,
+            null);
+
+        Assert.Null(result.JudgeConfiguration);
     }
 
     [Fact]

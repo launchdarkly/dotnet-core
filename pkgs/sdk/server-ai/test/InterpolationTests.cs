@@ -155,7 +155,7 @@ public class InterpolationTests
             message =>
             {
                 Assert.Equal(malformedTemplate, message.Content);
-                Assert.Equal(Role.System, message.Role);
+                Assert.Equal(LdAiConfigTypes.Role.System, message.Role);
             });
     }
 

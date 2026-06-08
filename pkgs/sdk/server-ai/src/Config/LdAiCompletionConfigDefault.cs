@@ -12,7 +12,7 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// Construct an instance via <see cref="New"/> and the nested <see cref="Builder"/>,
 /// or use <see cref="Disabled"/> for a disabled default.
 /// </summary>
-public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
+public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
 {
     /// <summary>
     /// Builder for constructing an LdAiCompletionConfigDefault instance, which can be passed
@@ -21,7 +21,8 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
     public class Builder
     {
         private bool _enabled;
-        private readonly List<Message> _messages;
+        private readonly List<LdAiConfigTypes.Message> _messages;
+        private LdAiConfigTypes.JudgeConfiguration _judgeConfiguration;
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
         private string _providerName;
@@ -30,7 +31,8 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
         internal Builder()
         {
             _enabled = true;
-            _messages = new List<Message>();
+            _messages = new List<LdAiConfigTypes.Message>();
+            _judgeConfiguration = null;
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
             _providerName = "";
@@ -38,14 +40,14 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
         }
 
         /// <summary>
-        /// Adds a message with the given content and role. The default role is <see cref="Role.User"/>.
+        /// Adds a message with the given content and role. The default role is <see cref="LdAiConfigTypes.Role.User"/>.
         /// </summary>
         /// <param name="content">the content, which may contain Mustache templates</param>
         /// <param name="role">the role</param>
         /// <returns>a new builder</returns>
-        public Builder AddMessage(string content, Role role = Role.User)
+        public Builder AddMessage(string content, LdAiConfigTypes.Role role = LdAiConfigTypes.Role.User)
         {
-            _messages.Add(new Message(content, role));
+            _messages.Add(new LdAiConfigTypes.Message(content, role));
             return this;
         }
 
@@ -119,30 +121,48 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefaultBase
         }
 
         /// <summary>
+        /// Sets the judge configuration for this completion config default.
+        /// </summary>
+        /// <param name="config">the judge configuration</param>
+        /// <returns>a new builder</returns>
+        public Builder SetJudgeConfiguration(LdAiConfigTypes.JudgeConfiguration config)
+        {
+            _judgeConfiguration = config;
+            return this;
+        }
+
+        /// <summary>
         /// Builds the LdAiCompletionConfigDefault instance.
         /// </summary>
         /// <returns>a new LdAiCompletionConfigDefault</returns>
         public LdAiCompletionConfigDefault Build()
         {
-            var model = new ModelConfig(
+            var model = new LdAiConfigTypes.ModelConfig(
                 _modelName,
                 new Dictionary<string, LdValue>(_modelParams),
                 new Dictionary<string, LdValue>(_customModelParams));
-            var provider = new ProviderConfig(_providerName);
-            return new LdAiCompletionConfigDefault(_enabled, _messages, model, provider);
+            var provider = new LdAiConfigTypes.ProviderConfig(_providerName);
+            return new LdAiCompletionConfigDefault(_enabled, _messages, _judgeConfiguration, model, provider);
         }
     }
 
     /// <summary>
     /// The prompts associated with the config.
     /// </summary>
-    public IReadOnlyList<Message> Messages { get; }
+    public IReadOnlyList<LdAiConfigTypes.Message> Messages { get; }
 
-    internal LdAiCompletionConfigDefault(bool? enabled, IEnumerable<Message> messages,
-        ModelConfig model, ProviderConfig provider)
+    /// <summary>
+    /// The judge configuration for this completion config default, or <c>null</c> if not specified.
+    /// </summary>
+    public LdAiConfigTypes.JudgeConfiguration JudgeConfiguration { get; }
+
+    internal LdAiCompletionConfigDefault(bool? enabled, IEnumerable<LdAiConfigTypes.Message> messages,
+        LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
+        LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider)
         : base(enabled, model, provider)
     {
-        Messages = messages?.ToList() ?? new List<Message>();
+        Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
+        JudgeConfiguration = judgeConfiguration;
     }
 
     internal LdValue ToLdValue()

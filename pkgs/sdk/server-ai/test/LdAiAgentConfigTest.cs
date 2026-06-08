@@ -237,6 +237,41 @@ public class LdAiAgentConfigTest
     }
 
     [Fact]
+    public void BuildAgentConfig_DefaultJudgeConfiguration_PreservedThroughToLdValueRoundTrip()
+    {
+        var (_, _, factory) = MakeFactory();
+
+        var judges = new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+        {
+            new("accuracy-judge", 0.5),
+            new("relevance-judge", 1.0)
+        };
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(judges);
+
+        var defaultConfig = LdAiAgentConfigDefault.New()
+            .SetInstructions("fallback instructions")
+            .SetModelName("fallback-model")
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        // Simulate what LdAiClient does: serialize the default to LdValue, then feed it back
+        // through BuildAgentConfig (as would happen when JsonVariation returns the default).
+        var result = factory.BuildAgentConfig(
+            "agent-key",
+            defaultConfig.ToLdValue(),
+            Context.New("user"),
+            LdAiAgentConfigDefault.Disabled,
+            null);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Equal(2, result.JudgeConfiguration.Judges.Count);
+        Assert.Equal("accuracy-judge", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.5, result.JudgeConfiguration.Judges[0].SamplingRate);
+        Assert.Equal("relevance-judge", result.JudgeConfiguration.Judges[1].Key);
+        Assert.Equal(1.0, result.JudgeConfiguration.Judges[1].SamplingRate);
+    }
+
+    [Fact]
     public void BuildAgentConfig_InstructionsInterpolated()
     {
         var (_, _, factory) = MakeFactory();

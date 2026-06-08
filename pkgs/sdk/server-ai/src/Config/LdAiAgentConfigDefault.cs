@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
 
@@ -185,6 +186,20 @@ public sealed class LdAiAgentConfigDefault : LdAiConfigDefault
                 { "name", LdValue.Of(Provider.Name) }
             }) }
         };
+
+        if (JudgeConfiguration != null)
+        {
+            root["judgeConfiguration"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "judges", LdValue.ArrayFrom(JudgeConfiguration.Judges.Select(j =>
+                    LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                    {
+                        { "key", LdValue.Of(j.Key) },
+                        { "samplingRate", LdValue.Of(j.SamplingRate) }
+                    })))
+                }
+            });
+        }
 
         return LdValue.ObjectFrom(root);
     }

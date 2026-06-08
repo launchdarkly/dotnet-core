@@ -60,6 +60,7 @@ internal sealed class ConfigFactory
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key);
         var tools = ParseTools(ldValue.Get("tools"));
+        var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
 
         return new LdAiCompletionConfig(
             key,
@@ -68,6 +69,7 @@ internal sealed class ConfigFactory
             version,
             messages,
             tools,
+            judgeConfiguration,
             model,
             provider,
             trackerFactory);
@@ -89,6 +91,7 @@ internal sealed class ConfigFactory
             version: 1,
             messages,
             tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
+            defaultValue.JudgeConfiguration,
             defaultValue.Model,
             defaultValue.Provider,
             trackerFactory);

@@ -755,4 +755,124 @@ public class LdAiClientTest
                 d.Get("version").AsInt == 3),
             1.0f), Times.Once);
     }
+
+    [Fact]
+    public void JudgeConfigurationPopulatedOnCompletionConfig()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": [],
+                              "judgeConfiguration": {
+                                "judges": [
+                                  {"key": "accuracy", "samplingRate": 0.5},
+                                  {"key": "relevance", "samplingRate": 1.0}
+                                ]
+                              }
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Equal(2, result.JudgeConfiguration.Judges.Count);
+        Assert.Equal("accuracy", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.5, result.JudgeConfiguration.Judges[0].SamplingRate);
+        Assert.Equal("relevance", result.JudgeConfiguration.Judges[1].Key);
+        Assert.Equal(1.0, result.JudgeConfiguration.Judges[1].SamplingRate);
+    }
+
+    [Fact]
+    public void JudgeConfigurationNullWhenAbsent()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": []
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.Null(result.JudgeConfiguration);
+    }
+
+    [Fact]
+    public void CompletionConfigDefaultWithJudgeConfiguration()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("precision", 0.8)
+            });
+
+        var defaultConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        Assert.NotNull(defaultConfig.JudgeConfiguration);
+        Assert.Single(defaultConfig.JudgeConfiguration.Judges);
+        Assert.Equal("precision", defaultConfig.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.8, defaultConfig.JudgeConfiguration.Judges[0].SamplingRate);
+    }
+
+    [Fact]
+    public void CompletionConfigDefaultJudgeConfigurationSurvivesBuildFromDefault()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        // Return null so the factory falls back to BuildCompletionFromDefault, preserving
+        // the JudgeConfiguration from the caller-supplied default.
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Null);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("coherence", 0.3)
+            });
+
+        var defaultConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Single(result.JudgeConfiguration.Judges);
+        Assert.Equal("coherence", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.3, result.JudgeConfiguration.Judges[0].SamplingRate);
+    }
 }

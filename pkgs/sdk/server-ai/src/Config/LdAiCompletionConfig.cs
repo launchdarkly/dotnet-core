@@ -33,13 +33,20 @@ public sealed class LdAiCompletionConfig : LdAiConfig
     /// </summary>
     public IReadOnlyDictionary<string, LdAiConfigTypes.Tool> Tools { get; }
 
+    /// <summary>
+    /// The judge configuration attached to this completion config, or <c>null</c> if none is configured.
+    /// </summary>
+    public LdAiConfigTypes.JudgeConfiguration JudgeConfiguration { get; }
+
     internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
         IEnumerable<LdAiConfigTypes.Message> messages, IReadOnlyDictionary<string, LdAiConfigTypes.Tool> tools,
+        LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
         LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
         : base(key, enabled, variationKey, version, model, provider, trackerFactory)
     {
         Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
         Tools = tools ?? ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;
+        JudgeConfiguration = judgeConfiguration;
     }
 }

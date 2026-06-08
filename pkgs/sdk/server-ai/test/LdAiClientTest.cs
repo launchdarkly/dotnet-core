@@ -907,4 +907,35 @@ public class LdAiClientTest
         Assert.Equal("coherence", result.JudgeConfiguration.Judges[0].Key);
         Assert.Equal(0.3, result.JudgeConfiguration.Judges[0].SamplingRate);
     }
+
+    [Fact]
+    public void CompletionConfigDefaultToLdValueIncludesJudgeConfiguration()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        // Return the default LdValue directly so it round-trips through BuildCompletionConfig.
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("accuracy", 0.9)
+            });
+
+        var defaultConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Single(result.JudgeConfiguration.Judges);
+        Assert.Equal("accuracy", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.9, result.JudgeConfiguration.Judges[0].SamplingRate);
+    }
 }

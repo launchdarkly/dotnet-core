@@ -173,7 +173,7 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
             ["mode"] = LdValue.Of(LdAiCompletionConfig.Mode)
         };
 
-        return LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        var root = new Dictionary<string, LdValue>
         {
             { "_ldMeta", LdValue.ObjectFrom(metaFields) },
             { "messages", LdValue.ArrayFrom(Messages.Select(m => LdValue.ObjectFrom(new Dictionary<string, LdValue>
@@ -191,7 +191,23 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
             {
                 { "name", LdValue.Of(Provider.Name) }
             }) }
-        });
+        };
+
+        if (JudgeConfiguration != null)
+        {
+            root["judgeConfiguration"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "judges", LdValue.ArrayFrom(JudgeConfiguration.Judges.Select(j =>
+                    LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                    {
+                        { "key", LdValue.Of(j.Key) },
+                        { "samplingRate", LdValue.Of(j.SamplingRate) }
+                    })))
+                }
+            });
+        }
+
+        return LdValue.ObjectFrom(root);
     }
 
     /// <summary>

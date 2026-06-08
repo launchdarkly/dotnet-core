@@ -845,6 +845,38 @@ public class LdAiClientTest
     }
 
     [Fact]
+    public void CompletionConfigDefaultJudgeConfigurationSurvivesToLdValueRoundtrip()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        // Return the serialized default value so that BuildCompletionConfig parses it via
+        // ParseJudgeConfiguration — this exercises the ToLdValue() → parse roundtrip.
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("precision", 0.8)
+            });
+
+        var defaultConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Single(result.JudgeConfiguration.Judges);
+        Assert.Equal("precision", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.8, result.JudgeConfiguration.Judges[0].SamplingRate);
+    }
+
+    [Fact]
     public void CompletionConfigDefaultJudgeConfigurationSurvivesBuildFromDefault()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();

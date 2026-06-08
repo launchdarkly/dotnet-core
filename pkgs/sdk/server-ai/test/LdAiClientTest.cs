@@ -1049,6 +1049,53 @@ public class LdAiClientTest
     }
 
     [Fact]
+    public void AgentConfigs_DuplicateKeys_AggregateEventCountsAllRequests()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation(It.IsAny<string>(), It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse("""
+                {
+                  "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                  "model": {},
+                  "provider": {},
+                  "instructions": "Be helpful"
+                }
+                """));
+
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var context = Context.New("user-key");
+        var client = new LdAiClient(mockClient.Object);
+
+        var requests = new List<AgentConfigRequest>
+        {
+            new AgentConfigRequest { Key = "agent-a" },
+            new AgentConfigRequest { Key = "agent-a" },
+            new AgentConfigRequest { Key = "agent-b" }
+        };
+
+        var result = client.AgentConfigs(requests, context);
+
+        // The result dictionary de-duplicates, but the aggregate event should count all 3 requests.
+        Assert.Equal(2, result.Count);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:agent-config",
+            context,
+            It.IsAny<LdValue>(),
+            1), Times.Exactly(3));
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:agent-configs",
+            context,
+            LdValue.Of(3),
+            3), Times.Once);
+    }
+
+    [Fact]
     public void JudgeConfig_BasicRetrieval()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();

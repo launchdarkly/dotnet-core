@@ -93,11 +93,13 @@ public sealed class LdAiClient : ILdAiClient
         IEnumerable<AgentConfigRequest> agentConfigs, Context context)
     {
         var result = new Dictionary<string, LdAiAgentConfig>();
+        var requestCount = 0;
         foreach (var req in agentConfigs ?? Enumerable.Empty<AgentConfigRequest>())
         {
             result[req.Key] = AgentConfig(req.Key, context, req.DefaultValue, req.Variables);
+            requestCount++;
         }
-        _client.Track(TrackUsageAgentConfigs, context, LdValue.Of(result.Count), result.Count);
+        _client.Track(TrackUsageAgentConfigs, context, LdValue.Of(requestCount), requestCount);
         return result;
     }
 

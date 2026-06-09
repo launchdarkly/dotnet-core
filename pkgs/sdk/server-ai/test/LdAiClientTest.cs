@@ -1006,7 +1006,7 @@ public class LdAiClientTest
     }
 
     [Fact]
-    public void AgentConfigs_FiresOnlyAggregateEvent_NotIndividualEvents()
+    public void AgentConfigs_OnlyBatchEventFired()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();

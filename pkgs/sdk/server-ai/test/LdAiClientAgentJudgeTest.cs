@@ -196,9 +196,10 @@ public class LdAiClientAgentJudgeTest
 
         client.AgentConfigs(requests, context);
 
-        // Only the aggregate event fires — individual $ld:ai:usage:agent-config must NOT fire
-        // because the caller invoked AgentConfigs, not AgentConfig N times.
+        // The batch method must NOT fire individual $ld:ai:usage:agent-config events
         mockClient.Verify(x => x.Track("$ld:ai:usage:agent-config", context, It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+
+        // One aggregate $ld:ai:usage:agent-configs with count = 2
         mockClient.Verify(x => x.Track("$ld:ai:usage:agent-configs", context, LdValue.Of(2), 2), Times.Once);
     }
 

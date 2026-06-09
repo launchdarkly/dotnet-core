@@ -244,14 +244,14 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
         catch (Exception)
         {
-            sw.Stop();
-            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
             TrackError();
             throw;
         }
-
-        sw.Stop();
-        TrackDuration((float)sw.Elapsed.TotalMilliseconds);
+        finally
+        {
+            sw.Stop();
+            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
+        }
 
         var metrics = metricsExtractor(result);
         if (metrics.Success)

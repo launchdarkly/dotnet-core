@@ -10,10 +10,8 @@ namespace LaunchDarkly.Sdk.Server.Ai.Config;
 /// <summary>
 /// Owns the translation from an evaluated <see cref="LdValue"/> to a typed AI Config.
 /// Holds the underlying LaunchDarkly client and logger so each per-mode build method
-/// (currently only <see cref="BuildCompletionConfig"/>; future agent and judge builders will
-/// follow the same pattern) can synthesize a tracker factory and merge in
-/// context-derived prompt variables without the public <see cref="LdAiClient"/>
-/// having to know any of those details.
+/// can synthesize a tracker factory and merge in context-derived prompt variables
+/// without the public <see cref="LdAiClient"/> having to know any of those details.
 /// </summary>
 internal sealed class ConfigFactory
 {
@@ -91,6 +89,155 @@ internal sealed class ConfigFactory
             defaultValue.Model,
             defaultValue.Provider,
             trackerFactory);
+    }
+
+    public LdAiAgentConfig BuildAgentConfig(
+        string key,
+        LdValue ldValue,
+        Context context,
+        LdAiAgentConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables)
+    {
+        var mergedVars = MergeVariables(variables, context);
+        var trackerFactory = TrackerFactoryFor(context);
+
+        if (ldValue.Type != LdValueType.Object)
+        {
+            _logger.Error(
+                "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
+                key, ldValue.Type);
+            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory);
+        }
+
+        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+
+        if (mode != LdAiAgentConfig.Mode)
+        {
+            _logger.Warn(
+                "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
+                key, LdAiAgentConfig.Mode, mode);
+            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory);
+        }
+
+        var model = ParseModel(ldValue.Get("model"));
+        var provider = ParseProvider(ldValue.Get("provider"));
+        var tools = ParseTools(ldValue.Get("tools"));
+        var instructions = InterpolateInstructions(ParseInstructions(ldValue.Get("instructions")), mergedVars, key);
+        var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
+
+        return new LdAiAgentConfig(
+            key,
+            enabled,
+            variationKey,
+            version,
+            instructions,
+            tools,
+            model,
+            provider,
+            judgeConfiguration,
+            trackerFactory);
+    }
+
+    private LdAiAgentConfig BuildAgentFromDefault(
+        string key,
+        LdAiAgentConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> mergedVars,
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
+    {
+        var instructions = InterpolateInstructions(defaultValue.Instructions, mergedVars, key);
+        return new LdAiAgentConfig(
+            key,
+            defaultValue.Enabled ?? true,
+            variationKey: "",
+            version: 1,
+            instructions,
+            tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
+            defaultValue.Model,
+            defaultValue.Provider,
+            defaultValue.JudgeConfiguration,
+            trackerFactory);
+    }
+
+    public LdAiJudgeConfig BuildJudgeConfig(
+        string key,
+        LdValue ldValue,
+        Context context,
+        LdAiJudgeConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables)
+    {
+        var mergedVars = MergeVariables(variables, context);
+        var trackerFactory = TrackerFactoryFor(context);
+
+        if (ldValue.Type != LdValueType.Object)
+        {
+            _logger.Error(
+                "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
+                key, ldValue.Type);
+            return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory);
+        }
+
+        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+
+        if (mode != LdAiJudgeConfig.Mode)
+        {
+            _logger.Warn(
+                "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
+                key, LdAiJudgeConfig.Mode, mode);
+            return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory);
+        }
+
+        var model = ParseModel(ldValue.Get("model"));
+        var provider = ParseProvider(ldValue.Get("provider"));
+        var messages = InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key);
+        var evaluationMetricKey = ParseEvaluationMetricKey(ldValue);
+
+        return new LdAiJudgeConfig(
+            key,
+            enabled,
+            variationKey,
+            version,
+            messages,
+            evaluationMetricKey,
+            model,
+            provider,
+            trackerFactory);
+    }
+
+    private LdAiJudgeConfig BuildJudgeFromDefault(
+        string key,
+        LdAiJudgeConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> mergedVars,
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
+    {
+        var messages = InterpolateMessages(defaultValue.Messages, mergedVars, key);
+        return new LdAiJudgeConfig(
+            key,
+            defaultValue.Enabled ?? true,
+            variationKey: "",
+            version: 1,
+            messages,
+            defaultValue.EvaluationMetricKey,
+            defaultValue.Model,
+            defaultValue.Provider,
+            trackerFactory);
+    }
+
+    private string InterpolateInstructions(
+        string instructions,
+        IReadOnlyDictionary<string, object> mergedVars,
+        string key)
+    {
+        if (instructions == null) return null;
+        try
+        {
+            return InterpolateTemplate(instructions, mergedVars);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn(
+                $"AI Config '{key}': skipping interpolation of malformed instructions template: {ex.Message}");
+            return instructions;
+        }
     }
 
     private IReadOnlyList<LdAiConfigTypes.Message> InterpolateMessages(

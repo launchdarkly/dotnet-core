@@ -1006,7 +1006,7 @@ public class LdAiClientTest
     }
 
     [Fact]
-    public void AgentConfigs_BatchAndIndividualEventsAreFired()
+    public void AgentConfigs_OnlyBatchEventFired()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
@@ -1039,7 +1039,7 @@ public class LdAiClientTest
             "$ld:ai:usage:agent-config",
             context,
             It.IsAny<LdValue>(),
-            1), Times.Exactly(2));
+            It.IsAny<double>()), Times.Never);
 
         mockClient.Verify(c => c.Track(
             "$ld:ai:usage:agent-configs",
@@ -1086,7 +1086,7 @@ public class LdAiClientTest
             "$ld:ai:usage:agent-config",
             context,
             It.IsAny<LdValue>(),
-            1), Times.Exactly(3));
+            It.IsAny<double>()), Times.Never);
 
         mockClient.Verify(c => c.Track(
             "$ld:ai:usage:agent-configs",

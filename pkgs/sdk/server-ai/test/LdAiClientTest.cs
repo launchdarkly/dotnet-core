@@ -469,6 +469,108 @@ public class LdAiClientTest
     }
 
     [Fact]
+    public void LdCtxOverrideIsSilent()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "messages": [{"content": "Hello {{ldctx.key}}", "role": "system"}]
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+
+        // Supply a user-provided ldctx that should be silently overridden by the SDK's context.
+        var variables = new Dictionary<string, object>
+        {
+            ["ldctx"] = new Dictionary<string, object> { ["key"] = "user-supplied-value" }
+        };
+
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "sdk-key"), null, variables);
+
+        // The SDK context's key ("sdk-key") wins, not the user-supplied one.
+        Assert.Collection(result.Messages,
+            m => Assert.Equal("Hello sdk-key", m.Content));
+
+        // No warning should be logged about the ldctx key.
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s => s.Contains("ldctx")),
+            It.IsAny<object[]>()
+        ), Times.Never);
+    }
+
+    [Fact]
+    public void ToolsPopulatedOnCompletionConfig()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": [],
+                              "tools": {
+                                "search": {
+                                  "name": "search",
+                                  "description": "Searches the web",
+                                  "type": "function",
+                                  "parameters": {"query": "string"},
+                                  "customParameters": {"timeout": 30}
+                                }
+                              }
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.Single(result.Tools);
+        Assert.True(result.Tools.ContainsKey("search"));
+        Assert.Equal("search", result.Tools["search"].Name);
+        Assert.Equal("Searches the web", result.Tools["search"].Description);
+        Assert.Equal(30, result.Tools["search"].CustomParameters["timeout"].AsInt);
+    }
+
+    [Fact]
+    public void ToolsEmptyWhenAbsentFromJson()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": []
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.NotNull(result.Tools);
+        Assert.Empty(result.Tools);
+    }
+
+    [Fact]
     public void CreateTrackerFromResumptionTokenRoundTrips()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
@@ -652,5 +754,157 @@ public class LdAiClientTest
                 d.Get("variationKey").IsNull &&
                 d.Get("version").AsInt == 3),
             1.0f), Times.Once);
+    }
+
+    [Fact]
+    public void JudgeConfigurationPopulatedOnCompletionConfig()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": [],
+                              "judgeConfiguration": {
+                                "judges": [
+                                  {"key": "accuracy", "samplingRate": 0.5},
+                                  {"key": "relevance", "samplingRate": 1.0}
+                                ]
+                              }
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Equal(2, result.JudgeConfiguration.Judges.Count);
+        Assert.Equal("accuracy", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.5, result.JudgeConfiguration.Judges[0].SamplingRate);
+        Assert.Equal("relevance", result.JudgeConfiguration.Judges[1].Key);
+        Assert.Equal(1.0, result.JudgeConfiguration.Judges[1].SamplingRate);
+    }
+
+    [Fact]
+    public void JudgeConfigurationNullWhenAbsent()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "1", "enabled": true},
+                              "model": {},
+                              "messages": []
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"),
+            LdAiCompletionConfigDefault.Disabled);
+
+        Assert.Null(result.JudgeConfiguration);
+    }
+
+    [Fact]
+    public void CompletionConfigDefaultWithJudgeConfiguration()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("precision", 0.8)
+            });
+
+        var defaultConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        Assert.NotNull(defaultConfig.JudgeConfiguration);
+        Assert.Single(defaultConfig.JudgeConfiguration.Judges);
+        Assert.Equal("precision", defaultConfig.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.8, defaultConfig.JudgeConfiguration.Judges[0].SamplingRate);
+    }
+
+    [Fact]
+    public void CompletionConfigDefaultJudgeConfigurationSurvivesToLdValueRoundtrip()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        // Return the serialized default value so that BuildCompletionConfig parses it via
+        // ParseJudgeConfiguration — this exercises the ToLdValue() → parse roundtrip.
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns((string _, Context _, LdValue dv) => dv);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("precision", 0.8)
+            });
+
+        var defaultConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Single(result.JudgeConfiguration.Judges);
+        Assert.Equal("precision", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.8, result.JudgeConfiguration.Judges[0].SamplingRate);
+    }
+
+    [Fact]
+    public void CompletionConfigDefaultJudgeConfigurationSurvivesBuildFromDefault()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        // Return null so the factory falls back to BuildCompletionFromDefault, preserving
+        // the JudgeConfiguration from the caller-supplied default.
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Null);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var judgeConfig = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("coherence", 0.3)
+            });
+
+        var defaultConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(judgeConfig)
+            .Build();
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New(ContextKind.Default, "key"), defaultConfig);
+
+        Assert.NotNull(result.JudgeConfiguration);
+        Assert.Single(result.JudgeConfiguration.Judges);
+        Assert.Equal("coherence", result.JudgeConfiguration.Judges[0].Key);
+        Assert.Equal(0.3, result.JudgeConfiguration.Judges[0].SamplingRate);
     }
 }

@@ -22,6 +22,7 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
     {
         private bool _enabled;
         private readonly List<LdAiConfigTypes.Message> _messages;
+        private LdAiConfigTypes.JudgeConfiguration _judgeConfiguration;
         private readonly Dictionary<string, LdValue> _modelParams;
         private readonly Dictionary<string, LdValue> _customModelParams;
         private string _providerName;
@@ -31,6 +32,7 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
         {
             _enabled = true;
             _messages = new List<LdAiConfigTypes.Message>();
+            _judgeConfiguration = null;
             _modelParams = new Dictionary<string, LdValue>();
             _customModelParams = new Dictionary<string, LdValue>();
             _providerName = "";
@@ -119,6 +121,17 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
         }
 
         /// <summary>
+        /// Sets the judge configuration for this completion config default.
+        /// </summary>
+        /// <param name="config">the judge configuration</param>
+        /// <returns>a new builder</returns>
+        public Builder SetJudgeConfiguration(LdAiConfigTypes.JudgeConfiguration config)
+        {
+            _judgeConfiguration = config;
+            return this;
+        }
+
+        /// <summary>
         /// Builds the LdAiCompletionConfigDefault instance.
         /// </summary>
         /// <returns>a new LdAiCompletionConfigDefault</returns>
@@ -129,7 +142,7 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
                 new Dictionary<string, LdValue>(_modelParams),
                 new Dictionary<string, LdValue>(_customModelParams));
             var provider = new LdAiConfigTypes.ProviderConfig(_providerName);
-            return new LdAiCompletionConfigDefault(_enabled, _messages, model, provider);
+            return new LdAiCompletionConfigDefault(_enabled, _messages, _judgeConfiguration, model, provider);
         }
     }
 
@@ -138,11 +151,18 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
     /// </summary>
     public IReadOnlyList<LdAiConfigTypes.Message> Messages { get; }
 
+    /// <summary>
+    /// The judge configuration for this completion config default, or <c>null</c> if not specified.
+    /// </summary>
+    public LdAiConfigTypes.JudgeConfiguration JudgeConfiguration { get; }
+
     internal LdAiCompletionConfigDefault(bool? enabled, IEnumerable<LdAiConfigTypes.Message> messages,
+        LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
         LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider)
         : base(enabled, model, provider)
     {
         Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
+        JudgeConfiguration = judgeConfiguration;
     }
 
     internal LdValue ToLdValue()
@@ -153,7 +173,7 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
             ["mode"] = LdValue.Of(LdAiCompletionConfig.Mode)
         };
 
-        return LdValue.ObjectFrom(new Dictionary<string, LdValue>
+        var root = new Dictionary<string, LdValue>
         {
             { "_ldMeta", LdValue.ObjectFrom(metaFields) },
             { "messages", LdValue.ArrayFrom(Messages.Select(m => LdValue.ObjectFrom(new Dictionary<string, LdValue>
@@ -171,7 +191,23 @@ public sealed class LdAiCompletionConfigDefault : LdAiConfigDefault
             {
                 { "name", LdValue.Of(Provider.Name) }
             }) }
-        });
+        };
+
+        if (JudgeConfiguration != null)
+        {
+            root["judgeConfiguration"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                { "judges", LdValue.ArrayFrom(JudgeConfiguration.Judges.Select(j =>
+                    LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                    {
+                        { "key", LdValue.Of(j.Key) },
+                        { "samplingRate", LdValue.Of(j.SamplingRate) }
+                    })))
+                }
+            });
+        }
+
+        return LdValue.ObjectFrom(root);
     }
 
     /// <summary>

@@ -63,8 +63,7 @@ public interface ILdAiClient
 
     /// <summary>
     /// Retrieves multiple LaunchDarkly AI Agent Configs in a single call. Each request is
-    /// evaluated independently, and each fires its own usage event. An additional aggregate
-    /// usage event is fired for the batch.
+    /// evaluated independently. A single aggregate usage event is fired for the entire batch.
     /// </summary>
     /// <param name="agentConfigs">the collection of agent config requests</param>
     /// <param name="context">the context</param>

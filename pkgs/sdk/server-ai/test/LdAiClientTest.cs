@@ -1006,7 +1006,7 @@ public class LdAiClientTest
     }
 
     [Fact]
-    public void AgentConfigs_BatchAndIndividualEventsAreFired()
+    public void AgentConfigs_FiresOnlyAggregateEvent_NotIndividualEvents()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
@@ -1035,11 +1035,12 @@ public class LdAiClientTest
 
         client.AgentConfigs(requests, context);
 
+        // Individual $ld:ai:usage:agent-config must NOT fire — the caller used AgentConfigs, not AgentConfig.
         mockClient.Verify(c => c.Track(
             "$ld:ai:usage:agent-config",
             context,
             It.IsAny<LdValue>(),
-            1), Times.Exactly(2));
+            It.IsAny<double>()), Times.Never);
 
         mockClient.Verify(c => c.Track(
             "$ld:ai:usage:agent-configs",
@@ -1079,15 +1080,17 @@ public class LdAiClientTest
 
         var result = client.AgentConfigs(requests, context);
 
-        // The result dictionary de-duplicates, but the aggregate event should count all 3 requests.
+        // The result dictionary de-duplicates by key.
         Assert.Equal(2, result.Count);
 
+        // Individual events must NOT fire.
         mockClient.Verify(c => c.Track(
             "$ld:ai:usage:agent-config",
             context,
             It.IsAny<LdValue>(),
-            1), Times.Exactly(3));
+            It.IsAny<double>()), Times.Never);
 
+        // Aggregate event counts all 3 requests, including the duplicate.
         mockClient.Verify(c => c.Track(
             "$ld:ai:usage:agent-configs",
             context,

@@ -180,7 +180,7 @@ public class LdAiClientAgentJudgeTest
     }
 
     [Fact]
-    public void AgentConfigs_FiresIndividualAndAggregateEvents()
+    public void AgentConfigs_FiresOnlyAggregateEvent()
     {
         var (mockClient, _, client) = MakeClient();
         var context = Context.New(ContextKind.Default, "user");
@@ -196,11 +196,9 @@ public class LdAiClientAgentJudgeTest
 
         client.AgentConfigs(requests, context);
 
-        // One $ld:ai:usage:agent-config per individual agent call
-        mockClient.Verify(x => x.Track("$ld:ai:usage:agent-config", context, LdValue.Of("agent-1"), 1), Times.Once);
-        mockClient.Verify(x => x.Track("$ld:ai:usage:agent-config", context, LdValue.Of("agent-2"), 1), Times.Once);
-
-        // One aggregate $ld:ai:usage:agent-configs with count = 2
+        // Only the aggregate event fires — individual $ld:ai:usage:agent-config must NOT fire
+        // because the caller invoked AgentConfigs, not AgentConfig N times.
+        mockClient.Verify(x => x.Track("$ld:ai:usage:agent-config", context, It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
         mockClient.Verify(x => x.Track("$ld:ai:usage:agent-configs", context, LdValue.Of(2), 2), Times.Once);
     }
 
@@ -248,7 +246,7 @@ public class LdAiClientAgentJudgeTest
             m =>
             {
                 Assert.Equal("Rate the response", m.Content);
-                Assert.Equal(Role.System, m.Role);
+                Assert.Equal(LdAiConfigTypes.Role.System, m.Role);
             });
         Assert.NotNull(result.CreateTracker());
     }

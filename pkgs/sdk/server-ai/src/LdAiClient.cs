@@ -77,29 +77,35 @@ public sealed class LdAiClient : ILdAiClient
         return CompletionConfig(key, context, defaultValue, variables);
     }
 
+    private LdAiAgentConfig BuildAgentConfig(string key, Context context,
+        LdAiAgentConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables)
+    {
+        defaultValue ??= LdAiAgentConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables);
+    }
+
     /// <inheritdoc/>
     public LdAiAgentConfig AgentConfig(string key, Context context,
         LdAiAgentConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
-        defaultValue ??= LdAiAgentConfigDefault.Disabled;
         _client.Track(TrackUsageAgentConfig, context, LdValue.Of(key), 1);
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables);
+        return BuildAgentConfig(key, context, defaultValue, variables);
     }
 
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, LdAiAgentConfig> AgentConfigs(
         IEnumerable<AgentConfigRequest> agentConfigs, Context context)
     {
+        var requests = (agentConfigs ?? Enumerable.Empty<AgentConfigRequest>()).ToList();
+        _client.Track(TrackUsageAgentConfigs, context, LdValue.Of(requests.Count), requests.Count);
         var result = new Dictionary<string, LdAiAgentConfig>();
-        var requestCount = 0;
-        foreach (var req in agentConfigs ?? Enumerable.Empty<AgentConfigRequest>())
+        foreach (var req in requests)
         {
-            result[req.Key] = AgentConfig(req.Key, context, req.DefaultValue, req.Variables);
-            requestCount++;
+            result[req.Key] = BuildAgentConfig(req.Key, context, req.DefaultValue, req.Variables);
         }
-        _client.Track(TrackUsageAgentConfigs, context, LdValue.Of(requestCount), requestCount);
         return result;
     }
 

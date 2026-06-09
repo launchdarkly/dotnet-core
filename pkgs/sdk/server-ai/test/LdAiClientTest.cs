@@ -845,6 +845,392 @@ public class LdAiClientTest
     }
 
     [Fact]
+    public void AgentConfig_BasicRetrieval()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                              "model": {"name": "gpt-4o"},
+                              "provider": {"name": "openai"},
+                              "instructions": "You are a helpful assistant",
+                              "tools": {
+                                "search": {
+                                  "name": "search",
+                                  "description": "Web search",
+                                  "type": "function",
+                                  "parameters": {},
+                                  "customParameters": {}
+                                }
+                              }
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("agent-key", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.AgentConfig("agent-key", Context.New("user"));
+
+        Assert.Equal("agent-key", result.Key);
+        Assert.True(result.Enabled);
+        Assert.Equal("You are a helpful assistant", result.Instructions);
+        Assert.Equal("gpt-4o", result.Model.Name);
+        Assert.Equal("openai", result.Provider.Name);
+        Assert.Single(result.Tools);
+        Assert.True(result.Tools.ContainsKey("search"));
+        Assert.NotNull(result.CreateTracker());
+    }
+
+    [Fact]
+    public void AgentConfig_ModeMismatch_ReturnsCallerDefault()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+                              "model": {"name": "should-be-ignored"},
+                              "instructions": "should be ignored"
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("agent-key", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var defaultConfig = LdAiAgentConfigDefault.New()
+            .SetInstructions("default instructions")
+            .SetModelName("default-model")
+            .Build();
+
+        var result = client.AgentConfig("agent-key", Context.New("user"), defaultConfig);
+
+        Assert.True(result.Enabled);
+        Assert.Equal("default instructions", result.Instructions);
+        Assert.Equal("default-model", result.Model.Name);
+
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s =>
+                s.Contains("AI Config mode mismatch") &&
+                s.Contains("Returning caller's default")),
+            It.Is<object[]>(args =>
+                args.Length == 3 &&
+                (string)args[0] == "agent-key" &&
+                (string)args[1] == "agent" &&
+                (string)args[2] == "completion")
+        ), Times.Once);
+    }
+
+    [Fact]
+    public void AgentConfig_UsageEventFired()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                              "model": {},
+                              "provider": {},
+                              "instructions": "Be helpful"
+                            }
+                            """;
+
+        var context = Context.New("user-key");
+        mockClient.Setup(x =>
+            x.JsonVariation("my-agent", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        client.AgentConfig("my-agent", context);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:agent-config",
+            context,
+            LdValue.Of("my-agent"),
+            1), Times.Once);
+    }
+
+    [Fact]
+    public void AgentConfigs_BatchEvaluatesEachKey()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation("agent-a", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse("""
+                {
+                  "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                  "model": {"name": "gpt-4o"},
+                  "provider": {"name": "openai"},
+                  "instructions": "Agent A"
+                }
+                """));
+
+        mockClient.Setup(x =>
+            x.JsonVariation("agent-b", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse("""
+                {
+                  "_ldMeta": {"variationKey": "v2", "enabled": true, "mode": "agent"},
+                  "model": {"name": "claude-3"},
+                  "provider": {"name": "anthropic"},
+                  "instructions": "Agent B"
+                }
+                """));
+
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var context = Context.New("user-key");
+        var client = new LdAiClient(mockClient.Object);
+
+        var requests = new List<AgentConfigRequest>
+        {
+            new AgentConfigRequest { Key = "agent-a" },
+            new AgentConfigRequest { Key = "agent-b" }
+        };
+
+        var result = client.AgentConfigs(requests, context);
+
+        Assert.Equal(2, result.Count);
+        Assert.True(result.ContainsKey("agent-a"));
+        Assert.True(result.ContainsKey("agent-b"));
+        Assert.Equal("Agent A", result["agent-a"].Instructions);
+        Assert.Equal("Agent B", result["agent-b"].Instructions);
+    }
+
+    [Fact]
+    public void AgentConfigs_OnlyBatchEventFired()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation(It.IsAny<string>(), It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse("""
+                {
+                  "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                  "model": {},
+                  "provider": {},
+                  "instructions": "Be helpful"
+                }
+                """));
+
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var context = Context.New("user-key");
+        var client = new LdAiClient(mockClient.Object);
+
+        var requests = new List<AgentConfigRequest>
+        {
+            new AgentConfigRequest { Key = "agent-a" },
+            new AgentConfigRequest { Key = "agent-b" }
+        };
+
+        client.AgentConfigs(requests, context);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:agent-config",
+            context,
+            It.IsAny<LdValue>(),
+            It.IsAny<double>()), Times.Never);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:agent-configs",
+            context,
+            LdValue.Of(2),
+            2), Times.Once);
+    }
+
+    [Fact]
+    public void AgentConfigs_DuplicateKeys_AggregateEventCountsAllRequests()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        mockClient.Setup(x =>
+            x.JsonVariation(It.IsAny<string>(), It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse("""
+                {
+                  "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                  "model": {},
+                  "provider": {},
+                  "instructions": "Be helpful"
+                }
+                """));
+
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var context = Context.New("user-key");
+        var client = new LdAiClient(mockClient.Object);
+
+        var requests = new List<AgentConfigRequest>
+        {
+            new AgentConfigRequest { Key = "agent-a" },
+            new AgentConfigRequest { Key = "agent-a" },
+            new AgentConfigRequest { Key = "agent-b" }
+        };
+
+        var result = client.AgentConfigs(requests, context);
+
+        // The result dictionary de-duplicates, but the aggregate event should count all 3 requests.
+        Assert.Equal(2, result.Count);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:agent-config",
+            context,
+            It.IsAny<LdValue>(),
+            It.IsAny<double>()), Times.Never);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:agent-configs",
+            context,
+            LdValue.Of(3),
+            3), Times.Once);
+    }
+
+    [Fact]
+    public void JudgeConfig_BasicRetrieval()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "judge"},
+                              "model": {"name": "gpt-4o"},
+                              "provider": {"name": "openai"},
+                              "messages": [
+                                {"content": "Rate the response", "role": "system"}
+                              ],
+                              "evaluationMetricKey": "$ld:ai:judge:relevance"
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("judge-key", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.JudgeConfig("judge-key", Context.New("user"));
+
+        Assert.Equal("judge-key", result.Key);
+        Assert.True(result.Enabled);
+        Assert.Equal("$ld:ai:judge:relevance", result.EvaluationMetricKey);
+        Assert.Equal("gpt-4o", result.Model.Name);
+        Assert.Equal("openai", result.Provider.Name);
+        Assert.Single(result.Messages);
+        Assert.Equal("Rate the response", result.Messages[0].Content);
+        Assert.Equal(LdAiConfigTypes.Role.System, result.Messages[0].Role);
+        Assert.NotNull(result.CreateTracker());
+    }
+
+    [Fact]
+    public void JudgeConfig_ModeMismatch_ReturnsCallerDefault()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                              "model": {"name": "should-be-ignored"},
+                              "messages": [{"content": "should be ignored", "role": "user"}]
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("judge-key", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var defaultConfig = LdAiJudgeConfigDefault.New()
+            .AddMessage("default message")
+            .SetModelName("default-model")
+            .Build();
+
+        var result = client.JudgeConfig("judge-key", Context.New("user"), defaultConfig);
+
+        Assert.True(result.Enabled);
+        Assert.Equal("default-model", result.Model.Name);
+        Assert.Single(result.Messages);
+        Assert.Equal("default message", result.Messages[0].Content);
+
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s =>
+                s.Contains("AI Config mode mismatch") &&
+                s.Contains("Returning caller's default")),
+            It.Is<object[]>(args =>
+                args.Length == 3 &&
+                (string)args[0] == "judge-key" &&
+                (string)args[1] == "judge" &&
+                (string)args[2] == "agent")
+        ), Times.Once);
+    }
+
+    [Fact]
+    public void JudgeConfig_UsageEventFired()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "judge"},
+                              "model": {},
+                              "provider": {},
+                              "messages": [],
+                              "evaluationMetricKey": "$ld:ai:judge:relevance"
+                            }
+                            """;
+
+        var context = Context.New("user-key");
+        mockClient.Setup(x =>
+            x.JsonVariation("my-judge", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        client.JudgeConfig("my-judge", context);
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:usage:judge-config",
+            context,
+            LdValue.Of("my-judge"),
+            1), Times.Once);
+    }
+
+    [Fact]
+    public void AgentConfig_LdCtxInterpolatedInInstructions()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                              "model": {},
+                              "provider": {},
+                              "instructions": "Hello {{ldctx.key}}"
+                            }
+                            """;
+
+        mockClient.Setup(x =>
+            x.JsonVariation("agent-key", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Parse(json));
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.AgentConfig("agent-key", Context.New("sdk-key"));
+
+        Assert.Equal("Hello sdk-key", result.Instructions);
+    }
+
+    [Fact]
     public void CompletionConfigDefaultJudgeConfigurationSurvivesToLdValueRoundtrip()
     {
         var mockClient = new Mock<ILaunchDarklyClient>();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
@@ -17,6 +18,9 @@ public sealed class LdAiClient : ILdAiClient
 
     private const string TrackSdkInfo = "$ld:ai:sdk:info";
     private const string TrackUsageCompletionConfig = "$ld:ai:usage:completion-config";
+    private const string TrackUsageAgentConfig = "$ld:ai:usage:agent-config";
+    private const string TrackUsageAgentConfigs = "$ld:ai:usage:agent-configs";
+    private const string TrackUsageJudgeConfig = "$ld:ai:usage:judge-config";
 
     /// <summary>
     /// Constructs a new LaunchDarkly AI client. Please note, the client library is an alpha release and is
@@ -73,6 +77,48 @@ public sealed class LdAiClient : ILdAiClient
         return CompletionConfig(key, context, defaultValue, variables);
     }
 
+    private LdAiAgentConfig BuildAgentConfig(string key, Context context,
+        LdAiAgentConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables)
+    {
+        defaultValue ??= LdAiAgentConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables);
+    }
+
+    /// <inheritdoc/>
+    public LdAiAgentConfig AgentConfig(string key, Context context,
+        LdAiAgentConfigDefault defaultValue = null,
+        IReadOnlyDictionary<string, object> variables = null)
+    {
+        _client.Track(TrackUsageAgentConfig, context, LdValue.Of(key), 1);
+        return BuildAgentConfig(key, context, defaultValue, variables);
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyDictionary<string, LdAiAgentConfig> AgentConfigs(
+        IEnumerable<AgentConfigRequest> agentConfigs, Context context)
+    {
+        var requests = (agentConfigs ?? Enumerable.Empty<AgentConfigRequest>()).ToList();
+        _client.Track(TrackUsageAgentConfigs, context, LdValue.Of(requests.Count), requests.Count);
+        var result = new Dictionary<string, LdAiAgentConfig>();
+        foreach (var req in requests)
+        {
+            result[req.Key] = BuildAgentConfig(req.Key, context, req.DefaultValue, req.Variables);
+        }
+        return result;
+    }
+
+    /// <inheritdoc/>
+    public LdAiJudgeConfig JudgeConfig(string key, Context context,
+        LdAiJudgeConfigDefault defaultValue = null,
+        IReadOnlyDictionary<string, object> variables = null)
+    {
+        defaultValue ??= LdAiJudgeConfigDefault.Disabled;
+        _client.Track(TrackUsageJudgeConfig, context, LdValue.Of(key), 1);
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables);
+    }
 
     /// <inheritdoc/>
     public ILdAiConfigTracker CreateTracker(string resumptionToken, Context context)

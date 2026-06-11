@@ -41,7 +41,8 @@ namespace TestService
             "auto-env-attributes",
             "inline-context-all",
             "anonymous-redaction",
-            "client-prereq-events"
+            "client-prereq-events",
+            "client-per-context-summaries"
         };
 
         public readonly Handler Handler;

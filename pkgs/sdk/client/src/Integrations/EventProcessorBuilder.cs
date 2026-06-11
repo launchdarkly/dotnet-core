@@ -228,7 +228,10 @@ namespace LaunchDarkly.Sdk.Client.Integrations
                 DiagnosticRecordingInterval = _diagnosticRecordingInterval,
                 DiagnosticUri = baseUri.AddPath(StandardEndpoints.DiagnosticEventsPostRequestPath),
                 PrivateAttributes = _privateAttributes.ToImmutableHashSet(),
-                RetryInterval = TimeSpan.FromSeconds(1)
+                RetryInterval = TimeSpan.FromSeconds(1),
+                // Client-side SDKs emit a summary event per context, with the context attached,
+                // since only one context is active at a time and context cardinality is low.
+                PerContextSummaries = true
             };
         }
     }

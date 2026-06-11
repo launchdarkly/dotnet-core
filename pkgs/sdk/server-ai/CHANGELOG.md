@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.10.0...LaunchDarkly.ServerSdk.Ai-v0.11.0) (2026-06-11)
+
+
+### Features
+
+* Add AgentConfig, AgentConfigs, and JudgeConfig methods to ILdAiClient ([#282](https://github.com/launchdarkly/dotnet-core/issues/282)) ([34293ca](https://github.com/launchdarkly/dotnet-core/commit/34293caf07bc0a50b3f9f095cd81229cdf807969))
+* Add Tools property to LdAiCompletionConfig — parses the same tools block agents use, exposes IReadOnlyDictionary&lt;string, ToolConfig&gt; (empty when absent) ([69418c8](https://github.com/launchdarkly/dotnet-core/commit/69418c8d564d8bf9bb97c6529fa85bbe6c971781))
+* Add TrackDurationOf, TrackMetricsOf, TrackJudgeResult, TrackToolCall ([#287](https://github.com/launchdarkly/dotnet-core/issues/287)) ([485976e](https://github.com/launchdarkly/dotnet-core/commit/485976e2b90d1b14a40e0fa7e31eea0ef2c1a416))
+
+
+### Bug Fixes
+
+* Silently override 'ldctx' in user-supplied template variables instead of warning and discarding it — the SDK context always wins, matches cross-SDK behavior ([69418c8](https://github.com/launchdarkly/dotnet-core/commit/69418c8d564d8bf9bb97c6529fa85bbe6c971781))
+
 ## [0.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.9.4...LaunchDarkly.ServerSdk.Ai-v0.10.0) (2026-06-05)
 
 

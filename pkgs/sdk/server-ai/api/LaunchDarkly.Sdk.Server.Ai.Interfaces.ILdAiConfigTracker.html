@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Interface ILdAiConfigTracker | LaunchDarkly Dotnet Server AI SDK </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Interface ILdAiConfigTracker | LaunchDarkly Dotnet Server AI SDK ">
+    
+    <meta name="description" content="Records metrics for a single AI run.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly Dotnet Server AI SDK">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker" class="text-break">Interface ILdAiConfigTracker</h1>
+  <div class="markdown level0 summary"><p>Records metrics for a single AI run.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a>.<a class="xref" href="LaunchDarkly.Sdk.Server.html">Server</a>.<a class="xref" href="LaunchDarkly.Sdk.Server.Ai.html">Ai</a>.<a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Interfaces.html">Interfaces</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.ServerSdk.Ai.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public interface ILdAiConfigTracker</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>All events emitted by a tracker share a runId (a UUIDv4) so LaunchDarkly can correlate
+them. See individual track methods for their specific semantics.
+Call <code>CreateTracker</code> on the AI Config to start a new run. A
+<a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.html#LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_ResumptionToken">ResumptionToken</a> preserves the runId, so events emitted by a tracker
+reconstructed in another process correlate with the original tracker's runId.</p>
+</div>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_ResumptionToken.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.ResumptionToken%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L26">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_ResumptionToken_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.ResumptionToken*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_ResumptionToken" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.ResumptionToken">ResumptionToken</h4>
+  <div class="markdown level1 summary"><p>A URL-safe Base64-encoded token that can be used to reconstruct this tracker in a different
+process or at a later time. The token contains the runId, configKey, variationKey, and version.</p>
+<p>Use <code>LdAiConfigTracker.FromResumptionToken</code> to reconstruct a tracker from this token.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">string ResumptionToken { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_Summary.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.Summary%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L31">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_Summary_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.Summary*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_Summary" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.Summary">Summary</h4>
+  <div class="markdown level1 summary"><p>A summary of the metrics tracked by this tracker.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">MetricSummary Summary { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.MetricSummary.html">MetricSummary</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDuration_System_Single_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDuration(System.Single)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L40">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDuration_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDuration*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDuration_System_Single_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDuration(System.Single)">TrackDuration(float)</h4>
+  <div class="markdown level1 summary"><p>Tracks a duration metric related to this config. For example, if a particular operation
+related to usage of the AI model takes 100ms, this can be tracked and made available in
+LaunchDarkly.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackDuration(float durationMs)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.single">float</a></td>
+        <td><span class="parametername">durationMs</span></td>
+        <td><p>the duration in milliseconds</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDuration_System_Single__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Records at most once per Tracker; further calls are ignored.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDurationOfTask__1_System_Threading_Tasks_Task___0__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDurationOfTask%60%601(System.Threading.Tasks.Task%7B%60%600%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L62">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDurationOfTask_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDurationOfTask*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDurationOfTask__1_System_Threading_Tasks_Task___0__" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDurationOfTask``1(System.Threading.Tasks.Task{``0})">TrackDurationOfTask&lt;T&gt;(Task&lt;T&gt;)</h4>
+  <div class="markdown level1 summary"><p>Tracks the duration of a task, and returns the result of the task.</p>
+<p>If the provided task throws, then this method will also throw.</p>
+<p>In the case the provided function throws, this function will still
+record the duration.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;Use TrackDurationOf instead.&quot;)]
+Task&lt;T&gt; TrackDurationOfTask&lt;T&gt;(Task&lt;T&gt; task)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;T&gt;</td>
+        <td><span class="parametername">task</span></td>
+        <td><p>the task</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;T&gt;</td>
+        <td><p>the task</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">T</span></td>
+        <td><p>type of the task's result</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDurationOf__1_System_Func_System_Threading_Tasks_Task___0___.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDurationOf%60%601(System.Func%7BSystem.Threading.Tasks.Task%7B%60%600%7D%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L49">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDurationOf_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDurationOf*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDurationOf__1_System_Func_System_Threading_Tasks_Task___0___" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackDurationOf``1(System.Func{System.Threading.Tasks.Task{``0}})">TrackDurationOf&lt;T&gt;(Func&lt;Task&lt;T&gt;&gt;)</h4>
+  <div class="markdown level1 summary"><p>Wraps a callable operation, measures its wall-clock duration, and records the result via
+<a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.html#LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackDuration_System_Single_">TrackDuration(float)</a>. The duration is recorded even if the operation throws.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">Task&lt;T&gt; TrackDurationOf&lt;T&gt;(Func&lt;Task&lt;T&gt;&gt; operation)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-1">Func</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;T&gt;&gt;</td>
+        <td><span class="parametername">operation</span></td>
+        <td><p>a factory that produces the task to time</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;T&gt;</td>
+        <td><p>the operation result</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">T</span></td>
+        <td><p>type of the operation's result</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackError.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackError%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L96">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackError_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackError*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackError" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackError">TrackError()</h4>
+  <div class="markdown level1 summary"><p>Tracks an unsuccessful generation event related to this config.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackError()</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackError_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Records at most once per Tracker. TrackSuccess and TrackError share state; only
+one of the two can record per Tracker, and subsequent calls are ignored.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackFeedback_LaunchDarkly_Sdk_Server_Ai_Tracking_Feedback_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackFeedback(LaunchDarkly.Sdk.Server.Ai.Tracking.Feedback)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L78">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackFeedback_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackFeedback*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackFeedback_LaunchDarkly_Sdk_Server_Ai_Tracking_Feedback_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackFeedback(LaunchDarkly.Sdk.Server.Ai.Tracking.Feedback)">TrackFeedback(Feedback)</h4>
+  <div class="markdown level1 summary"><p>Tracks feedback (positive or negative) related to the output of the model.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackFeedback(Feedback feedback)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Feedback.html">Feedback</a></td>
+        <td><span class="parametername">feedback</span></td>
+        <td><p>the feedback</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackFeedback_LaunchDarkly_Sdk_Server_Ai_Tracking_Feedback__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Records at most once per Tracker; further calls are ignored.</p>
+</div>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception">ArgumentOutOfRangeException</a></td>
+        <td><p>thrown if the feedback value is not <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Feedback.html#LaunchDarkly_Sdk_Server_Ai_Tracking_Feedback_Positive">Positive</a> or <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Feedback.html#LaunchDarkly_Sdk_Server_Ai_Tracking_Feedback_Negative">Negative</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackJudgeResult_LaunchDarkly_Sdk_Server_Ai_Tracking_JudgeResult_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackJudgeResult(LaunchDarkly.Sdk.Server.Ai.Tracking.JudgeResult)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L164">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackJudgeResult_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackJudgeResult*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackJudgeResult_LaunchDarkly_Sdk_Server_Ai_Tracking_JudgeResult_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackJudgeResult(LaunchDarkly.Sdk.Server.Ai.Tracking.JudgeResult)">TrackJudgeResult(JudgeResult)</h4>
+  <div class="markdown level1 summary"><p>Tracks the result of a judge evaluation. The event is silently dropped when
+<a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.JudgeResult.html#LaunchDarkly_Sdk_Server_Ai_Tracking_JudgeResult_Sampled">Sampled</a> or <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.JudgeResult.html#LaunchDarkly_Sdk_Server_Ai_Tracking_JudgeResult_Success">Success</a> is <code>false</code>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackJudgeResult(JudgeResult result)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.JudgeResult.html">JudgeResult</a></td>
+        <td><span class="parametername">result</span></td>
+        <td><p>the judge evaluation result</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackMetricsOf__1_System_Func___0_LaunchDarkly_Sdk_Server_Ai_Tracking_AiMetrics__System_Func_System_Threading_Tasks_Task___0___.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackMetricsOf%60%601(System.Func%7B%60%600%2CLaunchDarkly.Sdk.Server.Ai.Tracking.AiMetrics%7D%2CSystem.Func%7BSystem.Threading.Tasks.Task%7B%60%600%7D%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L109">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackMetricsOf_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackMetricsOf*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackMetricsOf__1_System_Func___0_LaunchDarkly_Sdk_Server_Ai_Tracking_AiMetrics__System_Func_System_Threading_Tasks_Task___0___" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackMetricsOf``1(System.Func{``0,LaunchDarkly.Sdk.Server.Ai.Tracking.AiMetrics},System.Func{System.Threading.Tasks.Task{``0}})">TrackMetricsOf&lt;T&gt;(Func&lt;T, AiMetrics&gt;, Func&lt;Task&lt;T&gt;&gt;)</h4>
+  <div class="markdown level1 summary"><p>Wraps a callable operation, automatically tracking its duration, success/error status,
+and optional token usage. The <code class="paramref">metricsExtractor</code> is called with the
+operation result to produce an <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.AiMetrics.html">AiMetrics</a> value.</p>
+<p>If the operation throws, <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.html#LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackError">TrackError()</a> is called and the exception is re-thrown.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">Task&lt;T&gt; TrackMetricsOf&lt;T&gt;(Func&lt;T, AiMetrics&gt; metricsExtractor, Func&lt;Task&lt;T&gt;&gt; operation)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-2">Func</a>&lt;T, <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.AiMetrics.html">AiMetrics</a>&gt;</td>
+        <td><span class="parametername">metricsExtractor</span></td>
+        <td><p>extracts <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.AiMetrics.html">AiMetrics</a> from the operation result</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-1">Func</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;T&gt;&gt;</td>
+        <td><span class="parametername">operation</span></td>
+        <td><p>a factory that produces the task to time and track</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;T&gt;</td>
+        <td><p>the operation result</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">T</span></td>
+        <td><p>type of the operation's result</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackRequest_System_Threading_Tasks_Task_LaunchDarkly_Sdk_Server_Ai_Tracking_Response__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackRequest(System.Threading.Tasks.Task%7BLaunchDarkly.Sdk.Server.Ai.Tracking.Response%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L149">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackRequest_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackRequest*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackRequest_System_Threading_Tasks_Task_LaunchDarkly_Sdk_Server_Ai_Tracking_Response__" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackRequest(System.Threading.Tasks.Task{LaunchDarkly.Sdk.Server.Ai.Tracking.Response})">TrackRequest(Task&lt;Response&gt;)</h4>
+  <div class="markdown level1 summary"><p>Tracks a request to a provider. The request is a task that returns a <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Response.html">Response</a>, which
+contains information about the request such as token usage and metrics.</p>
+<p>This function will track the duration of the operation, the token
+usage, and the success or error status.</p>
+<p>If the provided function throws, then this method will also throw.</p>
+<p>In the case the provided function throws, this function will record the
+duration and an error.</p>
+<p>A failed operation will not have any token usage data.</p>
+<p>It is the responsibility of the caller to fill in the <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Response.html">Response</a> object with any details
+that should be tracked.</p>
+<p>Example:</p>
+<pre><code class="lang-csharp">var response = tracker.TrackRequest(Task.Run(() =&gt; new Response {
+    // 1. Make a request to the AI provider
+    // 2. Identify relevant statistics returned in the response
+    // 3. Return a Response object containing the relevant statistics
+    Usage = new Usage { Total = 1, Input = 1, Output = 1 },
+    Metrics = new Metrics { LatencyMs = 100 }
+}));</code></pre>
+<p>If no latency statistic is explicitly returned in the <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Response.html">Response</a>, then the duration of the
+Task is automatically measured and recorded as the latency metric associated with this request.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;Use TrackMetricsOf instead.&quot;)]
+Task&lt;Response&gt; TrackRequest(Task&lt;Response&gt; request)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Response.html">Response</a>&gt;</td>
+        <td><span class="parametername">request</span></td>
+        <td><p>a task representing the request</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Response.html">Response</a>&gt;</td>
+        <td><p>the task</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackRequest_System_Threading_Tasks_Task_LaunchDarkly_Sdk_Server_Ai_Tracking_Response___remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Subsequent calls re-run the task but emit only metrics not already recorded on this Tracker.
+Call <code>CreateTracker</code> on the AI Config to start a new run.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackSuccess.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackSuccess%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L87">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackSuccess_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackSuccess*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackSuccess" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackSuccess">TrackSuccess()</h4>
+  <div class="markdown level1 summary"><p>Tracks a generation event related to this config.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackSuccess()</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackSuccess_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Records at most once per Tracker. TrackSuccess and TrackError share state; only
+one of the two can record per Tracker, and subsequent calls are ignored.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTimeToFirstToken_System_Single_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackTimeToFirstToken(System.Single)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L70">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTimeToFirstToken_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackTimeToFirstToken*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTimeToFirstToken_System_Single_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackTimeToFirstToken(System.Single)">TrackTimeToFirstToken(float)</h4>
+  <div class="markdown level1 summary"><p>Tracks the time it takes for the first token to be generated.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackTimeToFirstToken(float timeToFirstTokenMs)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.single">float</a></td>
+        <td><span class="parametername">timeToFirstTokenMs</span></td>
+        <td><p>the duration in milliseconds</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTimeToFirstToken_System_Single__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Records at most once per Tracker; further calls are ignored.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTokens_LaunchDarkly_Sdk_Server_Ai_Tracking_Usage_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackTokens(LaunchDarkly.Sdk.Server.Ai.Tracking.Usage)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L157">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTokens_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackTokens*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTokens_LaunchDarkly_Sdk_Server_Ai_Tracking_Usage_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackTokens(LaunchDarkly.Sdk.Server.Ai.Tracking.Usage)">TrackTokens(Usage)</h4>
+  <div class="markdown level1 summary"><p>Tracks token usage related to this config.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackTokens(Usage usage)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Tracking.Usage.html">Usage</a></td>
+        <td><span class="parametername">usage</span></td>
+        <td><p>the token usage</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackTokens_LaunchDarkly_Sdk_Server_Ai_Tracking_Usage__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Records at most once per Tracker; further calls are ignored.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackToolCall_System_String_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackToolCall(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L171">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackToolCall_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackToolCall*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackToolCall_System_String_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackToolCall(System.String)">TrackToolCall(string)</h4>
+  <div class="markdown level1 summary"><p>Tracks a single tool invocation. Unlike most track methods, this is not at-most-once;
+it may be called multiple times to record multiple tool calls in the same run.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackToolCall(string toolKey)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">toolKey</span></td>
+        <td><p>the identifier of the tool that was called</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackToolCalls_System_Collections_Generic_IEnumerable_System_String__.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackToolCalls(System.Collections.Generic.IEnumerable%7BSystem.String%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L177">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackToolCalls_" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackToolCalls*"></a>
+  <h4 id="LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackToolCalls_System_Collections_Generic_IEnumerable_System_String__" data-uid="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.TrackToolCalls(System.Collections.Generic.IEnumerable{System.String})">TrackToolCalls(IEnumerable&lt;string&gt;)</h4>
+  <div class="markdown level1 summary"><p>Tracks multiple tool invocations by calling <a class="xref" href="LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker.html#LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker_TrackToolCall_System_String_">TrackToolCall(string)</a> for each key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void TrackToolCalls(IEnumerable&lt;string&gt; toolKeys)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1">IEnumerable</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td><span class="parametername">toolKeys</span></td>
+        <td><p>the identifiers of the tools that were called</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="extensionmethods">Extension Methods</h3>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Server_Ai_Interfaces_ILdAiConfigTracker.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Server.Ai.Interfaces.ILdAiConfigTracker%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/src/Interfaces/ILdAiConfigTracker.cs/#L18" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

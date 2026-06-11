@@ -4,8 +4,6 @@
 > This AI SDK is in pre-release and not subject to backwards compatibility guarantees. The API may change based on feedback.
 >
 > Pin to a specific minor version and review the [changelog] before upgrading.
->
-> Active feature development is ongoing in the [Python][python-ai-sdk] and [Node.js][node-ai-sdk] AI SDKs, so this SDK will receive new features at a slower pace. Refer to those for the latest capabilities.
 
 [changelog]: https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/sdk/server-ai/CHANGELOG.md
 [python-ai-sdk]: https://github.com/launchdarkly/python-server-sdk-ai/tree/main/packages/sdk/server-ai

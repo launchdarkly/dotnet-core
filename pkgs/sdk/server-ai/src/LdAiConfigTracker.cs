@@ -59,6 +59,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private const string TokenInput = "$ld:ai:tokens:input";
     private const string TokenOutput = "$ld:ai:tokens:output";
     private const string TimeToFirstToken = "$ld:ai:tokens:ttf";
+    private const string ToolCall = "$ld:ai:tool_call";
 
     /// <summary>
     /// Constructs a tracker from individual fields, ordered as defined by the AI SDK spec.
@@ -144,6 +145,22 @@ public class LdAiConfigTracker : ILdAiConfigTracker
 
 
     /// <inheritdoc/>
+    public async Task<T> TrackDurationOf<T>(Func<Task<T>> operation)
+    {
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            return await operation();
+        }
+        finally
+        {
+            sw.Stop();
+            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    /// <inheritdoc/>
+    [Obsolete("Use TrackDurationOf instead.")]
     public async Task<T> TrackDurationOfTask<T>(Task<T> task)
     {
         var sw = Stopwatch.StartNew();
@@ -217,6 +234,45 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     }
 
     /// <inheritdoc/>
+    public async Task<T> TrackMetricsOf<T>(Func<T, AiMetrics> metricsExtractor, Func<Task<T>> operation)
+    {
+        var sw = Stopwatch.StartNew();
+        T result;
+        try
+        {
+            result = await operation();
+        }
+        catch (Exception)
+        {
+            TrackError();
+            throw;
+        }
+        finally
+        {
+            sw.Stop();
+            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
+        }
+
+        var metrics = metricsExtractor(result);
+        if (metrics.Success)
+        {
+            TrackSuccess();
+        }
+        else
+        {
+            TrackError();
+        }
+
+        if (metrics.Tokens != null)
+        {
+            TrackTokens(metrics.Tokens.Value);
+        }
+
+        return result;
+    }
+
+    /// <inheritdoc/>
+    [Obsolete("Use TrackMetricsOf instead.")]
     public async Task<Response> TrackRequest(Task<Response> request)
     {
         var sw = Stopwatch.StartNew();
@@ -272,6 +328,44 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         {
             _client.Track(TokenOutput, _context, _trackData, usage.Output.Value);
         }
+    }
+
+    /// <inheritdoc/>
+    public void TrackJudgeResult(JudgeResult result)
+    {
+        if (!result.Sampled || !result.Success)
+        {
+            return;
+        }
+
+        var data = string.IsNullOrEmpty(result.JudgeConfigKey)
+            ? _trackData
+            : MergeTrackData("judgeConfigKey", LdValue.Of(result.JudgeConfigKey));
+
+        _client.Track(result.MetricKey, _context, data, result.Score);
+    }
+
+    /// <inheritdoc/>
+    public void TrackToolCall(string toolKey)
+    {
+        var data = MergeTrackData("toolKey", LdValue.Of(toolKey));
+        _client.Track(ToolCall, _context, data, 1);
+    }
+
+    /// <inheritdoc/>
+    public void TrackToolCalls(IEnumerable<string> toolKeys)
+    {
+        foreach (var key in toolKeys)
+        {
+            TrackToolCall(key);
+        }
+    }
+
+    private LdValue MergeTrackData(string key, LdValue value)
+    {
+        var builder = new Dictionary<string, LdValue>(_trackData.Dictionary);
+        builder[key] = value;
+        return LdValue.ObjectFrom(builder);
     }
 
     /// <summary>

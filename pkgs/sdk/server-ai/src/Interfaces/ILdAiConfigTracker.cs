@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
 
@@ -39,6 +40,15 @@ public interface ILdAiConfigTracker
     public void TrackDuration(float durationMs);
 
     /// <summary>
+    /// Wraps a callable operation, measures its wall-clock duration, and records the result via
+    /// <see cref="TrackDuration"/>. The duration is recorded even if the operation throws.
+    /// </summary>
+    /// <param name="operation">a factory that produces the task to time</param>
+    /// <typeparam name="T">type of the operation's result</typeparam>
+    /// <returns>the operation result</returns>
+    public Task<T> TrackDurationOf<T>(Func<Task<T>> operation);
+
+    /// <summary>
     /// Tracks the duration of a task, and returns the result of the task.
     ///
     /// If the provided task throws, then this method will also throw.
@@ -49,6 +59,7 @@ public interface ILdAiConfigTracker
     /// <param name="task">the task</param>
     /// <typeparam name="T">type of the task's result</typeparam>
     /// <returns>the task</returns>
+    [Obsolete("Use TrackDurationOf instead.")]
     public Task<T> TrackDurationOfTask<T>(Task<T> task);
 
     /// <summary>
@@ -83,6 +94,19 @@ public interface ILdAiConfigTracker
     /// one of the two can record per Tracker, and subsequent calls are ignored.
     /// </remarks>
     public void TrackError();
+
+    /// <summary>
+    /// Wraps a callable operation, automatically tracking its duration, success/error status,
+    /// and optional token usage. The <paramref name="metricsExtractor"/> is called with the
+    /// operation result to produce an <see cref="AiMetrics"/> value.
+    ///
+    /// If the operation throws, <see cref="TrackError"/> is called and the exception is re-thrown.
+    /// </summary>
+    /// <param name="metricsExtractor">extracts <see cref="AiMetrics"/> from the operation result</param>
+    /// <param name="operation">a factory that produces the task to time and track</param>
+    /// <typeparam name="T">type of the operation's result</typeparam>
+    /// <returns>the operation result</returns>
+    public Task<T> TrackMetricsOf<T>(Func<T, AiMetrics> metricsExtractor, Func<Task<T>> operation);
 
     /// <summary>
     /// Tracks a request to a provider. The request is a task that returns a <see cref="Response"/>, which
@@ -122,6 +146,7 @@ public interface ILdAiConfigTracker
     /// </remarks>
     /// <param name="request">a task representing the request</param>
     /// <returns>the task</returns>
+    [Obsolete("Use TrackMetricsOf instead.")]
     public Task<Response> TrackRequest(Task<Response> request);
 
     /// <summary>
@@ -130,4 +155,24 @@ public interface ILdAiConfigTracker
     /// <remarks>Records at most once per Tracker; further calls are ignored.</remarks>
     /// <param name="usage">the token usage</param>
     public void TrackTokens(Usage usage);
+
+    /// <summary>
+    /// Tracks the result of a judge evaluation. The event is silently dropped when
+    /// <see cref="JudgeResult.Sampled"/> or <see cref="JudgeResult.Success"/> is <c>false</c>.
+    /// </summary>
+    /// <param name="result">the judge evaluation result</param>
+    public void TrackJudgeResult(JudgeResult result);
+
+    /// <summary>
+    /// Tracks a single tool invocation. Unlike most track methods, this is not at-most-once;
+    /// it may be called multiple times to record multiple tool calls in the same run.
+    /// </summary>
+    /// <param name="toolKey">the identifier of the tool that was called</param>
+    public void TrackToolCall(string toolKey);
+
+    /// <summary>
+    /// Tracks multiple tool invocations by calling <see cref="TrackToolCall"/> for each key.
+    /// </summary>
+    /// <param name="toolKeys">the identifiers of the tools that were called</param>
+    public void TrackToolCalls(IEnumerable<string> toolKeys);
 }

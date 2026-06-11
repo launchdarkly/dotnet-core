@@ -994,5 +994,213 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 $"iterations, but observed {maxObservedInvocations} emissions on iteration {iterationWithMax}. " +
                 "TrackDuration's check-then-set on _durationMs is not atomic.");
         }
+
+        // ── TrackDurationOf ─────────────────────────────────────────────────
+
+        [Fact]
+        public async Task TrackDurationOf_MeasuresDuration()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            await tracker.TrackDurationOf(async () =>
+            {
+                await Task.Delay(50);
+                return 42;
+            });
+
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:duration:total",
+                context,
+                It.IsAny<LdValue>(),
+                It.Is<double>(ms => ms >= 40 && ms < 5000)), Times.Once);
+        }
+
+        // ── TrackMetricsOf ──────────────────────────────────────────────────
+
+        [Fact]
+        public async Task TrackMetricsOf_SuccessPath_TracksAllMetrics()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            var result = await tracker.TrackMetricsOf(
+                _ => new AiMetrics(true, new Usage(10, 5, 5)),
+                () => Task.FromResult("response"));
+
+            Assert.Equal("response", result);
+
+            mockClient.Verify(x => x.Track("$ld:ai:duration:total", context, It.IsAny<LdValue>(),
+                It.IsAny<double>()), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:generation:success", context, It.IsAny<LdValue>(),
+                1.0), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:total", context, It.IsAny<LdValue>(),
+                10.0), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:input", context, It.IsAny<LdValue>(),
+                5.0), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:tokens:output", context, It.IsAny<LdValue>(),
+                5.0), Times.Once);
+        }
+
+        [Fact]
+        public async Task TrackMetricsOf_ErrorPath_TracksErrorAndRethrows()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await tracker.TrackMetricsOf<string>(
+                    _ => new AiMetrics(true),
+                    () => Task.FromException<string>(new InvalidOperationException("boom"))));
+
+            mockClient.Verify(x => x.Track("$ld:ai:generation:error", context, It.IsAny<LdValue>(),
+                1.0), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:duration:total", context, It.IsAny<LdValue>(),
+                It.IsAny<double>()), Times.Once);
+        }
+
+        // ── TrackJudgeResult ────────────────────────────────────────────────
+
+        [Fact]
+        public void TrackJudgeResult_SampledFalse_NoEventEmitted()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            tracker.TrackJudgeResult(new JudgeResult(
+                metricKey: "$ld:ai:judge:relevance",
+                score: 0.9,
+                sampled: false));
+
+            mockClient.Verify(x => x.Track(It.IsAny<string>(), It.IsAny<Context>(),
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+        }
+
+        [Fact]
+        public void TrackJudgeResult_SuccessFalse_NoEventEmitted()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            tracker.TrackJudgeResult(new JudgeResult(
+                metricKey: "$ld:ai:judge:relevance",
+                score: 0.9,
+                success: false));
+
+            mockClient.Verify(x => x.Track(It.IsAny<string>(), It.IsAny<Context>(),
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+        }
+
+        [Fact]
+        public void TrackJudgeResult_SuccessPath_EmitsCorrectEvent()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            tracker.TrackJudgeResult(new JudgeResult(
+                metricKey: "$ld:ai:judge:relevance",
+                score: 0.85,
+                judgeConfigKey: "my-judge"));
+
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:judge:relevance",
+                context,
+                It.Is<LdValue>(d =>
+                    d.Get("judgeConfigKey").AsString == "my-judge" &&
+                    d.Get("runId").Type == LdValueType.String),
+                0.85), Times.Once);
+        }
+
+        // ── TrackToolCall ───────────────────────────────────────────────────
+
+        [Fact]
+        public void TrackToolCall_DataIncludesToolKey()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            tracker.TrackToolCall("search");
+
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:tool_call",
+                context,
+                It.Is<LdValue>(d =>
+                    d.Get("toolKey").AsString == "search" &&
+                    d.Get("runId").Type == LdValueType.String),
+                1.0), Times.Once);
+        }
+
+        [Fact]
+        public void TrackToolCall_NoAtMostOnce_EmitsMultipleEvents()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            tracker.TrackToolCall("search");
+            tracker.TrackToolCall("fetch");
+            tracker.TrackToolCall("search");
+
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:tool_call",
+                context,
+                It.IsAny<LdValue>(),
+                1.0), Times.Exactly(3));
+        }
+
+        [Fact]
+        public void DeprecatedShims_StillCallable()
+        {
+            // Verify the obsolete shims still compile and execute without errors.
+            // The [Obsolete] attribute generates a compile-time warning, not an error,
+            // so this test confirms the methods remain functional.
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+#pragma warning disable CS0618
+            var durationTask = tracker.TrackDurationOfTask(Task.FromResult(42));
+            var requestTask = tracker.TrackRequest(Task.FromResult(new Response(new Usage(1, 0, 1), null)));
+#pragma warning restore CS0618
+
+            Task.WaitAll(durationTask, requestTask);
+
+            mockClient.Verify(x => x.Track("$ld:ai:duration:total", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
+        }
     }
 }

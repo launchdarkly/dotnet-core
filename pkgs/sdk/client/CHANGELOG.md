@@ -3,6 +3,13 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.9.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.8.0...LaunchDarkly.ClientSdk-v5.9.0) (2026-06-11)
+
+
+### Features
+
+* enable per-context summary events ([#288](https://github.com/launchdarkly/dotnet-core/issues/288)) ([b3caf8d](https://github.com/launchdarkly/dotnet-core/commit/b3caf8dfd577e8578c06669d93714886701d9a9c))
+
 ## [5.8.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.7.3...LaunchDarkly.ClientSdk-v5.8.0) (2026-05-27)
 
 

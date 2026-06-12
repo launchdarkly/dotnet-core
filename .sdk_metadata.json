@@ -88,6 +88,11 @@
       "languages": [
         "C#"
       ],
+      "features": {
+        "perContextSummaryEvents": {
+          "introduced": "5.9"
+        }
+      },
       "releases": {
         "tag-prefix": "LaunchDarkly.ClientSdk-"
       },

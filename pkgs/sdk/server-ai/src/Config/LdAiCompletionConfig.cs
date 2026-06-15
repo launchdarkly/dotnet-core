@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
@@ -42,8 +43,9 @@ public sealed class LdAiCompletionConfig : LdAiConfig
         IEnumerable<LdAiConfigTypes.Message> messages, IReadOnlyDictionary<string, LdAiConfigTypes.Tool> tools,
         LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
         LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider,
-        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
-        : base(key, enabled, variationKey, version, model, provider, trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
+        Evaluator evaluator = null)
+        : base(key, enabled, variationKey, version, model, provider, trackerFactory, evaluator)
     {
         Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
         Tools = tools ?? ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;

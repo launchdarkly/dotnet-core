@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Mustache;
 
@@ -21,11 +22,14 @@ internal sealed class ConfigFactory
 
     private readonly ILaunchDarklyClient _client;
     private readonly ILogger _logger;
+    private readonly Func<LdAiJudgeConfig, IRunner> _runnerFactory;
 
-    public ConfigFactory(ILaunchDarklyClient client, ILogger logger)
+    public ConfigFactory(ILaunchDarklyClient client, ILogger logger,
+        Func<LdAiJudgeConfig, IRunner> runnerFactory = null)
     {
         _client = client;
         _logger = logger;
+        _runnerFactory = runnerFactory;
     }
 
     public LdAiCompletionConfig BuildCompletionConfig(
@@ -61,6 +65,7 @@ internal sealed class ConfigFactory
         var messages = InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key);
         var tools = ParseTools(ldValue.Get("tools"));
         var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
+        var evaluator = BuildEvaluator(judgeConfiguration, context);
 
         return new LdAiCompletionConfig(
             key,
@@ -72,7 +77,8 @@ internal sealed class ConfigFactory
             judgeConfiguration,
             model,
             provider,
-            trackerFactory);
+            trackerFactory,
+            evaluator);
     }
 
     private LdAiCompletionConfig BuildCompletionFromDefault(
@@ -94,7 +100,8 @@ internal sealed class ConfigFactory
             defaultValue.JudgeConfiguration,
             defaultValue.Model,
             defaultValue.Provider,
-            trackerFactory);
+            trackerFactory,
+            evaluator: null);
     }
 
     public LdAiAgentConfig BuildAgentConfig(
@@ -130,6 +137,7 @@ internal sealed class ConfigFactory
         var tools = ParseTools(ldValue.Get("tools"));
         var instructions = InterpolateInstructions(ParseInstructions(ldValue.Get("instructions")), mergedVars, key);
         var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
+        var evaluator = BuildEvaluator(judgeConfiguration, context);
 
         return new LdAiAgentConfig(
             key,
@@ -141,7 +149,8 @@ internal sealed class ConfigFactory
             model,
             provider,
             judgeConfiguration,
-            trackerFactory);
+            trackerFactory,
+            evaluator);
     }
 
     private LdAiAgentConfig BuildAgentFromDefault(
@@ -226,6 +235,26 @@ internal sealed class ConfigFactory
             defaultValue.Model,
             defaultValue.Provider,
             trackerFactory);
+    }
+
+    private Evaluator BuildEvaluator(LdAiConfigTypes.JudgeConfiguration judgeConfiguration, Context context)
+    {
+        if (_runnerFactory == null || judgeConfiguration == null || judgeConfiguration.Judges.Count == 0)
+        {
+            return Evaluator.Noop();
+        }
+
+        var judges = new Dictionary<string, Judge>();
+        foreach (var judgeEntry in judgeConfiguration.Judges)
+        {
+            var defaultValue = LdAiJudgeConfigDefault.Disabled;
+            var ldValue = _client.JsonVariation(judgeEntry.Key, context, defaultValue.ToLdValue());
+            var judgeConfig = BuildJudgeConfig(judgeEntry.Key, ldValue, context, defaultValue, null);
+            var runner = _runnerFactory(judgeConfig);
+            judges[judgeEntry.Key] = new Judge(judgeConfig, runner, _logger);
+        }
+
+        return new Evaluator(judges, judgeConfiguration, _logger);
     }
 
     private string InterpolateInstructions(

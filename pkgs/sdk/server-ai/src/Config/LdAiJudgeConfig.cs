@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
@@ -41,7 +42,7 @@ public sealed class LdAiJudgeConfig : LdAiConfig
         LdAiConfigTypes.ModelConfig model,
         LdAiConfigTypes.ProviderConfig provider,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
-        : base(key, enabled, variationKey, version, model, provider, trackerFactory)
+        : base(key, enabled, variationKey, version, model, provider, trackerFactory, Evaluator.Noop())
     {
         Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
         EvaluationMetricKey = evaluationMetricKey;

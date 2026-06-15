@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai;
@@ -34,10 +35,14 @@ public sealed class LdAiClient : ILdAiClient
     ///
     /// </summary>
     /// <param name="client">an object satisfying <see cref="ILaunchDarklyClient"/>, such as an <see cref="LdClientAdapter"/></param>
-    public LdAiClient(ILaunchDarklyClient client)
+    /// <param name="runnerFactory">optional factory used to create an <see cref="IRunner"/> for each
+    /// judge when building an <see cref="Evaluator"/>; when <c>null</c> all configs receive
+    /// <see cref="Evaluator.Noop"/></param>
+    public LdAiClient(ILaunchDarklyClient client,
+        Func<LdAiJudgeConfig, IRunner> runnerFactory = null)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
-        _factory = new ConfigFactory(_client, _client.GetLogger());
+        _factory = new ConfigFactory(_client, _client.GetLogger(), runnerFactory);
 
         _client.Track(
             TrackSdkInfo,

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
+using LaunchDarkly.Sdk.Server.Ai.Tracking;
 using Moq;
 using Xunit;
 
@@ -160,6 +161,61 @@ public class LdAiJudgeConfigTest
                 (string)args[0] == "judge-key" &&
                 (LdValueType)args[1] == LdValueType.Number)
         ), Times.Once);
+    }
+
+    [Fact]
+    public void JudgeResult_BackwardCompat_OldConstructorStillWorks()
+    {
+        // Five-argument form (no ErrorMessage/Reasoning) must still compile and work.
+        var result = new JudgeResult("my-metric", 0.75, sampled: true, success: true, judgeConfigKey: "j1");
+
+        Assert.Equal("my-metric", result.MetricKey);
+        Assert.Equal(0.75, result.Score);
+        Assert.True(result.Sampled);
+        Assert.True(result.Success);
+        Assert.Equal("j1", result.JudgeConfigKey);
+        Assert.Null(result.ErrorMessage);
+        Assert.Null(result.Reasoning);
+    }
+
+    [Fact]
+    public void JudgeResult_ErrorMessageRoundTrip()
+    {
+        var result = new JudgeResult("metric", 0, success: false, errorMessage: "provider down");
+
+        Assert.False(result.Success);
+        Assert.Equal("provider down", result.ErrorMessage);
+        Assert.Null(result.Reasoning);
+    }
+
+    [Fact]
+    public void JudgeResult_ReasoningRoundTrip()
+    {
+        var result = new JudgeResult("metric", 0.9, reasoning: "Very coherent");
+
+        Assert.True(result.Success);
+        Assert.Equal("Very coherent", result.Reasoning);
+        Assert.Null(result.ErrorMessage);
+    }
+
+    [Fact]
+    public void JudgeResult_AllFieldsSet()
+    {
+        var result = new JudgeResult(
+            "metric", 0.5,
+            sampled: true,
+            success: false,
+            judgeConfigKey: "jk",
+            errorMessage: "bad input",
+            reasoning: "n/a");
+
+        Assert.Equal("metric", result.MetricKey);
+        Assert.Equal(0.5, result.Score);
+        Assert.True(result.Sampled);
+        Assert.False(result.Success);
+        Assert.Equal("jk", result.JudgeConfigKey);
+        Assert.Equal("bad input", result.ErrorMessage);
+        Assert.Equal("n/a", result.Reasoning);
     }
 
     [Fact]

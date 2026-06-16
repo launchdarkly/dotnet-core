@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
@@ -225,7 +226,8 @@ public sealed class LdAiClient : ILdAiClient
                     var handoffVal = edgeVal.Get("handoff");
                     if (handoffVal.Type == LdValueType.Object)
                     {
-                        handoff = handoffVal.Dictionary.ToDictionary(h => h.Key, h => h.Value);
+                        handoff = new ReadOnlyDictionary<string, LdValue>(
+                            handoffVal.Dictionary.ToDictionary(h => h.Key, h => h.Value));
                     }
 
                     edgeList.Add(new GraphEdge(targetKey, handoff));

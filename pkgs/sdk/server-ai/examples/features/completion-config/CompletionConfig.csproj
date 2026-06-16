@@ -10,7 +10,6 @@
   <ItemGroup>
     <PackageReference Include="LaunchDarkly.ServerSdk" Version="8.*" />
     <PackageReference Include="LaunchDarkly.ServerSdk.Ai" Version="0.*" />
-    <PackageReference Include="OpenAI" Version="2.*" />
     <PackageReference Include="DotNetEnv" Version="3.*" />
   </ItemGroup>
 

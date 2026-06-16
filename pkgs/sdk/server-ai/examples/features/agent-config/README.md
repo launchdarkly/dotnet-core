@@ -1,25 +1,24 @@
 # Agent Config
 
-This example demonstrates how to retrieve an AI Agent Config and use it with OpenAI's Chat Completions API.
+This example focuses on the LaunchDarkly AI SDK itself — it is **provider-agnostic** and does not call OpenAI, Bedrock, Anthropic, or any other model. The actual agent invocation is replaced with a synthetic operation so you can see the SDK's tracking surface clearly. For end-to-end provider integrations see the [getting-started/](../../getting-started) examples.
 
-It shows how to:
+It demonstrates:
 
-- Retrieve agent instructions and tools from LaunchDarkly via `LdAiClient.AgentConfig`
-- Use the builder pattern (`LdAiAgentConfigDefault.New()`) to declare a fallback default
-- Feed agent instructions into OpenAI as a system message
-- Enumerate the tools attached to the agent (so they can be mapped to your provider's function-calling API)
-- Track metrics and tool invocations via `tracker.TrackMetricsOf` and `tracker.TrackToolCall`
+- Retrieving agent instructions and tools from LaunchDarkly via `LdAiClient.AgentConfig`
+- Using the builder pattern (`LdAiAgentConfigDefault.New()`) to declare a fallback default
+- Interpolating Mustache placeholders in agent instructions
+- Enumerating the tools attached to the agent (so they can be mapped to your provider's function-calling API)
+- Tracking metrics via `tracker.TrackMetricsOf` and recording individual tool invocations via `tracker.TrackToolCall`
 
 ## Prerequisites
 
 - .NET 8.0 SDK
 - A LaunchDarkly account and a server-side SDK key
-- An [OpenAI API key](https://platform.openai.com/api-keys)
 
 ## Setup
 
-1. [Create an AI Config](https://launchdarkly.com/docs/home/ai-configs/create) of type **Agent** in LaunchDarkly with the key `sample-agent`. Set the instructions (you may include Mustache placeholders such as `{{companyName}}`), select OpenAI as the provider, and choose a model.
-2. Copy `.env.example` to `.env` and fill in your keys:
+1. [Create an AI Config](https://launchdarkly.com/docs/home/ai-configs/create) of type **Agent** in LaunchDarkly with the key `sample-agent`. Set the instructions (you may include Mustache placeholders such as `{{companyName}}`), choose a provider and model.
+2. Copy `.env.example` to `.env` and fill in your SDK key:
    ```sh
    cp .env.example .env
    ```

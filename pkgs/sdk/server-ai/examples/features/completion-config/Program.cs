@@ -5,7 +5,6 @@ using LaunchDarkly.Sdk.Server.Ai;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
-using OpenAI.Chat;
 
 Env.TraversePath().Load();
 
@@ -14,14 +13,6 @@ if (string.IsNullOrEmpty(sdkKey))
 {
     Console.Error.WriteLine(
         "LaunchDarkly SDK key is required: set the LAUNCHDARKLY_SDK_KEY environment variable and try again.");
-    return;
-}
-
-var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-if (string.IsNullOrEmpty(openAiKey))
-{
-    Console.Error.WriteLine(
-        "OpenAI API key is required: set the OPENAI_API_KEY environment variable and try again.");
     return;
 }
 
@@ -41,6 +32,8 @@ Console.WriteLine("*** SDK successfully initialized!");
 
 var aiClient = new LdAiClient(new LdClientAdapter(ldClient));
 
+// Set up the evaluation context. This context should appear on your
+// LaunchDarkly contexts dashboard soon after you run the demo.
 var context = Context.Builder(ContextKind.Of("user"), "example-user-key")
     .Name("Sandy")
     .Build();
@@ -75,7 +68,8 @@ try
         return;
     }
 
-    Console.WriteLine($"Resolved model: {config.Model.Name} (provider: {config.Provider.Name})");
+    Console.WriteLine();
+    Console.WriteLine($"Resolved model:    {config.Model.Name} (provider: {config.Provider.Name})");
 
     // Read typed model parameters set on the AI Config. Falls back to a
     // sensible default if the parameter is absent or null.
@@ -86,10 +80,19 @@ try
         ? maxVal.AsInt
         : 4096;
 
-    Console.WriteLine($"  temperature: {temperature}");
-    Console.WriteLine($"  maxTokens:   {maxTokens}");
+    Console.WriteLine($"  temperature:     {temperature}");
+    Console.WriteLine($"  maxTokens:       {maxTokens}");
 
-    // Tools configured on the AI Config are exposed as a name-keyed dictionary.
+    if (config.Messages.Count > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Resolved messages (Mustache variables interpolated):");
+        foreach (var m in config.Messages)
+        {
+            Console.WriteLine($"  [{m.Role}] {m.Content}");
+        }
+    }
+
     if (config.Tools.Count > 0)
     {
         Console.WriteLine();
@@ -101,44 +104,33 @@ try
     }
 
     var tracker = config.CreateTracker();
-    var modelName = string.IsNullOrEmpty(config.Model.Name) ? "gpt-4" : config.Model.Name;
-    var chatClient = new ChatClient(modelName, openAiKey);
 
-    var sampleQuestion = "How can LaunchDarkly help me?";
-    var messages = config.Messages
-        .Select(ToOpenAiMessage)
-        .Append(new UserChatMessage(sampleQuestion))
-        .ToList();
+    // To keep this example provider-agnostic, the operation below is a
+    // synthetic stand-in for an actual model call — see the getting-started/*
+    // examples for end-to-end integrations with OpenAI or AWS Bedrock. The
+    // tracker API is exercised exactly the same way regardless of provider.
+    Console.WriteLine();
+    Console.WriteLine("Running a synthetic model call wrapped in TrackMetricsOf...");
 
-    var options = new ChatCompletionOptions
-    {
-        Temperature = temperature,
-        MaxOutputTokenCount = maxTokens
-    };
+    var result = await tracker.TrackMetricsOf(
+        SyntheticMetrics,
+        async () =>
+        {
+            await Task.Delay(150);
+            return new SyntheticResult(
+                Content: "[simulated model response]",
+                InputTokens: 50,
+                OutputTokens: 100);
+        });
 
     Console.WriteLine();
-    Console.WriteLine($"Sending sample question to {modelName}: \"{sampleQuestion}\"");
-    Console.WriteLine("Waiting for response...");
-
-    var completion = await tracker.TrackMetricsOf(
-        result => new AiMetrics(
-            success: true,
-            tokens: new Usage(
-                Total: result.Value.Usage.TotalTokenCount,
-                Input: result.Value.Usage.InputTokenCount,
-                Output: result.Value.Usage.OutputTokenCount)),
-        async () => await chatClient.CompleteChatAsync(messages, options));
-
-    var aiResponse = completion.Value.Content[0].Text;
-    Console.WriteLine();
-    Console.WriteLine("Model response:");
-    Console.WriteLine(aiResponse);
+    Console.WriteLine("Simulated model response:");
+    Console.WriteLine(result.Content);
 
     PrintSummary(tracker.Summary);
 }
 catch (Exception ex)
 {
-    // In production, sanitize before logging — provider errors may include credentials.
     Console.Error.WriteLine($"Error: {ex.Message}");
 }
 finally
@@ -147,18 +139,17 @@ finally
     ldClient.Dispose();
 }
 
-static ChatMessage ToOpenAiMessage(LdAiConfigTypes.Message m) => m.Role switch
-{
-    LdAiConfigTypes.Role.System => new SystemChatMessage(m.Content),
-    LdAiConfigTypes.Role.Assistant => new AssistantChatMessage(m.Content),
-    LdAiConfigTypes.Role.User => new UserChatMessage(m.Content),
-    _ => new UserChatMessage(m.Content)
-};
+static AiMetrics SyntheticMetrics(SyntheticResult result) => new(
+    success: true,
+    tokens: new Usage(
+        Total: result.InputTokens + result.OutputTokens,
+        Input: result.InputTokens,
+        Output: result.OutputTokens));
 
 static void PrintSummary(MetricSummary summary)
 {
     Console.WriteLine();
-    Console.WriteLine("Done! The AI config was evaluated and the following metrics were tracked:");
+    Console.WriteLine("Done! The tracker captured the following metrics:");
     Console.WriteLine($"  Duration:      {summary.DurationMs}ms");
     Console.WriteLine($"  Success:       {summary.Success}");
     if (summary.Tokens is { } tokens)
@@ -168,3 +159,5 @@ static void PrintSummary(MetricSummary summary)
         Console.WriteLine($"  Total tokens:  {tokens.Total}");
     }
 }
+
+internal sealed record SyntheticResult(string Content, int InputTokens, int OutputTokens);

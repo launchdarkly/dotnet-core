@@ -1,4 +1,3 @@
-using System.Text.Json;
 using DotNetEnv;
 using LaunchDarkly.Sdk;
 using LaunchDarkly.Sdk.Server;
@@ -6,7 +5,6 @@ using LaunchDarkly.Sdk.Server.Ai;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
-using OpenAI.Chat;
 
 Env.TraversePath().Load();
 
@@ -15,14 +13,6 @@ if (string.IsNullOrEmpty(sdkKey))
 {
     Console.Error.WriteLine(
         "LaunchDarkly SDK key is required: set the LAUNCHDARKLY_SDK_KEY environment variable and try again.");
-    return;
-}
-
-var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-if (string.IsNullOrEmpty(openAiKey))
-{
-    Console.Error.WriteLine(
-        "OpenAI API key is required: set the OPENAI_API_KEY environment variable and try again.");
     return;
 }
 
@@ -42,13 +32,13 @@ Console.WriteLine("*** SDK successfully initialized!");
 
 var aiClient = new LdAiClient(new LdClientAdapter(ldClient));
 
+// Set up the evaluation context. This context should appear on your
+// LaunchDarkly contexts dashboard soon after you run the demo.
 var context = Context.Builder(ContextKind.Of("user"), "example-user-key")
     .Name("Sandy")
     .Build();
 
 // Default judge config used as a fallback when LaunchDarkly is unreachable.
-// The judge prompt instructs the model to reply with a JSON object so the
-// caller can extract a numeric score.
 var defaultValue = LdAiJudgeConfigDefault.New()
     .Enable()
     .SetModelName("gpt-4")
@@ -56,8 +46,7 @@ var defaultValue = LdAiJudgeConfigDefault.New()
     .SetEvaluationMetricKey("quality")
     .AddMessage(
         "You are an evaluator. Score the assistant response from 0.0 (poor) to " +
-        "1.0 (excellent) based on quality and relevance. " +
-        "Respond with JSON of the form {\"score\": <number>, \"reasoning\": \"<string>\"}.",
+        "1.0 (excellent) based on quality and relevance.",
         LdAiConfigTypes.Role.System)
     .AddMessage("Input given to the assistant: {{input}}", LdAiConfigTypes.Role.User)
     .AddMessage("Response to evaluate: {{response_to_evaluate}}", LdAiConfigTypes.Role.User)
@@ -87,55 +76,59 @@ try
         return;
     }
 
-    Console.WriteLine($"Resolved judge model:        {judgeConfig.Model.Name}");
-    Console.WriteLine($"Evaluation metric key:       {judgeConfig.EvaluationMetricKey}");
+    Console.WriteLine();
+    Console.WriteLine($"Resolved judge model:    {judgeConfig.Model.Name} (provider: {judgeConfig.Provider.Name})");
+    Console.WriteLine($"Evaluation metric key:   {judgeConfig.EvaluationMetricKey}");
+
+    if (judgeConfig.Messages.Count > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Resolved judge prompt (Mustache variables interpolated):");
+        foreach (var m in judgeConfig.Messages)
+        {
+            Console.WriteLine($"  [{m.Role}] {m.Content}");
+        }
+    }
 
     var tracker = judgeConfig.CreateTracker();
-    var modelName = string.IsNullOrEmpty(judgeConfig.Model.Name) ? "gpt-4" : judgeConfig.Model.Name;
-    var chatClient = new ChatClient(modelName, openAiKey);
 
-    var messages = judgeConfig.Messages.Select(ToOpenAiMessage).ToList();
-
+    // To keep this example provider-agnostic, we wrap a synthetic evaluation in
+    // TrackMetricsOf and report a hardcoded score. In a real integration the
+    // operation would call your model provider with the judge's resolved
+    // messages and parse the score from the response — see the
+    // getting-started/* examples for end-to-end provider integrations.
     Console.WriteLine();
-    Console.WriteLine($"Asking {modelName} to evaluate the response...");
+    Console.WriteLine("Running a synthetic judge evaluation wrapped in TrackMetricsOf...");
 
-    var completion = await tracker.TrackMetricsOf(
-        result => new AiMetrics(
-            success: true,
-            tokens: new Usage(
-                Total: result.Value.Usage.TotalTokenCount,
-                Input: result.Value.Usage.InputTokenCount,
-                Output: result.Value.Usage.OutputTokenCount)),
-        async () => await chatClient.CompleteChatAsync(messages));
-
-    var judgeResponse = completion.Value.Content[0].Text;
-    Console.WriteLine();
-    Console.WriteLine("Judge raw response:");
-    Console.WriteLine(judgeResponse);
-
-    var (score, reasoning, parsed) = ParseJudgeResponse(judgeResponse);
+    var evaluation = await tracker.TrackMetricsOf(
+        SyntheticMetrics,
+        async () =>
+        {
+            await Task.Delay(150);
+            return new SyntheticJudgeResult(
+                Score: 0.8,
+                Reasoning: "Response was clear but explicitly refused to help with the requested topic.",
+                InputTokens: 120,
+                OutputTokens: 60);
+        });
 
     // Emit the judge result back to LaunchDarkly. The event is silently
     // dropped when Sampled or Success is false.
     tracker.TrackJudgeResult(new JudgeResult(
         metricKey: judgeConfig.EvaluationMetricKey,
-        score: score,
+        score: evaluation.Score,
         sampled: true,
-        success: parsed,
+        success: true,
         judgeConfigKey: judgeKey));
 
     Console.WriteLine();
-    Console.WriteLine($"Parsed score:                {score}");
-    if (!string.IsNullOrEmpty(reasoning))
-    {
-        Console.WriteLine($"Reasoning:                   {reasoning}");
-    }
+    Console.WriteLine($"Simulated score:        {evaluation.Score}");
+    Console.WriteLine($"Reasoning:              {evaluation.Reasoning}");
 
     PrintSummary(tracker.Summary);
 }
 catch (Exception ex)
 {
-    // In production, sanitize before logging — provider errors may include credentials.
     Console.Error.WriteLine($"Error: {ex.Message}");
 }
 finally
@@ -144,36 +137,17 @@ finally
     ldClient.Dispose();
 }
 
-static ChatMessage ToOpenAiMessage(LdAiConfigTypes.Message m) => m.Role switch
-{
-    LdAiConfigTypes.Role.System => new SystemChatMessage(m.Content),
-    LdAiConfigTypes.Role.Assistant => new AssistantChatMessage(m.Content),
-    LdAiConfigTypes.Role.User => new UserChatMessage(m.Content),
-    _ => new UserChatMessage(m.Content)
-};
-
-static (double Score, string Reasoning, bool Parsed) ParseJudgeResponse(string text)
-{
-    try
-    {
-        using var doc = JsonDocument.Parse(text);
-        var root = doc.RootElement;
-        var score = root.TryGetProperty("score", out var scoreEl) ? scoreEl.GetDouble() : 0.0;
-        var reasoning = root.TryGetProperty("reasoning", out var reasoningEl)
-            ? reasoningEl.GetString() ?? ""
-            : "";
-        return (score, reasoning, true);
-    }
-    catch (JsonException)
-    {
-        return (0.0, "", false);
-    }
-}
+static AiMetrics SyntheticMetrics(SyntheticJudgeResult result) => new(
+    success: true,
+    tokens: new Usage(
+        Total: result.InputTokens + result.OutputTokens,
+        Input: result.InputTokens,
+        Output: result.OutputTokens));
 
 static void PrintSummary(MetricSummary summary)
 {
     Console.WriteLine();
-    Console.WriteLine("Done! The judge invocation was tracked with the following metrics:");
+    Console.WriteLine("Done! The tracker captured the following metrics:");
     Console.WriteLine($"  Duration:      {summary.DurationMs}ms");
     Console.WriteLine($"  Success:       {summary.Success}");
     if (summary.Tokens is { } tokens)
@@ -183,3 +157,9 @@ static void PrintSummary(MetricSummary summary)
         Console.WriteLine($"  Total tokens:  {tokens.Total}");
     }
 }
+
+internal sealed record SyntheticJudgeResult(
+    double Score,
+    string Reasoning,
+    int InputTokens,
+    int OutputTokens);

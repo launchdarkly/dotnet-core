@@ -5,7 +5,6 @@ using LaunchDarkly.Sdk.Server.Ai;
 using LaunchDarkly.Sdk.Server.Ai.Adapters;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;
-using OpenAI.Chat;
 
 Env.TraversePath().Load();
 
@@ -14,14 +13,6 @@ if (string.IsNullOrEmpty(sdkKey))
 {
     Console.Error.WriteLine(
         "LaunchDarkly SDK key is required: set the LAUNCHDARKLY_SDK_KEY environment variable and try again.");
-    return;
-}
-
-var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-if (string.IsNullOrEmpty(openAiKey))
-{
-    Console.Error.WriteLine(
-        "OpenAI API key is required: set the OPENAI_API_KEY environment variable and try again.");
     return;
 }
 
@@ -41,6 +32,8 @@ Console.WriteLine("*** SDK successfully initialized!");
 
 var aiClient = new LdAiClient(new LdClientAdapter(ldClient));
 
+// Set up the evaluation context. This context should appear on your
+// LaunchDarkly contexts dashboard soon after you run the demo.
 var context = Context.Builder(ContextKind.Of("user"), "example-user-key")
     .Name("Sandy")
     .Build();
@@ -70,9 +63,10 @@ try
         return;
     }
 
+    Console.WriteLine();
     Console.WriteLine($"Resolved agent model: {agentConfig.Model.Name} (provider: {agentConfig.Provider.Name})");
     Console.WriteLine();
-    Console.WriteLine("Agent instructions:");
+    Console.WriteLine("Agent instructions (Mustache variables interpolated):");
     Console.WriteLine(agentConfig.Instructions);
 
     if (agentConfig.Tools.Count > 0)
@@ -86,47 +80,42 @@ try
     }
 
     var tracker = agentConfig.CreateTracker();
-    var modelName = string.IsNullOrEmpty(agentConfig.Model.Name) ? "gpt-4" : agentConfig.Model.Name;
-    var chatClient = new ChatClient(modelName, openAiKey);
 
-    var sampleQuestion = "How can LaunchDarkly help me?";
-    var messages = new List<ChatMessage>
-    {
-        new SystemChatMessage(agentConfig.Instructions),
-        new UserChatMessage(sampleQuestion)
-    };
-
+    // To keep this example provider-agnostic, the operation below is a
+    // synthetic stand-in for an actual model call — see the getting-started/*
+    // examples for end-to-end integrations with OpenAI or AWS Bedrock. The
+    // tracker API is exercised exactly the same way regardless of provider.
     Console.WriteLine();
-    Console.WriteLine($"Sending sample question to {modelName}: \"{sampleQuestion}\"");
-    Console.WriteLine("Waiting for response...");
+    Console.WriteLine("Running a synthetic agent invocation wrapped in TrackMetricsOf...");
 
-    var completion = await tracker.TrackMetricsOf(
-        result => new AiMetrics(
-            success: true,
-            tokens: new Usage(
-                Total: result.Value.Usage.TotalTokenCount,
-                Input: result.Value.Usage.InputTokenCount,
-                Output: result.Value.Usage.OutputTokenCount)),
-        async () => await chatClient.CompleteChatAsync(messages));
+    var result = await tracker.TrackMetricsOf(
+        SyntheticMetrics,
+        async () =>
+        {
+            await Task.Delay(150);
+            return new SyntheticResult(
+                Content: "[simulated agent response]",
+                InputTokens: 80,
+                OutputTokens: 120,
+                ToolsInvoked: new[] { "search", "calculator" });
+        });
 
-    // If the agent invoked tools, record each call so it shows up on the
-    // agent's metric summary. Replace with the tool keys your agent actually
-    // invoked at runtime.
-    foreach (var toolCall in completion.Value.ToolCalls)
+    // Record each tool invocation on the tracker so it appears in the
+    // metric summary. In a real integration these names would come from
+    // the provider's tool-use response.
+    foreach (var toolName in result.ToolsInvoked)
     {
-        tracker.TrackToolCall(toolCall.FunctionName);
+        tracker.TrackToolCall(toolName);
     }
 
-    var aiResponse = completion.Value.Content.Count > 0 ? completion.Value.Content[0].Text : "";
     Console.WriteLine();
-    Console.WriteLine("Model response:");
-    Console.WriteLine(aiResponse);
+    Console.WriteLine("Simulated agent response:");
+    Console.WriteLine(result.Content);
 
     PrintSummary(tracker.Summary);
 }
 catch (Exception ex)
 {
-    // In production, sanitize before logging — provider errors may include credentials.
     Console.Error.WriteLine($"Error: {ex.Message}");
 }
 finally
@@ -135,10 +124,17 @@ finally
     ldClient.Dispose();
 }
 
+static AiMetrics SyntheticMetrics(SyntheticResult result) => new(
+    success: true,
+    tokens: new Usage(
+        Total: result.InputTokens + result.OutputTokens,
+        Input: result.InputTokens,
+        Output: result.OutputTokens));
+
 static void PrintSummary(MetricSummary summary)
 {
     Console.WriteLine();
-    Console.WriteLine("Done! The AI config was evaluated and the following metrics were tracked:");
+    Console.WriteLine("Done! The tracker captured the following metrics:");
     Console.WriteLine($"  Duration:      {summary.DurationMs}ms");
     Console.WriteLine($"  Success:       {summary.Success}");
     if (summary.Tokens is { } tokens)
@@ -148,3 +144,9 @@ static void PrintSummary(MetricSummary summary)
         Console.WriteLine($"  Total tokens:  {tokens.Total}");
     }
 }
+
+internal sealed record SyntheticResult(
+    string Content,
+    int InputTokens,
+    int OutputTokens,
+    IReadOnlyList<string> ToolsInvoked);

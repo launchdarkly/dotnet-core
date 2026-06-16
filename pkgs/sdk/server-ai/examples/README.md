@@ -19,10 +19,10 @@ These examples show how to integrate LaunchDarkly AI with different providers.
 
 ## Features
 
-These examples demonstrate the full range of AI config types and tracking capabilities.
+These examples focus on the LaunchDarkly AI SDK itself. They are **provider-agnostic** — they retrieve and resolve AI configs, then exercise the tracker API with synthetic operations rather than calling any model provider. Use them to understand the SDK's surface; use the getting-started examples above to see end-to-end provider integrations.
 
 | Example | Description |
 | --- | --- |
-| [Completion Config](features/completion-config/) | Default values, Mustache variables, model parameter extraction, and tool enumeration |
-| [Agent Config](features/agent-config/) | Agent instructions and tools with OpenAI; demonstrates `TrackToolCall` |
-| [Judge Config](features/judge-config/) | Judge evaluation of AI responses with score parsing and `TrackJudgeResult` |
+| [Completion Config](features/completion-config/) | Default values, Mustache variables, model parameter extraction, tool enumeration, and `TrackMetricsOf` |
+| [Agent Config](features/agent-config/) | Agent instructions and tools; `TrackMetricsOf` and `TrackToolCall` |
+| [Judge Config](features/judge-config/) | Judge config retrieval and `TrackJudgeResult` |

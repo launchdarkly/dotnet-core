@@ -229,6 +229,11 @@ public sealed class AiGraphTracker
     /// </summary>
     public void TrackTotalTokens(Usage tokens)
     {
+        // Empty usage doesn't burn the slot.
+        if ((tokens.Total ?? 0) <= 0)
+        {
+            return;
+        }
         if (Interlocked.CompareExchange(ref _tokens,
                 new StrongBox<Usage>(tokens), null) != null)
         {
@@ -236,10 +241,7 @@ public sealed class AiGraphTracker
                 _trackData.ToJsonString());
             return;
         }
-        if (tokens.Total is > 0)
-        {
-            _client.Track(GraphTotalTokens, _context, _trackData, tokens.Total.Value);
-        }
+        _client.Track(GraphTotalTokens, _context, _trackData, tokens.Total.Value);
     }
 
     /// <summary>

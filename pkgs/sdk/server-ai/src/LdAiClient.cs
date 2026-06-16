@@ -232,9 +232,9 @@ public sealed class LdAiClient : ILdAiClient
 
                     edgeList.Add(new GraphEdge(targetKey, handoff));
                 }
-                edgesDict[kv.Key] = edgeList;
+                edgesDict[kv.Key] = edgeList.AsReadOnly();
             }
-            edges = edgesDict;
+            edges = new ReadOnlyDictionary<string, IReadOnlyList<GraphEdge>>(edgesDict);
         }
 
         LdMeta meta = null;

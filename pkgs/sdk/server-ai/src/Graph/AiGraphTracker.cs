@@ -249,6 +249,8 @@ public sealed class AiGraphTracker
     /// </summary>
     public void TrackPath(IReadOnlyList<string> path)
     {
+        if (path == null) return;
+
         if (Interlocked.CompareExchange(ref _path,
                 new StrongBox<IReadOnlyList<string>>(path), null) != null)
         {

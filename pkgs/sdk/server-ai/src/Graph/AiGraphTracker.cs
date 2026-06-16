@@ -230,7 +230,7 @@ public sealed class AiGraphTracker
     public void TrackTotalTokens(Usage tokens)
     {
         // Empty usage doesn't burn the slot.
-        if ((tokens.Total ?? 0) <= 0)
+        if ((tokens.Total ?? 0) <= 0 && (tokens.Input ?? 0) <= 0 && (tokens.Output ?? 0) <= 0)
         {
             return;
         }
@@ -241,7 +241,10 @@ public sealed class AiGraphTracker
                 _trackData.ToJsonString());
             return;
         }
-        _client.Track(GraphTotalTokens, _context, _trackData, tokens.Total.Value);
+        var total = (tokens.Total ?? 0) > 0
+            ? tokens.Total.Value
+            : (tokens.Input ?? 0) + (tokens.Output ?? 0);
+        _client.Track(GraphTotalTokens, _context, _trackData, total);
     }
 
     /// <summary>

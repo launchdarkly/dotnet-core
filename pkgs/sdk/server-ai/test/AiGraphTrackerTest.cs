@@ -373,4 +373,55 @@ public class AiGraphTrackerTest
         // Should be a valid GUID format
         Assert.True(Guid.TryParse(td.RunId, out _));
     }
+
+    // TrackTotalTokens derives total from Input+Output when Total is null
+    [Fact]
+    public void TrackTotalTokensDerivesSumWhenTotalIsNull()
+    {
+        var mockClient = MockClient();
+        var context = Context.New("user");
+        var tracker = MakeTracker(mockClient.Object, context);
+
+        tracker.TrackTotalTokens(new Usage(null, 60, 40));
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:graph:total_tokens",
+            context,
+            It.Is<LdValue>(v => v.Get("graphKey").AsString == "my-graph"),
+            100.0), Times.Once);
+    }
+
+    // TrackTotalTokens does not fire when Total is null and Input/Output are both absent
+    [Fact]
+    public void TrackTotalTokensDropsWhenAllFieldsEmpty()
+    {
+        var mockClient = MockClient();
+        var context = Context.New("user");
+        var tracker = MakeTracker(mockClient.Object, context);
+
+        tracker.TrackTotalTokens(new Usage(null, null, null));
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:graph:total_tokens",
+            It.IsAny<Context>(),
+            It.IsAny<LdValue>(),
+            It.IsAny<double>()), Times.Never);
+    }
+
+    // TrackTotalTokens fires when only Output is provided (Total and Input null)
+    [Fact]
+    public void TrackTotalTokensUsesOutputAloneWhenInputIsNull()
+    {
+        var mockClient = MockClient();
+        var context = Context.New("user");
+        var tracker = MakeTracker(mockClient.Object, context);
+
+        tracker.TrackTotalTokens(new Usage(null, null, 75));
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:graph:total_tokens",
+            context,
+            It.Is<LdValue>(v => v.Get("graphKey").AsString == "my-graph"),
+            75.0), Times.Once);
+    }
 }

@@ -160,10 +160,19 @@ public sealed class AgentGraphDefinition
             }
         }
 
-        // If no terminals were seeded (e.g. single-node graph that is also root), seed root directly
-        if (queue.Count == 0 && root != null && visited.Add(root.Key))
+        // If no terminals were seeded (pure cycle — no leaf nodes exist), seed all non-root nodes
+        // so every node is still visited. For a single-node graph (or self-loop), fall back to
+        // seeding root itself as the only node.
+        if (queue.Count == 0 && root != null)
         {
-            queue.Enqueue(root);
+            foreach (var n in _nodes.Values)
+            {
+                if (n.Key == root.Key) continue;
+                if (visited.Add(n.Key))
+                    queue.Enqueue(n);
+            }
+            if (queue.Count == 0 && visited.Add(root.Key))
+                queue.Enqueue(root);
         }
 
         while (queue.Count > 0)

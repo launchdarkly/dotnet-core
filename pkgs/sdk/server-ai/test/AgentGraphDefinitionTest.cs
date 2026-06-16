@@ -227,7 +227,47 @@ public class AgentGraphDefinitionTest
         Assert.Equal("my-graph-key", tracker.GetTrackData().GraphKey);
     }
 
-    // Test 35: Cycle-safe — graph with cycles doesn't infinite loop
+    // Test 35: Cycle-safe — ReverseTraverse on pure cycle visits every node, root last
+    [Fact]
+    public void ReverseTraverseIsCycleSafe()
+    {
+        // a → b → c → a (pure cycle, no terminal nodes)
+        var flagValue = new AgentGraphFlagValue
+        {
+            Root = "a",
+            Edges = new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("b", null) },
+                ["b"] = new[] { new GraphEdge("c", null) },
+                ["c"] = new[] { new GraphEdge("a", null) }
+            },
+            Meta = new LdMeta { Enabled = true }
+        };
+        var configs = new Dictionary<string, LdAiAgentConfig>
+        {
+            ["a"] = MakeAgentConfig("a"),
+            ["b"] = MakeAgentConfig("b"),
+            ["c"] = MakeAgentConfig("c")
+        };
+
+        var graph = BuildEnabled(flagValue, configs);
+
+        var visited = new List<string>();
+        graph.ReverseTraverse((node, ctx) =>
+        {
+            visited.Add(node.Key);
+            return null;
+        });
+
+        // All three nodes visited exactly once, root last
+        Assert.Equal(3, visited.Count);
+        Assert.Contains("a", visited);
+        Assert.Contains("b", visited);
+        Assert.Contains("c", visited);
+        Assert.Equal("a", visited[visited.Count - 1]);
+    }
+
+    // Test 36: Cycle-safe — graph with cycles doesn't infinite loop
     [Fact]
     public void TraverseIsCycleSafe()
     {

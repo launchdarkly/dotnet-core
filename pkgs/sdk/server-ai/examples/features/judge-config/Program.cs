@@ -10,14 +10,36 @@ using OpenAI.Chat;
 
 Env.TraversePath().Load();
 
-var sdkKey = Environment.GetEnvironmentVariable("LAUNCHDARKLY_SDK_KEY")
-    ?? throw new InvalidOperationException("Set LAUNCHDARKLY_SDK_KEY");
-var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-    ?? throw new InvalidOperationException("Set OPENAI_API_KEY");
+var sdkKey = Environment.GetEnvironmentVariable("LAUNCHDARKLY_SDK_KEY");
+if (string.IsNullOrEmpty(sdkKey))
+{
+    Console.Error.WriteLine(
+        "LaunchDarkly SDK key is required: set the LAUNCHDARKLY_SDK_KEY environment variable and try again.");
+    return;
+}
+
+var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+if (string.IsNullOrEmpty(openAiKey))
+{
+    Console.Error.WriteLine(
+        "OpenAI API key is required: set the OPENAI_API_KEY environment variable and try again.");
+    return;
+}
+
+// Set judgeKey to the AI config key you want to evaluate.
 var judgeKey = Environment.GetEnvironmentVariable("LAUNCHDARKLY_JUDGE_KEY")
     ?? "sample-judge";
 
 var ldClient = new LdClient(Configuration.Builder(sdkKey).Build());
+if (!ldClient.Initialized)
+{
+    Console.Error.WriteLine(
+        "*** SDK failed to initialize. Please check your internet connection and SDK credential for any typo.");
+    ldClient.Dispose();
+    return;
+}
+Console.WriteLine("*** SDK successfully initialized!");
+
 var aiClient = new LdAiClient(new LdClientAdapter(ldClient));
 
 var context = Context.Builder(ContextKind.Of("user"), "example-user-key")

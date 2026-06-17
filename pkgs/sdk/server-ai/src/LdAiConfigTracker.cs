@@ -425,7 +425,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
 
         return new LdAiConfigTracker(client, payload.RunId, payload.ConfigKey,
-            payload.VariationKey, payload.Version, context, "", "", payload.GraphKey);
+            payload.VariationKey, payload.Version > 0 ? payload.Version.Value : 1, context, "", "", payload.GraphKey);
     }
 
     private class ResumptionPayload
@@ -443,6 +443,6 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         public string VariationKey { get; set; }
 
         [JsonPropertyName("version")]
-        public int Version { get; set; } = 1;
+        public int? Version { get; set; }
     }
 }

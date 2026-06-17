@@ -173,7 +173,7 @@ public sealed class AiGraphTracker
                 nameof(token));
         }
 
-        return new AiGraphTracker(ldClient, payload.GraphKey, payload.Version, context,
+        return new AiGraphTracker(ldClient, payload.GraphKey, payload.Version > 0 ? payload.Version.Value : 1, context,
             payload.VariationKey, payload.RunId);
     }
 
@@ -338,6 +338,6 @@ public sealed class AiGraphTracker
         public string VariationKey { get; set; }
 
         [JsonPropertyName("version")]
-        public int Version { get; set; } = 1;
+        public int? Version { get; set; }
     }
 }

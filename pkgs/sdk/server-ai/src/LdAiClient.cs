@@ -13,7 +13,7 @@ namespace LaunchDarkly.Sdk.Server.Ai;
 /// The LaunchDarkly AI client. The client is capable of retrieving AI Configs from LaunchDarkly,
 /// and generating events specific to usage of the AI Config when interacting with model providers.
 /// </summary>
-public sealed class LdAiClient : ILdAiClient
+public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
 {
     private readonly ILaunchDarklyClient _client;
     private readonly ConfigFactory _factory;

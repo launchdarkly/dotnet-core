@@ -1,0 +1,152 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/dotnet-server-sdk-consul/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/dotnet-server-sdk-consul/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/dotnet-server-sdk-dynamodb/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/dotnet-server-sdk-dynamodb/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/dotnet-server-sdk-redis/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/dotnet-server-sdk-redis/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/client/contract-tests"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/client/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/client/test/LaunchDarkly.ClientSdk.Device.Tests"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/client/test/LaunchDarkly.ClientSdk.Tests"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/server-ai/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/server-ai/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/server/contract-tests"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/server/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/sdk/server/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/shared/common-json-net/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/shared/common-json-net/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/shared/common/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/shared/common/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/shared/dotnet-server-sdk-shared-tests/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/shared/dotnet-server-sdk-shared-tests/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/telemetry/src"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/pkgs/telemetry/test"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "nuget"
+    directory: "/sandbox/dotnet-server-sandbox"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7

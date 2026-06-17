@@ -247,7 +247,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
             meta = new LdMeta
             {
                 VariationKey = metaValue.Get("variationKey").AsString,
-                Version = versionVal.IsNull ? 1 : versionVal.AsInt,
+                Version = versionVal.IsNull || versionVal.AsInt <= 0 ? 1 : versionVal.AsInt,
                 Enabled = enabledVal.IsNull || enabledVal.AsBool
             };
         }

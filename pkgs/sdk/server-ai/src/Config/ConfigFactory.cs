@@ -296,7 +296,7 @@ internal sealed class ConfigFactory
         var enabled = meta.Get("enabled").AsBool;
         var variationKey = meta.Get("variationKey").AsString ?? "";
         var versionValue = meta.Get("version");
-        var version = versionValue.IsNull ? 1 : versionValue.AsInt;
+        var version = versionValue.IsNull || versionValue.AsInt <= 0 ? 1 : versionValue.AsInt;
         // Default to the completion mode when _ldMeta.mode is missing or non-string: legacy
         // flags predate the mode tag and were always served as completion configs.
         var mode = meta.Get("mode").AsString ?? LdAiCompletionConfig.Mode;

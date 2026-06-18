@@ -374,6 +374,66 @@ public class AiGraphTrackerTest
         Assert.True(Guid.TryParse(td.RunId, out _));
     }
 
+    // At-most-once — second TrackPath logs warning and drops
+    [Fact]
+    public void TrackPathAtMostOnce()
+    {
+        var mockLogger = new Mock<ILogger>();
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        mockClient.Setup(c => c.GetLogger()).Returns(mockLogger.Object);
+        var context = Context.New("user");
+        var tracker = MakeTracker(mockClient.Object, context);
+
+        tracker.TrackPath(new[] { "a", "b" });
+        tracker.TrackPath(new[] { "a", "b" });
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:graph:path",
+            context,
+            It.IsAny<LdValue>(),
+            It.IsAny<double>()), Times.Once);
+        mockLogger.Verify(l => l.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.Once);
+    }
+
+    // At-most-once — second TrackTotalTokens logs warning and drops
+    [Fact]
+    public void TrackTotalTokensAtMostOnce()
+    {
+        var mockLogger = new Mock<ILogger>();
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        mockClient.Setup(c => c.GetLogger()).Returns(mockLogger.Object);
+        var context = Context.New("user");
+        var tracker = MakeTracker(mockClient.Object, context);
+
+        tracker.TrackTotalTokens(new Usage(100, 60, 40));
+        tracker.TrackTotalTokens(new Usage(100, 60, 40));
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:graph:total_tokens",
+            context,
+            It.IsAny<LdValue>(),
+            It.IsAny<double>()), Times.Once);
+        mockLogger.Verify(l => l.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.Once);
+    }
+
+    // Empty Usage does not consume the TrackTotalTokens slot
+    [Fact]
+    public void TrackTotalTokensEmptyUsageDoesNotConsumeSlot()
+    {
+        var mockClient = MockClient();
+        var context = Context.New("user");
+        var tracker = MakeTracker(mockClient.Object, context);
+
+        tracker.TrackTotalTokens(new Usage(0, 0, 0));
+        tracker.TrackTotalTokens(new Usage(100, 60, 40));
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:graph:total_tokens",
+            context,
+            It.Is<LdValue>(v => v.Get("graphKey").AsString == "my-graph"),
+            100.0), Times.Once);
+    }
+
     // TrackTotalTokens derives total from Input+Output when Total is null
     [Fact]
     public void TrackTotalTokensDerivesSumWhenTotalIsNull()

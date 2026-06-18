@@ -259,12 +259,8 @@ public class AgentGraphDefinitionTest
             return null;
         });
 
-        // All three nodes visited exactly once, root last
-        Assert.Equal(3, visited.Count);
-        Assert.Contains("a", visited);
-        Assert.Contains("b", visited);
-        Assert.Contains("c", visited);
-        Assert.Equal("a", visited[visited.Count - 1]);
+        // Pure cycle has no terminal nodes — reverse traversal is a no-op per spec AIGRAPH 1.4
+        Assert.Empty(visited);
     }
 
     // Test 36: Cycle-safe — graph with cycles doesn't infinite loop

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
 using System.Threading;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using LaunchDarkly.Sdk.Server.Ai.Tracking;

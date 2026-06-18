@@ -48,6 +48,24 @@ internal sealed class ConfigFactory
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
 
+        // A disabled variation is served as {"_ldMeta": {"enabled": false}} with no mode field,
+        // so check the disabled state before comparing mode. Otherwise the missing mode defaults
+        // to "completion" and trips the mode-mismatch path for agent and judge callers.
+        if (!enabled)
+        {
+            return new LdAiCompletionConfig(
+                key,
+                enabled: false,
+                variationKey,
+                version,
+                messages: new List<LdAiConfigTypes.Message>(),
+                tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
+                judgeConfiguration: null,
+                model: null,
+                provider: null,
+                trackerFactory);
+        }
+
         if (mode != LdAiCompletionConfig.Mode)
         {
             _logger.Warn(
@@ -117,6 +135,24 @@ internal sealed class ConfigFactory
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
 
+        // A disabled variation is served as {"_ldMeta": {"enabled": false}} with no mode field,
+        // so check the disabled state before comparing mode. Otherwise the missing mode defaults
+        // to "completion" and trips the mode-mismatch path for agent and judge callers.
+        if (!enabled)
+        {
+            return new LdAiAgentConfig(
+                key,
+                enabled: false,
+                variationKey,
+                version,
+                instructions: null,
+                tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
+                model: null,
+                provider: null,
+                judgeConfiguration: null,
+                trackerFactory);
+        }
+
         if (mode != LdAiAgentConfig.Mode)
         {
             _logger.Warn(
@@ -183,6 +219,23 @@ internal sealed class ConfigFactory
         }
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+
+        // A disabled variation is served as {"_ldMeta": {"enabled": false}} with no mode field,
+        // so check the disabled state before comparing mode. Otherwise the missing mode defaults
+        // to "completion" and trips the mode-mismatch path for agent and judge callers.
+        if (!enabled)
+        {
+            return new LdAiJudgeConfig(
+                key,
+                enabled: false,
+                variationKey,
+                version,
+                messages: new List<LdAiConfigTypes.Message>(),
+                evaluationMetricKey: null,
+                model: null,
+                provider: null,
+                trackerFactory);
+        }
 
         if (mode != LdAiJudgeConfig.Mode)
         {

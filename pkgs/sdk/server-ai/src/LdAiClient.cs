@@ -155,13 +155,13 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
 
         if (parsed.Meta?.Enabled == false)
         {
-            _client.GetLogger()?.Warn($"agentGraph: graph \"{graphKey}\" is disabled.");
+            _client.GetLogger()?.Debug($"agentGraph: graph \"{graphKey}\" is disabled.");
             return disabled;
         }
 
         if (string.IsNullOrEmpty(parsed.Root))
         {
-            _client.GetLogger()?.Warn($"agentGraph: graph \"{graphKey}\" is not fetchable or has no root node.");
+            _client.GetLogger()?.Debug($"agentGraph: graph \"{graphKey}\" is not fetchable or has no root node.");
             return disabled;
         }
 
@@ -170,7 +170,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         var unreachable = allKeys.FirstOrDefault(k => !reachableKeys.Contains(k));
         if (unreachable != null)
         {
-            _client.GetLogger()?.Warn(
+            _client.GetLogger()?.Debug(
                 $"agentGraph: graph \"{graphKey}\" has unconnected node \"{unreachable}\" that is not reachable from the root.");
             return disabled;
         }
@@ -181,7 +181,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
             var config = BuildAgentConfig(key, context, null, variables, graphKey);
             if (!config.Enabled)
             {
-                _client.GetLogger()?.Warn(
+                _client.GetLogger()?.Debug(
                     $"agentGraph: agent config \"{key}\" in graph \"{graphKey}\" is not enabled or could not be fetched.");
                 return disabled;
             }

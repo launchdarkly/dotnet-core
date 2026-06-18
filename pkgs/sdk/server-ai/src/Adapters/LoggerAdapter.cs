@@ -25,4 +25,7 @@ internal class LoggerAdapter : ILogger
 
     /// <inheritdoc/>
     public void Warn(string format, params object[] allParams) => _logger.Warn(format, allParams);
+
+    /// <inheritdoc/>
+    public void Debug(string format, params object[] allParams) => _logger.Debug(format, allParams);
 }

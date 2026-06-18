@@ -101,9 +101,9 @@ public class LdAiClientAgentGraphTest
         Assert.NotNull(result.GetNode("agent-b"));
     }
 
-    // Test 37: _ldMeta.enabled === false → AgentGraphDefinition.Enabled = false + warning
+    // Test 37: _ldMeta.enabled === false → AgentGraphDefinition.Enabled = false + debug log
     [Fact]
-    public void MetaDisabledReturnsFalseEnabledWithWarning()
+    public void MetaDisabledReturnsFalseEnabledWithDebugLog()
     {
         var mockLogger = new Mock<ILogger>();
         var mockClient = new Mock<ILaunchDarklyClient>();
@@ -117,7 +117,7 @@ public class LdAiClientAgentGraphTest
         var result = client.AgentGraph("my-graph", context);
 
         Assert.False(result.Enabled);
-        mockLogger.Verify(l => l.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
+        mockLogger.Verify(l => l.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
     }
 
     // Test 38: _ldMeta absent → defaults to enabled (no false check fires)
@@ -148,9 +148,9 @@ public class LdAiClientAgentGraphTest
         Assert.True(result.Enabled);
     }
 
-    // Test 39: Missing root → disabled + warning
+    // Test 39: Missing root → disabled + debug log
     [Fact]
-    public void MissingRootReturnsDisabledWithWarning()
+    public void MissingRootReturnsDisabledWithDebugLog()
     {
         var mockLogger = new Mock<ILogger>();
         var mockClient = new Mock<ILaunchDarklyClient>();
@@ -164,12 +164,12 @@ public class LdAiClientAgentGraphTest
         var result = client.AgentGraph("my-graph", context);
 
         Assert.False(result.Enabled);
-        mockLogger.Verify(l => l.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
+        mockLogger.Verify(l => l.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
     }
 
-    // Test 40: Unconnected node → disabled + warning
+    // Test 40: Unconnected node → disabled + debug log
     [Fact]
-    public void UnconnectedNodeReturnsDisabledWithWarning()
+    public void UnconnectedNodeReturnsDisabledWithDebugLog()
     {
         var mockLogger = new Mock<ILogger>();
         var mockClient = new Mock<ILaunchDarklyClient>();
@@ -206,12 +206,12 @@ public class LdAiClientAgentGraphTest
         var result = client.AgentGraph("my-graph", context);
 
         Assert.False(result.Enabled);
-        mockLogger.Verify(l => l.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
+        mockLogger.Verify(l => l.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
     }
 
-    // Test 41: Child config disabled → disabled + warning
+    // Test 41: Child config disabled → disabled + debug log
     [Fact]
-    public void DisabledChildConfigReturnsDisabledWithWarning()
+    public void DisabledChildConfigReturnsDisabledWithDebugLog()
     {
         var mockLogger = new Mock<ILogger>();
         var mockClient = new Mock<ILaunchDarklyClient>();
@@ -229,7 +229,7 @@ public class LdAiClientAgentGraphTest
         var result = client.AgentGraph("my-graph", context);
 
         Assert.False(result.Enabled);
-        mockLogger.Verify(l => l.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
+        mockLogger.Verify(l => l.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
     }
 
     // Test 42: Per-node trackers include graphKey (via BuildAgentConfig threading)

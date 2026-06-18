@@ -255,7 +255,7 @@ public sealed class AiGraphTracker
         if (path == null) return;
 
         if (Interlocked.CompareExchange(ref _path,
-                new StrongBox<IReadOnlyList<string>>(path), null) != null)
+                new StrongBox<IReadOnlyList<string>>(path.ToArray()), null) != null)
         {
             _logger?.Warn("Skipping TrackPath: path already recorded on this graph tracker. {0}",
                 _trackData.ToJsonString());

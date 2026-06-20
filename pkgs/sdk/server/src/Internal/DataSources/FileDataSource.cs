@@ -25,8 +25,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly Logger _logger;
         private volatile bool _started;
         private volatile bool _loadedValidData;
+        private volatile bool _disposed;
         private volatile int _lastVersion;
         private object _updateLock = new object();
+
+        private const int MaxRetries = 5;
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(600);
+        // Per-path JSON-parse retry counters. Only touched inside _updateLock.
+        private readonly Dictionary<string, int> _retryCounts = new Dictionary<string, int>();
 
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
             List<string> paths, bool autoUpdate, Func<string, object> alternateParser, bool skipMissingPaths,
@@ -83,6 +89,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (disposing)
             {
+                _disposed = true;
                 _reloader?.Dispose();
             }
         }
@@ -91,6 +98,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             lock (_updateLock)
             {
+                if (_disposed)
+                {
+                    return;
+                }
                 var version = Interlocked.Increment(ref _lastVersion);
                 var flags = new Dictionary<string, ItemDescriptor>();
                 var segments = new Dictionary<string, ItemDescriptor>();
@@ -102,10 +113,42 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         _logger.Debug("file data: {0}", content);
                         var data = _parser.Parse(content, version);
                         _dataMerger.AddToData(data, flags, segments);
+                        _retryCounts.Remove(path);
                     }
                     catch (FileNotFoundException) when (_skipMissingPaths)
                     {
                         _logger.Debug("{0}: {1}", path, "File not found");
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        // A file-change notification can fire while the file is mid-write, so we may read an
+                        // empty or partially written file. Retry up to MaxRetries times before giving up; the
+                        // counter is cleared on the next successful load.
+                        if (!_retryCounts.ContainsKey(path))
+                        {
+                            _retryCounts[path] = 0;
+                        }
+                        _retryCounts[path]++;
+
+                        if (_retryCounts[path] < MaxRetries)
+                        {
+                            _logger.Warn("{0}: Failed to parse file, retrying in {1} ms", path, RetryDelay.TotalMilliseconds);
+                            Task.Run(async () =>
+                            {
+                                await Task.Delay(RetryDelay).ConfigureAwait(false);
+                                if (_disposed)
+                                {
+                                    return;
+                                }
+                                LoadAll();
+                            });
+                        }
+                        else
+                        {
+                            _logger.Error("{0}: Failed to parse file after {1} retries", path, MaxRetries);
+                        }
+
+                        return;
                     }
                     catch (Exception e)
                     {

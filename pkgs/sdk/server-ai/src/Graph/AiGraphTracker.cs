@@ -174,7 +174,7 @@ public sealed class AiGraphTracker
                 nameof(token));
         }
 
-        return new AiGraphTracker(ldClient, payload.GraphKey, payload.Version > 0 ? payload.Version.Value : 1, context,
+        return new AiGraphTracker(ldClient, payload.GraphKey, payload.Version ?? 1, context,
             payload.VariationKey, payload.RunId);
     }
 

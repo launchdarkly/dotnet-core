@@ -425,7 +425,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
 
         return new LdAiConfigTracker(client, payload.RunId, payload.ConfigKey,
-            payload.VariationKey, payload.Version > 0 ? payload.Version.Value : 1, context, "", "", payload.GraphKey);
+            payload.VariationKey, payload.Version ?? 1, context, "", "", payload.GraphKey);
     }
 
     private class ResumptionPayload

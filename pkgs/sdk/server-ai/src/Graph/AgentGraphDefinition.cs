@@ -208,7 +208,9 @@ public sealed class AgentGraphDefinition
 
         foreach (var key in allKeys)
         {
-            var config = agentConfigs[key];
+            if (!agentConfigs.TryGetValue(key, out var config))
+                continue;
+
             var outgoingEdges = flagValue.Edges != null && flagValue.Edges.TryGetValue(key, out var edges)
                 ? edges
                 : (IReadOnlyList<GraphEdge>)Array.Empty<GraphEdge>();

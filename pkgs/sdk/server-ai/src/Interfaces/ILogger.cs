@@ -18,4 +18,11 @@ public interface ILogger
     /// <param name="format">format string</param>
     /// <param name="allParams">parameters</param>
     void Warn(string format, params object[] allParams);
+
+    /// <summary>
+    /// Log a debug message.
+    /// </summary>
+    /// <param name="format">format string</param>
+    /// <param name="allParams">parameters</param>
+    void Debug(string format, params object[] allParams);
 }

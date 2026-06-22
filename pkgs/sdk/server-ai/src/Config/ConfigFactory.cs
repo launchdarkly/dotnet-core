@@ -102,10 +102,11 @@ internal sealed class ConfigFactory
         LdValue ldValue,
         Context context,
         LdAiAgentConfigDefault defaultValue,
-        IReadOnlyDictionary<string, object> variables)
+        IReadOnlyDictionary<string, object> variables,
+        string graphKey = null)
     {
         var mergedVars = MergeVariables(variables, context);
-        var trackerFactory = TrackerFactoryFor(context);
+        var trackerFactory = TrackerFactoryFor(context, graphKey);
 
         if (ldValue.Type != LdValueType.Object)
         {
@@ -144,7 +145,7 @@ internal sealed class ConfigFactory
             trackerFactory);
     }
 
-    private LdAiAgentConfig BuildAgentFromDefault(
+    internal LdAiAgentConfig BuildAgentFromDefault(
         string key,
         LdAiAgentConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
@@ -275,7 +276,7 @@ internal sealed class ConfigFactory
         return result;
     }
 
-    private Func<LdAiConfig, ILdAiConfigTracker> TrackerFactoryFor(Context context)
+    private Func<LdAiConfig, ILdAiConfigTracker> TrackerFactoryFor(Context context, string graphKey = null)
     {
         return cfg => new LdAiConfigTracker(
             _client,
@@ -285,7 +286,8 @@ internal sealed class ConfigFactory
             cfg.Version,
             context,
             cfg.Model?.Name,
-            cfg.Provider?.Name);
+            cfg.Provider?.Name,
+            graphKey);
     }
 
     private static (bool Enabled, string VariationKey, int Version, string Mode) ParseMeta(LdValue value)

@@ -227,7 +227,7 @@ public class AgentGraphDefinitionTest
         Assert.Equal("my-graph-key", tracker.GetTrackData().GraphKey);
     }
 
-    // Test 35: Cycle-safe — ReverseTraverse on pure cycle visits every node, root last
+    // Test 35: Cycle-safe — pure cycle has no terminal nodes, so reverse traversal is a no-op
     [Fact]
     public void ReverseTraverseIsCycleSafe()
     {

@@ -263,7 +263,7 @@ public sealed class AiGraphTracker
             return;
         }
 
-        var pathArray = LdValue.ArrayFrom(System.Linq.Enumerable.Select(path, LdValue.Of));
+        var pathArray = LdValue.ArrayFrom(path.Select(LdValue.Of));
         var data = MergeTrackData("path", pathArray);
         _client.Track(GraphPath, _context, data, 1);
     }

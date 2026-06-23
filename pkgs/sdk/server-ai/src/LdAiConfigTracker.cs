@@ -118,15 +118,15 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             writer.WriteStartObject();
             writer.WriteString("runId", _runId);
             writer.WriteString("configKey", _configKey);
-            if (!string.IsNullOrEmpty(_graphKey))
-            {
-                writer.WriteString("graphKey", _graphKey);
-            }
             if (!string.IsNullOrEmpty(_variationKey))
             {
                 writer.WriteString("variationKey", _variationKey);
             }
             writer.WriteNumber("version", _version);
+            if (!string.IsNullOrEmpty(_graphKey))
+            {
+                writer.WriteString("graphKey", _graphKey);
+            }
             writer.WriteEndObject();
         }
         var base64 = Convert.ToBase64String(stream.ToArray());

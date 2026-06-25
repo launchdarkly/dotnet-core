@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestFramework Condition="'$(TESTFRAMEWORK)' == ''">net462;net8.0</TestFramework>
+    <TargetFrameworks>$(TESTFRAMEWORK)</TargetFrameworks>
+    <AssemblyName>LaunchDarkly.InternalSdk.Tests</AssemblyName>
+    <RootNamespace>LaunchDarkly.Sdk.Internal</RootNamespace>
+    <!-- Match the library's C# 11, needed for the 'scoped' ref-safety annotations. -->
+    <LangVersion>11</LangVersion>
+    <Version>1.2.3</Version> <!-- we check for this value in tests -->
+    <ReleaseVersion>1.2.3</ReleaseVersion>
+    <SynchReleaseVersion>false</SynchReleaseVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\LaunchDarkly.InternalSdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.console" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
+    <PackageReference Include="JunitXml.TestLogger" Version="3.0.114" />
+    <PackageReference Include="LaunchDarkly.TestHelpers" Version="2.0.0" />
+    <PackageReference Include="Moq" Version="4.8.1" />
+  </ItemGroup>
+</Project>

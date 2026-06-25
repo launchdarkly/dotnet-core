@@ -7,5 +7,6 @@
   "pkgs/telemetry": "1.5.1",
   "pkgs/sdk/server-ai": "0.11.0",
   "pkgs/shared/common": "7.2.0",
-  "pkgs/shared/common-json-net": "7.0.2"
+  "pkgs/shared/common-json-net": "7.0.2",
+  "pkgs/shared/internal": "3.8.0"
 }

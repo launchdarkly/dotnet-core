@@ -22,6 +22,7 @@ jobs:
       package-sdk-server-telemetry-released: ${{ steps.release.outputs['pkgs/telemetry--release_created'] }}
       package-shared-common-released: ${{ steps.release.outputs['pkgs/shared/common--release_created'] }}
       package-shared-common-json-net-released: ${{ steps.release.outputs['pkgs/shared/common-json-net--release_created'] }}
+      package-shared-internal-released: ${{ steps.release.outputs['pkgs/shared/internal--release_created'] }}
 
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
@@ -143,5 +144,18 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       package_path: pkgs/shared/common-json-net
+      dry_run: false
+      generate_provenance: true
+
+  release-shared-internal:
+    needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
+    if: ${{ needs.release-please.outputs.package-shared-internal-released == 'true'}}
+    uses: ./.github/workflows/release.yml
+    with:
+      package_path: pkgs/shared/internal
       dry_run: false
       generate_provenance: true

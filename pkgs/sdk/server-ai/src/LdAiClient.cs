@@ -58,15 +58,22 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
             1);
     }
 
+    private LdAiCompletionConfig EvaluateCompletion(string key, Context context,
+        LdAiCompletionConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables,
+        bool interpolate = true)
+    {
+        defaultValue ??= LdAiCompletionConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildCompletionConfig(key, ldValue, context, defaultValue, variables, interpolate);
+    }
+
     /// <inheritdoc/>
     public LdAiCompletionConfig CompletionConfig(string key, Context context, LdAiCompletionConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
         _client.Track(TrackUsageCompletionConfig, context, LdValue.Of(key), 1);
-        defaultValue ??= LdAiCompletionConfigDefault.Disabled;
-
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildCompletionConfig(key, ldValue, context, defaultValue, variables);
+        return EvaluateCompletion(key, context, defaultValue, variables);
     }
 
     /// <summary>
@@ -87,11 +94,12 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
     private LdAiAgentConfig BuildAgentConfig(string key, Context context,
         LdAiAgentConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> variables,
-        string graphKey = null)
+        string graphKey = null,
+        bool interpolate = true)
     {
         defaultValue ??= LdAiAgentConfigDefault.Disabled;
         var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables, graphKey);
+        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables, graphKey, interpolate);
     }
 
     /// <inheritdoc/>
@@ -117,15 +125,23 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         return result;
     }
 
+    private LdAiJudgeConfig EvaluateJudge(string key, Context context,
+        LdAiJudgeConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables,
+        bool interpolate = true)
+    {
+        defaultValue ??= LdAiJudgeConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables, interpolate);
+    }
+
     /// <inheritdoc/>
     public LdAiJudgeConfig JudgeConfig(string key, Context context,
         LdAiJudgeConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
-        defaultValue ??= LdAiJudgeConfigDefault.Disabled;
         _client.Track(TrackUsageJudgeConfig, context, LdValue.Of(key), 1);
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables);
+        return EvaluateJudge(key, context, defaultValue, variables);
     }
 
     /// <inheritdoc/>
@@ -133,9 +149,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         LdAiCompletionConfigDefault defaultValue = null)
     {
         _client.Track(TrackUsageCompletionConfigTemplate, context, LdValue.Of(key), 1);
-        defaultValue ??= LdAiCompletionConfigDefault.Disabled;
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildCompletionConfig(key, ldValue, context, defaultValue, variables: null, interpolate: false);
+        return EvaluateCompletion(key, context, defaultValue, variables: null, interpolate: false);
     }
 
     /// <inheritdoc/>
@@ -143,9 +157,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         LdAiAgentConfigDefault defaultValue = null)
     {
         _client.Track(TrackUsageAgentConfigTemplate, context, LdValue.Of(key), 1);
-        defaultValue ??= LdAiAgentConfigDefault.Disabled;
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables: null, interpolate: false);
+        return BuildAgentConfig(key, context, defaultValue, variables: null, interpolate: false);
     }
 
     /// <inheritdoc/>
@@ -153,9 +165,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         LdAiJudgeConfigDefault defaultValue = null)
     {
         _client.Track(TrackUsageJudgeConfigTemplate, context, LdValue.Of(key), 1);
-        defaultValue ??= LdAiJudgeConfigDefault.Disabled;
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables: null, interpolate: false);
+        return EvaluateJudge(key, context, defaultValue, variables: null, interpolate: false);
     }
 
     /// <inheritdoc/>

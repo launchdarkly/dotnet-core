@@ -25,6 +25,9 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
     private const string TrackUsageAgentConfigs = "$ld:ai:usage:agent-configs";
     private const string TrackUsageJudgeConfig = "$ld:ai:usage:judge-config";
     private const string TrackUsageAgentGraph = "$ld:ai:usage:agent-graph";
+    private const string TrackUsageCompletionConfigTemplate = "$ld:ai:usage:completion-config-template";
+    private const string TrackUsageAgentConfigTemplate = "$ld:ai:usage:agent-config-template";
+    private const string TrackUsageJudgeConfigTemplate = "$ld:ai:usage:judge-config-template";
 
     /// <summary>
     /// Constructs a new LaunchDarkly AI client. Please note, the client library is an alpha release and is
@@ -123,6 +126,36 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         _client.Track(TrackUsageJudgeConfig, context, LdValue.Of(key), 1);
         var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
         return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables);
+    }
+
+    /// <inheritdoc/>
+    public LdAiCompletionConfig CompletionConfigTemplate(string key, Context context,
+        LdAiCompletionConfigDefault defaultValue = null)
+    {
+        _client.Track(TrackUsageCompletionConfigTemplate, context, LdValue.Of(key), 1);
+        defaultValue ??= LdAiCompletionConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildCompletionConfig(key, ldValue, context, defaultValue, variables: null, interpolate: false);
+    }
+
+    /// <inheritdoc/>
+    public LdAiAgentConfig AgentConfigTemplate(string key, Context context,
+        LdAiAgentConfigDefault defaultValue = null)
+    {
+        _client.Track(TrackUsageAgentConfigTemplate, context, LdValue.Of(key), 1);
+        defaultValue ??= LdAiAgentConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables: null, interpolate: false);
+    }
+
+    /// <inheritdoc/>
+    public LdAiJudgeConfig JudgeConfigTemplate(string key, Context context,
+        LdAiJudgeConfigDefault defaultValue = null)
+    {
+        _client.Track(TrackUsageJudgeConfigTemplate, context, LdValue.Of(key), 1);
+        defaultValue ??= LdAiJudgeConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables: null, interpolate: false);
     }
 
     /// <inheritdoc/>

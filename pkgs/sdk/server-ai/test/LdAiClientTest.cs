@@ -1296,4 +1296,122 @@ public class LdAiClientTest
         Assert.Equal("coherence", result.JudgeConfiguration.Judges[0].Key);
         Assert.Equal(0.3, result.JudgeConfiguration.Judges[0].SamplingRate);
     }
+
+    // ── CompletionConfigTemplate ──────────────────────────────────────────────
+
+    private static (Mock<ILaunchDarklyClient> MockClient, Mock<ILogger> MockLogger, LdAiClient Client) MakeClient()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        return (mockClient, mockLogger, new LdAiClient(mockClient.Object));
+    }
+
+    [Fact]
+    public void CompletionConfigTemplate_PreservesPlaceholders()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+              "model": {"name": "gpt-4"},
+              "provider": {"name": "openai"},
+              "messages": [
+                {"content": "Hello {{name}}", "role": "system"},
+                {"content": "Score: {{score}}", "role": "user"}
+              ]
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("test-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.CompletionConfigTemplate("test-flag", Context.New("user"));
+
+        Assert.Collection(result.Messages,
+            m => Assert.Equal("Hello {{name}}", m.Content),
+            m => Assert.Equal("Score: {{score}}", m.Content));
+        Assert.True(result.Enabled);
+    }
+
+    [Fact]
+    public void CompletionConfigTemplate_PreservesLdCtxPlaceholder()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+              "model": {},
+              "messages": [
+                {"content": "Key: {{ldctx.key}}", "role": "system"}
+              ]
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("test-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.CompletionConfigTemplate("test-flag", Context.New(ContextKind.Default, "ctx-key-123"));
+
+        Assert.Collection(result.Messages,
+            m => Assert.Equal("Key: {{ldctx.key}}", m.Content));
+    }
+
+    [Fact]
+    public void CompletionConfigTemplate_FiresTemplateTrackingEvent()
+    {
+        var (mockClient, _, client) = MakeClient();
+        var context = Context.New(ContextKind.Default, "user");
+        mockClient.Setup(x => x.JsonVariation("my-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["mode"] = LdValue.Of("completion")
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>()),
+                ["messages"] = LdValue.ArrayOf()
+            }));
+
+        client.CompletionConfigTemplate("my-flag", context);
+
+        mockClient.Verify(x => x.Track(
+            "$ld:ai:usage:completion-config-template",
+            context,
+            LdValue.Of("my-flag"),
+            1), Times.Once);
+        mockClient.Verify(x => x.Track(
+            "$ld:ai:usage:completion-config",
+            It.IsAny<Context>(), It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+    }
+
+    [Fact]
+    public void CompletionConfigTemplate_UsesDisabledDefaultWhenNoDefaultProvided()
+    {
+        var (mockClient, _, client) = MakeClient();
+        mockClient.Setup(x => x.JsonVariation("my-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Null);
+
+        var result = client.CompletionConfigTemplate("my-flag", Context.New("user"));
+
+        Assert.False(result.Enabled);
+    }
+
+    [Fact]
+    public void CompletionConfigTemplate_CreateTrackerIsNonNull()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+              "model": {},
+              "messages": []
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("test-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.CompletionConfigTemplate("test-flag", Context.New("user"));
+
+        Assert.NotNull(result.CreateTracker());
+    }
 }

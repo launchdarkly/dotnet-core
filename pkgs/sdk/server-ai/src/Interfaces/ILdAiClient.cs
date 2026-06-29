@@ -91,6 +91,43 @@ public interface ILdAiClient
         IReadOnlyDictionary<string, object> variables = null);
 
     /// <summary>
+    /// Retrieves a LaunchDarkly AI Completion Config with Mustache placeholders left intact
+    /// (no interpolation). Useful for displaying prompt previews or storing templates for
+    /// later rendering.
+    /// </summary>
+    /// <param name="key">the AI Completion Config key</param>
+    /// <param name="context">the context</param>
+    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly.
+    /// When not provided, a disabled config is used as the fallback.</param>
+    /// <returns>an AI Completion Config with raw (non-interpolated) message content</returns>
+    public LdAiCompletionConfig CompletionConfigTemplate(string key, Context context,
+        LdAiCompletionConfigDefault defaultValue = null);
+
+    /// <summary>
+    /// Retrieves a LaunchDarkly AI Agent Config with Mustache placeholders left intact
+    /// (no interpolation). Useful for auditing instruction templates or building UI previews.
+    /// </summary>
+    /// <param name="key">the AI Agent Config key</param>
+    /// <param name="context">the context</param>
+    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly.
+    /// When not provided, a disabled config is used as the fallback.</param>
+    /// <returns>an AI Agent Config with raw (non-interpolated) instructions</returns>
+    public LdAiAgentConfig AgentConfigTemplate(string key, Context context,
+        LdAiAgentConfigDefault defaultValue = null);
+
+    /// <summary>
+    /// Retrieves a LaunchDarkly AI Judge Config with Mustache placeholders left intact
+    /// (no interpolation). Useful for auditing judge prompt templates.
+    /// </summary>
+    /// <param name="key">the AI Judge Config key</param>
+    /// <param name="context">the context</param>
+    /// <param name="defaultValue">the default config, if unable to retrieve from LaunchDarkly.
+    /// When not provided, a disabled config is used as the fallback.</param>
+    /// <returns>an AI Judge Config with raw (non-interpolated) message content</returns>
+    public LdAiJudgeConfig JudgeConfigTemplate(string key, Context context,
+        LdAiJudgeConfigDefault defaultValue = null);
+
+    /// <summary>
     /// Reconstructs a tracker from a resumption token. This enables cross-process scenarios
     /// such as deferred feedback, where a tracker's runId needs to be reused in a different
     /// process or at a later time.

@@ -25,6 +25,9 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
     private const string TrackUsageAgentConfigs = "$ld:ai:usage:agent-configs";
     private const string TrackUsageJudgeConfig = "$ld:ai:usage:judge-config";
     private const string TrackUsageAgentGraph = "$ld:ai:usage:agent-graph";
+    private const string TrackUsageCompletionConfigTemplate = "$ld:ai:usage:completion-config-template";
+    private const string TrackUsageAgentConfigTemplate = "$ld:ai:usage:agent-config-template";
+    private const string TrackUsageJudgeConfigTemplate = "$ld:ai:usage:judge-config-template";
 
     /// <summary>
     /// Constructs a new LaunchDarkly AI client. Please note, the client library is an alpha release and is
@@ -55,15 +58,22 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
             1);
     }
 
+    private LdAiCompletionConfig BuildCompletionConfig(string key, Context context,
+        LdAiCompletionConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables,
+        bool interpolate = true)
+    {
+        defaultValue ??= LdAiCompletionConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildCompletionConfig(key, ldValue, context, defaultValue, variables, interpolate);
+    }
+
     /// <inheritdoc/>
     public LdAiCompletionConfig CompletionConfig(string key, Context context, LdAiCompletionConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
         _client.Track(TrackUsageCompletionConfig, context, LdValue.Of(key), 1);
-        defaultValue ??= LdAiCompletionConfigDefault.Disabled;
-
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildCompletionConfig(key, ldValue, context, defaultValue, variables);
+        return BuildCompletionConfig(key, context, defaultValue, variables);
     }
 
     /// <summary>
@@ -84,11 +94,12 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
     private LdAiAgentConfig BuildAgentConfig(string key, Context context,
         LdAiAgentConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> variables,
-        string graphKey = null)
+        string graphKey = null,
+        bool interpolate = true)
     {
         defaultValue ??= LdAiAgentConfigDefault.Disabled;
         var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables, graphKey);
+        return _factory.BuildAgentConfig(key, ldValue, context, defaultValue, variables, graphKey, interpolate);
     }
 
     /// <inheritdoc/>
@@ -114,15 +125,47 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         return result;
     }
 
+    private LdAiJudgeConfig BuildJudgeConfig(string key, Context context,
+        LdAiJudgeConfigDefault defaultValue,
+        IReadOnlyDictionary<string, object> variables,
+        bool interpolate = true)
+    {
+        defaultValue ??= LdAiJudgeConfigDefault.Disabled;
+        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
+        return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables, interpolate);
+    }
+
     /// <inheritdoc/>
     public LdAiJudgeConfig JudgeConfig(string key, Context context,
         LdAiJudgeConfigDefault defaultValue = null,
         IReadOnlyDictionary<string, object> variables = null)
     {
-        defaultValue ??= LdAiJudgeConfigDefault.Disabled;
         _client.Track(TrackUsageJudgeConfig, context, LdValue.Of(key), 1);
-        var ldValue = _client.JsonVariation(key, context, defaultValue.ToLdValue());
-        return _factory.BuildJudgeConfig(key, ldValue, context, defaultValue, variables);
+        return BuildJudgeConfig(key, context, defaultValue, variables);
+    }
+
+    /// <inheritdoc/>
+    public LdAiCompletionConfig CompletionConfigTemplate(string key, Context context,
+        LdAiCompletionConfigDefault defaultValue = null)
+    {
+        _client.Track(TrackUsageCompletionConfigTemplate, context, LdValue.Of(key), 1);
+        return BuildCompletionConfig(key, context, defaultValue, variables: null, interpolate: false);
+    }
+
+    /// <inheritdoc/>
+    public LdAiAgentConfig AgentConfigTemplate(string key, Context context,
+        LdAiAgentConfigDefault defaultValue = null)
+    {
+        _client.Track(TrackUsageAgentConfigTemplate, context, LdValue.Of(key), 1);
+        return BuildAgentConfig(key, context, defaultValue, variables: null, interpolate: false);
+    }
+
+    /// <inheritdoc/>
+    public LdAiJudgeConfig JudgeConfigTemplate(string key, Context context,
+        LdAiJudgeConfigDefault defaultValue = null)
+    {
+        _client.Track(TrackUsageJudgeConfigTemplate, context, LdValue.Of(key), 1);
+        return BuildJudgeConfig(key, context, defaultValue, variables: null, interpolate: false);
     }
 
     /// <inheritdoc/>

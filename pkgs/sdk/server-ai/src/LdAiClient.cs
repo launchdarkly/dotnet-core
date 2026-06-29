@@ -58,7 +58,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
             1);
     }
 
-    private LdAiCompletionConfig EvaluateCompletion(string key, Context context,
+    private LdAiCompletionConfig BuildCompletionConfig(string key, Context context,
         LdAiCompletionConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> variables,
         bool interpolate = true)
@@ -73,7 +73,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         IReadOnlyDictionary<string, object> variables = null)
     {
         _client.Track(TrackUsageCompletionConfig, context, LdValue.Of(key), 1);
-        return EvaluateCompletion(key, context, defaultValue, variables);
+        return BuildCompletionConfig(key, context, defaultValue, variables);
     }
 
     /// <summary>
@@ -125,7 +125,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         return result;
     }
 
-    private LdAiJudgeConfig EvaluateJudge(string key, Context context,
+    private LdAiJudgeConfig BuildJudgeConfig(string key, Context context,
         LdAiJudgeConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> variables,
         bool interpolate = true)
@@ -141,7 +141,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         IReadOnlyDictionary<string, object> variables = null)
     {
         _client.Track(TrackUsageJudgeConfig, context, LdValue.Of(key), 1);
-        return EvaluateJudge(key, context, defaultValue, variables);
+        return BuildJudgeConfig(key, context, defaultValue, variables);
     }
 
     /// <inheritdoc/>
@@ -149,7 +149,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         LdAiCompletionConfigDefault defaultValue = null)
     {
         _client.Track(TrackUsageCompletionConfigTemplate, context, LdValue.Of(key), 1);
-        return EvaluateCompletion(key, context, defaultValue, variables: null, interpolate: false);
+        return BuildCompletionConfig(key, context, defaultValue, variables: null, interpolate: false);
     }
 
     /// <inheritdoc/>
@@ -165,7 +165,7 @@ public sealed class LdAiClient : ILdAiClient, ILdAiGraphClient
         LdAiJudgeConfigDefault defaultValue = null)
     {
         _client.Track(TrackUsageJudgeConfigTemplate, context, LdValue.Of(key), 1);
-        return EvaluateJudge(key, context, defaultValue, variables: null, interpolate: false);
+        return BuildJudgeConfig(key, context, defaultValue, variables: null, interpolate: false);
     }
 
     /// <inheritdoc/>

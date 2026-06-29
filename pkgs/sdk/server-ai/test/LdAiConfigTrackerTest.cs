@@ -1202,5 +1202,170 @@ namespace LaunchDarkly.Sdk.Server.Ai
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context,
                 It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
         }
+
+        // ── AiMetrics new fields ────────────────────────────────────────────
+
+        [Fact]
+        public void AiMetrics_BackwardCompat_OldConstructorStillWorks()
+        {
+            var tokens = new Usage(10, 4, 6);
+            var metrics = new AiMetrics(true, tokens);
+
+            Assert.True(metrics.Success);
+            Assert.Equal(tokens, metrics.Tokens);
+            Assert.Null(metrics.ToolCalls);
+            Assert.Null(metrics.DurationMs);
+        }
+
+        [Fact]
+        public void AiMetrics_NewFields_PopulatedCorrectly()
+        {
+            var tokens = new Usage(10, 4, 6);
+            var toolCalls = new[] { "search", "fetch" };
+            var metrics = new AiMetrics(true, tokens, toolCalls: toolCalls, durationMs: 42.0);
+
+            Assert.True(metrics.Success);
+            Assert.Equal(tokens, metrics.Tokens);
+            Assert.Equal(toolCalls, metrics.ToolCalls);
+            Assert.Equal(42.0, metrics.DurationMs);
+        }
+
+        // ── TrackMetricsOf tool calls and duration override ─────────────────
+
+        [Fact]
+        public async Task TrackMetricsOf_AutoTracksToolCalls()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            await tracker.TrackMetricsOf(
+                _ => new AiMetrics(true, toolCalls: new[] { "search", "fetch" }),
+                () => Task.FromResult("response"));
+
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:tool_call",
+                context,
+                It.Is<LdValue>(d => d.Get("toolKey").AsString == "search"),
+                1.0), Times.Once);
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:tool_call",
+                context,
+                It.Is<LdValue>(d => d.Get("toolKey").AsString == "fetch"),
+                1.0), Times.Once);
+        }
+
+        [Fact]
+        public async Task TrackMetricsOf_DurationMsOverride()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            await tracker.TrackMetricsOf(
+                _ => new AiMetrics(true, durationMs: 999.0),
+                () => Task.FromResult("response"));
+
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:duration:total",
+                context,
+                It.IsAny<LdValue>(),
+                999.0), Times.Once);
+        }
+
+        [Fact]
+        public async Task TrackMetricsOf_ExtractorException_TracksDurationButNotError()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await tracker.TrackMetricsOf<string>(
+                    _ => throw new InvalidOperationException("extractor boom"),
+                    () => Task.FromResult("response")));
+
+            mockClient.Verify(x => x.Track("$ld:ai:duration:total", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
+            mockClient.Verify(x => x.Track("$ld:ai:generation:error", context,
+                It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task TrackMetricsOf_DurationMsNull_UsesStopwatch()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var mockLogger = new Mock<ILogger>();
+            mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            await tracker.TrackMetricsOf(
+                _ => new AiMetrics(true),
+                () => Task.FromResult("response"));
+
+            mockClient.Verify(x => x.Track(
+                "$ld:ai:duration:total",
+                context,
+                It.IsAny<LdValue>(),
+                It.Is<double>(ms => ms >= 0)), Times.Once);
+        }
+
+        // ── Summary ToolCalls and ResumptionToken ───────────────────────────
+
+        [Fact]
+        public void Summary_IncludesToolCalls()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            mockClient.Setup(x => x.GetLogger()).Returns((ILogger)null);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            tracker.TrackToolCall("search");
+            tracker.TrackToolCall("fetch");
+
+            var summary = tracker.Summary;
+            Assert.NotNull(summary.ToolCalls);
+            Assert.Equal(2, summary.ToolCalls.Count);
+            Assert.Equal("search", summary.ToolCalls[0]);
+            Assert.Equal("fetch", summary.ToolCalls[1]);
+        }
+
+        [Fact]
+        public void Summary_ToolCallsNullWhenNoneTracked()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            mockClient.Setup(x => x.GetLogger()).Returns((ILogger)null);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            Assert.Null(tracker.Summary.ToolCalls);
+        }
+
+        [Fact]
+        public void Summary_IncludesResumptionToken()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            mockClient.Setup(x => x.GetLogger()).Returns((ILogger)null);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            var summary = tracker.Summary;
+            Assert.NotNull(summary.ResumptionToken);
+            Assert.Equal(tracker.ResumptionToken, summary.ResumptionToken);
+        }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
 using LaunchDarkly.Sdk.Server.Ai.Evals;
@@ -431,5 +432,163 @@ public class JudgeTest
 
         Assert.True(result.Sampled);
         Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ScoreAsInt_ExtractsCorrectly()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = (int)1 });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.True(result.Success);
+        Assert.Equal(1.0, result.Score);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ScoreAsLong_ExtractsCorrectly()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = (long)1 });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.True(result.Success);
+        Assert.Equal(1.0, result.Score);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ScoreAsFloat_ExtractsCorrectly()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = (float)0.5f });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.True(result.Success);
+        Assert.Equal(0.5, result.Score, precision: 5);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ScoreAsDecimal_ExtractsCorrectly()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = (decimal)0.7m });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.True(result.Success);
+        Assert.Equal(0.7, result.Score, precision: 5);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ScoreAsJsonElement_ExtractsCorrectly()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var jsonDoc = JsonDocument.Parse("{\"score\": 0.85}");
+        var jsonElement = jsonDoc.RootElement.GetProperty("score");
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = jsonElement });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.True(result.Success);
+        Assert.Equal(0.85, result.Score, precision: 5);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_NullParsed_ReturnsSuccessFalse()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: null);
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var mockLogger = new Mock<ILogger>();
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object, mockLogger.Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.False(result.Success);
+        Assert.True(result.Sampled);
+        Assert.Equal(0.0, result.Score);
+        Assert.NotNull(result.ErrorMessage);
+        mockLogger.Verify(x => x.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_MissingScoreKey_ReturnsSuccessFalse()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["reasoning"] = "no score here" });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var mockLogger = new Mock<ILogger>();
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object, mockLogger.Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.False(result.Success);
+        Assert.True(result.Sampled);
+        Assert.Equal(0.0, result.Score);
+        Assert.NotNull(result.ErrorMessage);
+        mockLogger.Verify(x => x.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_NonNumericScore_ReturnsSuccessFalse()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = "abc" });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var mockLogger = new Mock<ILogger>();
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object, mockLogger.Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.False(result.Success);
+        Assert.True(result.Sampled);
+        Assert.Equal(0.0, result.Score);
+        Assert.NotNull(result.ErrorMessage);
+        mockLogger.Verify(x => x.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.Once);
     }
 }

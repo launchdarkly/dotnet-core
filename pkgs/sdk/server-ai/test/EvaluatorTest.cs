@@ -207,4 +207,19 @@ public class EvaluatorTest
 
         Assert.Empty(results);
     }
+
+    [Fact]
+    public async Task EvaluateAsync_SkippedJudge_DoesNotWarnAtEvalTime()
+    {
+        // Simulate fix 4: the judgeConfiguration passed to the Evaluator already has the
+        // skipped judge filtered out, so no "not found" warning should ever fire at eval time.
+        var judgeConfiguration = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>());
+
+        var mockLogger = new Mock<ILogger>();
+        var evaluator = new Evaluator(new Dictionary<string, Judge>(), judgeConfiguration, mockLogger.Object);
+        await evaluator.EvaluateAsync("input", "output");
+
+        mockLogger.Verify(x => x.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+    }
 }

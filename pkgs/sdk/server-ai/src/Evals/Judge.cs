@@ -91,12 +91,27 @@ public sealed class Judge
 
         double score = 0;
         string reasoning = null;
+        bool scoreExtracted = false;
 
         if (result?.Parsed != null)
         {
-            if (result.Parsed.TryGetValue("score", out var rawScore) && rawScore is double d)
+            if (result.Parsed.TryGetValue("score", out var rawScore))
             {
-                score = d;
+                try
+                {
+                    if (rawScore is System.Text.Json.JsonElement je &&
+                        je.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    {
+                        score = je.GetDouble();
+                        scoreExtracted = true;
+                    }
+                    else
+                    {
+                        score = Convert.ToDouble(rawScore);
+                        scoreExtracted = true;
+                    }
+                }
+                catch { /* handled below */ }
             }
 
             if (result.Parsed.TryGetValue("reasoning", out var rawReasoning))
@@ -111,6 +126,15 @@ public sealed class Judge
                         "Judge '{0}': reasoning field is not a string; ignoring", Config.Key);
                 }
             }
+        }
+
+        if (!scoreExtracted)
+        {
+            var noScoreMsg = "Runner did not return a valid score";
+            _logger?.Warn("Judge '{0}': {1}", Config.Key, noScoreMsg);
+            return new JudgeResult(Config.EvaluationMetricKey, 0,
+                sampled: true, success: false, judgeConfigKey: Config.Key,
+                errorMessage: noScoreMsg);
         }
 
         if (score < 0.0 || score > 1.0)

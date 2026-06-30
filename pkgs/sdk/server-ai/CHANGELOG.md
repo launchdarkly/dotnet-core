@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.11.0...LaunchDarkly.ServerSdk.Ai-v0.12.0) (2026-06-30)
+
+
+### Features
+
+* Add AgentGraph support to the AI SDK ([#292](https://github.com/launchdarkly/dotnet-core/issues/292)) ([c81b28f](https://github.com/launchdarkly/dotnet-core/commit/c81b28f6ea3fd7a87145142b3e5ade653e7a2ccd))
+* Add template config methods to AI SDK ([#299](https://github.com/launchdarkly/dotnet-core/issues/299)) ([1b96e4a](https://github.com/launchdarkly/dotnet-core/commit/1b96e4ae9d8a7f43327860185fefe785697ab095))
+
 ## [0.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.10.0...LaunchDarkly.ServerSdk.Ai-v0.11.0) (2026-06-11)
 
 

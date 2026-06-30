@@ -17,7 +17,7 @@ on:
 jobs:
 # Building is done on mac runner due to xcode build dependencies
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     permissions:
       id-token: write
       contents: write
@@ -112,7 +112,7 @@ jobs:
 
 # Packing is done on Mac due to ios workload requirements.
   publish:
-    runs-on: macos-latest
+    runs-on: macos-15
     needs: sign-dlls
     permissions:
       id-token: write

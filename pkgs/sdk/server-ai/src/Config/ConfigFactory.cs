@@ -183,7 +183,8 @@ internal sealed class ConfigFactory
             defaultValue.Model,
             defaultValue.Provider,
             defaultValue.JudgeConfiguration,
-            trackerFactory);
+            trackerFactory,
+            evaluator: null);
     }
 
     public LdAiJudgeConfig BuildJudgeConfig(
@@ -266,11 +267,31 @@ internal sealed class ConfigFactory
         var judges = new Dictionary<string, Judge>();
         foreach (var judgeEntry in judgeConfiguration.Judges)
         {
-            var defaultValue = LdAiJudgeConfigDefault.Disabled;
-            var ldValue = _client.JsonVariation(judgeEntry.Key, context, defaultValue.ToLdValue());
-            var judgeConfig = BuildJudgeConfig(judgeEntry.Key, ldValue, context, defaultValue, null);
-            var runner = _runnerFactory(judgeConfig);
-            judges[judgeEntry.Key] = new Judge(judgeConfig, runner, _logger);
+            try
+            {
+                var defaultValue = LdAiJudgeConfigDefault.Disabled;
+                var ldValue = _client.JsonVariation(judgeEntry.Key, context, defaultValue.ToLdValue());
+                var judgeConfig = BuildJudgeConfig(judgeEntry.Key, ldValue, context, defaultValue, null);
+
+                if (!judgeConfig.Enabled)
+                {
+                    _logger?.Warn("Judge '{0}' is disabled; skipping.", judgeEntry.Key);
+                    continue;
+                }
+
+                var runner = _runnerFactory(judgeConfig);
+                if (runner == null)
+                {
+                    _logger?.Warn("Runner factory returned null for judge '{0}'; skipping.", judgeEntry.Key);
+                    continue;
+                }
+
+                judges[judgeEntry.Key] = new Judge(judgeConfig, runner, _logger);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn("Failed to initialize judge '{0}': {1}", judgeEntry.Key, ex.Message);
+            }
         }
 
         return new Evaluator(judges, judgeConfiguration, _logger);

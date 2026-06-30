@@ -353,4 +353,81 @@ public class JudgeTest
         // Output is runnerResult.Content
         Assert.Contains("the response", capturedInput);
     }
+
+    [Fact]
+    public async Task EvaluateAsync_MissingEvaluationMetricKey_ReturnsErrorResult()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var mockRunner = new Mock<IRunner>();
+        var mockLogger = new Mock<ILogger>();
+
+        var config = MakeJudgeConfig(mockTracker, metricKey: null);
+        var judge = new Judge(config, mockRunner.Object, mockLogger.Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.True(result.Sampled);
+        Assert.False(result.Success);
+        Assert.Equal("my-judge", result.JudgeConfigKey);
+        Assert.Equal("Judge configuration is missing required evaluation metric key", result.ErrorMessage);
+        Assert.Null(result.MetricKey);
+        // Runner must not be called when metric key is missing
+        mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Never);
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s => s.Contains("missing evaluation metric key")),
+            It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_NaNSamplingRate_TreatedAsFullRateAndEvaluates()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = 0.5 });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object);
+
+        // NaN normalizes to 1.0, so random > 1.0 is always false → always evaluates
+        var result = await judge.EvaluateAsync("input", "output", samplingRate: double.NaN);
+
+        Assert.True(result.Sampled);
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_NegativeSamplingRate_TreatedAsZeroAndSkips()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var mockRunner = new Mock<IRunner>();
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, mockRunner.Object);
+
+        // Negative normalizes to 0.0, so random > 0.0 is almost always true → always skips
+        var result = await judge.EvaluateAsync("input", "output", samplingRate: -0.5);
+
+        Assert.False(result.Sampled);
+        mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_AboveOneSamplingRate_TreatedAsFullRateAndEvaluates()
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = 0.7 });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object);
+
+        // >1 normalizes to 1.0, so random > 1.0 is always false → always evaluates
+        var result = await judge.EvaluateAsync("input", "output", samplingRate: 2.0);
+
+        Assert.True(result.Sampled);
+        Assert.True(result.Success);
+    }
 }

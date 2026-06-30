@@ -23,7 +23,8 @@ public sealed class Judge
                 ["score"] = new Dictionary<string, object> { ["type"] = "number" },
                 ["reasoning"] = new Dictionary<string, object> { ["type"] = "string" }
             },
-            ["required"] = new[] { "score", "reasoning" }
+            ["required"] = new[] { "score", "reasoning" },
+            ["additionalProperties"] = false
         };
 
     /// <summary>The judge's AI config.</summary>
@@ -58,10 +59,17 @@ public sealed class Judge
     public async Task<JudgeResult> EvaluateAsync(string input, string output,
         double? samplingRate = null)
     {
-        if (samplingRate.HasValue && new Random().NextDouble() >= samplingRate.Value)
+        if (string.IsNullOrWhiteSpace(Config.EvaluationMetricKey))
         {
-            return new JudgeResult(Config.EvaluationMetricKey, 0,
-                sampled: false, success: false, judgeConfigKey: Config.Key);
+            _logger?.Warn("Judge '{0}': missing evaluation metric key", Config.Key);
+            return new JudgeResult(sampled: true, success: false, judgeConfigKey: Config.Key,
+                errorMessage: "Judge configuration is missing required evaluation metric key");
+        }
+
+        var effectiveRate = samplingRate.HasValue ? NormalizeSamplingRate(samplingRate.Value) : 1.0;
+        if (new Random().NextDouble() > effectiveRate)
+        {
+            return new JudgeResult(sampled: false, judgeConfigKey: Config.Key);
         }
 
         var formatted = $"MESSAGE HISTORY:\n{input}\n\nRESPONSE TO EVALUATE:\n{output}";
@@ -137,5 +145,13 @@ public sealed class Judge
             : string.Join("\n", messages.Select(m => $"{m.Role.ToString().ToLowerInvariant()}: {m.Content}"));
 
         return EvaluateAsync(formattedMessages, runnerResult?.Content ?? string.Empty, samplingRate);
+    }
+
+    private static double NormalizeSamplingRate(double rate)
+    {
+        if (double.IsNaN(rate) || double.IsInfinity(rate)) return 1.0;
+        if (rate < 0.0) return 0.0;
+        if (rate > 1.0) return 1.0;
+        return rate;
     }
 }

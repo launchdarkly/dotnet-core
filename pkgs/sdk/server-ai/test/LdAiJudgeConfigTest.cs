@@ -191,7 +191,7 @@ public class LdAiJudgeConfigTest
     [Fact]
     public void JudgeResult_ReasoningRoundTrip()
     {
-        var result = new JudgeResult("metric", 0.9, reasoning: "Very coherent");
+        var result = new JudgeResult("metric", 0.9, sampled: true, success: true, reasoning: "Very coherent");
 
         Assert.True(result.Success);
         Assert.Equal("Very coherent", result.Reasoning);

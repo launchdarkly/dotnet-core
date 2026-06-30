@@ -44,18 +44,18 @@ public sealed record JudgeResult
     /// <summary>
     /// Constructs a <see cref="JudgeResult"/>.
     /// </summary>
-    /// <param name="metricKey">the LaunchDarkly metric key</param>
-    /// <param name="score">the numeric score</param>
-    /// <param name="sampled">whether sampled; defaults to <c>true</c></param>
-    /// <param name="success">whether successful; defaults to <c>true</c></param>
+    /// <param name="metricKey">the LaunchDarkly metric key; optional per spec</param>
+    /// <param name="score">the numeric score; optional per spec</param>
+    /// <param name="sampled">whether sampled; defaults to <c>false</c></param>
+    /// <param name="success">whether successful; defaults to <c>false</c></param>
     /// <param name="judgeConfigKey">optional judge config key</param>
     /// <param name="errorMessage">optional error message when success is false</param>
     /// <param name="reasoning">optional reasoning behind the score</param>
     public JudgeResult(
-        string metricKey,
-        double score,
-        bool sampled = true,
-        bool success = true,
+        string metricKey = null,
+        double score = 0.0,
+        bool sampled = false,
+        bool success = false,
         string judgeConfigKey = null,
         string errorMessage = null,
         string reasoning = null)

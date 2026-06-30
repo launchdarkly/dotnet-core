@@ -192,8 +192,9 @@ public class JudgeTest
 
         Assert.False(result.Success);
         Assert.Equal(0.0, result.Score);
+        Assert.Contains("out of range", result.ErrorMessage);
         mockLogger.Verify(x => x.Warn(
-            It.Is<string>(s => s.Contains("outside valid range")),
+            It.IsAny<string>(),
             It.IsAny<object[]>()), Times.Once);
     }
 
@@ -213,8 +214,9 @@ public class JudgeTest
         var result = await judge.EvaluateAsync("input", "output");
 
         Assert.False(result.Success);
+        Assert.Contains("out of range", result.ErrorMessage);
         mockLogger.Verify(x => x.Warn(
-            It.Is<string>(s => s.Contains("outside valid range")),
+            It.IsAny<string>(),
             It.IsAny<object[]>()), Times.Once);
     }
 

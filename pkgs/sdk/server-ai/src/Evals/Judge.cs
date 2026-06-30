@@ -115,10 +115,11 @@ public sealed class Judge
 
         if (score < 0.0 || score > 1.0)
         {
-            _logger?.Warn(
-                "Judge '{0}': score {1} is outside valid range [0, 1]", Config.Key, score);
+            var msg = $"Score {score} is out of range [0, 1]";
+            _logger?.Warn("Judge '{0}': {1}", Config.Key, msg);
             return new JudgeResult(Config.EvaluationMetricKey, 0,
-                sampled: true, success: false, judgeConfigKey: Config.Key);
+                sampled: true, success: false, judgeConfigKey: Config.Key,
+                errorMessage: msg);
         }
 
         return new JudgeResult(Config.EvaluationMetricKey, score,

@@ -24,7 +24,7 @@ jobs:
 
       - uses: ./.github/actions/xcode-select
         with:
-          xcode-version: '16.2'
+          xcode-version: '26.3'
 
       - name: Setup Env from project's Env file
         shell: bash

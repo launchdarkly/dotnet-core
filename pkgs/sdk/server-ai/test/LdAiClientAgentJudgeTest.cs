@@ -328,6 +328,214 @@ public class LdAiClientAgentJudgeTest
             m => Assert.Equal("Evaluate for metric: relevance", m.Content));
     }
 
+    // ── AgentConfigTemplate ──────────────────────────────────────────────────
+
+    [Fact]
+    public void AgentConfigTemplate_PreservesPlaceholders()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+              "model": {},
+              "instructions": "Hello {{name}}, specialize in {{topic}}"
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("agent-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.AgentConfigTemplate("agent-flag", Context.New("user"));
+
+        Assert.Equal("Hello {{name}}, specialize in {{topic}}", result.Instructions);
+        Assert.True(result.Enabled);
+    }
+
+    [Fact]
+    public void AgentConfigTemplate_PreservesLdCtxPlaceholder()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+              "model": {},
+              "instructions": "Serving context key: {{ldctx.key}}"
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("agent-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.AgentConfigTemplate("agent-flag", Context.New(ContextKind.Default, "ctx-key-123"));
+
+        Assert.Equal("Serving context key: {{ldctx.key}}", result.Instructions);
+    }
+
+    [Fact]
+    public void AgentConfigTemplate_FiresTemplateTrackingEvent()
+    {
+        var (mockClient, _, client) = MakeClient();
+        var context = Context.New(ContextKind.Default, "user");
+        mockClient.Setup(x => x.JsonVariation("my-agent", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["mode"] = LdValue.Of("agent")
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>())
+            }));
+
+        client.AgentConfigTemplate("my-agent", context);
+
+        mockClient.Verify(x => x.Track(
+            "$ld:ai:usage:agent-config-template",
+            context,
+            LdValue.Of("my-agent"),
+            1), Times.Once);
+        mockClient.Verify(x => x.Track(
+            "$ld:ai:usage:agent-config",
+            It.IsAny<Context>(), It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+    }
+
+    [Fact]
+    public void AgentConfigTemplate_UsesDisabledDefaultWhenNoDefaultProvided()
+    {
+        var (mockClient, _, client) = MakeClient();
+        mockClient.Setup(x => x.JsonVariation("my-agent", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Null);
+
+        var result = client.AgentConfigTemplate("my-agent", Context.New("user"));
+
+        Assert.False(result.Enabled);
+    }
+
+    [Fact]
+    public void AgentConfigTemplate_CreateTrackerIsNonNull()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+              "model": {}
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("agent-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.AgentConfigTemplate("agent-flag", Context.New("user"));
+
+        Assert.NotNull(result.CreateTracker());
+    }
+
+    // ── JudgeConfigTemplate ──────────────────────────────────────────────────
+
+    [Fact]
+    public void JudgeConfigTemplate_PreservesPlaceholders()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "judge"},
+              "model": {},
+              "messages": [
+                {"content": "Evaluate for metric: {{metric}}", "role": "user"},
+                {"content": "Score: {{score}}", "role": "system"}
+              ]
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("judge-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.JudgeConfigTemplate("judge-flag", Context.New("user"));
+
+        Assert.Collection(result.Messages,
+            m => Assert.Equal("Evaluate for metric: {{metric}}", m.Content),
+            m => Assert.Equal("Score: {{score}}", m.Content));
+        Assert.True(result.Enabled);
+    }
+
+    [Fact]
+    public void JudgeConfigTemplate_PreservesLdCtxPlaceholder()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "judge"},
+              "model": {},
+              "messages": [
+                {"content": "Context key: {{ldctx.key}}", "role": "system"}
+              ]
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("judge-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.JudgeConfigTemplate("judge-flag", Context.New(ContextKind.Default, "ctx-key-123"));
+
+        Assert.Collection(result.Messages,
+            m => Assert.Equal("Context key: {{ldctx.key}}", m.Content));
+    }
+
+    [Fact]
+    public void JudgeConfigTemplate_FiresTemplateTrackingEvent()
+    {
+        var (mockClient, _, client) = MakeClient();
+        var context = Context.New(ContextKind.Default, "user");
+        mockClient.Setup(x => x.JsonVariation("my-judge", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["mode"] = LdValue.Of("judge")
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>()),
+                ["messages"] = LdValue.ArrayOf()
+            }));
+
+        client.JudgeConfigTemplate("my-judge", context);
+
+        mockClient.Verify(x => x.Track(
+            "$ld:ai:usage:judge-config-template",
+            context,
+            LdValue.Of("my-judge"),
+            1), Times.Once);
+        mockClient.Verify(x => x.Track(
+            "$ld:ai:usage:judge-config",
+            It.IsAny<Context>(), It.IsAny<LdValue>(), It.IsAny<double>()), Times.Never);
+    }
+
+    [Fact]
+    public void JudgeConfigTemplate_UsesDisabledDefaultWhenNoDefaultProvided()
+    {
+        var (mockClient, _, client) = MakeClient();
+        mockClient.Setup(x => x.JsonVariation("my-judge", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Null);
+
+        var result = client.JudgeConfigTemplate("my-judge", Context.New("user"));
+
+        Assert.False(result.Enabled);
+    }
+
+    [Fact]
+    public void JudgeConfigTemplate_CreateTrackerIsNonNull()
+    {
+        var (mockClient, _, client) = MakeClient();
+        const string json = """
+            {
+              "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "judge"},
+              "model": {},
+              "messages": []
+            }
+            """;
+        mockClient.Setup(x => x.JsonVariation("judge-flag", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var result = client.JudgeConfigTemplate("judge-flag", Context.New("user"));
+
+        Assert.NotNull(result.CreateTracker());
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private static void SetupAgentJson(Mock<ILaunchDarklyClient> mockClient, string key, string instructions)

@@ -29,6 +29,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private readonly ILaunchDarklyClient _client;
     private readonly string _runId;
     private readonly string _configKey;
+    private readonly string _graphKey;
     private readonly string _variationKey;
     private readonly int _version;
     private readonly Context _context;
@@ -68,11 +69,13 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// funnel through this single constructor.
     /// </summary>
     internal LdAiConfigTracker(ILaunchDarklyClient client, string runId, string configKey,
-        string variationKey, int version, Context context, string modelName, string providerName)
+        string variationKey, int version, Context context, string modelName, string providerName,
+        string graphKey = null)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _configKey = configKey ?? throw new ArgumentNullException(nameof(configKey));
         _runId = runId ?? "";
+        _graphKey = graphKey ?? "";
         _variationKey = variationKey ?? "";
         _version = version;
         _context = context;
@@ -88,6 +91,10 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             { "modelName", LdValue.Of(_modelName) },
             { "providerName", LdValue.Of(_providerName) },
         };
+        if (!string.IsNullOrEmpty(_graphKey))
+        {
+            trackDataBuilder.Add("graphKey", LdValue.Of(_graphKey));
+        }
         if (!string.IsNullOrEmpty(_variationKey))
         {
             trackDataBuilder.Add("variationKey", LdValue.Of(_variationKey));
@@ -103,8 +110,8 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private string BuildResumptionToken()
     {
         // Utf8JsonWriter gives stable key ordering and avoids the runtime cost of
-        // anonymous-type reflection. The wire format omits empty variationKey so that
-        // resumption tokens round-trip exactly for configs that never carried one.
+        // anonymous-type reflection. The wire format omits empty optional fields so that
+        // resumption tokens round-trip exactly for configs that never carried them.
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
@@ -116,6 +123,10 @@ public class LdAiConfigTracker : ILdAiConfigTracker
                 writer.WriteString("variationKey", _variationKey);
             }
             writer.WriteNumber("version", _version);
+            if (!string.IsNullOrEmpty(_graphKey))
+            {
+                writer.WriteString("graphKey", _graphKey);
+            }
             writer.WriteEndObject();
         }
         var base64 = Convert.ToBase64String(stream.ToArray());
@@ -414,7 +425,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
 
         return new LdAiConfigTracker(client, payload.RunId, payload.ConfigKey,
-            payload.VariationKey, payload.Version, context, "", "");
+            payload.VariationKey, payload.Version ?? 1, context, "", "", payload.GraphKey);
     }
 
     private class ResumptionPayload
@@ -425,10 +436,13 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         [JsonPropertyName("configKey")]
         public string ConfigKey { get; set; }
 
+        [JsonPropertyName("graphKey")]
+        public string GraphKey { get; set; }
+
         [JsonPropertyName("variationKey")]
         public string VariationKey { get; set; }
 
         [JsonPropertyName("version")]
-        public int Version { get; set; } = 1;
+        public int? Version { get; set; }
     }
 }

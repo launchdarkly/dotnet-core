@@ -37,9 +37,10 @@ internal sealed class ConfigFactory
         LdValue ldValue,
         Context context,
         LdAiCompletionConfigDefault defaultValue,
-        IReadOnlyDictionary<string, object> variables)
+        IReadOnlyDictionary<string, object> variables,
+        bool interpolate = true)
     {
-        var mergedVars = MergeVariables(variables, context);
+        var mergedVars = interpolate ? MergeVariables(variables, context) : null;
         var trackerFactory = TrackerFactoryFor(context);
 
         if (ldValue.Type != LdValueType.Object)
@@ -47,7 +48,7 @@ internal sealed class ConfigFactory
             _logger.Error(
                 "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
                 key, ldValue.Type);
-            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory);
+            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
@@ -57,12 +58,14 @@ internal sealed class ConfigFactory
             _logger.Warn(
                 "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
                 key, LdAiCompletionConfig.Mode, mode);
-            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory);
+            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
         var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
-        var messages = InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key);
+        var messages = interpolate
+            ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
+            : ParseMessages(ldValue.Get("messages"));
         var tools = ParseTools(ldValue.Get("tools"));
         var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
         var evaluator = BuildEvaluator(judgeConfiguration, context);
@@ -85,11 +88,14 @@ internal sealed class ConfigFactory
         string key,
         LdAiCompletionConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
-        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
+        bool interpolate = true)
     {
         // Caller-supplied default messages can contain Mustache templates too; interpolate
         // with the same per-message fallback as server-returned configs.
-        var messages = InterpolateMessages(defaultValue.Messages, mergedVars, key);
+        var messages = interpolate
+            ? InterpolateMessages(defaultValue.Messages, mergedVars, key)
+            : (defaultValue.Messages ?? new List<LdAiConfigTypes.Message>());
         return new LdAiCompletionConfig(
             key,
             defaultValue.Enabled ?? true,
@@ -109,17 +115,19 @@ internal sealed class ConfigFactory
         LdValue ldValue,
         Context context,
         LdAiAgentConfigDefault defaultValue,
-        IReadOnlyDictionary<string, object> variables)
+        IReadOnlyDictionary<string, object> variables,
+        string graphKey = null,
+        bool interpolate = true)
     {
-        var mergedVars = MergeVariables(variables, context);
-        var trackerFactory = TrackerFactoryFor(context);
+        var mergedVars = interpolate ? MergeVariables(variables, context) : null;
+        var trackerFactory = TrackerFactoryFor(context, graphKey);
 
         if (ldValue.Type != LdValueType.Object)
         {
             _logger.Error(
                 "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
                 key, ldValue.Type);
-            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory);
+            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
@@ -129,13 +137,15 @@ internal sealed class ConfigFactory
             _logger.Warn(
                 "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
                 key, LdAiAgentConfig.Mode, mode);
-            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory);
+            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
         var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
         var tools = ParseTools(ldValue.Get("tools"));
-        var instructions = InterpolateInstructions(ParseInstructions(ldValue.Get("instructions")), mergedVars, key);
+        var instructions = interpolate
+            ? InterpolateInstructions(ParseInstructions(ldValue.Get("instructions")), mergedVars, key)
+            : ParseInstructions(ldValue.Get("instructions"));
         var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
         var evaluator = BuildEvaluator(judgeConfiguration, context);
 
@@ -153,13 +163,16 @@ internal sealed class ConfigFactory
             evaluator);
     }
 
-    private LdAiAgentConfig BuildAgentFromDefault(
+    internal LdAiAgentConfig BuildAgentFromDefault(
         string key,
         LdAiAgentConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
-        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
+        bool interpolate = true)
     {
-        var instructions = InterpolateInstructions(defaultValue.Instructions, mergedVars, key);
+        var instructions = interpolate
+            ? InterpolateInstructions(defaultValue.Instructions, mergedVars, key)
+            : defaultValue.Instructions;
         return new LdAiAgentConfig(
             key,
             defaultValue.Enabled ?? true,
@@ -178,9 +191,10 @@ internal sealed class ConfigFactory
         LdValue ldValue,
         Context context,
         LdAiJudgeConfigDefault defaultValue,
-        IReadOnlyDictionary<string, object> variables)
+        IReadOnlyDictionary<string, object> variables,
+        bool interpolate = true)
     {
-        var mergedVars = MergeVariables(variables, context);
+        var mergedVars = interpolate ? MergeVariables(variables, context) : null;
         var trackerFactory = TrackerFactoryFor(context);
 
         if (ldValue.Type != LdValueType.Object)
@@ -188,7 +202,7 @@ internal sealed class ConfigFactory
             _logger.Error(
                 "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
                 key, ldValue.Type);
-            return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory);
+            return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
@@ -198,12 +212,14 @@ internal sealed class ConfigFactory
             _logger.Warn(
                 "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
                 key, LdAiJudgeConfig.Mode, mode);
-            return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory);
+            return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
         var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
-        var messages = InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key);
+        var messages = interpolate
+            ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
+            : ParseMessages(ldValue.Get("messages"));
         var evaluationMetricKey = ParseEvaluationMetricKey(ldValue);
 
         return new LdAiJudgeConfig(
@@ -222,9 +238,12 @@ internal sealed class ConfigFactory
         string key,
         LdAiJudgeConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
-        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
+        bool interpolate = true)
     {
-        var messages = InterpolateMessages(defaultValue.Messages, mergedVars, key);
+        var messages = interpolate
+            ? InterpolateMessages(defaultValue.Messages, mergedVars, key)
+            : (defaultValue.Messages ?? new List<LdAiConfigTypes.Message>());
         return new LdAiJudgeConfig(
             key,
             defaultValue.Enabled ?? true,
@@ -304,7 +323,7 @@ internal sealed class ConfigFactory
         return result;
     }
 
-    private Func<LdAiConfig, ILdAiConfigTracker> TrackerFactoryFor(Context context)
+    private Func<LdAiConfig, ILdAiConfigTracker> TrackerFactoryFor(Context context, string graphKey = null)
     {
         return cfg => new LdAiConfigTracker(
             _client,
@@ -314,7 +333,8 @@ internal sealed class ConfigFactory
             cfg.Version,
             context,
             cfg.Model?.Name,
-            cfg.Provider?.Name);
+            cfg.Provider?.Name,
+            graphKey);
     }
 
     private static (bool Enabled, string VariationKey, int Version, string Mode) ParseMeta(LdValue value)

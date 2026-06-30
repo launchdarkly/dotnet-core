@@ -13,7 +13,7 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-15]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     permissions:
@@ -24,7 +24,7 @@ jobs:
 
       - uses: ./.github/actions/xcode-select
         with:
-          xcode-version: '26.3'
+          xcode-version: '16.2'
 
       - name: Setup Env from project's Env file
         shell: bash

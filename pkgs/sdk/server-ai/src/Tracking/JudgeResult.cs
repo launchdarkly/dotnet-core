@@ -32,24 +32,40 @@ public sealed record JudgeResult
     public readonly string JudgeConfigKey;
 
     /// <summary>
+    /// Error message when the evaluation failed. Present only when <see cref="Success"/> is <c>false</c>.
+    /// </summary>
+    public readonly string ErrorMessage;
+
+    /// <summary>
+    /// The judge's reasoning behind the score, if provided by the runner.
+    /// </summary>
+    public readonly string Reasoning;
+
+    /// <summary>
     /// Constructs a <see cref="JudgeResult"/>.
     /// </summary>
-    /// <param name="metricKey">the LaunchDarkly metric key</param>
-    /// <param name="score">the numeric score</param>
-    /// <param name="sampled">whether sampled; defaults to <c>true</c></param>
-    /// <param name="success">whether successful; defaults to <c>true</c></param>
+    /// <param name="metricKey">the LaunchDarkly metric key; optional per spec</param>
+    /// <param name="score">the numeric score; optional per spec</param>
+    /// <param name="sampled">whether sampled; defaults to <c>false</c></param>
+    /// <param name="success">whether successful; defaults to <c>false</c></param>
     /// <param name="judgeConfigKey">optional judge config key</param>
+    /// <param name="errorMessage">optional error message when success is false</param>
+    /// <param name="reasoning">optional reasoning behind the score</param>
     public JudgeResult(
-        string metricKey,
-        double score,
-        bool sampled = true,
-        bool success = true,
-        string judgeConfigKey = null)
+        string metricKey = null,
+        double score = 0.0,
+        bool sampled = false,
+        bool success = false,
+        string judgeConfigKey = null,
+        string errorMessage = null,
+        string reasoning = null)
     {
         MetricKey = metricKey;
         Score = score;
         Sampled = sampled;
         Success = success;
         JudgeConfigKey = judgeConfigKey;
+        ErrorMessage = errorMessage;
+        Reasoning = reasoning;
     }
 }

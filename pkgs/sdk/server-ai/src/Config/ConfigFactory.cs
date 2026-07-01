@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 using Mustache;
 
@@ -21,11 +22,14 @@ internal sealed class ConfigFactory
 
     private readonly ILaunchDarklyClient _client;
     private readonly ILogger _logger;
+    private readonly Func<LdAiJudgeConfig, IRunner> _runnerFactory;
 
-    public ConfigFactory(ILaunchDarklyClient client, ILogger logger)
+    public ConfigFactory(ILaunchDarklyClient client, ILogger logger,
+        Func<LdAiJudgeConfig, IRunner> runnerFactory = null)
     {
         _client = client;
         _logger = logger;
+        _runnerFactory = runnerFactory;
     }
 
     public LdAiCompletionConfig BuildCompletionConfig(
@@ -44,7 +48,7 @@ internal sealed class ConfigFactory
             _logger.Error(
                 "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
                 key, ldValue.Type);
-            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
+            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, context, variables, interpolate);
         }
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
@@ -54,7 +58,7 @@ internal sealed class ConfigFactory
             _logger.Warn(
                 "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
                 key, LdAiCompletionConfig.Mode, mode);
-            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
+            return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, context, variables, interpolate);
         }
 
         var model = ParseModel(ldValue.Get("model"));
@@ -64,6 +68,7 @@ internal sealed class ConfigFactory
             : ParseMessages(ldValue.Get("messages"));
         var tools = ParseTools(ldValue.Get("tools"));
         var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
+        var evaluator = BuildEvaluator(judgeConfiguration, context, variables);
 
         return new LdAiCompletionConfig(
             key,
@@ -75,7 +80,8 @@ internal sealed class ConfigFactory
             judgeConfiguration,
             model,
             provider,
-            trackerFactory);
+            trackerFactory,
+            evaluator);
     }
 
     private LdAiCompletionConfig BuildCompletionFromDefault(
@@ -83,6 +89,8 @@ internal sealed class ConfigFactory
         LdAiCompletionConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
+        Context context,
+        IReadOnlyDictionary<string, object> variables = null,
         bool interpolate = true)
     {
         // Caller-supplied default messages can contain Mustache templates too; interpolate
@@ -90,6 +98,7 @@ internal sealed class ConfigFactory
         var messages = interpolate
             ? InterpolateMessages(defaultValue.Messages, mergedVars, key)
             : (defaultValue.Messages ?? new List<LdAiConfigTypes.Message>());
+        var evaluator = BuildEvaluator(defaultValue.JudgeConfiguration, context, variables);
         return new LdAiCompletionConfig(
             key,
             defaultValue.Enabled ?? true,
@@ -100,7 +109,8 @@ internal sealed class ConfigFactory
             defaultValue.JudgeConfiguration,
             defaultValue.Model,
             defaultValue.Provider,
-            trackerFactory);
+            trackerFactory,
+            evaluator);
     }
 
     public LdAiAgentConfig BuildAgentConfig(
@@ -120,7 +130,7 @@ internal sealed class ConfigFactory
             _logger.Error(
                 "AI Config '{0}': variation result is not an object (got {1}); using caller's default.",
                 key, ldValue.Type);
-            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
+            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, context, variables, interpolate, graphKey);
         }
 
         var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
@@ -130,7 +140,7 @@ internal sealed class ConfigFactory
             _logger.Warn(
                 "AI Config mode mismatch for {0}: expected {1}, got {2}. Returning caller's default.",
                 key, LdAiAgentConfig.Mode, mode);
-            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
+            return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, context, variables, interpolate, graphKey);
         }
 
         var model = ParseModel(ldValue.Get("model"));
@@ -140,6 +150,7 @@ internal sealed class ConfigFactory
             ? InterpolateInstructions(ParseInstructions(ldValue.Get("instructions")), mergedVars, key)
             : ParseInstructions(ldValue.Get("instructions"));
         var judgeConfiguration = ParseJudgeConfiguration(ldValue.Get("judgeConfiguration"));
+        var evaluator = BuildEvaluator(judgeConfiguration, context, variables, graphKey);
 
         return new LdAiAgentConfig(
             key,
@@ -151,7 +162,8 @@ internal sealed class ConfigFactory
             model,
             provider,
             judgeConfiguration,
-            trackerFactory);
+            trackerFactory,
+            evaluator);
     }
 
     internal LdAiAgentConfig BuildAgentFromDefault(
@@ -159,11 +171,15 @@ internal sealed class ConfigFactory
         LdAiAgentConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> mergedVars,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
-        bool interpolate = true)
+        Context context,
+        IReadOnlyDictionary<string, object> variables = null,
+        bool interpolate = true,
+        string graphKey = null)
     {
         var instructions = interpolate
             ? InterpolateInstructions(defaultValue.Instructions, mergedVars, key)
             : defaultValue.Instructions;
+        var evaluator = BuildEvaluator(defaultValue.JudgeConfiguration, context, variables, graphKey);
         return new LdAiAgentConfig(
             key,
             defaultValue.Enabled ?? true,
@@ -174,7 +190,8 @@ internal sealed class ConfigFactory
             defaultValue.Model,
             defaultValue.Provider,
             defaultValue.JudgeConfiguration,
-            trackerFactory);
+            trackerFactory,
+            evaluator);
     }
 
     public LdAiJudgeConfig BuildJudgeConfig(
@@ -183,10 +200,11 @@ internal sealed class ConfigFactory
         Context context,
         LdAiJudgeConfigDefault defaultValue,
         IReadOnlyDictionary<string, object> variables,
-        bool interpolate = true)
+        bool interpolate = true,
+        string graphKey = null)
     {
         var mergedVars = interpolate ? MergeVariables(variables, context) : null;
-        var trackerFactory = TrackerFactoryFor(context);
+        var trackerFactory = TrackerFactoryFor(context, graphKey);
 
         if (ldValue.Type != LdValueType.Object)
         {
@@ -245,6 +263,49 @@ internal sealed class ConfigFactory
             defaultValue.Model,
             defaultValue.Provider,
             trackerFactory);
+    }
+
+    private Evaluator BuildEvaluator(LdAiConfigTypes.JudgeConfiguration judgeConfiguration, Context context,
+        IReadOnlyDictionary<string, object> variables = null, string graphKey = null)
+    {
+        if (_runnerFactory == null || judgeConfiguration == null || judgeConfiguration.Judges.Count == 0)
+        {
+            return Evaluator.Noop();
+        }
+
+        var judges = new Dictionary<string, Judge>();
+        foreach (var judgeEntry in judgeConfiguration.Judges)
+        {
+            try
+            {
+                var defaultValue = LdAiJudgeConfigDefault.Disabled;
+                var ldValue = _client.JsonVariation(judgeEntry.Key, context, defaultValue.ToLdValue());
+                var judgeConfig = BuildJudgeConfig(judgeEntry.Key, ldValue, context, defaultValue, variables, graphKey: graphKey);
+
+                if (!judgeConfig.Enabled)
+                {
+                    _logger?.Debug("Judge '{0}' is disabled; skipping.", judgeEntry.Key);
+                    continue;
+                }
+
+                var runner = _runnerFactory(judgeConfig);
+                if (runner == null)
+                {
+                    _logger?.Warn("Runner factory returned null for judge '{0}'; skipping.", judgeEntry.Key);
+                    continue;
+                }
+
+                judges[judgeEntry.Key] = new Judge(judgeConfig, runner, _logger);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn("Failed to initialize judge '{0}': {1}", judgeEntry.Key, ex.Message);
+            }
+        }
+
+        var filteredConfig = new LdAiConfigTypes.JudgeConfiguration(
+            judgeConfiguration.Judges.Where(j => judges.ContainsKey(j.Key)).ToList());
+        return new Evaluator(judges, filteredConfig, _logger);
     }
 
     private string InterpolateInstructions(
@@ -401,9 +462,13 @@ internal sealed class ConfigFactory
         {
             var j = judgesArray.Get(i);
             if (j.Type != LdValueType.Object) continue;
+            var samplingRateValue = j.Get("samplingRate");
+            double? samplingRate = samplingRateValue.Type == LdValueType.Number
+                ? samplingRateValue.AsDouble
+                : (double?)null;
             entries.Add(new LdAiConfigTypes.JudgeConfiguration.Judge(
                 j.Get("key").AsString ?? "",
-                j.Get("samplingRate").AsDouble));
+                samplingRate));
         }
         return new LdAiConfigTypes.JudgeConfiguration(entries);
     }

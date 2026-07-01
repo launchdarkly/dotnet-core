@@ -1,6 +1,10 @@
+using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
+using LaunchDarkly.Sdk.Server.Ai.Tracking;
 using Moq;
 using Xunit;
 
@@ -78,5 +82,307 @@ public class LdAiCompletionConfigTest
         Assert.NotNull(tracker);
         tracker.TrackSuccess();
         mockClient.Verify(x => x.Track("$ld:ai:generation:success", It.IsAny<Context>(), It.IsAny<LdValue>(), 1.0f), Times.Once);
+    }
+
+    [Fact]
+    public void Evaluator_IsNoop_WhenNoRunnerFactory()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>())).Returns(LdValue.Null);
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+
+        // No runnerFactory supplied → Evaluator should be Noop
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("foo", Context.New("key"));
+
+        Assert.NotNull(result.Evaluator);
+        // Noop evaluator returns empty list immediately
+        var evalResults = result.Evaluator.EvaluateAsync("input", "output").GetAwaiter().GetResult();
+        Assert.Empty(evalResults);
+    }
+
+    [Fact]
+    public async Task Evaluator_IsReal_WhenRunnerFactoryProvided()
+    {
+        const string judgeKey = "my-judge";
+        const string judgeMetricKey = "$ld:ai:judge:test";
+        const string completionJson = """
+                                     {
+                                         "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+                                         "model": {},
+                                         "judgeConfiguration": {
+                                             "judges": [
+                                                 {"key": "my-judge", "samplingRate": 1.0}
+                                             ]
+                                         }
+                                     }
+                                     """;
+        const string judgeJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "j1", "enabled": true, "mode": "judge"},
+                                     "model": {"name": "judge-model"},
+                                     "provider": {"name": "openai"},
+                                     "evaluationMetricKey": "$ld:ai:judge:test"
+                                 }
+                                 """;
+
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x =>
+            x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(completionJson));
+        mockClient.Setup(x =>
+            x.JsonVariation(judgeKey, It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(judgeJson));
+
+        // Runner factory returns a runner that always succeeds with score 0.9
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult("ok", new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = 0.9 });
+        mockTracker
+            .Setup(x => x.TrackMetricsOf(
+                It.IsAny<System.Func<RunnerResult, AiMetrics>>(),
+                It.IsAny<System.Func<Task<RunnerResult>>>()))
+            .Returns<System.Func<RunnerResult, AiMetrics>, System.Func<Task<RunnerResult>>>(
+                (_, op) => op());
+
+        var mockRunner = new Mock<IRunner>();
+        mockRunner.Setup(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()))
+            .ReturnsAsync(runnerResult);
+
+        var client = new LdAiClient(mockClient.Object,
+            runnerFactory: judgeConfig =>
+            {
+                // Tracker factory on the judge config must be wired up from the client
+                return mockRunner.Object;
+            });
+
+        // Override the tracker on the judge config by hooking the mockClient
+        mockClient.Setup(x =>
+            x.Track(It.IsAny<string>(), It.IsAny<Context>(), It.IsAny<LdValue>(), It.IsAny<float>()));
+
+        var completionConfig = client.CompletionConfig("foo", Context.New("user"));
+
+        Assert.NotNull(completionConfig.Evaluator);
+
+        // The evaluator is not Noop — it should actually use the runner
+        // We verify this by checking the runner gets called during evaluation
+        // (we can't easily distinguish Noop vs real without running it, so run it)
+        var evalResults = await completionConfig.Evaluator.EvaluateAsync("user input", "model output");
+
+        Assert.Single(evalResults);
+        Assert.Equal(judgeMetricKey, evalResults[0].MetricKey);
+        Assert.Equal(0.9, evalResults[0].Score);
+        Assert.True(evalResults[0].Success);
+        mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Evaluator_SkipsJudge_WhenRunnerFactoryReturnsNull()
+    {
+        const string completionJson = """
+                                     {
+                                         "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+                                         "model": {},
+                                         "judgeConfiguration": {
+                                             "judges": [
+                                                 {"key": "my-judge", "samplingRate": 1.0}
+                                             ]
+                                         }
+                                     }
+                                     """;
+        const string judgeJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "j1", "enabled": true, "mode": "judge"},
+                                     "model": {},
+                                     "evaluationMetricKey": "$ld:ai:judge:test"
+                                 }
+                                 """;
+
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x => x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(completionJson));
+        mockClient.Setup(x => x.JsonVariation("my-judge", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(judgeJson));
+
+        // Runner factory returns null → judge must be skipped, not throw
+        var client = new LdAiClient(mockClient.Object, runnerFactory: _ => null);
+        var completionConfig = client.CompletionConfig("foo", Context.New("user"));
+
+        // Evaluator runs without throwing, producing an empty result (judge was skipped)
+        var results = await completionConfig.Evaluator.EvaluateAsync("input", "output");
+        Assert.Empty(results);
+
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s => s.Contains("null") && s.Contains("skipping")),
+            It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Evaluator_SkipsJudge_WhenJudgeConfigIsDisabled()
+    {
+        const string completionJson = """
+                                     {
+                                         "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+                                         "model": {},
+                                         "judgeConfiguration": {
+                                             "judges": [
+                                                 {"key": "my-judge", "samplingRate": 1.0}
+                                             ]
+                                         }
+                                     }
+                                     """;
+        const string judgeJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "j1", "enabled": false, "mode": "judge"},
+                                     "model": {},
+                                     "evaluationMetricKey": "$ld:ai:judge:test"
+                                 }
+                                 """;
+
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x => x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(completionJson));
+        mockClient.Setup(x => x.JsonVariation("my-judge", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(judgeJson));
+
+        var mockRunner = new Mock<IRunner>();
+        var client = new LdAiClient(mockClient.Object, runnerFactory: _ => mockRunner.Object);
+        var completionConfig = client.CompletionConfig("foo", Context.New("user"));
+
+        // Evaluator runs without throwing; disabled judge is skipped → empty results
+        var results = await completionConfig.Evaluator.EvaluateAsync("input", "output");
+        Assert.Empty(results);
+
+        // The runner must never be invoked for a disabled judge
+        mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Never);
+
+        mockLogger.Verify(x => x.Debug(
+            It.Is<string>(s => s.Contains("disabled") && s.Contains("skipping")),
+            It.IsAny<object[]>()), Times.Once);
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s => s.Contains("disabled") && s.Contains("skipping")),
+            It.IsAny<object[]>()), Times.Never);
+    }
+
+    [Fact]
+    public void Evaluator_JudgeMessages_InterpolatedWithCallerVariables()
+    {
+        // Regression test: before the fix, BuildEvaluator called BuildJudgeConfig with
+        // variables=null, so judge message templates only received ldctx. Caller-supplied
+        // prompt variables were silently dropped.
+        const string judgeKey = "my-judge";
+        const string completionJson = """
+                                     {
+                                         "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "completion"},
+                                         "model": {},
+                                         "judgeConfiguration": {
+                                             "judges": [
+                                                 {"key": "my-judge", "samplingRate": 1.0}
+                                             ]
+                                         }
+                                     }
+                                     """;
+        const string judgeJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "j1", "enabled": true, "mode": "judge"},
+                                     "model": {},
+                                     "evaluationMetricKey": "$ld:ai:judge:test",
+                                     "messages": [
+                                         {"content": "Evaluate for topic: {{topic}}", "role": "system"}
+                                     ]
+                                 }
+                                 """;
+
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x => x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(completionJson));
+        mockClient.Setup(x => x.JsonVariation(judgeKey, It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(judgeJson));
+
+        LdAiJudgeConfig capturedJudgeConfig = null;
+        var client = new LdAiClient(mockClient.Object, runnerFactory: jc =>
+        {
+            capturedJudgeConfig = jc;
+            return new Mock<IRunner>().Object;
+        });
+
+        var variables = new Dictionary<string, object> { ["topic"] = "safety" };
+        client.CompletionConfig("foo", Context.New("user"), variables: variables);
+
+        Assert.NotNull(capturedJudgeConfig);
+        Assert.Single(capturedJudgeConfig.Messages);
+        Assert.Equal("Evaluate for topic: safety", capturedJudgeConfig.Messages[0].Content);
+    }
+
+    [Fact]
+    public async Task Evaluator_IsReal_WhenDefaultPathTriggered()
+    {
+        // When the flag returns a non-object value, BuildCompletionConfig falls through to
+        // BuildCompletionFromDefault. After fix 3, that path now calls BuildEvaluator with
+        // the default's JudgeConfiguration, so a real evaluator is wired up.
+        const string judgeKey = "my-judge";
+        const string judgeMetricKey = "$ld:ai:judge:test";
+        const string judgeJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "j1", "enabled": true, "mode": "judge"},
+                                     "model": {"name": "judge-model"},
+                                     "provider": {"name": "openai"},
+                                     "evaluationMetricKey": "$ld:ai:judge:test"
+                                 }
+                                 """;
+
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        // Return null (non-object) for the completion flag → forces the default path
+        mockClient.Setup(x => x.JsonVariation("foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Null);
+        mockClient.Setup(x => x.JsonVariation(judgeKey, It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(judgeJson));
+
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult("ok", new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = 0.75 });
+        mockTracker
+            .Setup(x => x.TrackMetricsOf(
+                It.IsAny<System.Func<RunnerResult, AiMetrics>>(),
+                It.IsAny<System.Func<Task<RunnerResult>>>()))
+            .Returns<System.Func<RunnerResult, AiMetrics>, System.Func<Task<RunnerResult>>>(
+                (_, op) => op());
+
+        var mockRunner = new Mock<IRunner>();
+        mockRunner.Setup(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()))
+            .ReturnsAsync(runnerResult);
+
+        var judgeConfig = LdAiCompletionConfigDefault.New()
+            .SetJudgeConfiguration(new LdAiConfigTypes.JudgeConfiguration(
+                new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+                {
+                    new LdAiConfigTypes.JudgeConfiguration.Judge(judgeKey, samplingRate: 1.0)
+                }))
+            .Build();
+
+        var client = new LdAiClient(mockClient.Object, runnerFactory: _ => mockRunner.Object);
+        var completionConfig = client.CompletionConfig("foo", Context.New("user"), judgeConfig);
+
+        Assert.NotNull(completionConfig.Evaluator);
+
+        var evalResults = await completionConfig.Evaluator.EvaluateAsync("user input", "model output");
+
+        Assert.Single(evalResults);
+        Assert.Equal(judgeMetricKey, evalResults[0].MetricKey);
+        Assert.Equal(0.75, evalResults[0].Score);
+        Assert.True(evalResults[0].Success);
+        mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Once);
     }
 }

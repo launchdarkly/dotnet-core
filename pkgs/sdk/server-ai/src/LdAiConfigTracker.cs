@@ -47,6 +47,10 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     private StrongBox<Feedback> _feedback;
     private StrongBox<bool> _trackedSuccess; // true = success, false = error
 
+    // Accumulates tool keys from TrackToolCall calls. Guarded by a lock since tool calls
+    // have no at-most-once semantics and may be called concurrently.
+    private readonly List<string> _toolCallKeys = new();
+
     // Lazy<T> caches the encoded token so repeated reads avoid re-encoding the immutable
     // payload. All resumption-token inputs are readonly for a tracker's lifetime.
     private readonly Lazy<string> _resumptionToken;
@@ -134,13 +138,26 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     }
 
     /// <inheritdoc/>
-    public MetricSummary Summary => new MetricSummary(
-        _durationMs?.Value,
-        _feedback?.Value,
-        _tokens?.Value,
-        _trackedSuccess?.Value,
-        _timeToFirstTokenMs?.Value
-    );
+    public MetricSummary Summary
+    {
+        get
+        {
+            IReadOnlyList<string> toolCalls;
+            lock (_toolCallKeys)
+            {
+                toolCalls = _toolCallKeys.Count > 0 ? _toolCallKeys.AsReadOnly() : null;
+            }
+            return new MetricSummary(
+                _durationMs?.Value,
+                _feedback?.Value,
+                _tokens?.Value,
+                _trackedSuccess?.Value,
+                _timeToFirstTokenMs?.Value,
+                toolCalls,
+                ResumptionToken
+            );
+        }
+    }
 
     /// <inheritdoc/>
     public void TrackDuration(float durationMs)
@@ -255,16 +272,32 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
         catch (Exception)
         {
+            sw.Stop();
+            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
             TrackError();
             throw;
         }
-        finally
+
+        // Capture elapsed immediately so a slow extractor doesn't inflate the metric.
+        sw.Stop();
+        var operationElapsedMs = sw.Elapsed.TotalMilliseconds;
+
+        // Extractor failure: track duration but NOT error — the AI operation itself succeeded.
+        // Matches Java's LDAIConfigTrackerImpl.trackMetricsOf behavior.
+        AiMetrics metrics;
+        try
         {
-            sw.Stop();
-            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
+            metrics = metricsExtractor(result);
+        }
+        catch (Exception)
+        {
+            TrackDuration((float)operationElapsedMs);
+            throw;
         }
 
-        var metrics = metricsExtractor(result);
+        // Honor an explicit duration override from the caller; fall back to the measured value.
+        TrackDuration((float)(metrics.DurationMs ?? operationElapsedMs));
+
         if (metrics.Success)
         {
             TrackSuccess();
@@ -277,6 +310,11 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         if (metrics.Tokens != null)
         {
             TrackTokens(metrics.Tokens.Value);
+        }
+
+        if (metrics.ToolCalls?.Count > 0)
+        {
+            TrackToolCalls(metrics.ToolCalls);
         }
 
         return result;
@@ -359,6 +397,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// <inheritdoc/>
     public void TrackToolCall(string toolKey)
     {
+        lock (_toolCallKeys) { _toolCallKeys.Add(toolKey); }
         var data = MergeTrackData("toolKey", LdValue.Of(toolKey));
         _client.Track(ToolCall, _context, data, 1);
     }

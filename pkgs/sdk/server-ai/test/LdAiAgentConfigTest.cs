@@ -305,6 +305,58 @@ public class LdAiAgentConfigTest
     }
 
     [Fact]
+    public void Evaluator_JudgeMessages_InterpolatedWithCallerVariables()
+    {
+        // Regression test: before the fix, BuildEvaluator called BuildJudgeConfig with
+        // variables=null, so judge message templates only received ldctx. Caller-supplied
+        // prompt variables were silently dropped.
+        const string judgeKey = "my-judge";
+        const string agentJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                                     "model": {},
+                                     "judgeConfiguration": {
+                                         "judges": [
+                                             {"key": "my-judge", "samplingRate": 1.0}
+                                         ]
+                                     }
+                                 }
+                                 """;
+        const string judgeJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "j1", "enabled": true, "mode": "judge"},
+                                     "model": {},
+                                     "evaluationMetricKey": "$ld:ai:judge:test",
+                                     "messages": [
+                                         {"content": "Evaluate for topic: {{topic}}", "role": "system"}
+                                     ]
+                                 }
+                                 """;
+
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x => x.JsonVariation("agent-foo", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(agentJson));
+        mockClient.Setup(x => x.JsonVariation(judgeKey, It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(judgeJson));
+
+        LdAiJudgeConfig capturedJudgeConfig = null;
+        var client = new LdAiClient(mockClient.Object, runnerFactory: jc =>
+        {
+            capturedJudgeConfig = jc;
+            return new Mock<IRunner>().Object;
+        });
+
+        var variables = new Dictionary<string, object> { ["topic"] = "safety" };
+        client.AgentConfig("agent-foo", Context.New("user"), variables: variables);
+
+        Assert.NotNull(capturedJudgeConfig);
+        Assert.Single(capturedJudgeConfig.Messages);
+        Assert.Equal("Evaluate for topic: safety", capturedJudgeConfig.Messages[0].Content);
+    }
+
+    [Fact]
     public async Task Evaluator_IsReal_WhenDefaultPathTriggered()
     {
         // When the flag returns a non-object value, BuildAgentConfig falls through to

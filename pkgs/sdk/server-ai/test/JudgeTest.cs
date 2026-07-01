@@ -221,6 +221,32 @@ public class JudgeTest
             It.IsAny<object[]>()), Times.Once);
     }
 
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public async Task EvaluateAsync_NaNOrInfinityScore_LogsWarningAndReturnsSuccessFalse(double badScore)
+    {
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult(
+            Content: "ok",
+            Metrics: new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = badScore });
+        SetupTrackMetricsOf(mockTracker, runnerResult);
+        var mockLogger = new Mock<ILogger>();
+        var config = MakeJudgeConfig(mockTracker);
+        var judge = new Judge(config, MockRunner(runnerResult).Object, mockLogger.Object);
+
+        var result = await judge.EvaluateAsync("input", "output");
+
+        Assert.False(result.Success);
+        Assert.Equal(0.0, result.Score);
+        Assert.NotNull(result.ErrorMessage);
+        mockLogger.Verify(x => x.Warn(
+            It.IsAny<string>(),
+            It.IsAny<object[]>()), Times.Once);
+    }
+
     [Fact]
     public async Task EvaluateAsync_NonStringReasoning_LogsWarningAndSetsNull()
     {

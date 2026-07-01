@@ -137,7 +137,7 @@ public sealed class Judge
                 errorMessage: noScoreMsg);
         }
 
-        if (score < 0.0 || score > 1.0)
+        if (double.IsNaN(score) || double.IsInfinity(score) || score < 0.0 || score > 1.0)
         {
             var msg = $"Score {score} is out of range [0, 1]";
             _logger?.Warn("Judge '{0}': {1}", Config.Key, msg);

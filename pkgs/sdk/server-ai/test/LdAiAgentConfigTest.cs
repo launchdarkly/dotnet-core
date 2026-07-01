@@ -417,4 +417,63 @@ public class LdAiAgentConfigTest
         Assert.True(evalResults[0].Success);
         mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Once);
     }
+
+    [Fact]
+    public void GraphAgent_JudgeTrackerIncludesGraphKey()
+    {
+        const string judgeKey = "my-judge";
+        const string agentJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "v1", "enabled": true, "mode": "agent"},
+                                     "model": {},
+                                     "judgeConfiguration": {
+                                         "judges": [
+                                             {"key": "my-judge", "samplingRate": 1.0}
+                                         ]
+                                     }
+                                 }
+                                 """;
+        const string judgeJson = """
+                                 {
+                                     "_ldMeta": {"variationKey": "j1", "enabled": true, "mode": "judge"},
+                                     "model": {},
+                                     "evaluationMetricKey": "$ld:ai:judge:test"
+                                 }
+                                 """;
+
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x => x.JsonVariation(judgeKey, It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(judgeJson));
+
+        LdAiJudgeConfig capturedJudgeConfig = null;
+        var factory = new ConfigFactory(mockClient.Object, mockLogger.Object,
+            runnerFactory: jc =>
+            {
+                capturedJudgeConfig = jc;
+                return new Mock<IRunner>().Object;
+            });
+
+        var context = Context.New("user");
+        factory.BuildAgentConfig(
+            "agent-foo",
+            LdValue.Parse(agentJson),
+            context,
+            LdAiAgentConfigDefault.Disabled,
+            variables: null,
+            graphKey: "my-graph");
+
+        Assert.NotNull(capturedJudgeConfig);
+
+        // Fire a tracking event via the judge's tracker — it should include graphKey
+        var tracker = capturedJudgeConfig.CreateTracker();
+        tracker.TrackSuccess();
+
+        mockClient.Verify(c => c.Track(
+            "$ld:ai:generation:success",
+            context,
+            It.Is<LdValue>(v => v.Get("graphKey").AsString == "my-graph"),
+            It.IsAny<double>()), Times.Once);
+    }
 }

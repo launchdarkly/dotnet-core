@@ -161,10 +161,11 @@ public static class LdAiConfigTypes
 
             /// <summary>
             /// The fraction of requests that this judge evaluates, in the range [0, 1].
+            /// When null, the judge evaluates 100% of requests.
             /// </summary>
-            public double SamplingRate { get; }
+            public double? SamplingRate { get; }
 
-            internal Judge(string key, double samplingRate)
+            internal Judge(string key, double? samplingRate)
             {
                 Key = key;
                 SamplingRate = samplingRate;

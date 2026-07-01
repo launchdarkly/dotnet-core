@@ -209,6 +209,62 @@ public class EvaluatorTest
     }
 
     [Fact]
+    public async Task EvaluateAsync_NullSamplingRate_AlwaysEvaluates()
+    {
+        var runnerResult = new RunnerResult("ok", new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = 0.9 });
+        var tracker = MakeTrackerWithResult(runnerResult);
+        var mockRunner = MockRunner(runnerResult);
+        var judgeConfig = MakeJudgeConfig("judge-1", "metric-1", tracker);
+        var judges = new Dictionary<string, Judge>
+        {
+            ["judge-1"] = new Judge(judgeConfig, mockRunner.Object)
+        };
+
+        // samplingRate omitted (null) — should default to 1.0 and always run
+        var judgeConfiguration = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("judge-1", samplingRate: null)
+            });
+
+        var evaluator = new Evaluator(judges, judgeConfiguration);
+        var results = await evaluator.EvaluateAsync("input", "output");
+
+        Assert.Single(results);
+        Assert.True(results[0].Success);
+        mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ExplicitZeroSamplingRate_AlwaysSkips()
+    {
+        var runnerResult = new RunnerResult("ok", new AiMetrics(true),
+            Parsed: new Dictionary<string, object> { ["score"] = 0.9 });
+        var tracker = MakeTrackerWithResult(runnerResult);
+        var mockRunner = MockRunner(runnerResult);
+        var judgeConfig = MakeJudgeConfig("judge-1", "metric-1", tracker);
+        var judges = new Dictionary<string, Judge>
+        {
+            ["judge-1"] = new Judge(judgeConfig, mockRunner.Object)
+        };
+
+        // samplingRate explicitly 0.0 — judge should be skipped every time
+        var judgeConfiguration = new LdAiConfigTypes.JudgeConfiguration(
+            new List<LdAiConfigTypes.JudgeConfiguration.Judge>
+            {
+                new LdAiConfigTypes.JudgeConfiguration.Judge("judge-1", samplingRate: 0.0)
+            });
+
+        var evaluator = new Evaluator(judges, judgeConfiguration);
+        var results = await evaluator.EvaluateAsync("input", "output");
+
+        Assert.Single(results);
+        Assert.False(results[0].Sampled);
+        mockRunner.Verify(x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()), Times.Never);
+    }
+
+    [Fact]
     public async Task EvaluateAsync_SkippedJudge_DoesNotWarnAtEvalTime()
     {
         // Simulate fix 4: the judgeConfiguration passed to the Evaluator already has the

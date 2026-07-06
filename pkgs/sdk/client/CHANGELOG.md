@@ -3,6 +3,13 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.9.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.0...LaunchDarkly.ClientSdk-v5.9.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* update LaunchDarkly.EventSource to 5.3.1 for Authenticode-signed assemblies ([#303](https://github.com/launchdarkly/dotnet-core/issues/303)) ([60e5c4e](https://github.com/launchdarkly/dotnet-core/commit/60e5c4ec3de82c29df4b64874a89956bb3d0f1c5))
+
 ## [5.9.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.8.0...LaunchDarkly.ClientSdk-v5.9.0) (2026-06-11)
 
 

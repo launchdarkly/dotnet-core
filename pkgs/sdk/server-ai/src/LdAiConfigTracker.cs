@@ -160,7 +160,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     }
 
     /// <inheritdoc/>
-    public void TrackDuration(float durationMs)
+    public void TrackDuration(double durationMs)
     {
         if (Interlocked.CompareExchange(ref _durationMs,
                 new StrongBox<double>(durationMs), null) != null)
@@ -183,7 +183,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         finally
         {
             sw.Stop();
-            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
+            TrackDuration(sw.Elapsed.TotalMilliseconds);
         }
     }
 
@@ -273,7 +273,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         catch (Exception)
         {
             sw.Stop();
-            TrackDuration((float)sw.Elapsed.TotalMilliseconds);
+            TrackDuration(sw.Elapsed.TotalMilliseconds);
             TrackError();
             throw;
         }
@@ -291,12 +291,12 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
         catch (Exception)
         {
-            TrackDuration((float)operationElapsedMs);
+            TrackDuration(operationElapsedMs);
             throw;
         }
 
         // Honor an explicit duration override from the caller; fall back to the measured value.
-        TrackDuration((float)(metrics.DurationMs ?? operationElapsedMs));
+        TrackDuration(metrics.DurationMs ?? operationElapsedMs);
 
         if (metrics.Success)
         {

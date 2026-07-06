@@ -37,7 +37,7 @@ public interface ILdAiConfigTracker
     /// </summary>
     /// <remarks>Records at most once per Tracker; further calls are ignored.</remarks>
     /// <param name="durationMs">the duration in milliseconds</param>
-    public void TrackDuration(float durationMs);
+    public void TrackDuration(double durationMs);
 
     /// <summary>
     /// Wraps a callable operation, measures its wall-clock duration, and records the result via

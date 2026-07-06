@@ -617,4 +617,28 @@ public class JudgeTest
         Assert.NotNull(result.ErrorMessage);
         mockLogger.Verify(x => x.Warn(It.IsAny<string>(), It.IsAny<object[]>()), Times.Once);
     }
+
+    [Fact]
+    public async Task EvaluateAsync_WithSeededRandom_SamplingDecisionIsDeterministic()
+    {
+        // Use a seeded Random so the sampling decision is predictable without
+        // hardcoding a platform-specific float: draw from a fresh same-seed instance
+        // to know what the judge will draw, then choose a rate that will skip it.
+        const int seed = 1;
+        var expectedDraw = new Random(seed).NextDouble();
+        var rateThatSkips = expectedDraw / 2.0; // draw > rate → skipped
+
+        var mockTracker = new Mock<ILdAiConfigTracker>();
+        var runnerResult = new RunnerResult("ok", new AiMetrics(true));
+        var config = MakeJudgeConfig(mockTracker);
+        var mockRunner = MockRunner(runnerResult);
+        var judge = new Judge(config, mockRunner.Object);
+
+        var result = await judge.EvaluateAsync("input", "output", rateThatSkips, new Random(seed));
+
+        Assert.False(result.Sampled);
+        mockRunner.Verify(
+            x => x.RunAsync(It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object>>()),
+            Times.Never);
+    }
 }

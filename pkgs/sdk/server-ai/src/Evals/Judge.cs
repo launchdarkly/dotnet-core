@@ -57,7 +57,7 @@ public sealed class Judge
     /// if a random draw exceeds this value the evaluation is skipped</param>
     /// <returns>a <see cref="JudgeResult"/> describing the evaluation outcome</returns>
     public async Task<JudgeResult> EvaluateAsync(string input, string output,
-        double? samplingRate = null)
+        double? samplingRate = null, Random random = null)
     {
         if (string.IsNullOrWhiteSpace(Config.EvaluationMetricKey))
         {
@@ -67,7 +67,7 @@ public sealed class Judge
         }
 
         var effectiveRate = samplingRate.HasValue ? NormalizeSamplingRate(samplingRate.Value) : 1.0;
-        if (new Random().NextDouble() > effectiveRate)
+        if ((random ?? new Random()).NextDouble() > effectiveRate)
         {
             return new JudgeResult(sampled: false, judgeConfigKey: Config.Key);
         }
@@ -163,13 +163,14 @@ public sealed class Judge
     public Task<JudgeResult> EvaluateMessagesAsync(
         IReadOnlyList<LdAiConfigTypes.Message> messages,
         RunnerResult runnerResult,
-        double? samplingRate = null)
+        double? samplingRate = null,
+        Random random = null)
     {
         var formattedMessages = messages == null
             ? string.Empty
             : string.Join("\n", messages.Select(m => $"{m.Role.ToString().ToLowerInvariant()}: {m.Content}"));
 
-        return EvaluateAsync(formattedMessages, runnerResult?.Content ?? string.Empty, samplingRate);
+        return EvaluateAsync(formattedMessages, runnerResult?.Content ?? string.Empty, samplingRate, random);
     }
 
     private static double NormalizeSamplingRate(double rate)

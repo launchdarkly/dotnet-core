@@ -24,6 +24,7 @@ public sealed class Evaluator
     private readonly LdAiConfigTypes.JudgeConfiguration _judgeConfiguration;
     private readonly ILogger _logger;
     private readonly bool _isNoop;
+    private readonly Random _random;
 
     private Evaluator()
     {
@@ -49,6 +50,7 @@ public sealed class Evaluator
         _judgeConfiguration = judgeConfiguration;
         _logger = logger;
         _isNoop = false;
+        _random = new Random();
     }
 
     /// <summary>
@@ -82,7 +84,7 @@ public sealed class Evaluator
                 continue;
             }
 
-            var result = await judge.EvaluateAsync(input, output, judgeEntry.SamplingRate);
+            var result = await judge.EvaluateAsync(input, output, judgeEntry.SamplingRate, _random);
             results.Add(result);
         }
 

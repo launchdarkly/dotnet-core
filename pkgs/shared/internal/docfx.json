@@ -40,7 +40,7 @@
     ],
     "globalMetadata": {
       "_appName": "LaunchDarkly.InternalSdk",
-      "_appTitle": "LaunchDarkly internal common code for .NET and Xamarin clients",
+      "_appTitle": "LaunchDarkly internal common code for .NET clients",
       "_enableSearch": true,
       "pdf": false
     }

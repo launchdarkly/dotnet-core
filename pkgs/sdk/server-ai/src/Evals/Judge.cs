@@ -55,6 +55,7 @@ public sealed class Judge
     /// <param name="output">the model response to evaluate</param>
     /// <param name="samplingRate">when provided, the fraction of requests to actually evaluate;
     /// if a random draw exceeds this value the evaluation is skipped</param>
+    /// <param name="random">optional Random instance for sampling; when null a new instance is created</param>
     /// <returns>a <see cref="JudgeResult"/> describing the evaluation outcome</returns>
     public async Task<JudgeResult> EvaluateAsync(string input, string output,
         double? samplingRate = null, Random random = null)
@@ -159,6 +160,7 @@ public sealed class Judge
     /// <param name="messages">the conversation messages</param>
     /// <param name="runnerResult">the runner result whose content is to be evaluated</param>
     /// <param name="samplingRate">optional sampling rate; see <see cref="EvaluateAsync"/></param>
+    /// <param name="random">optional Random instance for sampling; forwarded to <see cref="EvaluateAsync"/></param>
     /// <returns>a <see cref="JudgeResult"/> describing the evaluation outcome</returns>
     public Task<JudgeResult> EvaluateMessagesAsync(
         IReadOnlyList<LdAiConfigTypes.Message> messages,

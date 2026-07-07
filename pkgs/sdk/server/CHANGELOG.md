@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.14.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.14.0...LaunchDarkly.ServerSdk-v8.14.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* update LaunchDarkly.EventSource to 5.3.1 for Authenticode-signed assemblies ([#303](https://github.com/launchdarkly/dotnet-core/issues/303)) ([60e5c4e](https://github.com/launchdarkly/dotnet-core/commit/60e5c4ec3de82c29df4b64874a89956bb3d0f1c5))
+
 ## [8.14.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.13.0...LaunchDarkly.ServerSdk-v8.14.0) (2026-05-28)
 
 

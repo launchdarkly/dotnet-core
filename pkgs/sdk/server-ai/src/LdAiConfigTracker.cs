@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -146,7 +147,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             IReadOnlyList<string> toolCalls;
             lock (_toolCallKeys)
             {
-                toolCalls = _toolCallKeys.Count > 0 ? _toolCallKeys.ToList().AsReadOnly() : null;
+                toolCalls = _toolCallKeys.Count > 0 ? _toolCallKeys.ToImmutableArray() : null;
             }
             return new MetricSummary(
                 _durationMs?.Value,

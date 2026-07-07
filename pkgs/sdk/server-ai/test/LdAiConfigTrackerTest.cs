@@ -113,7 +113,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var tracker = config.CreateTracker();
 
-            tracker.TrackDuration(1.0f);
+            tracker.TrackDuration(1.0);
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context,
                 It.Is<LdValue>(d =>
                     d.Get("runId").Type == LdValueType.String &&
@@ -130,7 +130,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var config = BuildConfig(mockClient.Object, flagKey, context);
             var tracker = config.CreateTracker();
 
-            tracker.TrackDuration(1.0f);
+            tracker.TrackDuration(1.0);
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context,
                 It.Is<LdValue>(d => MatchesTrackData(d, flagKey, config)), 1.0f), Times.Once);
         }
@@ -368,8 +368,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             var tracker = config.CreateTracker();
 
-            tracker.TrackDuration(1.0f);
-            tracker.TrackDuration(2.0f);
+            tracker.TrackDuration(1.0);
+            tracker.TrackDuration(2.0);
 
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context,
                 It.IsAny<LdValue>(), It.IsAny<double>()), Times.Once);
@@ -583,8 +583,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             var tracker1 = config.CreateTracker();
             var tracker2 = config.CreateTracker();
 
-            tracker1.TrackDuration(10.0f);
-            tracker2.TrackDuration(20.0f);
+            tracker1.TrackDuration(10.0);
+            tracker2.TrackDuration(20.0);
 
             string runId1 = null;
             string runId2 = null;
@@ -615,11 +615,11 @@ namespace LaunchDarkly.Sdk.Server.Ai
 
             // Track duration on the first tracker (exhausts at-most-once)
             var tracker1 = config.CreateTracker();
-            tracker1.TrackDuration(1.0f);
+            tracker1.TrackDuration(1.0);
 
             // A second tracker has fresh tracking state
             var tracker2 = config.CreateTracker();
-            tracker2.TrackDuration(2.0f);
+            tracker2.TrackDuration(2.0);
 
             // Both calls should have gone through
             mockClient.Verify(x => x.Track("$ld:ai:duration:total", context,
@@ -868,7 +868,7 @@ namespace LaunchDarkly.Sdk.Server.Ai
             Assert.Null(summary.TimeToFirstTokenMs);
 
             // Track some metrics
-            tracker.TrackDuration(100.5f);
+            tracker.TrackDuration(100.5);
             tracker.TrackTimeToFirstToken(10.2f);
             tracker.TrackFeedback(Feedback.Positive);
             tracker.TrackSuccess();
@@ -978,8 +978,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 var tracker = config.CreateTracker();
 
                 var barrier = new Barrier(2);
-                var t1 = Task.Run(() => { barrier.SignalAndWait(); tracker.TrackDuration(123.0f); });
-                var t2 = Task.Run(() => { barrier.SignalAndWait(); tracker.TrackDuration(123.0f); });
+                var t1 = Task.Run(() => { barrier.SignalAndWait(); tracker.TrackDuration(123.0); });
+                var t2 = Task.Run(() => { barrier.SignalAndWait(); tracker.TrackDuration(123.0); });
                 Task.WaitAll(t1, t2);
 
                 var calls = mockClient.Invocations.Count(inv =>

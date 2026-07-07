@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace LaunchDarkly.Sdk.Server.Ai.Tracking;
 
 /// <summary>
@@ -8,10 +10,14 @@ namespace LaunchDarkly.Sdk.Server.Ai.Tracking;
 /// <param name="Tokens">the token usage</param>
 /// <param name="Success">whether the generation was successful</param>
 /// <param name="TimeToFirstTokenMs">the time to first token in milliseconds</param>
+/// <param name="ToolCalls">the tool keys invoked during the operation, or null if none were tracked</param>
+/// <param name="ResumptionToken">the resumption token for cross-process continuation</param>
 public record struct MetricSummary(
     double? DurationMs,
     Feedback? Feedback,
     Usage? Tokens,
     bool? Success,
-    double? TimeToFirstTokenMs
+    double? TimeToFirstTokenMs,
+    IReadOnlyList<string> ToolCalls = null,
+    string ResumptionToken = null
 );

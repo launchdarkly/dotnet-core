@@ -1367,5 +1367,23 @@ namespace LaunchDarkly.Sdk.Server.Ai
             Assert.NotNull(summary.ResumptionToken);
             Assert.Equal(tracker.ResumptionToken, summary.ResumptionToken);
         }
+
+        [Fact]
+        public void Summary_ToolCallsIsSnapshot_NotLiveView()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            mockClient.Setup(x => x.GetLogger()).Returns((ILogger)null);
+            var context = Context.New("key");
+            var config = BuildConfig(mockClient.Object, "flag", context);
+            var tracker = config.CreateTracker();
+
+            tracker.TrackToolCall("search");
+            var snapshot = tracker.Summary;
+
+            tracker.TrackToolCall("fetch");
+
+            Assert.Equal(1, snapshot.ToolCalls.Count);
+            Assert.Equal("search", snapshot.ToolCalls[0]);
+        }
     }
 }

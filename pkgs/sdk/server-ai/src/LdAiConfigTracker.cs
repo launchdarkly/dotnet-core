@@ -145,7 +145,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             IReadOnlyList<string> toolCalls;
             lock (_toolCallKeys)
             {
-                toolCalls = _toolCallKeys.Count > 0 ? _toolCallKeys.AsReadOnly() : null;
+                toolCalls = _toolCallKeys.Count > 0 ? _toolCallKeys.ToList().AsReadOnly() : null;
             }
             return new MetricSummary(
                 _durationMs?.Value,

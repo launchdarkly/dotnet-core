@@ -6,7 +6,7 @@ This project contains .NET classes and interfaces that are shared between the La
 
 ## Contributing
 
-See [Contributing](https://github.com/launchdarkly/dotnet-sdk-internal/blob/main/CONTRIBUTING.md).
+See [Contributing](./CONTRIBUTING.md).
 
 ## Signing
 

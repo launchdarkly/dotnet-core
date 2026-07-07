@@ -38,9 +38,9 @@ The following policy criteria will be enforced:
 The following 1 attestation matched the policy criteria
 
 - Attestation #1
-  - Build repo:..... launchdarkly/dotnet-sdk-internal
+  - Build repo:..... launchdarkly/dotnet-core
   - Build workflow:. .github/workflows/release-please.yml
-  - Signer repo:.... launchdarkly/dotnet-sdk-internal
+  - Signer repo:.... launchdarkly/dotnet-core
   - Signer workflow: .github/workflows/release-please.yml
 ```
 

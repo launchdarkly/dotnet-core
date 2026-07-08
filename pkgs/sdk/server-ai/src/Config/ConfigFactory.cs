@@ -305,6 +305,8 @@ internal sealed class ConfigFactory
             context,
             cfg.Model?.Name,
             cfg.Provider?.Name,
+            cfg.Model?.ModelKey,
+            cfg.Model?.ModelVersion ?? 1,
             graphKey);
     }
 
@@ -326,7 +328,10 @@ internal sealed class ConfigFactory
         var name = modelValue.Get("name").AsString ?? "";
         var parameters = LdValueObjectToDictionary(modelValue.Get("parameters"));
         var custom = LdValueObjectToDictionary(modelValue.Get("custom"));
-        return new LdAiConfigTypes.ModelConfig(name, parameters, custom);
+        var modelKey = modelValue.Get("modelKey").AsString;
+        var modelVersionValue = modelValue.Get("modelVersion");
+        var modelVersion = modelVersionValue.IsNull ? 1 : modelVersionValue.AsInt;
+        return new LdAiConfigTypes.ModelConfig(name, parameters, custom, modelKey, modelVersion);
     }
 
     private static LdAiConfigTypes.ProviderConfig ParseProvider(LdValue providerValue)

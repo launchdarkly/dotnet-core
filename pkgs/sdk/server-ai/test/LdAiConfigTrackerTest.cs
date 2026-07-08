@@ -686,6 +686,84 @@ namespace LaunchDarkly.Sdk.Server.Ai
             // modelName and providerName should NOT be in the token
             Assert.False(doc.RootElement.TryGetProperty("modelName", out _));
             Assert.False(doc.RootElement.TryGetProperty("providerName", out _));
+            Assert.False(doc.RootElement.TryGetProperty("modelKey", out _));
+            Assert.False(doc.RootElement.TryGetProperty("modelVersion", out _));
+        }
+
+        [Fact]
+        public void TrackDataIncludesModelVersionByDefault()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+
+            var tracker = new LdAiConfigTracker(mockClient.Object, "test-run-id",
+                "config-key", "variation-key", 3, context, "fakeModel", "fakeProvider");
+            tracker.TrackSuccess();
+
+            mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+                It.Is<LdValue>(d => d.Get("modelVersion").AsInt == 1), 1.0f), Times.Once);
+        }
+
+        [Fact]
+        public void TrackDataIncludesModelKeyWhenSet()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+
+            var tracker = new LdAiConfigTracker(mockClient.Object, "test-run-id",
+                "config-key", "variation-key", 3, context, "fakeModel", "fakeProvider",
+                modelKey: "my-model", modelVersion: 2);
+            tracker.TrackSuccess();
+
+            mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+                It.Is<LdValue>(d =>
+                    d.Get("modelKey").AsString == "my-model" &&
+                    d.Get("modelVersion").AsInt == 2),
+                1.0f), Times.Once);
+        }
+
+        [Fact]
+        public void TrackDataOmitsModelKeyWhenEmpty()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+
+            var tracker = new LdAiConfigTracker(mockClient.Object, "test-run-id",
+                "config-key", "variation-key", 3, context, "fakeModel", "fakeProvider",
+                modelKey: "", modelVersion: 3);
+            tracker.TrackSuccess();
+
+            mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+                It.Is<LdValue>(d =>
+                    d.Get("modelVersion").AsInt == 3 &&
+                    d.Get("modelKey").IsNull),
+                1.0f), Times.Once);
+        }
+
+        [Fact]
+        public void FromResumptionTokenDefaultsModelVersionAndOmitsModelKey()
+        {
+            var mockClient = new Mock<ILaunchDarklyClient>();
+            var context = Context.New("key");
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                runId = "test-run-id",
+                configKey = "test-key",
+                variationKey = "var-1",
+                version = 2,
+            });
+            var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+            var token = base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+            var tracker = LdAiConfigTracker.FromResumptionToken(token, mockClient.Object, context);
+            tracker.TrackSuccess();
+
+            mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+                It.Is<LdValue>(d =>
+                    d.Get("modelVersion").AsInt == 1 &&
+                    d.Get("modelKey").IsNull),
+                1.0f), Times.Once);
         }
 
         [Fact]

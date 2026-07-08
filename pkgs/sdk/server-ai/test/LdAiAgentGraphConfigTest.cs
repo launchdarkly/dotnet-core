@@ -24,7 +24,7 @@ public class LdAiAgentGraphConfigTest
         string graphKey = null)
     {
         return new LdAiConfigTracker(client, Guid.NewGuid().ToString(), "config-key",
-            "v1", 1, context, "model", "provider", graphKey);
+            "v1", 1, context, "model", "provider", graphKey: graphKey);
     }
 
     // Test 1: Tracker created with graphKey → events include graphKey in data

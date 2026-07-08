@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Ai.Config;
+using LaunchDarkly.Sdk.Server.Ai.Interfaces;
+using Moq;
 using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Ai;
@@ -203,5 +205,117 @@ public class ConfigFactoryParserTest
         Assert.Empty(tools);
         Assert.Null(judgeConfig);
         Assert.Null(evaluationMetricKey);
+    }
+
+    [Fact]
+    public void CompletionConfigReadsModelKeyAndVersionFromFlag()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x =>
+            x.JsonVariation("model-config-with-key-version", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["variationKey"] = LdValue.Of("v1"),
+                    ["version"] = LdValue.Of(1)
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("gpt-4"),
+                    ["modelKey"] = LdValue.Of("my-model"),
+                    ["modelVersion"] = LdValue.Of(2)
+                }),
+                ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("openai")
+                }),
+                ["messages"] = LdValue.ArrayOf()
+            }));
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("model-config-with-key-version", Context.New("user-key"));
+
+        Assert.Equal("my-model", result.Model.ModelKey);
+        Assert.Equal(2, result.Model.ModelVersion);
+    }
+
+    [Fact]
+    public void CompletionConfigDefaultsModelVersionWhenAbsent()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x =>
+            x.JsonVariation("model-config-no-version", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["variationKey"] = LdValue.Of("v1"),
+                    ["version"] = LdValue.Of(1)
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("gpt-4")
+                }),
+                ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("openai")
+                }),
+                ["messages"] = LdValue.ArrayOf()
+            }));
+
+        var client = new LdAiClient(mockClient.Object);
+        var result = client.CompletionConfig("model-config-no-version", Context.New("user-key"));
+
+        Assert.Null(result.Model.ModelKey);
+        Assert.Equal(1, result.Model.ModelVersion);
+    }
+
+    [Fact]
+    public void CreateTrackerStampsModelKeyAndVersionOnTrackData()
+    {
+        var mockClient = new Mock<ILaunchDarklyClient>();
+        var mockLogger = new Mock<ILogger>();
+        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
+        mockClient.Setup(x =>
+            x.JsonVariation("my-config-key", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
+            {
+                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["enabled"] = LdValue.Of(true),
+                    ["variationKey"] = LdValue.Of("var-abc"),
+                    ["version"] = LdValue.Of(7)
+                }),
+                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("gpt-4"),
+                    ["modelKey"] = LdValue.Of("my-model"),
+                    ["modelVersion"] = LdValue.Of(2)
+                }),
+                ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
+                {
+                    ["name"] = LdValue.Of("openai")
+                }),
+                ["messages"] = LdValue.ArrayOf()
+            }));
+
+        var client = new LdAiClient(mockClient.Object);
+        var context = Context.New("user-key");
+        var config = client.CompletionConfig("my-config-key", context);
+        var tracker = config.CreateTracker();
+        tracker.TrackSuccess();
+
+        mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+            It.Is<LdValue>(d =>
+                d.Get("modelKey").AsString == "my-model" &&
+                d.Get("modelVersion").AsInt == 2),
+            1.0f), Times.Once);
     }
 }

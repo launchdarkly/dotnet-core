@@ -57,7 +57,7 @@ internal sealed class ConfigFactory
             return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue.Get("model"));
+        var model = ParseModel(ldValue);
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = interpolate
             ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
@@ -133,7 +133,7 @@ internal sealed class ConfigFactory
             return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue.Get("model"));
+        var model = ParseModel(ldValue);
         var provider = ParseProvider(ldValue.Get("provider"));
         var tools = ParseTools(ldValue.Get("tools"));
         var instructions = interpolate
@@ -206,7 +206,7 @@ internal sealed class ConfigFactory
             return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue.Get("model"));
+        var model = ParseModel(ldValue);
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = interpolate
             ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
@@ -323,13 +323,15 @@ internal sealed class ConfigFactory
         return (enabled, variationKey, version, mode);
     }
 
-    private static LdAiConfigTypes.ModelConfig ParseModel(LdValue modelValue)
+    private static LdAiConfigTypes.ModelConfig ParseModel(LdValue value)
     {
+        var modelValue = value.Get("model");
         var name = modelValue.Get("name").AsString ?? "";
         var parameters = LdValueObjectToDictionary(modelValue.Get("parameters"));
         var custom = LdValueObjectToDictionary(modelValue.Get("custom"));
-        var modelKey = modelValue.Get("modelKey").AsString;
-        var modelVersionValue = modelValue.Get("modelVersion");
+        var meta = value.Get("_ldMeta");
+        var modelKey = meta.Get("modelKey").AsString;
+        var modelVersionValue = meta.Get("modelVersion");
         var modelVersion = modelVersionValue.IsNull ? 1 : modelVersionValue.AsInt;
         return new LdAiConfigTypes.ModelConfig(name, parameters, custom, modelKey, modelVersion);
     }

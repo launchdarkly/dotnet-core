@@ -221,13 +221,13 @@ public class ConfigFactoryParserTest
                 {
                     ["enabled"] = LdValue.Of(true),
                     ["variationKey"] = LdValue.Of("v1"),
-                    ["version"] = LdValue.Of(1)
+                    ["version"] = LdValue.Of(1),
+                    ["modelKey"] = LdValue.Of("my-model"),
+                    ["modelVersion"] = LdValue.Of(2)
                 }),
                 ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
                 {
-                    ["name"] = LdValue.Of("gpt-4"),
-                    ["modelKey"] = LdValue.Of("my-model"),
-                    ["modelVersion"] = LdValue.Of(2)
+                    ["name"] = LdValue.Of("gpt-4")
                 }),
                 ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
                 {
@@ -291,13 +291,13 @@ public class ConfigFactoryParserTest
                 {
                     ["enabled"] = LdValue.Of(true),
                     ["variationKey"] = LdValue.Of("var-abc"),
-                    ["version"] = LdValue.Of(7)
+                    ["version"] = LdValue.Of(7),
+                    ["modelKey"] = LdValue.Of("my-model"),
+                    ["modelVersion"] = LdValue.Of(2)
                 }),
                 ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
                 {
-                    ["name"] = LdValue.Of("gpt-4"),
-                    ["modelKey"] = LdValue.Of("my-model"),
-                    ["modelVersion"] = LdValue.Of(2)
+                    ["name"] = LdValue.Of("gpt-4")
                 }),
                 ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
                 {

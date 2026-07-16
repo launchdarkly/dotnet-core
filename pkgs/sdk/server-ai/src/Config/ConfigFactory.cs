@@ -47,7 +47,7 @@ internal sealed class ConfigFactory
             return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+        var (enabled, variationKey, version, mode, modelKey, modelVersion) = ParseMeta(ldValue);
 
         if (mode != LdAiCompletionConfig.Mode)
         {
@@ -57,7 +57,7 @@ internal sealed class ConfigFactory
             return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue);
+        var model = ParseModel(ldValue.Get("model"), modelKey, modelVersion);
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = interpolate
             ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
@@ -123,7 +123,7 @@ internal sealed class ConfigFactory
             return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+        var (enabled, variationKey, version, mode, modelKey, modelVersion) = ParseMeta(ldValue);
 
         if (mode != LdAiAgentConfig.Mode)
         {
@@ -133,7 +133,7 @@ internal sealed class ConfigFactory
             return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue);
+        var model = ParseModel(ldValue.Get("model"), modelKey, modelVersion);
         var provider = ParseProvider(ldValue.Get("provider"));
         var tools = ParseTools(ldValue.Get("tools"));
         var instructions = interpolate
@@ -196,7 +196,7 @@ internal sealed class ConfigFactory
             return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+        var (enabled, variationKey, version, mode, modelKey, modelVersion) = ParseMeta(ldValue);
 
         if (mode != LdAiJudgeConfig.Mode)
         {
@@ -206,7 +206,7 @@ internal sealed class ConfigFactory
             return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue);
+        var model = ParseModel(ldValue.Get("model"), modelKey, modelVersion);
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = interpolate
             ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
@@ -310,7 +310,12 @@ internal sealed class ConfigFactory
             graphKey);
     }
 
-    private static (bool Enabled, string VariationKey, int Version, string Mode) ParseMeta(LdValue value)
+    // _ldMeta carries modelKey/modelVersion alongside the variation-level fields (rather than
+    // the model object) so modelVersion can't be mistaken for the underlying LLM's own version.
+    private readonly record struct Meta(
+        bool Enabled, string VariationKey, int Version, string Mode, string ModelKey, int ModelVersion);
+
+    private static Meta ParseMeta(LdValue value)
     {
         var meta = value.Get("_ldMeta");
         var enabled = meta.Get("enabled").AsBool;
@@ -320,19 +325,17 @@ internal sealed class ConfigFactory
         // Default to the completion mode when _ldMeta.mode is missing or non-string: legacy
         // flags predate the mode tag and were always served as completion configs.
         var mode = meta.Get("mode").AsString ?? LdAiCompletionConfig.Mode;
-        return (enabled, variationKey, version, mode);
-    }
-
-    private static LdAiConfigTypes.ModelConfig ParseModel(LdValue value)
-    {
-        var modelValue = value.Get("model");
-        var name = modelValue.Get("name").AsString ?? "";
-        var parameters = LdValueObjectToDictionary(modelValue.Get("parameters"));
-        var custom = LdValueObjectToDictionary(modelValue.Get("custom"));
-        var meta = value.Get("_ldMeta");
         var modelKey = meta.Get("modelKey").AsString;
         var modelVersionValue = meta.Get("modelVersion");
         var modelVersion = modelVersionValue.IsNull ? 1 : modelVersionValue.AsInt;
+        return new Meta(enabled, variationKey, version, mode, modelKey, modelVersion);
+    }
+
+    private static LdAiConfigTypes.ModelConfig ParseModel(LdValue modelValue, string modelKey, int modelVersion)
+    {
+        var name = modelValue.Get("name").AsString ?? "";
+        var parameters = LdValueObjectToDictionary(modelValue.Get("parameters"));
+        var custom = LdValueObjectToDictionary(modelValue.Get("custom"));
         return new LdAiConfigTypes.ModelConfig(name, parameters, custom, modelKey, modelVersion);
     }
 

@@ -76,6 +76,14 @@
         "src/LaunchDarkly.CommonSdk.JsonNet.csproj",
         "PROVENANCE.md"
       ]
+    },
+    "pkgs/shared/internal": {
+      "release-type": "simple",
+      "package-name": "LaunchDarkly.InternalSdk",
+      "extra-files": [
+        "src/LaunchDarkly.InternalSdk.csproj",
+        "PROVENANCE.md"
+      ]
     }
   }
 }

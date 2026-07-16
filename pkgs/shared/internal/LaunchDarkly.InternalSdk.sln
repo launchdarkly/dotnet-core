@@ -1,0 +1,23 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.InternalSdk", "src\LaunchDarkly.InternalSdk.csproj", "{E9EA3EA1-D5CD-46CE-9E67-A8CDA4C292F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaunchDarkly.InternalSdk.Tests", "test\LaunchDarkly.InternalSdk.Tests.csproj", "{DA1B9706-BD2B-4956-8074-3B4686C008AB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E9EA3EA1-D5CD-46CE-9E67-A8CDA4C292F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9EA3EA1-D5CD-46CE-9E67-A8CDA4C292F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9EA3EA1-D5CD-46CE-9E67-A8CDA4C292F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9EA3EA1-D5CD-46CE-9E67-A8CDA4C292F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA1B9706-BD2B-4956-8074-3B4686C008AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA1B9706-BD2B-4956-8074-3B4686C008AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA1B9706-BD2B-4956-8074-3B4686C008AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA1B9706-BD2B-4956-8074-3B4686C008AB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -57,7 +57,7 @@ internal sealed class ConfigFactory
             return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue.Get("model"), modelKey, modelVersion);
+        var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = interpolate
             ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
@@ -70,6 +70,8 @@ internal sealed class ConfigFactory
             enabled,
             variationKey,
             version,
+            modelKey,
+            modelVersion,
             messages,
             tools,
             judgeConfiguration,
@@ -95,6 +97,8 @@ internal sealed class ConfigFactory
             defaultValue.Enabled ?? true,
             variationKey: "",
             version: 1,
+            modelKey: null,
+            modelVersion: 1,
             messages,
             tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
             defaultValue.JudgeConfiguration,
@@ -133,7 +137,7 @@ internal sealed class ConfigFactory
             return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue.Get("model"), modelKey, modelVersion);
+        var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
         var tools = ParseTools(ldValue.Get("tools"));
         var instructions = interpolate
@@ -146,6 +150,8 @@ internal sealed class ConfigFactory
             enabled,
             variationKey,
             version,
+            modelKey,
+            modelVersion,
             instructions,
             tools,
             model,
@@ -169,6 +175,8 @@ internal sealed class ConfigFactory
             defaultValue.Enabled ?? true,
             variationKey: "",
             version: 1,
+            modelKey: null,
+            modelVersion: 1,
             instructions,
             tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
             defaultValue.Model,
@@ -206,7 +214,7 @@ internal sealed class ConfigFactory
             return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var model = ParseModel(ldValue.Get("model"), modelKey, modelVersion);
+        var model = ParseModel(ldValue.Get("model"));
         var provider = ParseProvider(ldValue.Get("provider"));
         var messages = interpolate
             ? InterpolateMessages(ParseMessages(ldValue.Get("messages")), mergedVars, key)
@@ -218,6 +226,8 @@ internal sealed class ConfigFactory
             enabled,
             variationKey,
             version,
+            modelKey,
+            modelVersion,
             messages,
             evaluationMetricKey,
             model,
@@ -240,6 +250,8 @@ internal sealed class ConfigFactory
             defaultValue.Enabled ?? true,
             variationKey: "",
             version: 1,
+            modelKey: null,
+            modelVersion: 1,
             messages,
             defaultValue.EvaluationMetricKey,
             defaultValue.Model,
@@ -305,8 +317,8 @@ internal sealed class ConfigFactory
             context,
             cfg.Model?.Name,
             cfg.Provider?.Name,
-            cfg.Model?.ModelKey,
-            cfg.Model?.ModelVersion ?? 1,
+            cfg.ModelKey,
+            cfg.ModelVersion,
             graphKey);
     }
 
@@ -331,12 +343,12 @@ internal sealed class ConfigFactory
         return new Meta(enabled, variationKey, version, mode, modelKey, modelVersion);
     }
 
-    private static LdAiConfigTypes.ModelConfig ParseModel(LdValue modelValue, string modelKey, int modelVersion)
+    private static LdAiConfigTypes.ModelConfig ParseModel(LdValue modelValue)
     {
         var name = modelValue.Get("name").AsString ?? "";
         var parameters = LdValueObjectToDictionary(modelValue.Get("parameters"));
         var custom = LdValueObjectToDictionary(modelValue.Get("custom"));
-        return new LdAiConfigTypes.ModelConfig(name, parameters, custom, modelKey, modelVersion);
+        return new LdAiConfigTypes.ModelConfig(name, parameters, custom);
     }
 
     private static LdAiConfigTypes.ProviderConfig ParseProvider(LdValue providerValue)

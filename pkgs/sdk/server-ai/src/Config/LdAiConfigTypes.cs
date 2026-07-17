@@ -71,23 +71,10 @@ public static class LdAiConfigTypes
         /// </summary>
         public readonly IReadOnlyDictionary<string, LdValue> Custom;
 
-        /// <summary>
-        /// The stable, unique key of the model (used for direct lookup; distinct from
-        /// <see cref="Name"/>, which is not guaranteed unique).
-        /// </summary>
-        public readonly string ModelKey;
-
-        /// <summary>
-        /// The pinned version of the model that this config variation references.
-        /// </summary>
-        public readonly int ModelVersion;
-
         internal ModelConfig(
             string name,
             IReadOnlyDictionary<string, LdValue> parameters,
-            IReadOnlyDictionary<string, LdValue> custom,
-            string modelKey = null,
-            int modelVersion = 1)
+            IReadOnlyDictionary<string, LdValue> custom)
         {
             Name = name;
             // Materialize into an ImmutableDictionary so a consumer that downcasts to
@@ -96,8 +83,6 @@ public static class LdAiConfigTypes
             // NotSupportedException at runtime, matching the typed read-only promise.
             Parameters = parameters?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
             Custom = custom?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdValue>.Empty;
-            ModelKey = modelKey;
-            ModelVersion = modelVersion;
         }
     }
 

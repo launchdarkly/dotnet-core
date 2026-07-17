@@ -208,44 +208,11 @@ public class ConfigFactoryParserTest
     }
 
     [Fact]
-    public void CompletionConfigReadsModelKeyAndVersionFromFlag()
+    public void CreateTrackerDefaultsModelVersionAndOmitsModelKeyWhenAbsentFromFlag()
     {
-        var mockClient = new Mock<ILaunchDarklyClient>();
-        var mockLogger = new Mock<ILogger>();
-        mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
-        mockClient.Setup(x =>
-            x.JsonVariation("model-config-with-key-version", It.IsAny<Context>(), It.IsAny<LdValue>()))
-            .Returns(LdValue.ObjectFrom(new Dictionary<string, LdValue>
-            {
-                ["_ldMeta"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
-                {
-                    ["enabled"] = LdValue.Of(true),
-                    ["variationKey"] = LdValue.Of("v1"),
-                    ["version"] = LdValue.Of(1),
-                    ["modelKey"] = LdValue.Of("my-model"),
-                    ["modelVersion"] = LdValue.Of(2)
-                }),
-                ["model"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
-                {
-                    ["name"] = LdValue.Of("gpt-4")
-                }),
-                ["provider"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
-                {
-                    ["name"] = LdValue.Of("openai")
-                }),
-                ["messages"] = LdValue.ArrayOf()
-            }));
-
-        var client = new LdAiClient(mockClient.Object);
-        var result = client.CompletionConfig("model-config-with-key-version", Context.New("user-key"));
-
-        Assert.Equal("my-model", result.Model.ModelKey);
-        Assert.Equal(2, result.Model.ModelVersion);
-    }
-
-    [Fact]
-    public void CompletionConfigDefaultsModelVersionWhenAbsent()
-    {
+        // modelKey/modelVersion are intentionally not exposed on Model (they'd read as
+        // properties of the LLM itself, e.g. a version like "5.4"); the only place they
+        // surface is the tracker's stamped event data, mirroring variationKey/version.
         var mockClient = new Mock<ILaunchDarklyClient>();
         var mockLogger = new Mock<ILogger>();
         mockClient.Setup(x => x.GetLogger()).Returns(mockLogger.Object);
@@ -271,10 +238,16 @@ public class ConfigFactoryParserTest
             }));
 
         var client = new LdAiClient(mockClient.Object);
-        var result = client.CompletionConfig("model-config-no-version", Context.New("user-key"));
+        var context = Context.New("user-key");
+        var config = client.CompletionConfig("model-config-no-version", context);
+        var tracker = config.CreateTracker();
+        tracker.TrackSuccess();
 
-        Assert.Null(result.Model.ModelKey);
-        Assert.Equal(1, result.Model.ModelVersion);
+        mockClient.Verify(x => x.Track("$ld:ai:generation:success", context,
+            It.Is<LdValue>(d =>
+                d.Get("modelKey").IsNull &&
+                d.Get("modelVersion").AsInt == 1),
+            1.0f), Times.Once);
     }
 
     [Fact]

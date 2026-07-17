@@ -25,6 +25,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
                 enabled: false,
                 variationKey: "",
                 version: 1,
+                modelKey: null,
+                modelVersion: 1,
                 messages: new List<LdAiConfigTypes.Message>(),
                 tools: new Dictionary<string, LdAiConfigTypes.Tool>(),
                 judgeConfiguration: null,

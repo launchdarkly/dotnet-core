@@ -41,10 +41,22 @@ public abstract class LdAiConfig
     internal int Version { get; }
 
     /// <summary>
+    /// This field meant for internal LaunchDarkly usage. Not exposed on <see cref="Model"/> so
+    /// it can't be mistaken for the underlying LLM's own version (e.g. "GPT-5.4").
+    /// </summary>
+    internal string ModelKey { get; }
+
+    /// <summary>
+    /// This field meant for internal LaunchDarkly usage.
+    /// </summary>
+    internal int ModelVersion { get; }
+
+    /// <summary>
     /// Factory that produces a tracker for the config. The factory is mode-agnostic — it
     /// operates only on the shared fields (<see cref="Key"/>, <see cref="Model"/>,
-    /// <see cref="Provider"/>, <see cref="VariationKey"/>, <see cref="Version"/>), so the
-    /// same tracker class serves all config modes.
+    /// <see cref="Provider"/>, <see cref="VariationKey"/>, <see cref="Version"/>,
+    /// <see cref="ModelKey"/>, <see cref="ModelVersion"/>), so the same tracker class serves
+    /// all config modes.
     /// </summary>
     private readonly Func<LdAiConfig, ILdAiConfigTracker> _trackerFactory;
 
@@ -64,6 +76,8 @@ public abstract class LdAiConfig
         bool enabled,
         string variationKey,
         int version,
+        string modelKey,
+        int modelVersion,
         LdAiConfigTypes.ModelConfig model,
         LdAiConfigTypes.ProviderConfig provider,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
@@ -72,6 +86,8 @@ public abstract class LdAiConfig
         Enabled = enabled;
         VariationKey = variationKey ?? "";
         Version = version;
+        ModelKey = modelKey;
+        ModelVersion = modelVersion;
         Model = model ?? new LdAiConfigTypes.ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
         Provider = provider ?? new LdAiConfigTypes.ProviderConfig("");
         _trackerFactory = trackerFactory ?? throw new ArgumentNullException(nameof(trackerFactory));

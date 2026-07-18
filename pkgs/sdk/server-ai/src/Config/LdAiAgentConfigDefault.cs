@@ -192,11 +192,15 @@ public sealed class LdAiAgentConfigDefault : LdAiConfigDefault
             root["judgeConfiguration"] = LdValue.ObjectFrom(new Dictionary<string, LdValue>
             {
                 { "judges", LdValue.ArrayFrom(JudgeConfiguration.Judges.Select(j =>
-                    LdValue.ObjectFrom(new Dictionary<string, LdValue>
                     {
-                        { "key", LdValue.Of(j.Key) },
-                        { "samplingRate", LdValue.Of(j.SamplingRate) }
-                    })))
+                        var judgeFields = new Dictionary<string, LdValue>
+                        {
+                            { "key", LdValue.Of(j.Key) }
+                        };
+                        if (j.SamplingRate.HasValue)
+                            judgeFields["samplingRate"] = LdValue.Of(j.SamplingRate.Value);
+                        return LdValue.ObjectFrom(judgeFields);
+                    }))
                 }
             });
         }

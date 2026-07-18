@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
@@ -46,8 +47,9 @@ public sealed class LdAiAgentConfig : LdAiConfig
         LdAiConfigTypes.ModelConfig model,
         LdAiConfigTypes.ProviderConfig provider,
         LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
-        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
-        : base(key, enabled, variationKey, version, model, provider, trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
+        Evaluator evaluator = null)
+        : base(key, enabled, variationKey, version, model, provider, trackerFactory, evaluator)
     {
         Instructions = instructions;
         Tools = tools?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;

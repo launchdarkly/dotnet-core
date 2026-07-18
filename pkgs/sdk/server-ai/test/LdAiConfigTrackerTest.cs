@@ -1124,6 +1124,8 @@ namespace LaunchDarkly.Sdk.Server.Ai
             tracker.TrackJudgeResult(new JudgeResult(
                 metricKey: "$ld:ai:judge:relevance",
                 score: 0.85,
+                sampled: true,
+                success: true,
                 judgeConfigKey: "my-judge"));
 
             mockClient.Verify(x => x.Track(

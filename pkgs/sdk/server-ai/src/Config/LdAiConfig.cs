@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LaunchDarkly.Sdk.Server.Ai.Evals;
 using LaunchDarkly.Sdk.Server.Ai.Interfaces;
 
 namespace LaunchDarkly.Sdk.Server.Ai.Config;
@@ -41,6 +42,12 @@ public abstract class LdAiConfig
     internal int Version { get; }
 
     /// <summary>
+    /// The evaluator attached to this config. Always non-null; use <see cref="Evaluator.Noop"/>
+    /// when no real evaluation is configured.
+    /// </summary>
+    public Evaluator Evaluator { get; }
+
+    /// <summary>
     /// Factory that produces a tracker for the config. The factory is mode-agnostic — it
     /// operates only on the shared fields (<see cref="Key"/>, <see cref="Model"/>,
     /// <see cref="Provider"/>, <see cref="VariationKey"/>, <see cref="Version"/>), so the
@@ -66,7 +73,8 @@ public abstract class LdAiConfig
         int version,
         LdAiConfigTypes.ModelConfig model,
         LdAiConfigTypes.ProviderConfig provider,
-        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
+        Func<LdAiConfig, ILdAiConfigTracker> trackerFactory,
+        Evaluator evaluator = null)
     {
         Key = key;
         Enabled = enabled;
@@ -75,5 +83,6 @@ public abstract class LdAiConfig
         Model = model ?? new LdAiConfigTypes.ModelConfig("", new Dictionary<string, LdValue>(), new Dictionary<string, LdValue>());
         Provider = provider ?? new LdAiConfigTypes.ProviderConfig("");
         _trackerFactory = trackerFactory ?? throw new ArgumentNullException(nameof(trackerFactory));
+        Evaluator = evaluator ?? Evals.Evaluator.Noop();
     }
 }

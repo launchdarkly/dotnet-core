@@ -86,6 +86,33 @@ public class LdAiClientAgentJudgeTest
     }
 
     [Fact]
+    public void AgentConfig_DisabledVariation_ReturnsDisabledAgentWithoutModeMismatchWarning()
+    {
+        var (mockClient, mockLogger, client) = MakeClient();
+
+        // A disabled variation is served with no mode field, so its mode defaults to "completion".
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": false}
+                            }
+                            """;
+
+        mockClient.Setup(x => x.JsonVariation("agent-key", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var defaultConfig = LdAiAgentConfigDefault.New().SetInstructions("fallback").Build();
+        var result = client.AgentConfig("agent-key", Context.New("user"), defaultConfig);
+
+        Assert.IsType<LdAiAgentConfig>(result);
+        Assert.False(result.Enabled);
+
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s => s.Contains("AI Config mode mismatch")),
+            It.IsAny<object[]>()
+        ), Times.Never);
+    }
+
+    [Fact]
     public void AgentConfig_InstructionsInterpolated()
     {
         var (mockClient, _, client) = MakeClient();
@@ -274,6 +301,36 @@ public class LdAiClientAgentJudgeTest
         var result = client.JudgeConfig("judge-key", Context.New("user"), defaultConfig);
 
         Assert.Equal("$ld:ai:judge:fallback", result.EvaluationMetricKey);
+    }
+
+    [Fact]
+    public void JudgeConfig_DisabledVariation_ReturnsDisabledJudgeWithoutModeMismatchWarning()
+    {
+        var (mockClient, mockLogger, client) = MakeClient();
+
+        // A disabled variation is served with no mode field, so its mode defaults to "completion".
+        const string json = """
+                            {
+                              "_ldMeta": {"variationKey": "v1", "enabled": false}
+                            }
+                            """;
+
+        mockClient.Setup(x => x.JsonVariation("judge-key", It.IsAny<Context>(), It.IsAny<LdValue>()))
+            .Returns(LdValue.Parse(json));
+
+        var defaultConfig = LdAiJudgeConfigDefault.New()
+            .SetEvaluationMetricKey("$ld:ai:judge:fallback")
+            .Build();
+
+        var result = client.JudgeConfig("judge-key", Context.New("user"), defaultConfig);
+
+        Assert.IsType<LdAiJudgeConfig>(result);
+        Assert.False(result.Enabled);
+
+        mockLogger.Verify(x => x.Warn(
+            It.Is<string>(s => s.Contains("AI Config mode mismatch")),
+            It.IsAny<object[]>()
+        ), Times.Never);
     }
 
     [Fact]

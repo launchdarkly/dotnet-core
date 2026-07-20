@@ -8,6 +8,7 @@ using LaunchDarkly.Sdk.Json;
 using LaunchDarkly.Sdk.Server;
 using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Integrations;
+using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Migrations;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -19,6 +20,8 @@ namespace TestService
 
         private readonly LdClient _client;
         private readonly Logger _log;
+        private readonly Dictionary<string, EventHandler<FlagChangeEvent>> _flagListeners =
+            new Dictionary<string, EventHandler<FlagChangeEvent>>();
 
         public SdkClientEntity(
             SdkConfigParams sdkParams,
@@ -39,8 +42,23 @@ namespace TestService
 
         public void Close()
         {
+            foreach (var handler in _flagListeners.Values)
+            {
+                _client.FlagTracker.FlagChanged -= handler;
+            }
+            _flagListeners.Clear();
             _client.Dispose();
             _log.Info("Test ended");
+        }
+
+        private void RegisterFlagListener(string listenerId, EventHandler<FlagChangeEvent> handler)
+        {
+            if (_flagListeners.TryGetValue(listenerId, out var existing))
+            {
+                _client.FlagTracker.FlagChanged -= existing;
+            }
+            _flagListeners[listenerId] = handler;
+            _client.FlagTracker.FlagChanged += handler;
         }
 
         public bool DoCommand(CommandParams command, out object response)
@@ -109,6 +127,43 @@ namespace TestService
                 case "migrationOperation":
                     response = DoMigrationOperation(command.MigrationOperation);
                     break;
+
+                case "registerFlagChangeListener":
+                {
+                    var p = command.RegisterFlagChangeListener;
+                    var svc = new CallbackService(p.CallbackUri);
+                    EventHandler<FlagChangeEvent> handler = (sender, e) =>
+                        svc.Post("", new ListenerNotification { ListenerId = p.ListenerId, FlagKey = e.Key });
+                    RegisterFlagListener(p.ListenerId, handler);
+                    break;
+                }
+
+                case "registerFlagValueChangeListener":
+                {
+                    var p = command.RegisterFlagValueChangeListener;
+                    var svc = new CallbackService(p.CallbackUri);
+                    var handler = _client.FlagTracker.FlagValueChangeHandler(p.FlagKey, p.Context,
+                        (sender, e) => svc.Post("", new ListenerNotification
+                        {
+                            ListenerId = p.ListenerId,
+                            FlagKey = e.Key,
+                            OldValue = e.OldValue,
+                            NewValue = e.NewValue
+                        }));
+                    RegisterFlagListener(p.ListenerId, handler);
+                    break;
+                }
+
+                case "unregisterListener":
+                {
+                    var p = command.UnregisterListener;
+                    if (_flagListeners.TryGetValue(p.ListenerId, out var handler))
+                    {
+                        _client.FlagTracker.FlagChanged -= handler;
+                        _flagListeners.Remove(p.ListenerId);
+                    }
+                    break;
+                }
 
                 default:
                     return false;

@@ -40,6 +40,8 @@ namespace TestService
             "inline-context-all",
             "anonymous-redaction",
             "evaluation-hooks",
+            "flag-change-listeners",
+            "flag-value-change-listeners",
             "client-prereq-events",
             "fdv1-fallback",
             "instance-id"

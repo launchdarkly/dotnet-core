@@ -32,6 +32,8 @@ namespace TestService
             "big-segments",
             "context-type",
             "secure-mode-hash",
+            "server-side-polling",
+            "service-endpoints",
             "migrations",
             "event-sampling",
             "tags",

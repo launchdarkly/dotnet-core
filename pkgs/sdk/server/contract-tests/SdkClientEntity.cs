@@ -289,14 +289,49 @@ namespace TestService
                 builder.StartWaitTime(TimeSpan.FromMilliseconds(sdkParams.StartWaitTimeMs.Value));
             }
 
+            var serviceEndpointsParams = sdkParams.ServiceEndpoints;
+            if (serviceEndpointsParams != null)
+            {
+                if (serviceEndpointsParams.Streaming != null)
+                {
+                    endpoints.Streaming(serviceEndpointsParams.Streaming);
+                }
+                if (serviceEndpointsParams.Polling != null)
+                {
+                    endpoints.Polling(serviceEndpointsParams.Polling);
+                }
+                if (serviceEndpointsParams.Events != null)
+                {
+                    endpoints.Events(serviceEndpointsParams.Events);
+                }
+            }
+
             var streamingParams = sdkParams.Streaming;
             if (streamingParams != null)
             {
-                endpoints.Streaming(streamingParams.BaseUri);
+                if (streamingParams.BaseUri != null)
+                {
+                    endpoints.Streaming(streamingParams.BaseUri);
+                }
                 var dataSource = Components.StreamingDataSource();
                 if (streamingParams.InitialRetryDelayMs.HasValue)
                 {
                     dataSource.InitialReconnectDelay(TimeSpan.FromMilliseconds(streamingParams.InitialRetryDelayMs.Value));
+                }
+                builder.DataSource(dataSource);
+            }
+
+            var pollingParams = sdkParams.Polling;
+            if (pollingParams != null)
+            {
+                if (pollingParams.BaseUri != null)
+                {
+                    endpoints.Polling(pollingParams.BaseUri);
+                }
+                var dataSource = Components.PollingDataSource();
+                if (pollingParams.PollIntervalMs.HasValue)
+                {
+                    dataSource.PollInterval(TimeSpan.FromMilliseconds(pollingParams.PollIntervalMs.Value));
                 }
                 builder.DataSource(dataSource);
             }
@@ -308,7 +343,10 @@ namespace TestService
             }
             else
             {
-                endpoints.Events(eventParams.BaseUri);
+                if (eventParams.BaseUri != null)
+                {
+                    endpoints.Events(eventParams.BaseUri);
+                }
                 var events = Components.SendEvents()
                     .AllAttributesPrivate(eventParams.AllAttributesPrivate);
                 if (eventParams.Capacity.HasValue && eventParams.Capacity.Value > 0)

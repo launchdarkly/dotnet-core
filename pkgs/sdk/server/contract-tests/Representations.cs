@@ -28,6 +28,8 @@ namespace TestService
         public long? StartWaitTimeMs { get; set; }
         public bool InitCanFail { get; set; }
         public SdkConfigStreamParams Streaming { get; set; }
+        public SdkConfigPollingParams Polling { get; set; }
+        public SdkConfigServiceEndpointsParams ServiceEndpoints { get; set; }
         public SdkConfigEventParams Events { get; set; }
         public SdkConfigBigSegmentsParams BigSegments { get; set; }
         public SdkTagParams Tags { get; set; }
@@ -69,6 +71,13 @@ namespace TestService
     {
         public Uri BaseUri { get; set; }
         public long? InitialRetryDelayMs { get; set; }
+    }
+
+    public class SdkConfigServiceEndpointsParams
+    {
+        public Uri Streaming { get; set; }
+        public Uri Polling { get; set; }
+        public Uri Events { get; set; }
     }
 
     public class SdkConfigEventParams

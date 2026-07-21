@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class DiagnosticStoreBase | LaunchDarkly internal common code for .NET clients </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class DiagnosticStoreBase | LaunchDarkly internal common code for .NET clients ">
+    
+    <meta name="description" content="Abstract implementation of IDiagnosticStore.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="LaunchDarkly.InternalSdk">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase">
+
+
+
+  <h1 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase" class="text-break">Class DiagnosticStoreBase</h1>
+  <div class="markdown level0 summary"><p>Abstract implementation of IDiagnosticStore.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">DiagnosticStoreBase</span></div>
+  </div>
+  <div class="implements">
+    <h5>Implements</h5>
+    <div><a class="xref" href="LaunchDarkly.Sdk.Internal.Events.IDiagnosticStore.html">IDiagnosticStore</a></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="LaunchDarkly.html">LaunchDarkly</a>.<a class="xref" href="LaunchDarkly.Sdk.html">Sdk</a>.<a class="xref" href="LaunchDarkly.Sdk.Internal.html">Internal</a>.<a class="xref" href="LaunchDarkly.Sdk.Internal.Events.html">Events</a></h6>
+  <h6><strong>Assembly</strong>: LaunchDarkly.InternalSdk.dll</h6>
+  <h5 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract class DiagnosticStoreBase : IDiagnosticStore</code></pre>
+  </div>
+  <h5 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_remarks"><strong>Remarks</strong></h5>
+  <div class="markdown level0 remarks"><p>Platform-specific behavior is provided by subclass overrides.</p>
+</div>
+  <h3 id="constructors">Constructors
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase__ctor.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.%23ctor%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L84">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase__ctor_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.#ctor*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase__ctor" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.#ctor">DiagnosticStoreBase()</h4>
+  <div class="markdown level1 summary"><p>Base class constructor.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected DiagnosticStoreBase()</code></pre>
+  </div>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_ConfigProperties.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.ConfigProperties%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L59">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_ConfigProperties_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.ConfigProperties*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_ConfigProperties" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.ConfigProperties">ConfigProperties</h4>
+  <div class="markdown level1 summary"><p>Subclasses override this property to return one or more JSON objects which will
+be merged together to form the configuration properties. For convenience, these
+are represented with the <a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a> type, but any values that are not
+JSON objects will be ignored.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected abstract IEnumerable&lt;LdValue&gt; ConfigProperties { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1">IEnumerable</a>&lt;<a class="xref" href="LaunchDarkly.Sdk.LdValue.html">LdValue</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_DataSince.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.DataSince%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L37">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_DataSince_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.DataSince*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_DataSince" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.DataSince">DataSince</h4>
+  <div class="markdown level1 summary"><p>The last time the periodic data was reset for the current diagnosticId. This may be from
+before the SDK initialized if periodic diagnostic data has been persisted from a
+previous initialization, but the session was not considered ended (meaning the same
+diagnostic id) when the current initialization occurred. For the server SDK this will be
+the time of initialization.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public DateTime DataSince { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.datetime">DateTime</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_DotNetTargetFramework.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.DotNetTargetFramework%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L64">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_DotNetTargetFramework_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.DotNetTargetFramework*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_DotNetTargetFramework" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.DotNetTargetFramework">DotNetTargetFramework</h4>
+  <div class="markdown level1 summary"><p>Subclasses override this property to return a string such as &quot;netstandard2.0&quot;.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected abstract string DotNetTargetFramework { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_HttpProperties.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.HttpProperties%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L69">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_HttpProperties_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.HttpProperties*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_HttpProperties" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.HttpProperties">HttpProperties</h4>
+  <div class="markdown level1 summary"><p>Subclasses override this property to return the configured HTTP properties.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected abstract HttpProperties HttpProperties { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Internal.Http.HttpProperties.html">HttpProperties</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_InitEvent.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.InitEvent%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L31">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_InitEvent_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.InitEvent*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_InitEvent" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.InitEvent">InitEvent</h4>
+  <div class="markdown level1 summary"><p>An event to be sent for a new diagnostic id, if the initialization represented a new
+diagnostic id.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public DiagnosticEvent? InitEvent { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Internal.Events.DiagnosticEvent.html">DiagnosticEvent</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_PersistedUnsentEvent.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.PersistedUnsentEvent%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L34">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_PersistedUnsentEvent_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.PersistedUnsentEvent*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_PersistedUnsentEvent" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.PersistedUnsentEvent">PersistedUnsentEvent</h4>
+  <div class="markdown level1 summary"><p>Persisted periodic diagnostic data from a previous initialization. This should be set
+with the data from the previous diagnostic id if the initialization caused a switch of
+diagnostic id and there is periodic diagnostics data available for the previous id.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public DiagnosticEvent? PersistedUnsentEvent { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Internal.Events.DiagnosticEvent.html">DiagnosticEvent</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_SdkKeyOrMobileKey.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.SdkKeyOrMobileKey%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L46">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_SdkKeyOrMobileKey_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.SdkKeyOrMobileKey*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_SdkKeyOrMobileKey" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.SdkKeyOrMobileKey">SdkKeyOrMobileKey</h4>
+  <div class="markdown level1 summary"><p>Subclasses override this property to return the configured SDK key or mobile key.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected abstract string SdkKeyOrMobileKey { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_SdkName.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.SdkName%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L51">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_SdkName_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.SdkName*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_SdkName" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.SdkName">SdkName</h4>
+  <div class="markdown level1 summary"><p>Subclasses override this property to return a string such as &quot;dotnet-server-sdk&quot;.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected abstract string SdkName { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_TypeOfLdClient.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.TypeOfLdClient%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L75">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_TypeOfLdClient_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.TypeOfLdClient*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_TypeOfLdClient" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.TypeOfLdClient">TypeOfLdClient</h4>
+  <div class="markdown level1 summary"><p>Subclasses override this property to return the type of the SDK's client class,
+which is used to determine the version via reflection.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected abstract Type TypeOfLdClient { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.type">Type</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_AddStreamInit_System_DateTime_System_TimeSpan_System_Boolean_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.AddStreamInit(System.DateTime%2CSystem.TimeSpan%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L103">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_AddStreamInit_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.AddStreamInit*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_AddStreamInit_System_DateTime_System_TimeSpan_System_Boolean_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.AddStreamInit(System.DateTime,System.TimeSpan,System.Boolean)">AddStreamInit(DateTime, TimeSpan, bool)</h4>
+  <div class="markdown level1 summary"><p>Called when a stream init completes with details of the initialization.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void AddStreamInit(DateTime timestamp, TimeSpan duration, bool failed)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.datetime">DateTime</a></td>
+        <td><span class="parametername">timestamp</span></td>
+        <td><p>The time at which the stream began attempted initialization.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
+        <td><span class="parametername">duration</span></td>
+        <td><p>The duration of the stream initialization attempt.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">failed</span></td>
+        <td><p>True if the initialization failed, false otherwise.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_CreateEventAndReset.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.CreateEventAndReset%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L120">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_CreateEventAndReset_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.CreateEventAndReset*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_CreateEventAndReset" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.CreateEventAndReset">CreateEventAndReset()</h4>
+  <div class="markdown level1 summary"><p>Called to generate a periodic diagnostic event, resetting the store counts and stream
+initializations.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public DiagnosticEvent CreateEventAndReset()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="LaunchDarkly.Sdk.Internal.Events.DiagnosticEvent.html">DiagnosticEvent</a></td>
+        <td><p>A dictionary representing the periodic diagnostic event</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_IncrementDeduplicatedUsers.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.IncrementDeduplicatedUsers%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L95">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_IncrementDeduplicatedUsers_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.IncrementDeduplicatedUsers*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_IncrementDeduplicatedUsers" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.IncrementDeduplicatedUsers">IncrementDeduplicatedUsers()</h4>
+  <div class="markdown level1 summary"><p>Called when the user deduplicator prevents a user from being indexed.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void IncrementDeduplicatedUsers()</code></pre>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_IncrementDroppedEvents.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.IncrementDroppedEvents%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L99">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_IncrementDroppedEvents_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.IncrementDroppedEvents*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_IncrementDroppedEvents" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.IncrementDroppedEvents">IncrementDroppedEvents()</h4>
+  <div class="markdown level1 summary"><p>Called when an event is dropped due to a full event buffer.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void IncrementDroppedEvents()</code></pre>
+  </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_RecordEventsInBatch_System_Int64_.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.RecordEventsInBatch(System.Int64)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L116">View Source</a>
+  </span>
+  <a id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_RecordEventsInBatch_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.RecordEventsInBatch*"></a>
+  <h4 id="LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase_RecordEventsInBatch_System_Int64_" data-uid="LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase.RecordEventsInBatch(System.Int64)">RecordEventsInBatch(long)</h4>
+  <div class="markdown level1 summary"><p>Called when flushing events, recording how many events were contained in the flush payload.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void RecordEventsInBatch(long eventsInBatch)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int64">long</a></td>
+        <td><span class="parametername">eventsInBatch</span></td>
+        <td><p>The number of events that were flushed.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Internal.Events.IDiagnosticStore.html">IDiagnosticStore</a>
+  </div>
+  <h3 id="extensionmethods">Extension Methods</h3>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_GetPluginHooks__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.GetPluginHooks&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+  <div>
+      <a class="xref" href="LaunchDarkly.Sdk.Integrations.Plugins.PluginExtensions.html#LaunchDarkly_Sdk_Integrations_Plugins_PluginExtensions_RegisterPlugins__2___0_System_Collections_Generic_IEnumerable_LaunchDarkly_Sdk_Integrations_Plugins_PluginBase___0___1___LaunchDarkly_Sdk_Integrations_Plugins_EnvironmentMetadata_LaunchDarkly_Logging_Logger_">PluginExtensions.RegisterPlugins&lt;TClient, THook&gt;(TClient, IEnumerable&lt;PluginBase&lt;TClient, THook&gt;&gt;, EnvironmentMetadata, Logger)</a>
+  </div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/new/main/apiSpec/new?filename=LaunchDarkly_Sdk_Internal_Events_DiagnosticStoreBase.md&amp;value=---%0Auid%3A%20LaunchDarkly.Sdk.Internal.Events.DiagnosticStoreBase%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/src/Events/DiagnosticStoreBase.cs/#L15" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

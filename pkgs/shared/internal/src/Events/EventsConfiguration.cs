@@ -28,6 +28,11 @@ namespace LaunchDarkly.Sdk.Internal.Events
     {
         public bool AllAttributesPrivate { get; set; }
 
+        // When true, all attributes of anonymous contexts are redacted from inlined contexts in
+        // custom and migration_op events (in addition to feature events, which always redact for
+        // non-debug). Server-side SDKs set this true; client-side SDKs leave it false.
+        public bool RedactAnonymousAllEvents { get; set; }
+
         public TimeSpan DiagnosticRecordingInterval { get; set; }
 
         public Uri DiagnosticUri { get; set; }

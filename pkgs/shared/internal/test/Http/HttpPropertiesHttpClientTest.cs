@@ -73,13 +73,14 @@ namespace LaunchDarkly.Sdk.Internal.Http
         [Fact]
         public async Task ClientUsesConnectTimeout()
         {
-            // There doesn't seem to be a way, in .NET's low-level socket API, to set up a TCP listener that
-            // doesn't immediately accept incoming connections-- so, we can't directly test what happens if
-            // for instance the timeout is 100ms and the connection takes 200ms. We'll do the next best things:
-            // 1. verify that it times out if we set a ridiculously low timeout...
-            using (var server = HttpServer.Start(Handlers.Status(200)))
+            // 1. verify that a short connect timeout fires when the connection cannot be established.
+            //    We connect to a non-routable TEST-NET-1 address (RFC 5737): packets are silently
+            //    dropped, so the TCP connect attempt hangs and the connect timeout triggers
+            //    deterministically. (Previously this used a ridiculously low 1-tick timeout against a
+            //    real loopback server, which was flaky -- a fast loopback connection can complete
+            //    before such a tiny timeout is enforced, so no exception would be thrown.)
             {
-                var hp = HttpProperties.Default.WithConnectTimeout(TimeSpan.FromTicks(1));
+                var hp = HttpProperties.Default.WithConnectTimeout(TimeSpan.FromMilliseconds(250));
                 using (var client = hp.NewHttpClient())
                 {
                     // The exact type of exception thrown by SocketsHttpHandler for a connection timeout is
@@ -87,7 +88,7 @@ namespace LaunchDarkly.Sdk.Internal.Http
                     // in .NET Core 3.1 and .NET 5.0, whereas in .NET Core 2.1 it's an HttpRequestException that
                     // wraps a TaskCanceledException.
                     var ex = await Assert.ThrowsAnyAsync<Exception>(async () =>
-                        await client.GetAsync(server.Uri));
+                        await client.GetAsync(new Uri("http://192.0.2.1:8080")));
                     if (ex is HttpRequestException)
                     {
                         Assert.IsType<TaskCanceledException>(ex.InnerException);

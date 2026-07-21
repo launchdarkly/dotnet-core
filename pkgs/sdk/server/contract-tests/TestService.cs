@@ -31,6 +31,7 @@ namespace TestService
             "all-flags-with-reasons",
             "big-segments",
             "context-type",
+            "context-comparison",
             "secure-mode-hash",
             "server-side-polling",
             "service-endpoints",

@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.InternalSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.9.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.8.0...LaunchDarkly.InternalSdk-v3.9.0) (2026-07-21)
+
+
+### Features
+
+* Support redacting anonymous context attributes in all events ([034e43b](https://github.com/launchdarkly/dotnet-core/commit/034e43b127fc98b24c066b24c0cb25a43c49a774))
+
 ## [3.8.0](https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.7.0...3.8.0) (2026-06-16)
 
 

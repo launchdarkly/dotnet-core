@@ -373,6 +373,133 @@ namespace LaunchDarkly.Sdk.Client
             }
         }
 
+        // Cycle-detection tests exercise the ancestor-set cycle guard added to EvaluateInternal.
+        // Each test constructs a cyclic prereq graph, evaluates one flag on the cycle, and asserts
+        // (a) the requested flag returns its cached value unchanged and (b) the recorded evaluation
+        // events match exactly one entry per cycle-safe descent.
+
+        [Fact]
+        public void VariationSkipsSelfLoopPrerequisiteAndReturnsCachedValue()
+        {
+            var flagA = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagA").Build();
+            _testData.Update(_testData.Flag("flagA").PreconfiguredFlag(flagA));
+
+            using (LdClient client = MakeClient(user))
+            {
+                Assert.True(client.BoolVariation("flagA"));
+                // Only flagA emits a feature event; the self-prereq is cycle-skipped.
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user),
+                    e => CheckEvaluationEvent(e, "flagA")
+                );
+            }
+        }
+
+        [Fact]
+        public void VariationHandlesTwoCycleEvaluatingA()
+        {
+            var flagA = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagB").Build();
+            var flagB = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagA").Build();
+            _testData.Update(_testData.Flag("flagA").PreconfiguredFlag(flagA));
+            _testData.Update(_testData.Flag("flagB").PreconfiguredFlag(flagB));
+
+            using (LdClient client = MakeClient(user))
+            {
+                Assert.True(client.BoolVariation("flagA"));
+                // A -> B -> [A skipped]. Events deepest-first: B (as prereq of A), then A.
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user),
+                    e => CheckEvaluationEvent(e, "flagB"),
+                    e => CheckEvaluationEvent(e, "flagA")
+                );
+            }
+        }
+
+        [Fact]
+        public void VariationHandlesTwoCycleEvaluatingB()
+        {
+            var flagA = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagB").Build();
+            var flagB = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagA").Build();
+            _testData.Update(_testData.Flag("flagA").PreconfiguredFlag(flagA));
+            _testData.Update(_testData.Flag("flagB").PreconfiguredFlag(flagB));
+
+            using (LdClient client = MakeClient(user))
+            {
+                Assert.True(client.BoolVariation("flagB"));
+                // Symmetric: same graph, entry from B. Events: A (as prereq of B), then B.
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user),
+                    e => CheckEvaluationEvent(e, "flagA"),
+                    e => CheckEvaluationEvent(e, "flagB")
+                );
+            }
+        }
+
+        [Fact]
+        public void VariationHandlesThreeCycle()
+        {
+            var flagA = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagB").Build();
+            var flagB = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagC").Build();
+            var flagC = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagA").Build();
+            _testData.Update(_testData.Flag("flagA").PreconfiguredFlag(flagA));
+            _testData.Update(_testData.Flag("flagB").PreconfiguredFlag(flagB));
+            _testData.Update(_testData.Flag("flagC").PreconfiguredFlag(flagC));
+
+            using (LdClient client = MakeClient(user))
+            {
+                Assert.True(client.BoolVariation("flagA"));
+                // A -> B -> C -> [A skipped]. Events emitted deepest-first: C, B, A.
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user),
+                    e => CheckEvaluationEvent(e, "flagC"),
+                    e => CheckEvaluationEvent(e, "flagB"),
+                    e => CheckEvaluationEvent(e, "flagA")
+                );
+            }
+        }
+
+        [Fact]
+        public void VariationEmitsSharedDescendantOncePerPathInDiamond()
+        {
+            // Diamond: A -> [B, C], B -> [D], C -> [D]. Not a cycle. Ancestor-set (current-path)
+            // semantics let D be reached on each of the two independent paths, so D emits twice.
+            // A naive "visited across the whole walk" implementation would drop the second event.
+            var flagA = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagB", "flagC").Build();
+            var flagB = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagD").Build();
+            var flagC = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Prerequisites("flagD").Build();
+            var flagD = new FeatureFlagBuilder().Value(LdValue.Of(true)).Variation(1).Version(1)
+                .TrackEvents(false).TrackReason(false).Build();
+            _testData.Update(_testData.Flag("flagA").PreconfiguredFlag(flagA));
+            _testData.Update(_testData.Flag("flagB").PreconfiguredFlag(flagB));
+            _testData.Update(_testData.Flag("flagC").PreconfiguredFlag(flagC));
+            _testData.Update(_testData.Flag("flagD").PreconfiguredFlag(flagD));
+
+            using (LdClient client = MakeClient(user))
+            {
+                Assert.True(client.BoolVariation("flagA"));
+                // Events (deepest-first per path): D (via B), B, D (via C), C, A. D appears twice.
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user),
+                    e => CheckEvaluationEvent(e, "flagD"),
+                    e => CheckEvaluationEvent(e, "flagB"),
+                    e => CheckEvaluationEvent(e, "flagD"),
+                    e => CheckEvaluationEvent(e, "flagC"),
+                    e => CheckEvaluationEvent(e, "flagA")
+                );
+            }
+        }
+
         private void CheckIdentifyEvent(object e, Context c)
         {
             IdentifyEvent ie = Assert.IsType<IdentifyEvent>(e);

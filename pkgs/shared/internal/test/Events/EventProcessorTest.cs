@@ -677,7 +677,14 @@ namespace LaunchDarkly.Sdk.Internal.Events
             using (var ep = MakeProcessor(_config, mockSender))
             {
                 RecordIdentify(ep, _fixedTimestamp, _context);
-                FlushAndWait(ep, captured);
+                // Use the synchronous FlushAndWait so the flush fully completes -- including the
+                // processor setting its disabled flag in response to FailedAndMustShutDown -- before
+                // we flush again. The capture-based helper only waits for the payload to be sent,
+                // which races the disable on slow runners and lets the second flush's payload slip
+                // through. We still drain this first payload (AwaitPayload) so ExpectNoMorePayloads
+                // below only sees payloads produced *after* the shutdown.
+                ep.FlushAndWait(TimeSpan.FromSeconds(5));
+                captured.AwaitPayload();
 
                 Assert.Collection(captured.Events,
                     item => CheckIdentifyEvent(item, _fixedTimestamp, _contextJson));

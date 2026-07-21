@@ -75,7 +75,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
                     break;
                 case CustomEvent ce:
                     WriteBase("custom", w, ce.Timestamp, ce.EventKey);
-                    WriteContext(ce.Context, w);
+                    WriteContext(ce.Context, w, redactAnonymous: _config.RedactAnonymousAllEvents);
                     JsonConverterHelpers.WriteLdValueIfNotNull(w, "data", ce.Data);
                     if (ce.MetricValue.HasValue)
                     {
@@ -199,7 +199,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         private void WriteMigrationOpEvent(MigrationOpEvent migrationOpEvent, Utf8JsonWriter obj)
         {
             WriteBase("migration_op", obj, migrationOpEvent.Timestamp, null);
-            WriteContext(migrationOpEvent.Context, obj);
+            WriteContext(migrationOpEvent.Context, obj, redactAnonymous: _config.RedactAnonymousAllEvents);
             if (migrationOpEvent.SamplingRatio != 1)
             {
                 obj.WriteNumber("samplingRatio", migrationOpEvent.SamplingRatio);

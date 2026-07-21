@@ -231,6 +231,43 @@ namespace TestService
         public SecureModeHashParams SecureModeHash { get; set; }
         public MigrationVariationParams MigrationVariation { get; set; }
         public MigrationOperationParams MigrationOperation { get; set; }
+        public RegisterFlagChangeListenerParams RegisterFlagChangeListener { get; set; }
+        public RegisterFlagValueChangeListenerParams RegisterFlagValueChangeListener { get; set; }
+        public UnregisterListenerParams UnregisterListener { get; set; }
+    }
+
+    public class RegisterFlagChangeListenerParams
+    {
+        public string ListenerId { get; set; }
+        public Uri CallbackUri { get; set; }
+    }
+
+    public class RegisterFlagValueChangeListenerParams
+    {
+        public string ListenerId { get; set; }
+        public string FlagKey { get; set; }
+        public Context Context { get; set; }
+        public LdValue DefaultValue { get; set; }
+        public Uri CallbackUri { get; set; }
+    }
+
+    public class UnregisterListenerParams
+    {
+        public string ListenerId { get; set; }
+    }
+
+    public class ListenerNotification
+    {
+        public string ListenerId { get; set; }
+        public string FlagKey { get; set; }
+
+        // OldValue/NewValue are sent only for flag-value-change notifications; they are omitted
+        // for general flag-change notifications (matching the harness's expectations).
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public LdValue? OldValue { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public LdValue? NewValue { get; set; }
     }
 
     public class EvaluateFlagParams

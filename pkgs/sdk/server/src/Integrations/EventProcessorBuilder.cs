@@ -258,6 +258,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             return new EventsConfiguration
             {
                 AllAttributesPrivate = _allAttributesPrivate,
+                RedactAnonymousAllEvents = true, // server-side SDKs redact anonymous contexts in custom & migration_op events
                 DiagnosticRecordingInterval = _diagnosticRecordingInterval,
                 EventCapacity = _capacity,
                 EventFlushInterval = _flushInterval,

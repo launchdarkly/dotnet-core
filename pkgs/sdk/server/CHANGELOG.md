@@ -1,5 +1,17 @@
 # Changelog
 
+## [8.15.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.14.1...LaunchDarkly.ServerSdk-v8.15.0) (2026-07-21)
+
+
+### Features
+
+* Support redacting anonymous context attributes in all events ([034e43b](https://github.com/launchdarkly/dotnet-core/commit/034e43b127fc98b24c066b24c0cb25a43c49a774))
+
+
+### Bug Fixes
+
+* enable anonymous-context redaction for server events (SDK-2735) ([#314](https://github.com/launchdarkly/dotnet-core/issues/314)) ([0113050](https://github.com/launchdarkly/dotnet-core/commit/01130502f6ca5a03c09a5556b08fc64967e2f3a6))
+
 ## [8.14.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.14.0...LaunchDarkly.ServerSdk-v8.14.1) (2026-07-01)
 
 

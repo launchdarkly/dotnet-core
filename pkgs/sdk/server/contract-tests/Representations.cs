@@ -231,9 +231,52 @@ namespace TestService
         public SecureModeHashParams SecureModeHash { get; set; }
         public MigrationVariationParams MigrationVariation { get; set; }
         public MigrationOperationParams MigrationOperation { get; set; }
+        public ContextComparisonPairParams ContextComparison { get; set; }
         public RegisterFlagChangeListenerParams RegisterFlagChangeListener { get; set; }
         public RegisterFlagValueChangeListenerParams RegisterFlagValueChangeListener { get; set; }
         public UnregisterListenerParams UnregisterListener { get; set; }
+    }
+
+    public class ContextComparisonPairParams
+    {
+        public ContextComparisonParams Context1 { get; set; }
+        public ContextComparisonParams Context2 { get; set; }
+    }
+
+    public class ContextComparisonParams
+    {
+        public ContextComparisonSingleParams Single { get; set; }
+        public ContextComparisonSingleParams[] Multi { get; set; }
+    }
+
+    public class ContextComparisonSingleParams
+    {
+        public string Kind { get; set; }
+        public string Key { get; set; }
+        public AttributeDefinition[] Attributes { get; set; }
+
+        // The harness emits this key literally as "privateAttributes:omitempty" because of a
+        // malformed json struct tag in servicedef (a colon where a comma should be). Match it verbatim.
+        [JsonPropertyName("privateAttributes:omitempty")]
+        public PrivateAttribute[] PrivateAttributes { get; set; }
+    }
+
+    public class AttributeDefinition
+    {
+        public string Name { get; set; }
+        public LdValue Value { get; set; }
+    }
+
+    public class PrivateAttribute
+    {
+        public string Value { get; set; }
+        public bool Literal { get; set; }
+    }
+
+    public class ContextComparisonResponse
+    {
+        [JsonPropertyName("equals")]
+        public bool AreEqual { get; set; }
     }
 
     public class RegisterFlagChangeListenerParams

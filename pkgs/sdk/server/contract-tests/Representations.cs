@@ -254,10 +254,6 @@ namespace TestService
         public string Kind { get; set; }
         public string Key { get; set; }
         public AttributeDefinition[] Attributes { get; set; }
-
-        // The harness emits this key literally as "privateAttributes:omitempty" because of a
-        // malformed json struct tag in servicedef (a colon where a comma should be). Match it verbatim.
-        [JsonPropertyName("privateAttributes:omitempty")]
         public PrivateAttribute[] PrivateAttributes { get; set; }
     }
 

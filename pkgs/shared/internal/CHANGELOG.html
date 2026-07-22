@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Change log | LaunchDarkly internal common code for .NET clients </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Change log | LaunchDarkly internal common code for .NET clients ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="">
+      <meta property="docfx:tocrel" content="">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="LaunchDarkly.InternalSdk">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="change-log">Change log</h1>
+
+<p>All notable changes to <code>LaunchDarkly.InternalSdk</code> will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to <a href="http://semver.org">Semantic Versioning</a>.</p>
+<h2 id="3100-2026-07-22"><a href="https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.9.0...LaunchDarkly.InternalSdk-v3.10.0">3.10.0</a> (2026-07-22)</h2>
+<h3 id="features">Features</h3>
+<ul>
+<li>enable gzip AutomaticDecompression on the default HTTP handler (<a href="https://github.com/launchdarkly/dotnet-core/issues/318">#318</a>) (<a href="https://github.com/launchdarkly/dotnet-core/commit/b346071a896672a8eaa2206b5dfbbd54473fe93c">b346071</a>)</li>
+</ul>
+<h2 id="390-2026-07-21"><a href="https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.8.0...LaunchDarkly.InternalSdk-v3.9.0">3.9.0</a> (2026-07-21)</h2>
+<h3 id="features-1">Features</h3>
+<ul>
+<li>Support redacting anonymous context attributes in all events (<a href="https://github.com/launchdarkly/dotnet-core/commit/034e43b127fc98b24c066b24c0cb25a43c49a774">034e43b</a>)</li>
+</ul>
+<h2 id="380-2026-06-16"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.7.0...3.8.0">3.8.0</a> (2026-06-16)</h2>
+<h3 id="features-2">Features</h3>
+<ul>
+<li>Update target frameworks to net8.0 (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/69">#69</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/235c52f7e83db46590b6d4ac81333e555d7e876d">235c52f</a>)</li>
+</ul>
+<h2 id="370-2026-06-08"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.6.1...3.7.0">3.7.0</a> (2026-06-08)</h2>
+<h3 id="features-3">Features</h3>
+<ul>
+<li>add optional support for per-context summary events (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/65">#65</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/d835d08d062d6d71acebc6b572d112eed976a508">d835d08</a>)</li>
+</ul>
+<h2 id="361-2026-04-09"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.6.0...3.6.1">3.6.1</a> (2026-04-09)</h2>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li>Update CommonSdk to 7.2.0 (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/60">#60</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/047a867705a4bb4fd0f9cad99e9a51ed733952ef">047a867</a>)</li>
+</ul>
+<h2 id="360-2025-12-16"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.5.5...3.6.0">3.6.0</a> (2025-12-16)</h2>
+<h3 id="features-4">Features</h3>
+<ul>
+<li>adds headers to UnsuccessfulResponseException (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/52">#52</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/3cca2ff29e779def2fe75770dfdd13b94433742f">3cca2ff</a>)</li>
+</ul>
+<h2 id="355-2025-09-26"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.5.4...3.5.5">3.5.5</a> (2025-09-26)</h2>
+<h3 id="bug-fixes-1">Bug Fixes</h3>
+<ul>
+<li>Update CommonSdk to 7.1.1 (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/50">#50</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/b8d57d30032a26fd3b034dcea00e24af4cc3be68">b8d57d3</a>)</li>
+</ul>
+<h2 id="354-2025-08-22"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.5.3...3.5.4">3.5.4</a> (2025-08-22)</h2>
+<h3 id="bug-fixes-2">Bug Fixes</h3>
+<ul>
+<li>Prevent invalid strings from being part of format value (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/46">#46</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/b4c772e059a1f67c8c94c5c39dbb44ca31c2850e">b4c772e</a>)</li>
+</ul>
+<h2 id="353-2025-07-10"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.5.2...3.5.3">3.5.3</a> (2025-07-10)</h2>
+<h3 id="bug-fixes-3">Bug Fixes</h3>
+<ul>
+<li>Relax common dependency (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/44">#44</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/66913b15b173cbb4eb4a55133989a5f3c21c6781">66913b1</a>)</li>
+</ul>
+<h2 id="352-2025-06-24"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.5.1...3.5.2">3.5.2</a> (2025-06-24)</h2>
+<h3 id="bug-fixes-4">Bug Fixes</h3>
+<ul>
+<li>Address ARM64 optimization throwing exceptions (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/42">#42</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/bac4833a526b9f63025a0c864ce41514e402718c">bac4833</a>)</li>
+</ul>
+<h2 id="351-2025-05-30"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.5.0...3.5.1">3.5.1</a> (2025-05-30)</h2>
+<h3 id="bug-fixes-5">Bug Fixes</h3>
+<ul>
+<li>conditionalize immutable dependency (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/40">#40</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/3ab529d730fcbcc0fd5614d96997929b2e4644e1">3ab529d</a>)</li>
+</ul>
+<h2 id="350-2025-05-02"><a href="https://github.com/launchdarkly/dotnet-sdk-internal/compare/3.4.0...3.5.0">3.5.0</a> (2025-05-02)</h2>
+<h3 id="features-5">Features</h3>
+<ul>
+<li>Inline context for custom and migrations op events (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/issues/34">#34</a>) (<a href="https://github.com/launchdarkly/dotnet-sdk-internal/commit/7013bbe95b3be44ca277f311a84e195e1adfd41d">7013bbe</a>)</li>
+</ul>
+<h2 id="340---2024-03-13">[3.4.0] - 2024-03-13</h2>
+<h3 id="changed">Changed:</h3>
+<ul>
+<li>Redact anonymous attributes within feature events</li>
+<li>Always inline contexts for feature events</li>
+</ul>
+<h2 id="331---2023-10-17">[3.3.1] - 2023-10-17</h2>
+<h3 id="changed-1">Changed:</h3>
+<ul>
+<li>Updated Dotnet Common to 7.0.0 which contains nullability of IEnvironmentReporter properties.</li>
+</ul>
+<h2 id="330---2023-10-10">[3.3.0] - 2023-10-10</h2>
+<h3 id="changed-2">Changed:</h3>
+<ul>
+<li>Updated LaunchDarkly.CommonSdk to 6.2.0 to incorporate changes.</li>
+</ul>
+<h2 id="320---2023-10-10">[3.2.0] - 2023-10-10</h2>
+<h3 id="added">Added:</h3>
+<ul>
+<li>Add common support for technology migrations.</li>
+<li>HttpProperties now supports WithApplicationTags.</li>
+</ul>
+<h2 id="312---2023-04-21">[3.1.2] - 2023-04-21</h2>
+<h3 id="changed-3">Changed:</h3>
+<ul>
+<li>Updated <code>LaunchDarkly.CommonSdk</code> to <code>6.0.1</code>.</li>
+</ul>
+<h2 id="311---2023-03-08">[3.1.1] - 2023-03-08</h2>
+<h3 id="fixed">Fixed:</h3>
+<ul>
+<li>Fixed an issue where calling <code>FlushAndWait</code> with <code>TimeSpan.Zero</code> would never complete if there were no events to flush.</li>
+</ul>
+<h2 id="310---2022-12-06">[3.1.0] - 2022-12-06</h2>
+<h3 id="added-1">Added:</h3>
+<ul>
+<li>In <code>EventProcessor</code>, <code>FlushAndWait</code> and <code>FlushAndWaitAsync</code>.</li>
+</ul>
+<h2 id="300---2022-12-01">[3.0.0] - 2022-12-01</h2>
+<p>This major version release of <code>LaunchDarkly.InternalSdk</code> corresponds to the upcoming v7.0.0 release of the LaunchDarkly server-side .NET SDK (<code>LaunchDarkly.ServerSdk</code>) and the v3.0.0 release of the LaunchDarkly client-side .NET SDK (<code>LaunchDarkly.ClientSdk</code>), and cannot be used with earlier SDK versions.</p>
+<h3 id="changed-4">Changed:</h3>
+<ul>
+<li>.NET Core 2.1, .NET Framework 4.5.2, .NET Framework 4.6.1, and .NET 5.0 are now unsupported. The minimum platform versions are now .NET Core 3.1, .NET Framework 4.6.2, .NET 6.0, and .NET Standard 2.0.</li>
+<li>Events now use the <code>Context</code> type rather than <code>User</code>.</li>
+<li>Private attributes can now be designated with the <code>AttributeRef</code> type, which allows redaction of either a full attribute or a property within a JSON object value.</li>
+<li>There is a new JSON schema for analytics events. The HTTP headers for event payloads now report the schema version as 4.</li>
+<li>There is no longer a dependency on <code>LaunchDarkly.JsonStream</code>. This package existed because some platforms did not support the <code>System.Text.Json</code> API, but that is no longer the case and the SDK now uses <code>System.Text.Json</code> directly for all of its JSON operations.</li>
+<li><code>EventSender</code> now takes a byte array instead of a string for the event payload, so we can serialize JSON data directly to UTF8.</li>
+</ul>
+<h3 id="removed">Removed:</h3>
+<ul>
+<li>All alias event functionality</li>
+<li><code>EventsConfiguration.InlineUsersInEvents</code></li>
+</ul>
+<h2 id="232---2022-02-02">[2.3.2] - 2022-02-02</h2>
+<h3 id="changed-5">Changed:</h3>
+<ul>
+<li>Updated <code>LaunchDarkly.CommonSdk</code> dependency to latest release.</li>
+</ul>
+<h2 id="231---2022-01-28">[2.3.1] - 2022-01-28</h2>
+<h3 id="fixed-1">Fixed:</h3>
+<ul>
+<li>In analytics event data, <code>index</code> events were showing a <code>contextKind</code> property for anonymous users. That type of event should not have that property; LaunchDarkly would ignore it.</li>
+</ul>
+<h2 id="230---2021-10-27">[2.3.0] - 2021-10-27</h2>
+<h3 id="added-2">Added:</h3>
+<ul>
+<li><code>HttpProperties.NewHttpMessageHandler()</code></li>
+</ul>
+<h2 id="220---2021-10-25">[2.2.0] - 2021-10-25</h2>
+<h3 id="added-3">Added:</h3>
+<ul>
+<li>In <code>TaskExecutor</code>, there is a new parameter for controlling how events are dispatched that will be used by the client-side .NET SDK.</li>
+<li>In <code>LaunchDarkly.Sdk.Internal.Events</code>, new types <code>DiagnosticStoreBase</code> and <code>DiagnosticConfigProperties</code> contain logic that was previously only in <code>LaunchDarkly.ServerSdk</code> and will now be shared by <code>LaunchDarkly.ClientSdk</code>.</li>
+</ul>
+<h3 id="changed-6">Changed:</h3>
+<ul>
+<li>Updated <code>LaunchDarkly.CommonSdk</code> to 5.4.0.</li>
+</ul>
+<h2 id="211---2021-10-05">[2.1.1] - 2021-10-05</h2>
+<h3 id="changed-7">Changed:</h3>
+<ul>
+<li>Updated dependency versions to keep in sync with dependencies of <code>LaunchDarkly.ServerSdk</code>.</li>
+</ul>
+<h2 id="210---2021-09-21">[2.1.0] - 2021-09-21</h2>
+<h3 id="added-4">Added:</h3>
+<ul>
+<li>Made <code>StateMonitor</code> and <code>TaskExecutor</code> public; they had mistakenly been marked internal.</li>
+</ul>
+<h2 id="200---2021-09-21">[2.0.0] - 2021-09-21</h2>
+<h3 id="added-5">Added:</h3>
+<ul>
+<li><code>StateMonitor</code>, <code>TaskExecutor</code>.</li>
+</ul>
+<h3 id="changed-8">Changed:</h3>
+<ul>
+<li>Moved <code>AtomicBoolean</code> and <code>AsyncUtils</code> into new namespace <code>LaunchDarkly.Sdk.Internal.Concurrent</code>.</li>
+</ul>
+<h3 id="removed-1">Removed:</h3>
+<ul>
+<li><code>MultiNotifier</code> (obviated by <code>StateMonitor</code>).</li>
+</ul>
+<h2 id="112---2021-06-07">[1.1.2] - 2021-06-07</h2>
+<h3 id="fixed-2">Fixed:</h3>
+<ul>
+<li>Updated minimum <code>LaunchDarkly.CommonSdk</code> version to latest patch, to exclude versions of <code>LaunchDarkly.JsonStream</code> with a known parsing bug.</li>
+</ul>
+<h2 id="111---2021-05-07">[1.1.1] - 2021-05-07</h2>
+<h3 id="fixed-3">Fixed:</h3>
+<ul>
+<li><code>HttpProperties.ConnectTimeout</code> now really sets the TCP connect timeout, if the platform is .NET Core or .NET 5.0. Other platforms don't support connect timeouts and will continue to ignore this value.</li>
+</ul>
+<h2 id="110---2021-04-27">[1.1.0] - 2021-04-27</h2>
+<h3 id="added-6">Added:</h3>
+<ul>
+<li><code>UriExtensions</code></li>
+</ul>
+<h3 id="fixed-4">Fixed:</h3>
+<ul>
+<li>Improved coverage and reliability of HTTP tests using <code>LaunchDarkly.TestHelpers</code>.</li>
+</ul>
+<h2 id="100---2021-02-08">[1.0.0] - 2021-02-08</h2>
+<p>Initial release of this package, to be used in <code>LaunchDarkly.ServerSdk</code> 6.0 and <code>LaunchDarkly.XamarinSdk</code> 2.0.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/launchdarkly/dotnet-core/blob/main/pkgs/shared/internal/CHANGELOG.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

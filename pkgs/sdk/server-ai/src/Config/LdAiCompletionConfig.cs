@@ -39,11 +39,12 @@ public sealed class LdAiCompletionConfig : LdAiConfig
     public LdAiConfigTypes.JudgeConfiguration JudgeConfiguration { get; }
 
     internal LdAiCompletionConfig(string key, bool enabled, string variationKey, int version,
+        string modelKey, int modelVersion,
         IEnumerable<LdAiConfigTypes.Message> messages, IReadOnlyDictionary<string, LdAiConfigTypes.Tool> tools,
         LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
         LdAiConfigTypes.ModelConfig model, LdAiConfigTypes.ProviderConfig provider,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
-        : base(key, enabled, variationKey, version, model, provider, trackerFactory)
+        : base(key, enabled, variationKey, version, modelKey, modelVersion, model, provider, trackerFactory)
     {
         Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
         Tools = tools ?? ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;

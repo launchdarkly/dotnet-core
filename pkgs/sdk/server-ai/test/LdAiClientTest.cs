@@ -668,7 +668,9 @@ public class LdAiClientTest
                 d.Get("variationKey").AsString == "var-1" &&
                 d.Get("version").AsInt == 2 &&
                 d.Get("modelName").AsString == "" &&
-                d.Get("providerName").AsString == ""),
+                d.Get("providerName").AsString == "" &&
+                d.Get("modelVersion").AsInt == 1 &&
+                d.Get("modelKey").IsNull),
             1.0f), Times.Once);
     }
 

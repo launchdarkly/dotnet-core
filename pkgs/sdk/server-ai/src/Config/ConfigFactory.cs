@@ -47,7 +47,7 @@ internal sealed class ConfigFactory
             return BuildCompletionFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+        var (enabled, variationKey, version, mode, modelKey, modelVersion) = ParseMeta(ldValue);
 
         if (mode != LdAiCompletionConfig.Mode)
         {
@@ -70,6 +70,8 @@ internal sealed class ConfigFactory
             enabled,
             variationKey,
             version,
+            modelKey,
+            modelVersion,
             messages,
             tools,
             judgeConfiguration,
@@ -95,6 +97,8 @@ internal sealed class ConfigFactory
             defaultValue.Enabled ?? true,
             variationKey: "",
             version: 1,
+            modelKey: null,
+            modelVersion: 1,
             messages,
             tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
             defaultValue.JudgeConfiguration,
@@ -123,7 +127,7 @@ internal sealed class ConfigFactory
             return BuildAgentFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+        var (enabled, variationKey, version, mode, modelKey, modelVersion) = ParseMeta(ldValue);
 
         if (mode != LdAiAgentConfig.Mode)
         {
@@ -146,6 +150,8 @@ internal sealed class ConfigFactory
             enabled,
             variationKey,
             version,
+            modelKey,
+            modelVersion,
             instructions,
             tools,
             model,
@@ -169,6 +175,8 @@ internal sealed class ConfigFactory
             defaultValue.Enabled ?? true,
             variationKey: "",
             version: 1,
+            modelKey: null,
+            modelVersion: 1,
             instructions,
             tools: ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty,
             defaultValue.Model,
@@ -196,7 +204,7 @@ internal sealed class ConfigFactory
             return BuildJudgeFromDefault(key, defaultValue, mergedVars, trackerFactory, interpolate);
         }
 
-        var (enabled, variationKey, version, mode) = ParseMeta(ldValue);
+        var (enabled, variationKey, version, mode, modelKey, modelVersion) = ParseMeta(ldValue);
 
         if (mode != LdAiJudgeConfig.Mode)
         {
@@ -218,6 +226,8 @@ internal sealed class ConfigFactory
             enabled,
             variationKey,
             version,
+            modelKey,
+            modelVersion,
             messages,
             evaluationMetricKey,
             model,
@@ -240,6 +250,8 @@ internal sealed class ConfigFactory
             defaultValue.Enabled ?? true,
             variationKey: "",
             version: 1,
+            modelKey: null,
+            modelVersion: 1,
             messages,
             defaultValue.EvaluationMetricKey,
             defaultValue.Model,
@@ -305,10 +317,17 @@ internal sealed class ConfigFactory
             context,
             cfg.Model?.Name,
             cfg.Provider?.Name,
+            cfg.ModelKey,
+            cfg.ModelVersion,
             graphKey);
     }
 
-    private static (bool Enabled, string VariationKey, int Version, string Mode) ParseMeta(LdValue value)
+    // _ldMeta carries modelKey/modelVersion alongside the variation-level fields (rather than
+    // the model object) so modelVersion can't be mistaken for the underlying LLM's own version.
+    private readonly record struct Meta(
+        bool Enabled, string VariationKey, int Version, string Mode, string ModelKey, int ModelVersion);
+
+    private static Meta ParseMeta(LdValue value)
     {
         var meta = value.Get("_ldMeta");
         var enabled = meta.Get("enabled").AsBool;
@@ -318,7 +337,10 @@ internal sealed class ConfigFactory
         // Default to the completion mode when _ldMeta.mode is missing or non-string: legacy
         // flags predate the mode tag and were always served as completion configs.
         var mode = meta.Get("mode").AsString ?? LdAiCompletionConfig.Mode;
-        return (enabled, variationKey, version, mode);
+        var modelKey = meta.Get("modelKey").AsString;
+        var modelVersionValue = meta.Get("modelVersion");
+        var modelVersion = modelVersionValue.IsNull ? 1 : modelVersionValue.AsInt;
+        return new Meta(enabled, variationKey, version, mode, modelKey, modelVersion);
     }
 
     private static LdAiConfigTypes.ModelConfig ParseModel(LdValue modelValue)

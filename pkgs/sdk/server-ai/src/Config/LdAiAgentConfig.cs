@@ -41,13 +41,15 @@ public sealed class LdAiAgentConfig : LdAiConfig
         bool enabled,
         string variationKey,
         int version,
+        string modelKey,
+        int modelVersion,
         string instructions,
         IReadOnlyDictionary<string, LdAiConfigTypes.Tool> tools,
         LdAiConfigTypes.ModelConfig model,
         LdAiConfigTypes.ProviderConfig provider,
         LdAiConfigTypes.JudgeConfiguration judgeConfiguration,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
-        : base(key, enabled, variationKey, version, model, provider, trackerFactory)
+        : base(key, enabled, variationKey, version, modelKey, modelVersion, model, provider, trackerFactory)
     {
         Instructions = instructions;
         Tools = tools?.ToImmutableDictionary() ?? ImmutableDictionary<string, LdAiConfigTypes.Tool>.Empty;

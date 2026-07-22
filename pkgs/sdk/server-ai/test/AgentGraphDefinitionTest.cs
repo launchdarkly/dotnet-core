@@ -23,6 +23,8 @@ public class AgentGraphDefinitionTest
             enabled: enabled,
             variationKey: "v1",
             version: 1,
+            modelKey: null,
+            modelVersion: 1,
             instructions: null,
             tools: new Dictionary<string, LdAiConfigTypes.Tool>(),
             model: null,

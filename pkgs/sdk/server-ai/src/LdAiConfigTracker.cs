@@ -76,7 +76,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// </summary>
     internal LdAiConfigTracker(ILaunchDarklyClient client, string runId, string configKey,
         string variationKey, int version, Context context, string modelName, string providerName,
-        string graphKey = null)
+        string modelKey = null, int modelVersion = 1, string graphKey = null)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _configKey = configKey ?? throw new ArgumentNullException(nameof(configKey));
@@ -96,6 +96,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
             { "version", LdValue.Of(_version) },
             { "modelName", LdValue.Of(_modelName) },
             { "providerName", LdValue.Of(_providerName) },
+            { "modelVersion", LdValue.Of(modelVersion) },
         };
         if (!string.IsNullOrEmpty(_graphKey))
         {
@@ -104,6 +105,10 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         if (!string.IsNullOrEmpty(_variationKey))
         {
             trackDataBuilder.Add("variationKey", LdValue.Of(_variationKey));
+        }
+        if (!string.IsNullOrEmpty(modelKey))
+        {
+            trackDataBuilder.Add("modelKey", LdValue.Of(modelKey));
         }
         _trackData = LdValue.ObjectFrom(trackDataBuilder);
 
@@ -118,6 +123,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         // Utf8JsonWriter gives stable key ordering and avoids the runtime cost of
         // anonymous-type reflection. The wire format omits empty optional fields so that
         // resumption tokens round-trip exactly for configs that never carried them.
+        // modelName, providerName, modelKey, and modelVersion are not included.
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
@@ -426,7 +432,8 @@ public class LdAiConfigTracker : ILdAiConfigTracker
     /// process or at a later time.
     ///
     /// The reconstructed tracker will have empty model and provider names, as these are not
-    /// included in the resumption token.
+    /// included in the resumption token. modelKey and modelVersion are also not included;
+    /// modelVersion defaults to 1 on reconstructed trackers.
     /// </summary>
     /// <param name="token">the resumption token obtained from <see cref="ResumptionToken"/></param>
     /// <param name="client">the LaunchDarkly client</param>
@@ -466,7 +473,7 @@ public class LdAiConfigTracker : ILdAiConfigTracker
         }
 
         return new LdAiConfigTracker(client, payload.RunId, payload.ConfigKey,
-            payload.VariationKey, payload.Version ?? 1, context, "", "", payload.GraphKey);
+            payload.VariationKey, payload.Version ?? 1, context, "", "", graphKey: payload.GraphKey);
     }
 
     private class ResumptionPayload

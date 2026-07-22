@@ -36,12 +36,14 @@ public sealed class LdAiJudgeConfig : LdAiConfig
         bool enabled,
         string variationKey,
         int version,
+        string modelKey,
+        int modelVersion,
         IEnumerable<LdAiConfigTypes.Message> messages,
         string evaluationMetricKey,
         LdAiConfigTypes.ModelConfig model,
         LdAiConfigTypes.ProviderConfig provider,
         Func<LdAiConfig, ILdAiConfigTracker> trackerFactory)
-        : base(key, enabled, variationKey, version, model, provider, trackerFactory)
+        : base(key, enabled, variationKey, version, modelKey, modelVersion, model, provider, trackerFactory)
     {
         Messages = messages?.ToList() ?? new List<LdAiConfigTypes.Message>();
         EvaluationMetricKey = evaluationMetricKey;

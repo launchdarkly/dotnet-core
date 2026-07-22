@@ -71,7 +71,10 @@ public static class LdAiConfigTypes
         /// </summary>
         public readonly IReadOnlyDictionary<string, LdValue> Custom;
 
-        internal ModelConfig(string name, IReadOnlyDictionary<string, LdValue> parameters, IReadOnlyDictionary<string, LdValue> custom)
+        internal ModelConfig(
+            string name,
+            IReadOnlyDictionary<string, LdValue> parameters,
+            IReadOnlyDictionary<string, LdValue> custom)
         {
             Name = name;
             // Materialize into an ImmutableDictionary so a consumer that downcasts to

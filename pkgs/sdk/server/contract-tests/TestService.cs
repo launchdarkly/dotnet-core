@@ -34,6 +34,7 @@ namespace TestService
             "context-comparison",
             "secure-mode-hash",
             "server-side-polling",
+            "polling-gzip",
             "service-endpoints",
             "migrations",
             "event-sampling",

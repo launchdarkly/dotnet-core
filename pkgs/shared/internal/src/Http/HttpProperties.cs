@@ -267,19 +267,28 @@ namespace LaunchDarkly.Sdk.Internal.Http
 
         private static HttpMessageHandler DefaultHttpMessageHandlerFactory(HttpProperties props)
         {
+            // AutomaticDecompression makes the runtime send "Accept-Encoding: gzip" and transparently
+            // decompress gzipped responses, so the SDK accepts compressed streaming/polling/event
+            // payloads (matching the transparent-gzip behavior of the Go and Java/OkHttp SDKs).
 #if NETCOREAPP
             return new SocketsHttpHandler
             {
+                AutomaticDecompression = DecompressionMethods.GZip,
                 ConnectTimeout = props.ConnectTimeout,
                 Proxy = props.Proxy
             };
 #else
+            // Always return a configured handler (not null) so AutomaticDecompression is applied even
+            // when no proxy is set; the platform default handler on these frameworks is HttpClientHandler.
+            var handler = new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip
+            };
             if (props.Proxy != null)
             {
-                return new HttpClientHandler { Proxy = props.Proxy };
+                handler.Proxy = props.Proxy;
             }
-
-            return null;
+            return handler;
 #endif
         }
 

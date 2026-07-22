@@ -128,6 +128,10 @@ namespace TestService
                     response = DoMigrationOperation(command.MigrationOperation);
                     break;
 
+                case "contextComparison":
+                    response = DoContextComparison(command.ContextComparison);
+                    break;
+
                 case "registerFlagChangeListener":
                 {
                     var p = command.RegisterFlagChangeListener;
@@ -314,6 +318,46 @@ namespace TestService
             }
             return b.Build();
         }
+        private ContextComparisonResponse DoContextComparison(ContextComparisonPairParams p) =>
+            new ContextComparisonResponse
+            {
+                AreEqual = BuildComparisonContext(p.Context1).Equals(BuildComparisonContext(p.Context2))
+            };
+
+        private Context BuildComparisonContext(ContextComparisonParams p)
+        {
+            if (p.Single != null)
+            {
+                return BuildComparisonSingle(p.Single);
+            }
+            var b = Context.MultiBuilder();
+            foreach (var s in p.Multi)
+            {
+                b.Add(BuildComparisonSingle(s));
+            }
+            return b.Build();
+        }
+
+        private Context BuildComparisonSingle(ContextComparisonSingleParams s)
+        {
+            var b = Context.Builder(s.Key).Kind(s.Kind);
+            if (s.Attributes != null)
+            {
+                foreach (var a in s.Attributes)
+                {
+                    b.Set(a.Name, a.Value);
+                }
+            }
+            if (s.PrivateAttributes != null)
+            {
+                foreach (var pa in s.PrivateAttributes)
+                {
+                    b.Private(pa.Literal ? AttributeRef.FromLiteral(pa.Value) : AttributeRef.FromPath(pa.Value));
+                }
+            }
+            return b.Build();
+        }
+
         private ContextBuildResponse DoContextConvert(ContextConvertParams p)
         {
             try

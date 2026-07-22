@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.InternalSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.9.0...LaunchDarkly.InternalSdk-v3.10.0) (2026-07-22)
+
+
+### Features
+
+* enable gzip AutomaticDecompression on the default HTTP handler ([#318](https://github.com/launchdarkly/dotnet-core/issues/318)) ([b346071](https://github.com/launchdarkly/dotnet-core/commit/b346071a896672a8eaa2206b5dfbbd54473fe93c))
+
 ## [3.9.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.8.0...LaunchDarkly.InternalSdk-v3.9.0) (2026-07-21)
 
 

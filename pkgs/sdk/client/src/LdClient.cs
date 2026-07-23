@@ -755,7 +755,7 @@ namespace LaunchDarkly.Sdk.Client
         }
 
         EvaluationDetail<T> EvaluateInternal<T>(string featureKey, LdValue defaultJson, LdValue.Converter<T> converter,
-            bool checkType, EventFactory eventFactory)
+            bool checkType, EventFactory eventFactory, HashSet<string> visited = null)
         {
             T defaultValue = converter.ToType(defaultJson);
 
@@ -791,12 +791,33 @@ namespace LaunchDarkly.Sdk.Client
             }
 
             // Prerequisites are evaluated directly via EvaluateInternal to avoid triggering hooks.
-            if (flag.Prerequisites != null)
+            //
+            // `visited` tracks the chain of prerequisite dependencies from the top-level evaluation
+            // to (but not including) the current flag. It is allocated lazily: variation calls on
+            // prereq-less flags allocate no set. Once created it is shared for the rest of the walk
+            // via add-before-recurse / remove-after-recurse in a try/finally, so an exception below
+            // cannot leave a stale ancestor entry visible to a sibling branch.
+            if (flag.Prerequisites != null && flag.Prerequisites.Count > 0)
             {
-                foreach (var prerequisiteKey in flag.Prerequisites)
+                var ancestors = visited ?? new HashSet<string>();
+                ancestors.Add(featureKey);
+                try
                 {
-                    EvaluateInternal(prerequisiteKey, LdValue.Null, LdValue.Convert.Json, false,
-                        _eventFactoryWithReasons);
+                    foreach (var prerequisiteKey in flag.Prerequisites)
+                    {
+                        if (ancestors.Contains(prerequisiteKey))
+                        {
+                            // Cyclic edge: skip descent, continue with remaining prerequisites at this level.
+                            // The requested flag's value and reason (below) are unaffected.
+                            continue;
+                        }
+                        EvaluateInternal(prerequisiteKey, LdValue.Null, LdValue.Convert.Json, false,
+                            _eventFactoryWithReasons, ancestors);
+                    }
+                }
+                finally
+                {
+                    ancestors.Remove(featureKey);
                 }
             }
 

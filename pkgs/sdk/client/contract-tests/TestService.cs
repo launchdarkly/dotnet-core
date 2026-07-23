@@ -42,6 +42,7 @@ namespace TestService
             "inline-context-all",
             "anonymous-redaction",
             "client-prereq-events",
+            "client-prereq-cycle-detection",
             "client-per-context-summaries"
         };
 

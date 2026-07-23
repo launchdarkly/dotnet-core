@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.13.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.12.0...LaunchDarkly.ServerSdk.Ai-v0.13.0) (2026-07-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* ILdAiConfigTracker.TrackDuration now takes a double instead of a float — custom ILdAiConfigTracker implementations must update their TrackDuration override signature
+
+### Features
+
+* Extend AiMetrics with optional ToolCalls and DurationMs (duration override) ([2e307c9](https://github.com/launchdarkly/dotnet-core/commit/2e307c9faa08038f82a80e6cac9d1dea1a194b99))
+* Extend MetricSummary with accumulated ToolCalls and ResumptionToken ([2e307c9](https://github.com/launchdarkly/dotnet-core/commit/2e307c9faa08038f82a80e6cac9d1dea1a194b99))
+* ILdAiConfigTracker.TrackDuration now takes a double instead of a float — custom ILdAiConfigTracker implementations must update their TrackDuration override signature ([2e307c9](https://github.com/launchdarkly/dotnet-core/commit/2e307c9faa08038f82a80e6cac9d1dea1a194b99))
+* **server-ai:** stamp modelKey and modelVersion on AI usage events (… ([#308](https://github.com/launchdarkly/dotnet-core/issues/308)) ([9daa47a](https://github.com/launchdarkly/dotnet-core/commit/9daa47aea0945c58a80c67d0094527f7dd514dcf))
+* TrackMetricsOf auto-tracks tool calls, honors DurationMs override, and aligns operation-vs-extractor failure semantics with the other SDKs ([2e307c9](https://github.com/launchdarkly/dotnet-core/commit/2e307c9faa08038f82a80e6cac9d1dea1a194b99))
+
 ## [0.12.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.11.0...LaunchDarkly.ServerSdk.Ai-v0.12.0) (2026-06-30)
 
 

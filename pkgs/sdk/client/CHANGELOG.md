@@ -3,6 +3,13 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.9.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.1...LaunchDarkly.ClientSdk-v5.9.2) (2026-07-23)
+
+
+### Bug Fixes
+
+* add defensive cycle guard to prerequisite evaluation ([#317](https://github.com/launchdarkly/dotnet-core/issues/317)) ([babb87a](https://github.com/launchdarkly/dotnet-core/commit/babb87af55eea862c02421b2a14647007f504ddb))
+
 ## [5.9.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.0...LaunchDarkly.ClientSdk-v5.9.1) (2026-07-01)
 
 

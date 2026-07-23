@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.16.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.15.0...LaunchDarkly.ServerSdk-v8.16.0) (2026-07-23)
+
+
+### Features
+
+* Support server-side gzip for polling ([#319](https://github.com/launchdarkly/dotnet-core/issues/319)) ([058d977](https://github.com/launchdarkly/dotnet-core/commit/058d977ea17789108c82dd493313afd353676770))
+
 ## [8.15.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.14.1...LaunchDarkly.ServerSdk-v8.15.0) (2026-07-21)
 
 

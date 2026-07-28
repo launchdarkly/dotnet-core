@@ -3,6 +3,13 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.9.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.2...LaunchDarkly.ClientSdk-v5.9.3) (2026-07-28)
+
+
+### Bug Fixes
+
+* treat unknown/constrained network access as connected ([#323](https://github.com/launchdarkly/dotnet-core/issues/323)) ([a633c9a](https://github.com/launchdarkly/dotnet-core/commit/a633c9a261105edc557ded09ff9a8f3053adf0a6))
+
 ## [5.9.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.1...LaunchDarkly.ClientSdk-v5.9.2) (2026-07-23)
 
 

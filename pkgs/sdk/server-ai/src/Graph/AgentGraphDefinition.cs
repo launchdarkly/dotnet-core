@@ -94,12 +94,13 @@ public sealed class AgentGraphDefinition
     public AiGraphTracker CreateTracker() => _createTracker();
 
     /// <summary>
-    /// Performs a breadth-first traversal of the graph starting from the root node.
-    /// For each visited node, <paramref name="fn"/> is called with the node and the
-    /// accumulated context dictionary. The return value of <paramref name="fn"/> is
-    /// stored in the context under the node's key and passed to subsequent calls.
-    /// Cycle-safe: each node is visited at most once.
+    /// Visits each reachable node in topological order (predecessors first, root first).
+    /// Ties break by discovery order. Cycle-safe.
     /// </summary>
+    /// <remarks>
+    /// <paramref name="fn"/> receives <paramref name="initialContext"/> plus results
+    /// from that node's reachable predecessors only.
+    /// </remarks>
     public void Traverse(
         Func<AgentGraphNode, Dictionary<string, object>, object> fn,
         Dictionary<string, object> initialContext = null)
@@ -108,91 +109,143 @@ public sealed class AgentGraphDefinition
         if (root == null) return;
 
         var context = initialContext ?? new Dictionary<string, object>();
+        var (reachable, order) = ReachableAndDiscovery(root.Key);
+
+        var indeg = reachable.ToDictionary(k => k, _ => 0);
+        foreach (var k in reachable)
+        {
+            foreach (var e in GetNode(k).Edges)
+            {
+                if (reachable.Contains(e.Key)) indeg[e.Key]++;
+            }
+        }
+        indeg[root.Key] = 0;
 
         var visited = new HashSet<string>();
-        var queue = new Queue<AgentGraphNode>();
-        queue.Enqueue(root);
-        visited.Add(root.Key);
+        var results = new Dictionary<string, object>();
+        var ancestors = new Dictionary<string, HashSet<string>>();
 
-        while (queue.Count > 0)
+        Dictionary<string, object> Scoped(HashSet<string> deps)
         {
-            var node = queue.Dequeue();
-            var result = fn(node, context);
-            context[node.Key] = result;
+            var c = new Dictionary<string, object>(context);
+            foreach (var k in deps) c[k] = results[k];
+            return c;
+        }
 
-            foreach (var child in GetChildNodes(node.Key))
+        while (visited.Count < reachable.Count)
+        {
+            var next = order.FirstOrDefault(k => !visited.Contains(k) && indeg[k] <= 0)
+                       ?? order.Where(k => !visited.Contains(k)).OrderBy(k => indeg[k]).First();
+
+            var anc = new HashSet<string>();
+            foreach (var parent in GetParentNodes(next))
             {
-                if (visited.Add(child.Key))
-                {
-                    queue.Enqueue(child);
-                }
+                if (!visited.Contains(parent.Key)) continue;
+                anc.Add(parent.Key);
+                anc.UnionWith(ancestors[parent.Key]);
+            }
+            ancestors[next] = anc;
+            visited.Add(next);
+
+            results[next] = fn(GetNode(next), Scoped(anc));
+            foreach (var e in GetNode(next).Edges)
+            {
+                if (reachable.Contains(e.Key)) indeg[e.Key]--;
             }
         }
     }
 
     /// <summary>
-    /// Performs a reverse breadth-first traversal: starts from terminal nodes and
-    /// works upward toward the root. The root node is always processed last.
-    /// Cycle-safe: each node is visited at most once.
+    /// Visits each reachable node in reverse topological order (descendants first,
+    /// root last). Ties break by discovery order. Cycle-safe.
     /// </summary>
+    /// <remarks>
+    /// <paramref name="fn"/> receives <paramref name="initialContext"/> plus results
+    /// from that node's reachable descendants only.
+    /// </remarks>
     public void ReverseTraverse(
         Func<AgentGraphNode, Dictionary<string, object>, object> fn,
         Dictionary<string, object> initialContext = null)
     {
-        if (_nodes.Count == 0) return;
-
-        var context = initialContext ?? new Dictionary<string, object>();
-
         var root = RootNode();
-        var visited = new HashSet<string>();
-        var queue = new Queue<AgentGraphNode>();
+        if (root == null) return;
 
-        // Seed with terminal nodes (excluding root if it happens to be terminal and there are others)
-        foreach (var terminal in TerminalNodes())
+        var rootKey = root.Key;
+        var context = initialContext ?? new Dictionary<string, object>();
+        var (reachable, order) = ReachableAndDiscovery(rootKey);
+
+        var outdeg = reachable.ToDictionary(
+            k => k, k => GetNode(k).Edges.Count(e => reachable.Contains(e.Key)));
+
+        var visited = new HashSet<string>();
+        var results = new Dictionary<string, object>();
+        var descendants = new Dictionary<string, HashSet<string>>();
+
+        Dictionary<string, object> Scoped(HashSet<string> deps)
         {
-            if (root != null && terminal.Key == root.Key && _nodes.Count > 1)
+            var c = new Dictionary<string, object>(context);
+            foreach (var k in deps) c[k] = results[k];
+            return c;
+        }
+
+        bool NonRootRemaining() => reachable.Any(k => k != rootKey && !visited.Contains(k));
+        while (NonRootRemaining())
+        {
+            var next = order.FirstOrDefault(k => k != rootKey && !visited.Contains(k) && outdeg[k] <= 0)
+                       ?? order.Where(k => k != rootKey && !visited.Contains(k)).OrderBy(k => outdeg[k]).First();
+
+            var desc = new HashSet<string>();
+            foreach (var e in GetNode(next).Edges)
             {
-                continue;
+                if (!reachable.Contains(e.Key) || !visited.Contains(e.Key)) continue;
+                desc.Add(e.Key);
+                desc.UnionWith(descendants[e.Key]);
             }
-            if (visited.Add(terminal.Key))
+            descendants[next] = desc;
+            visited.Add(next);
+
+            results[next] = fn(GetNode(next), Scoped(desc));
+            foreach (var parent in GetParentNodes(next))
             {
-                queue.Enqueue(terminal);
+                if (parent.Key != rootKey && reachable.Contains(parent.Key))
+                    outdeg[parent.Key]--;
             }
         }
+
+        // Root last
+        var rootDeps = new HashSet<string>(reachable.Where(k => k != rootKey));
+        results[rootKey] = fn(root, Scoped(rootDeps));
+    }
+
+    /// <summary>
+    /// Reachable nodes from <paramref name="rootKey"/> and BFS discovery order
+    /// (declared edge order). Used as a topological tie-break.
+    /// </summary>
+    private (HashSet<string> reachable, List<string> order) ReachableAndDiscovery(string rootKey)
+    {
+        var reachable = new HashSet<string>();
+        var order = new List<string>();
+        var queue = new Queue<string>();
+        reachable.Add(rootKey);
+        order.Add(rootKey);
+        queue.Enqueue(rootKey);
 
         while (queue.Count > 0)
         {
-            var node = queue.Dequeue();
-
-            // Defer root until the very end (unless it's the only node)
-            if (root != null && node.Key == root.Key && _nodes.Count > 1)
+            var key = queue.Dequeue();
+            var node = GetNode(key);
+            if (node == null) continue;
+            foreach (var edge in node.Edges)
             {
-                continue;
-            }
-
-            var result = fn(node, context);
-            context[node.Key] = result;
-
-            foreach (var parent in GetParentNodes(node.Key))
-            {
-                if (root != null && parent.Key == root.Key)
+                if (GetNode(edge.Key) != null && reachable.Add(edge.Key))
                 {
-                    // Don't enqueue root yet — process it last
-                    continue;
-                }
-                if (visited.Add(parent.Key))
-                {
-                    queue.Enqueue(parent);
+                    order.Add(edge.Key);
+                    queue.Enqueue(edge.Key);
                 }
             }
         }
 
-        // Process root last
-        if (root != null && _nodes.Count > 1 && visited.Count > 0)
-        {
-            var result = fn(root, context);
-            context[root.Key] = result;
-        }
+        return (reachable, order);
     }
 
     /// <summary>

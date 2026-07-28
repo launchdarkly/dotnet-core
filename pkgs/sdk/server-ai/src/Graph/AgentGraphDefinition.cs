@@ -134,7 +134,7 @@ public sealed class AgentGraphDefinition
 
         while (visited.Count < reachable.Count)
         {
-            var next = order.FirstOrDefault(k => !visited.Contains(k) && indeg[k] <= 0)
+            var next = order.FirstOrDefault(k => !visited.Contains(k) && indeg[k] == 0)
                        ?? order.Where(k => !visited.Contains(k)).OrderBy(k => indeg[k]).First();
 
             var anc = new HashSet<string>();
@@ -191,7 +191,7 @@ public sealed class AgentGraphDefinition
         bool NonRootRemaining() => reachable.Any(k => k != rootKey && !visited.Contains(k));
         while (NonRootRemaining())
         {
-            var next = order.FirstOrDefault(k => k != rootKey && !visited.Contains(k) && outdeg[k] <= 0)
+            var next = order.FirstOrDefault(k => k != rootKey && !visited.Contains(k) && outdeg[k] == 0)
                        ?? order.Where(k => k != rootKey && !visited.Contains(k)).OrderBy(k => outdeg[k]).First();
 
             var desc = new HashSet<string>();

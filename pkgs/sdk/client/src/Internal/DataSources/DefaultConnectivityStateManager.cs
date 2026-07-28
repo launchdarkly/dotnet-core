@@ -32,7 +32,15 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
 
         private void UpdateConnectedStatus()
         {
-            isConnected = PlatformConnectivity.LdNetworkAccess == LdNetworkAccess.Internet;
+            isConnected = IsConsideredConnected(PlatformConnectivity.LdNetworkAccess);
         }
+
+        // Unknown covers MAUI Connectivity's cold-start race; ConstrainedInternet typically
+        // resolves upward. Local stays disconnected so the transition to Internet triggers
+        // a fresh reconnect via ConnectivityChanged.
+        internal static bool IsConsideredConnected(LdNetworkAccess access) =>
+            access == LdNetworkAccess.Internet
+            || access == LdNetworkAccess.Unknown
+            || access == LdNetworkAccess.ConstrainedInternet;
     }
 }

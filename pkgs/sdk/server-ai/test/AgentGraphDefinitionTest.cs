@@ -913,6 +913,34 @@ public class AgentGraphDefinitionTest
     }
 
     [Fact]
+    public void SelfLoopIsNotIncludedInOwnContext()
+    {
+        // a → b → b (self-loop on b)
+        var graph = BuildGraph("a", new Dictionary<string, IReadOnlyList<GraphEdge>>
+        {
+            ["a"] = new[] { new GraphEdge("b", null) },
+            ["b"] = new[] { new GraphEdge("b", null) }
+        });
+        var initial = new Dictionary<string, object> { ["seed"] = 1 };
+
+        graph.Traverse((node, ctx) =>
+        {
+            if (node.Key == "b")
+                AssertExactContextKeys(ctx, new[] { "seed", "a" });
+            return $"result-of-{node.Key}";
+        }, initial);
+
+        graph.ReverseTraverse((node, ctx) =>
+        {
+            if (node.Key == "b")
+                AssertExactContextKeys(ctx, new[] { "seed" });
+            if (node.Key == "a")
+                AssertExactContextKeys(ctx, new[] { "seed", "b" });
+            return $"result-of-{node.Key}";
+        }, initial);
+    }
+
+    [Fact]
     public void TraverseAndReverseTraverseAreDeterministic()
     {
         var graph = BuildGraph("a", new Dictionary<string, IReadOnlyList<GraphEdge>>

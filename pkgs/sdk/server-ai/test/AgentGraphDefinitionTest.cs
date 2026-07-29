@@ -490,7 +490,7 @@ public class AgentGraphDefinitionTest
         };
 
     /// <summary>
-    /// Canonical G1–G6/G2b vectors from sdk-specs test-vectors/vectors.json:
+    /// Canonical G1–G6/G2b agent-graph traversal vectors, shared across the LaunchDarkly AI SDKs:
     /// order plus exact traverse_context / reverse_traverse_context.
     /// </summary>
     public static IEnumerable<object[]> Vectors()

@@ -469,6 +469,225 @@ public class AgentGraphDefinitionTest
         Assert.Equal(expectedSorted, actual);
     }
 
+    private static readonly Dictionary<string, string[]> G2ForwardContext =
+        new Dictionary<string, string[]>
+        {
+            ["a"] = Array.Empty<string>(),
+            ["b"] = new[] { "a" },
+            ["c"] = new[] { "a" },
+            ["d"] = new[] { "a", "c" },
+            ["e"] = new[] { "a", "b", "c", "d" }
+        };
+
+    private static readonly Dictionary<string, string[]> G2ReverseContext =
+        new Dictionary<string, string[]>
+        {
+            ["a"] = new[] { "b", "c", "d", "e" },
+            ["b"] = new[] { "e" },
+            ["c"] = new[] { "d", "e" },
+            ["d"] = new[] { "e" },
+            ["e"] = Array.Empty<string>()
+        };
+
+    /// <summary>
+    /// Canonical G1–G6/G2b vectors from sdk-specs test-vectors/vectors.json:
+    /// order plus exact traverse_context / reverse_traverse_context.
+    /// </summary>
+    public static IEnumerable<object[]> Vectors()
+    {
+        yield return new object[]
+        {
+            "G1",
+            "a",
+            new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("b", null) },
+                ["b"] = new[] { new GraphEdge("c", null) }
+            },
+            new[] { "a", "b", "c" },
+            new[] { "c", "b", "a" },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = Array.Empty<string>(),
+                ["b"] = new[] { "a" },
+                ["c"] = new[] { "a", "b" }
+            },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = new[] { "b", "c" },
+                ["b"] = new[] { "c" },
+                ["c"] = Array.Empty<string>()
+            }
+        };
+        yield return new object[]
+        {
+            "G2",
+            "a",
+            new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("b", null), new GraphEdge("c", null) },
+                ["b"] = new[] { new GraphEdge("e", null) },
+                ["c"] = new[] { new GraphEdge("d", null) },
+                ["d"] = new[] { new GraphEdge("e", null) }
+            },
+            new[] { "a", "b", "c", "d", "e" },
+            new[] { "e", "b", "d", "c", "a" },
+            G2ForwardContext,
+            G2ReverseContext
+        };
+        yield return new object[]
+        {
+            "G2b",
+            "a",
+            new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("c", null), new GraphEdge("b", null) },
+                ["b"] = new[] { new GraphEdge("e", null) },
+                ["c"] = new[] { new GraphEdge("d", null) },
+                ["d"] = new[] { new GraphEdge("e", null) }
+            },
+            new[] { "a", "c", "b", "d", "e" },
+            new[] { "e", "b", "d", "c", "a" },
+            G2ForwardContext,
+            G2ReverseContext
+        };
+        yield return new object[]
+        {
+            "G3",
+            "a",
+            new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("b", null), new GraphEdge("c", null) },
+                ["b"] = new[] { new GraphEdge("d", null) },
+                ["c"] = new[] { new GraphEdge("d", null) }
+            },
+            new[] { "a", "b", "c", "d" },
+            new[] { "d", "b", "c", "a" },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = Array.Empty<string>(),
+                ["b"] = new[] { "a" },
+                ["c"] = new[] { "a" },
+                ["d"] = new[] { "a", "b", "c" }
+            },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = new[] { "b", "c", "d" },
+                ["b"] = new[] { "d" },
+                ["c"] = new[] { "d" },
+                ["d"] = Array.Empty<string>()
+            }
+        };
+        yield return new object[]
+        {
+            "G4",
+            "a",
+            new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("n", null) },
+                ["n"] = new[] { new GraphEdge("m", null), new GraphEdge("t", null) },
+                ["m"] = new[] { new GraphEdge("t", null) }
+            },
+            new[] { "a", "n", "m", "t" },
+            new[] { "t", "m", "n", "a" },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = Array.Empty<string>(),
+                ["n"] = new[] { "a" },
+                ["m"] = new[] { "a", "n" },
+                ["t"] = new[] { "a", "m", "n" }
+            },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = new[] { "m", "n", "t" },
+                ["n"] = new[] { "m", "t" },
+                ["m"] = new[] { "t" },
+                ["t"] = Array.Empty<string>()
+            }
+        };
+        yield return new object[]
+        {
+            "G5",
+            "a",
+            new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("b", null), new GraphEdge("c", null) },
+                ["b"] = new[] { new GraphEdge("d", null) }
+            },
+            new[] { "a", "b", "c", "d" },
+            new[] { "c", "d", "b", "a" },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = Array.Empty<string>(),
+                ["b"] = new[] { "a" },
+                ["c"] = new[] { "a" },
+                ["d"] = new[] { "a", "b" }
+            },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = new[] { "b", "c", "d" },
+                ["b"] = new[] { "d" },
+                ["c"] = Array.Empty<string>(),
+                ["d"] = Array.Empty<string>()
+            }
+        };
+        yield return new object[]
+        {
+            "G6",
+            "a",
+            new Dictionary<string, IReadOnlyList<GraphEdge>>
+            {
+                ["a"] = new[] { new GraphEdge("b", null) },
+                ["b"] = new[] { new GraphEdge("c", null) },
+                ["c"] = new[] { new GraphEdge("b", null) }
+            },
+            new[] { "a", "b", "c" },
+            new[] { "b", "c", "a" },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = Array.Empty<string>(),
+                ["b"] = new[] { "a" },
+                ["c"] = new[] { "a", "b" }
+            },
+            new Dictionary<string, string[]>
+            {
+                ["a"] = new[] { "b", "c" },
+                ["b"] = Array.Empty<string>(),
+                ["c"] = new[] { "b" }
+            }
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(Vectors))]
+    public void VectorTraversalOrderAndContext(
+        string id,
+        string root,
+        Dictionary<string, IReadOnlyList<GraphEdge>> edges,
+        string[] traverse,
+        string[] reverseTraverse,
+        Dictionary<string, string[]> forwardContext,
+        Dictionary<string, string[]> reverseContext)
+    {
+        Assert.NotNull(id);
+        var graph = BuildGraph(root, edges);
+
+        Assert.Equal(traverse, CollectOrder(graph, reverse: false));
+        Assert.Equal(reverseTraverse, CollectOrder(graph, reverse: true));
+
+        graph.Traverse((node, ctx) =>
+        {
+            AssertExactContextKeys(ctx, forwardContext[node.Key]);
+            return $"result-of-{node.Key}";
+        });
+
+        graph.ReverseTraverse((node, ctx) =>
+        {
+            AssertExactContextKeys(ctx, reverseContext[node.Key]);
+            return $"result-of-{node.Key}";
+        });
+    }
+
     [Fact]
     public void G1_TraverseVisitsLinearChain()
     {
@@ -652,91 +871,6 @@ public class AgentGraphDefinitionTest
         Assert.Equal(new[] { "a", "b", "c" }, first.OrderBy(k => k).ToArray());
         Assert.Equal(first, second);
         Assert.Equal(new[] { "b", "c", "a" }, first);
-    }
-
-    [Fact]
-    public void G2_TraverseScopesContextToExactPredecessors()
-    {
-        var graph = BuildGraph("a", new Dictionary<string, IReadOnlyList<GraphEdge>>
-        {
-            ["a"] = new[] { new GraphEdge("b", null), new GraphEdge("c", null) },
-            ["b"] = new[] { new GraphEdge("e", null) },
-            ["c"] = new[] { new GraphEdge("d", null) },
-            ["d"] = new[] { new GraphEdge("e", null) }
-        });
-
-        var expected = new Dictionary<string, string[]>
-        {
-            ["a"] = Array.Empty<string>(),
-            ["b"] = new[] { "a" },
-            ["c"] = new[] { "a" },
-            ["d"] = new[] { "a", "c" },
-            ["e"] = new[] { "a", "b", "c", "d" }
-        };
-
-        graph.Traverse((node, ctx) =>
-        {
-            AssertExactContextKeys(ctx, expected[node.Key]);
-            if (node.Key == "b") Assert.False(ctx.ContainsKey("c"));
-            if (node.Key == "d") Assert.False(ctx.ContainsKey("b"));
-            return $"result-of-{node.Key}";
-        });
-    }
-
-    [Fact]
-    public void G2_ReverseTraverseScopesContextToExactDescendants()
-    {
-        var graph = BuildGraph("a", new Dictionary<string, IReadOnlyList<GraphEdge>>
-        {
-            ["a"] = new[] { new GraphEdge("b", null), new GraphEdge("c", null) },
-            ["b"] = new[] { new GraphEdge("e", null) },
-            ["c"] = new[] { new GraphEdge("d", null) },
-            ["d"] = new[] { new GraphEdge("e", null) }
-        });
-
-        var expected = new Dictionary<string, string[]>
-        {
-            ["a"] = new[] { "b", "c", "d", "e" },
-            ["b"] = new[] { "e" },
-            ["c"] = new[] { "d", "e" },
-            ["d"] = new[] { "e" },
-            ["e"] = Array.Empty<string>()
-        };
-
-        graph.ReverseTraverse((node, ctx) =>
-        {
-            AssertExactContextKeys(ctx, expected[node.Key]);
-            if (node.Key == "b" || node.Key == "d")
-                Assert.False(ctx.ContainsKey("c"));
-            return $"result-of-{node.Key}";
-        });
-    }
-
-    [Fact]
-    public void G2b_TraverseContextScopingIndependentOfEdgeOrder()
-    {
-        var graph = BuildGraph("a", new Dictionary<string, IReadOnlyList<GraphEdge>>
-        {
-            ["a"] = new[] { new GraphEdge("c", null), new GraphEdge("b", null) },
-            ["b"] = new[] { new GraphEdge("e", null) },
-            ["c"] = new[] { new GraphEdge("d", null) },
-            ["d"] = new[] { new GraphEdge("e", null) }
-        });
-
-        var expected = new Dictionary<string, string[]>
-        {
-            ["a"] = Array.Empty<string>(),
-            ["b"] = new[] { "a" },
-            ["c"] = new[] { "a" },
-            ["d"] = new[] { "a", "c" },
-            ["e"] = new[] { "a", "b", "c", "d" }
-        };
-
-        graph.Traverse((node, ctx) =>
-        {
-            AssertExactContextKeys(ctx, expected[node.Key]);
-            return $"result-of-{node.Key}";
-        });
     }
 
     [Fact]

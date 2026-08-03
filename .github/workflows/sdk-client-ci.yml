@@ -35,6 +35,10 @@ jobs:
         with:
           dotnet-version: 8.0
 
+      - name: Copy global.json in place
+        shell: bash
+        run: cp global.example.json global.json
+
       - name: Restore workloads
         shell: bash
         run: dotnet workload restore ${{ env.PROJECT_FILE }}

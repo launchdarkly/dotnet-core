@@ -3,6 +3,13 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.9.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.3...LaunchDarkly.ClientSdk-v5.9.4) (2026-08-10)
+
+
+### Bug Fixes
+
+* update LaunchDarkly.EventSource to 5.3.2 for MAUI Android SSE stall (SDK-2755) ([#328](https://github.com/launchdarkly/dotnet-core/issues/328)) ([9f7cb38](https://github.com/launchdarkly/dotnet-core/commit/9f7cb3883d4d6520f88c35b4d3a26e3b16572bb9))
+
 ## [5.9.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.2...LaunchDarkly.ClientSdk-v5.9.3) (2026-07-28)
 
 

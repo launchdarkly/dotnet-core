@@ -42,6 +42,7 @@ namespace TestService
             "inline-context-all",
             "anonymous-redaction",
             "evaluation-hooks",
+            "hook-environment-id",
             "flag-change-listeners",
             "flag-value-change-listeners",
             "client-prereq-events",

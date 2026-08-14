@@ -58,7 +58,14 @@ runs:
       if: inputs.run_fdv2_tests == 'true'
       id: launch-contract-tests-fdv2
       shell: bash
-      run: dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
+      run: |
+        # The previous run shuts the service down; wait for the port to be released.
+        for _ in $(seq 1 30); do
+          curl -sf -o /dev/null http://localhost:8000 || break
+          sleep 1
+        done
+        sleep 2
+        dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
 
     - name: Run Contract Tests FDv2 Flavor
       if: inputs.run_fdv2_tests == 'true'

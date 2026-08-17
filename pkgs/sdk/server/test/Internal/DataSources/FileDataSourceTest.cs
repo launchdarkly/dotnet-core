@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using Castle.Core.Internal;
+using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Integrations;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.Model;
@@ -274,14 +276,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        private static void WaitForReads(ScriptedFileReader reader, int count)
+        private static void WaitUntil(Func<bool> condition, string description)
         {
-            var deadline = DateTime.UtcNow.AddSeconds(10);
-            while (reader.Reads < count && DateTime.UtcNow < deadline)
+            var deadline = DateTime.UtcNow.AddSeconds(15);
+            while (!condition() && DateTime.UtcNow < deadline)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(20);
             }
+            Assert.True(condition(), "timed out waiting for " + description);
         }
+
+        private static void WaitForReads(ScriptedFileReader reader, int count) =>
+            WaitUntil(() => reader.Reads >= count, count + " file reads");
 
         [Fact]
         public void ParseFailureFromPartialReadIsRetriedUntilContentIsComplete()
@@ -390,12 +396,126 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             using (var file = TempFile.Create())
             {
                 factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                var fp = MakeDataSource();
-                fp.Start(); // schedules a retry
-                Assert.Equal(1, reader.Reads);
-                fp.Dispose();
-                Thread.Sleep(1500);
-                Assert.Equal(1, reader.Reads); // the pending retry observed the disposal and did nothing
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start(); // schedules a retry
+                    fp.Dispose();
+                    // No new load may start after Dispose; any retry scheduled before it must
+                    // observe the disposal and do nothing. (Reads are captured after Dispose so
+                    // the test stays valid even if a retry fired before Dispose ran.)
+                    var readsAtDispose = reader.Reads;
+                    Thread.Sleep(1500);
+                    Assert.Equal(readsAtDispose, reader.Reads);
+                }
+            }
+        }
+
+        // The multi-path tests below use paths in a directory that does not exist, so the file
+        // watcher fails to construct (logged and swallowed, _reloader == null). That makes the
+        // load sequence fully deterministic: the only externally triggered loads are the Start()
+        // calls, which exercise the same code path as a file-change notification.
+        private const string MultiPathA = "/nonexistent-ld-filedatasource-test-dir/a.json";
+        private const string MultiPathB = "/nonexistent-ld-filedatasource-test-dir/b.json";
+
+        private class PerPathScriptedReader : FileDataTypes.IFileReader
+        {
+            private readonly ConcurrentDictionary<string, int> _reads = new ConcurrentDictionary<string, int>();
+            private readonly ConcurrentDictionary<string, bool> _bad = new ConcurrentDictionary<string, bool>();
+
+            public void SetBad(string path, bool bad) { _bad[path] = bad; }
+            public int Reads(string path) => _reads.TryGetValue(path, out var n) ? n : 0;
+
+            public string ReadAllText(string path)
+            {
+                _reads.AddOrUpdate(path, 1, (_, n) => n + 1);
+                if (_bad.TryGetValue(path, out var bad) && bad)
+                {
+                    return TruncatedFlagJson;
+                }
+                // distinct flag keys per path, so a successful merge of both files can't throw
+                // on duplicate keys (the builder default is DuplicateKeysHandling.Throw)
+                return path == MultiPathA
+                    ? @"{""flagValues"":{""flagA"":""a""}}"
+                    : @"{""flagValues"":{""flagB"":""b""}}";
+            }
+        }
+
+        [Fact]
+        public void PendingParseRetryIsSkippedIfAnExternalReloadAlreadySucceeded()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start(); // fails, schedules a retry
+
+                    // An externally triggered load (same code path as a file-change notification)
+                    // succeeds before the pending retry fires.
+                    reader.Bad = false;
+                    fp.Start();
+                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
+                    var readsAfterSuccess = reader.Reads;
+
+                    Thread.Sleep(1500); // past the retry delay
+                    // The pending retry saw that the load already succeeded and did not reload,
+                    // so no redundant Init (which would fire spurious change events) occurred.
+                    Assert.Equal(readsAfterSuccess, reader.Reads);
+                    _updateSink.Inits.ExpectNoValue();
+                }
+            }
+        }
+
+        [Fact]
+        public void ParseFailureInANewEpisodeGetsAFullRetryBudgetAfterAnotherPathGaveUp()
+        {
+            var reader = new PerPathScriptedReader();
+            reader.SetBad(MultiPathB, true);
+            factory.FilePaths(MultiPathA, MultiPathB).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
+            {
+                fp.Start(); // A parses, B fails; B accumulates failures across retries
+                WaitUntil(() => reader.Reads(MultiPathB) >= 4, "4 reads of path B");
+                reader.SetBad(MultiPathA, true); // now every attempt stops at A
+                WaitUntil(() => reader.Reads(MultiPathA) >= 9, "A to exhaust its retry budget");
+                Thread.Sleep(1500); // the retry chain is dead
+                Assert.Equal(9, reader.Reads(MultiPathA));
+
+                // A new externally triggered load fails at A; A recovers before the retry fires.
+                fp.Start();
+                reader.SetBad(MultiPathA, false);
+                WaitUntil(() => reader.Reads(MultiPathB) >= 5, "the retry to reach path B");
+                reader.SetBad(MultiPathB, false);
+
+                // B's failure was its first in the new episode, so it gets a fresh retry budget
+                // instead of inheriting the dead episode's count and giving up immediately.
+                _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
+            }
+        }
+
+        [Fact]
+        public void PathAbandonedWhenAnotherPathGivesUpGetsATerminalLogMessage()
+        {
+            var reader = new PerPathScriptedReader();
+            reader.SetBad(MultiPathB, true);
+            factory.FilePaths(MultiPathA, MultiPathB).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
+            {
+                fp.Start();
+                WaitUntil(() => reader.Reads(MultiPathB) >= 4, "4 reads of path B");
+                reader.SetBad(MultiPathA, true);
+                WaitUntil(() => reader.Reads(MultiPathA) >= 9, "A to exhaust its retry budget");
+                Thread.Sleep(1500); // the retry chain is dead
+
+                // B was last warned "will retry in 600 ms", but A's give-up ended the chain.
+                // That promise must be either fulfilled (B re-read) or terminated with an
+                // error log naming B.
+                var bRetried = reader.Reads(MultiPathB) >= 5;
+                var bTerminallyLogged = LogCapture.GetMessages().Any(m =>
+                    m.Level == LogLevel.Error && m.Text.Contains(MultiPathB));
+                Assert.True(bRetried || bTerminallyLogged,
+                    "path B was promised a retry but was never re-read and got no terminal error log");
             }
         }
 

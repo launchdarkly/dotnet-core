@@ -32,8 +32,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private const int MaxParseAttempts = 5;
         private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(600);
-        // Consecutive parse failures per path within the current failure episode. A failure seen on
-        // an externally triggered load (Start or a file-change notification) starts a new episode,
+        // Consecutive parse failures per path within the current failure episode. An externally
+        // triggered load (Start or a file-change notification) starts a new episode and clears this,
         // so the retry budget is per-episode, not per-lifetime. Only touched inside _updateLock.
         private readonly Dictionary<string, int> _parseFailureCounts = new Dictionary<string, int>();
         // Whether a delayed retry is already scheduled; at most one retry chain exists at a time,
@@ -109,6 +109,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     return;
                 }
+                if (!isRetry)
+                {
+                    // An externally triggered load starts a new failure episode: parse failures
+                    // observed from here on get a fresh retry budget, and any state left over
+                    // from a previous episode is discarded.
+                    _parseFailureCounts.Clear();
+                }
                 var version = Interlocked.Increment(ref _lastVersion);
                 var flags = new Dictionary<string, ItemDescriptor>();
                 var segments = new Dictionary<string, ItemDescriptor>();
@@ -129,11 +136,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                             // failure may just mean we read an empty or partially written file. This applies
                             // to any configured parser (JSON or alternate), so we treat every failure of
                             // Parse — as opposed to reading the file — as potentially transient.
-                            HandleParseFailure(path, e, isRetry);
+                            HandleParseFailure(path, e);
                             return;
                         }
-                        _dataMerger.AddToData(data, flags, segments);
                         _parseFailureCounts.Remove(path);
+                        _dataMerger.AddToData(data, flags, segments);
                     }
                     catch (FileNotFoundException) when (_skipMissingPaths)
                     {
@@ -156,8 +163,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        // Called under _updateLock when parsing a path's content fails.
-        private void HandleParseFailure(string path, Exception e, bool isRetry)
+        // Called under _updateLock when parsing a path's content fails. Since an externally
+        // triggered load clears _parseFailureCounts before reading, any existing count for the
+        // path belongs to the current episode.
+        private void HandleParseFailure(string path, Exception e)
         {
             if (!_autoUpdate)
             {
@@ -167,24 +176,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 return;
             }
 
-            var attempts = 1;
-            if (isRetry && _parseFailureCounts.TryGetValue(path, out var previousAttempts))
-            {
-                attempts = previousAttempts + 1;
-            }
+            var attempts = _parseFailureCounts.TryGetValue(path, out var previousAttempts)
+                ? previousAttempts + 1
+                : 1;
 
             if (attempts < MaxParseAttempts)
             {
                 _parseFailureCounts[path] = attempts;
-                _logger.Warn("{0}: failed to parse file ({1}); will retry in {2} ms in case it was incompletely written",
+                _logger.Warn("{0}: Failed to parse file ({1}); will retry in {2} ms in case it was incompletely written",
                     path, LogValues.ExceptionSummary(e), RetryDelay.TotalMilliseconds);
+                _logger.Debug("{0}", LogValues.ExceptionTrace(e));
                 ScheduleRetry();
             }
             else
             {
+                // This path kept failing, so the retry chain ends until the next external trigger.
+                // Every attempt stopped at this path, so any other paths with recorded failures
+                // were never re-attempted; their episodes end here too.
                 _parseFailureCounts.Remove(path);
+                foreach (var abandoned in _parseFailureCounts.Keys)
+                {
+                    _logger.Error("{0}: Will not be retried because {1} repeatedly failed to parse; both will be re-read on the next detected file change",
+                        abandoned, path);
+                }
+                _parseFailureCounts.Clear();
                 LogHelpers.LogException(_logger,
-                    string.Format("{0}: failed to parse file after {1} attempts", path, MaxParseAttempts), e);
+                    string.Format("{0}: Failed to parse file after {1} attempts", path, MaxParseAttempts), e);
             }
         }
 
@@ -218,9 +235,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _retryPending = false;
                 if (_disposed || _parseFailureCounts.Count == 0)
                 {
-                    // Disposed, or an externally triggered load already succeeded in the meantime
-                    // (success clears the failure counts) — a reload would be redundant and would
-                    // re-Init identical data at bumped versions, firing spurious change events.
+                    // Disposed, or the failure state was cleared in the meantime (an externally
+                    // triggered load succeeded, or the chain gave up) — a reload would be redundant
+                    // and would re-Init identical data at bumped versions, firing spurious change
+                    // events.
                     return;
                 }
                 LoadAll(isRetry: true);

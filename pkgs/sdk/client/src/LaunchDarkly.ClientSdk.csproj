@@ -25,7 +25,7 @@
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\LaunchDarkly.ClientSdk.xml</DocumentationFile>
         <Company>LaunchDarkly</Company>
         <Copyright>Copyright 2020 LaunchDarkly</Copyright>
-        <LicenseExpression>Apache-2.0</LicenseExpression>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/launchdarkly/dotnet-core</PackageProjectUrl>
         <RepositoryUrl>https://github.com/launchdarkly/dotnet-core</RepositoryUrl>
         <RepositoryBranch>master</RepositoryBranch>

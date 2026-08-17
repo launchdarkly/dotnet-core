@@ -22,6 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly FlagFileDataMerger _dataMerger;
         private readonly FileDataTypes.IFileReader _fileReader;
         private readonly bool _skipMissingPaths;
+        private readonly bool _autoUpdate;
         private readonly Logger _logger;
         private volatile bool _started;
         private volatile bool _loadedValidData;
@@ -29,10 +30,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private volatile int _lastVersion;
         private object _updateLock = new object();
 
-        private const int MaxRetries = 5;
+        private const int MaxParseAttempts = 5;
         private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(600);
-        // Per-path JSON-parse retry counters. Only touched inside _updateLock.
-        private readonly Dictionary<string, int> _retryCounts = new Dictionary<string, int>();
+        // Consecutive parse failures per path within the current failure episode. A failure seen on
+        // an externally triggered load (Start or a file-change notification) starts a new episode,
+        // so the retry budget is per-episode, not per-lifetime. Only touched inside _updateLock.
+        private readonly Dictionary<string, int> _parseFailureCounts = new Dictionary<string, int>();
+        // Whether a delayed retry is already scheduled; at most one retry chain exists at a time,
+        // since each retry re-reads every path anyway. Only touched inside _updateLock.
+        private bool _retryPending;
 
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
             List<string> paths, bool autoUpdate, Func<string, object> alternateParser, bool skipMissingPaths,
@@ -46,6 +52,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             _dataMerger = new FlagFileDataMerger(duplicateKeysHandling);
             _fileReader = fileReader;
             _skipMissingPaths = skipMissingPaths;
+            _autoUpdate = autoUpdate;
             _lastVersion = 0;
             if (autoUpdate)
             {
@@ -68,7 +75,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public Task<bool> Start()
         {
             _started = true;
-            LoadAll();
+            LoadAll(isRetry: false);
 
             // We always complete the start task regardless of whether we successfully loaded data or not;
             // if the data files were bad, they're unlikely to become good within the short interval that
@@ -94,7 +101,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        private void LoadAll()
+        private void LoadAll(bool isRetry)
         {
             lock (_updateLock)
             {
@@ -111,44 +118,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     {
                         var content = _fileReader.ReadAllText(path);
                         _logger.Debug("file data: {0}", content);
-                        var data = _parser.Parse(content, version);
+                        FullDataSet<ItemDescriptor> data;
+                        try
+                        {
+                            data = _parser.Parse(content, version);
+                        }
+                        catch (Exception e)
+                        {
+                            // A file-change notification can fire while the file is mid-write, so a parse
+                            // failure may just mean we read an empty or partially written file. This applies
+                            // to any configured parser (JSON or alternate), so we treat every failure of
+                            // Parse — as opposed to reading the file — as potentially transient.
+                            HandleParseFailure(path, e, isRetry);
+                            return;
+                        }
                         _dataMerger.AddToData(data, flags, segments);
-                        _retryCounts.Remove(path);
+                        _parseFailureCounts.Remove(path);
                     }
                     catch (FileNotFoundException) when (_skipMissingPaths)
                     {
                         _logger.Debug("{0}: {1}", path, "File not found");
-                    }
-                    catch (System.Text.Json.JsonException)
-                    {
-                        // A file-change notification can fire while the file is mid-write, so we may read an
-                        // empty or partially written file. Retry up to MaxRetries times before giving up; the
-                        // counter is cleared on the next successful load.
-                        if (!_retryCounts.ContainsKey(path))
-                        {
-                            _retryCounts[path] = 0;
-                        }
-                        _retryCounts[path]++;
-
-                        if (_retryCounts[path] < MaxRetries)
-                        {
-                            _logger.Warn("{0}: Failed to parse file, retrying in {1} ms", path, RetryDelay.TotalMilliseconds);
-                            Task.Run(async () =>
-                            {
-                                await Task.Delay(RetryDelay).ConfigureAwait(false);
-                                if (_disposed)
-                                {
-                                    return;
-                                }
-                                LoadAll();
-                            });
-                        }
-                        else
-                        {
-                            _logger.Error("{0}: Failed to parse file after {1} retries", path, MaxRetries);
-                        }
-
-                        return;
                     }
                     catch (Exception e)
                     {
@@ -167,12 +156,83 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        // Called under _updateLock when parsing a path's content fails.
+        private void HandleParseFailure(string path, Exception e, bool isRetry)
+        {
+            if (!_autoUpdate)
+            {
+                // With auto-update off, files are documented to be loaded only once, so we don't
+                // retry in the background — Start()'s result stays final.
+                LogHelpers.LogException(_logger, "Failed to parse " + path, e);
+                return;
+            }
+
+            var attempts = 1;
+            if (isRetry && _parseFailureCounts.TryGetValue(path, out var previousAttempts))
+            {
+                attempts = previousAttempts + 1;
+            }
+
+            if (attempts < MaxParseAttempts)
+            {
+                _parseFailureCounts[path] = attempts;
+                _logger.Warn("{0}: failed to parse file ({1}); will retry in {2} ms in case it was incompletely written",
+                    path, LogValues.ExceptionSummary(e), RetryDelay.TotalMilliseconds);
+                ScheduleRetry();
+            }
+            else
+            {
+                _parseFailureCounts.Remove(path);
+                LogHelpers.LogException(_logger,
+                    string.Format("{0}: failed to parse file after {1} attempts", path, MaxParseAttempts), e);
+            }
+        }
+
+        // Called under _updateLock.
+        private void ScheduleRetry()
+        {
+            if (_retryPending)
+            {
+                return; // the already-scheduled retry will re-read every path
+            }
+            _retryPending = true;
+            Task.Run(async () =>
+            {
+                await Task.Delay(RetryDelay).ConfigureAwait(false);
+                try
+                {
+                    RetryLoadAll();
+                }
+                catch (Exception e)
+                {
+                    // Nothing observes this task, so any escaping exception would otherwise vanish.
+                    LogHelpers.LogException(_logger, "Unexpected error while retrying file data load", e);
+                }
+            });
+        }
+
+        private void RetryLoadAll()
+        {
+            lock (_updateLock)
+            {
+                _retryPending = false;
+                if (_disposed || _parseFailureCounts.Count == 0)
+                {
+                    // Disposed, or an externally triggered load already succeeded in the meantime
+                    // (success clears the failure counts) — a reload would be redundant and would
+                    // re-Init identical data at bumped versions, firing spurious change events.
+                    return;
+                }
+                LoadAll(isRetry: true);
+            }
+        }
+
         private void TriggerReload()
         {
             if (_started)
             {
                 _logger.Info("detected file modification, reloading");
-                LoadAll();
+                LoadAll(isRetry: false);
             }
         }
     }

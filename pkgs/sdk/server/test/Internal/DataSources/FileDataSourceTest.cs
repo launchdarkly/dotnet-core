@@ -255,6 +255,150 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        private const string ValidFlagJson = @"{""flagValues"":{""flag1"":""a""}}";
+        private const string TruncatedFlagJson = @"{""flagValues"": {"; // invalid as JSON and as YAML
+
+        // Simulates reading a file that is mid-write: returns truncated content until Bad is
+        // cleared, and counts reads so tests can observe retry attempts deterministically
+        // without depending on real file-watcher timing.
+        private class ScriptedFileReader : FileDataTypes.IFileReader
+        {
+            private int _reads;
+            public volatile bool Bad = true;
+            public int Reads => Volatile.Read(ref _reads);
+
+            public string ReadAllText(string path)
+            {
+                Interlocked.Increment(ref _reads);
+                return Bad ? TruncatedFlagJson : ValidFlagJson;
+            }
+        }
+
+        private static void WaitForReads(ScriptedFileReader reader, int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (reader.Reads < count && DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(50);
+            }
+        }
+
+        [Fact]
+        public void ParseFailureFromPartialReadIsRetriedUntilContentIsComplete()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start();
+                    WaitForReads(reader, 2);
+                    reader.Bad = false; // as if the write completed, with no further notification
+                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
+                    Assert.True(fp.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public void ParseRetryStopsAfterMaxAttemptsAndDoesNotInit()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start();
+                    WaitForReads(reader, 5); // initial attempt + 4 retries
+                    Thread.Sleep(1500); // longer than two retry delays
+                    Assert.Equal(5, reader.Reads); // budget exhausted, no further attempts
+                    _updateSink.Inits.ExpectNoValue();
+                    Assert.False(fp.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public void ParseRetryBudgetResetsForANewFailureEpisode()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start();
+                    WaitForReads(reader, 5); // episode 1: all attempts fail
+                    Thread.Sleep(1500);
+                    Assert.Equal(5, reader.Reads); // episode 1 exhausted, nothing pending
+
+                    // A new file-change notification starts a new episode with a fresh retry
+                    // budget, even though its first read still sees partial content.
+                    file.SetContent("trigger-new-episode");
+                    WaitForReads(reader, 6);
+
+                    reader.Bad = false; // write completed; no further notification arrives
+                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
+                }
+            }
+        }
+
+        [Fact]
+        public void ParseRetryAppliesWhenAlternateParserIsConfigured()
+        {
+            var yaml = new DeserializerBuilder().Build();
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader)
+                    .Parser(s => yaml.Deserialize<object>(s));
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start();
+                    reader.Bad = false;
+                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
+                }
+            }
+        }
+
+        [Fact]
+        public void ParseFailureIsNotRetriedIfAutoUpdateIsOff()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(false).FileReader(reader);
+                using (var fp = MakeDataSource())
+                {
+                    var task = fp.Start();
+                    Assert.True(task.IsCompleted);
+                    Assert.False(fp.Initialized);
+                    reader.Bad = false;
+                    _updateSink.Inits.ExpectNoValue(TimeSpan.FromSeconds(2));
+                    Assert.False(fp.Initialized);
+                    Assert.Equal(1, reader.Reads);
+                }
+            }
+        }
+
+        [Fact]
+        public void PendingParseRetryIsCanceledByDispose()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                var fp = MakeDataSource();
+                fp.Start(); // schedules a retry
+                Assert.Equal(1, reader.Reads);
+                fp.Dispose();
+                Thread.Sleep(1500);
+                Assert.Equal(1, reader.Reads); // the pending retry observed the disposal and did nothing
+            }
+        }
+
         [Fact]
         public void FullFlagDefinitionEvaluatesAsExpected()
         {

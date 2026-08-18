@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Castle.Core.Internal;
@@ -267,11 +268,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             private int _reads;
             public volatile bool Bad = true;
+            public volatile bool Throw = false;
             public int Reads => Volatile.Read(ref _reads);
 
             public string ReadAllText(string path)
             {
                 Interlocked.Increment(ref _reads);
+                if (Throw)
+                {
+                    throw new IOException("simulated transient read error");
+                }
                 return Bad ? TruncatedFlagJson : ValidFlagJson;
             }
         }
@@ -385,6 +391,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _updateSink.Inits.ExpectNoValue(TimeSpan.FromSeconds(2));
                     Assert.False(fp.Initialized);
                     Assert.Equal(1, reader.Reads);
+                }
+            }
+        }
+
+        [Fact]
+        public void TransientReadErrorDuringRetryDoesNotEndTheEpisode()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start(); // parse fails, schedules a retry
+                    // The retry's read fails transiently (e.g. a writer is replacing the file);
+                    // the content itself is complete from here on.
+                    reader.Bad = false;
+                    reader.Throw = true;
+                    WaitForReads(reader, 2);
+                    reader.Throw = false;
+
+                    // The episode still has budget, so the chain must continue and load the data
+                    // instead of dying on the non-parse failure.
+                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
                 }
             }
         }

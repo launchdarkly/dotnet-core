@@ -149,6 +149,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     catch (Exception e)
                     {
                         LogHelpers.LogException(_logger, "Failed to load " + path, e);
+                        if (isRetry)
+                        {
+                            // A transient read error (for example, a writer replacing the file)
+                            // must not end a retry episode early: paths that were promised
+                            // retries would keep stale data with budget remaining, and another
+                            // file-change notification is not guaranteed. Charge the failure to
+                            // the same per-path budget and continue the chain.
+                            HandleRetryLoadFailure(path);
+                        }
                         return;
                     }
                 }
@@ -190,19 +199,48 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
             else
             {
-                // This path kept failing, so the retry chain ends until the next external trigger.
-                // Every attempt stopped at this path, so any other paths with recorded failures
-                // were never re-attempted; their episodes end here too.
-                _parseFailureCounts.Remove(path);
-                foreach (var abandoned in _parseFailureCounts.Keys)
-                {
-                    _logger.Error("{0}: Will not be retried because {1} repeatedly failed to parse; both will be re-read on the next detected file change",
-                        abandoned, path);
-                }
-                _parseFailureCounts.Clear();
+                EndEpisode(path);
                 LogHelpers.LogException(_logger,
                     string.Format("{0}: Failed to parse file after {1} attempts", path, MaxParseAttempts), e);
             }
+        }
+
+        // Called under _updateLock when a retry attempt fails before parsing (for example, a
+        // transient read error). The caller has already logged the exception; this charges the
+        // failure to the path's per-episode budget and continues or ends the retry chain.
+        private void HandleRetryLoadFailure(string path)
+        {
+            var attempts = _parseFailureCounts.TryGetValue(path, out var previousAttempts)
+                ? previousAttempts + 1
+                : 1;
+
+            if (attempts < MaxParseAttempts)
+            {
+                _parseFailureCounts[path] = attempts;
+                _logger.Warn("{0}: Failed to read file on a retry; will retry again in {1} ms",
+                    path, RetryDelay.TotalMilliseconds);
+                ScheduleRetry();
+            }
+            else
+            {
+                EndEpisode(path);
+                _logger.Error("{0}: Failed to load file after {1} attempts; will not retry until the next detected file change",
+                    path, MaxParseAttempts);
+            }
+        }
+
+        // Called under _updateLock. Ends the current failure episode for every path: the chain
+        // stopped at failedPath on every attempt, so any other paths with recorded failures were
+        // never re-attempted and their promised retries cannot happen.
+        private void EndEpisode(string failedPath)
+        {
+            _parseFailureCounts.Remove(failedPath);
+            foreach (var abandoned in _parseFailureCounts.Keys)
+            {
+                _logger.Error("{0}: Will not be retried because {1} repeatedly failed to load; both will be re-read on the next detected file change",
+                    abandoned, failedPath);
+            }
+            _parseFailureCounts.Clear();
         }
 
         // Called under _updateLock.

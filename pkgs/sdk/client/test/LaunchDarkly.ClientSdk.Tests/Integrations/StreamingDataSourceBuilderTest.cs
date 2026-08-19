@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Reflection;
+using LaunchDarkly.Sdk.Client.Internal.DataSources;
 using LaunchDarkly.TestHelpers;
 using Xunit;
 
@@ -24,6 +26,21 @@ namespace LaunchDarkly.Sdk.Client.Integrations
             var prop = _tester.Property(b => b._initialReconnectDelay, (b, v) => b.InitialReconnectDelay(v));
             prop.AssertDefault(StreamingDataSourceBuilder.DefaultInitialReconnectDelay);
             prop.AssertCanSet(TimeSpan.FromMilliseconds(222));
+        }
+
+        [Fact]
+        public void BuildInBackgroundFallsBackToPollingWithBackgroundPollInterval()
+        {
+            var builder = Components.StreamingDataSource()
+                .BackgroundPollInterval(TimeSpan.FromMinutes(30));
+
+            var dataSource = builder.Build(TestUtil.SimpleContext.WithInBackground(true));
+
+            var polling = Assert.IsType<PollingDataSource>(dataSource);
+            var pollingInterval = (TimeSpan)typeof(PollingDataSource)
+                .GetField("_pollingInterval", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(polling);
+            Assert.Equal(TimeSpan.FromMinutes(30), pollingInterval);
         }
     }
 }

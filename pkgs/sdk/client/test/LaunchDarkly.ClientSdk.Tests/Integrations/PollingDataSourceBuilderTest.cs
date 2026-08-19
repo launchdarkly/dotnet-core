@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using LaunchDarkly.Sdk.Client.Internal.DataSources;
 using LaunchDarkly.TestHelpers;
 using Xunit;
@@ -10,11 +9,6 @@ namespace LaunchDarkly.Sdk.Client.Integrations
     {
         private readonly BuilderBehavior.InternalStateTester<PollingDataSourceBuilder> _tester =
             BuilderBehavior.For(Components.PollingDataSource);
-
-        private static TimeSpan GetPollingInterval(PollingDataSource dataSource) =>
-            (TimeSpan)typeof(PollingDataSource)
-                .GetField("_pollingInterval", BindingFlags.NonPublic | BindingFlags.Instance)
-                .GetValue(dataSource);
 
         [Fact]
         public void BackgroundPollInterval()
@@ -46,7 +40,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
 
             var dataSource = (PollingDataSource)builder.Build(TestUtil.SimpleContext.WithInBackground(false));
 
-            Assert.Equal(TimeSpan.FromMinutes(10), GetPollingInterval(dataSource));
+            Assert.Equal(TimeSpan.FromMinutes(10), dataSource.PollingInterval);
         }
 
         [Fact]
@@ -58,7 +52,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
 
             var dataSource = (PollingDataSource)builder.Build(TestUtil.SimpleContext.WithInBackground(true));
 
-            Assert.Equal(TimeSpan.FromMinutes(30), GetPollingInterval(dataSource));
+            Assert.Equal(TimeSpan.FromMinutes(30), dataSource.PollingInterval);
         }
     }
 }

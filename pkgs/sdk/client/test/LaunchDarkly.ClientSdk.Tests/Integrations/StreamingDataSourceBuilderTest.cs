@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using LaunchDarkly.Sdk.Client.Internal.DataSources;
 using LaunchDarkly.TestHelpers;
 using Xunit;
@@ -37,10 +36,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
             var dataSource = builder.Build(TestUtil.SimpleContext.WithInBackground(true));
 
             var polling = Assert.IsType<PollingDataSource>(dataSource);
-            var pollingInterval = (TimeSpan)typeof(PollingDataSource)
-                .GetField("_pollingInterval", BindingFlags.NonPublic | BindingFlags.Instance)
-                .GetValue(polling);
-            Assert.Equal(TimeSpan.FromMinutes(30), pollingInterval);
+            Assert.Equal(TimeSpan.FromMinutes(30), polling.PollingInterval);
         }
     }
 }

@@ -63,6 +63,8 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
 
         public bool Initialized => _initialized.Get();
 
+        internal TimeSpan PollingInterval => _pollingInterval;
+
         private async Task UpdateTaskAsync()
         {
             try

@@ -3,6 +3,20 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.9.6](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.5...LaunchDarkly.ClientSdk-v5.9.6) (2026-08-19)
+
+
+### Bug Fixes
+
+* honor BackgroundPollInterval when app is in background ([#334](https://github.com/launchdarkly/dotnet-core/issues/334)) ([22e139b](https://github.com/launchdarkly/dotnet-core/commit/22e139bdfd4c2cabc0497888211f51e74f8e5470))
+
+## [5.9.5](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.4...LaunchDarkly.ClientSdk-v5.9.5) (2026-08-17)
+
+
+### Bug Fixes
+
+* Correct nuget license format. ([#332](https://github.com/launchdarkly/dotnet-core/issues/332)) ([cc1ff83](https://github.com/launchdarkly/dotnet-core/commit/cc1ff83705794fe36d1d14ea5e10d232ce23997d))
+
 ## [5.9.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.3...LaunchDarkly.ClientSdk-v5.9.4) (2026-08-10)
 
 

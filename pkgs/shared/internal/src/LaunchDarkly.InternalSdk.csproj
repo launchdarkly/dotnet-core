@@ -25,6 +25,12 @@
     <PackageProjectUrl>https://github.com/launchdarkly/dotnet-core</PackageProjectUrl>
     <RepositoryUrl>https://github.com/launchdarkly/dotnet-core</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
+    <Configurations>Debug;Release;DebugLocalReferences</Configurations>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net462'">
@@ -32,8 +38,36 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="LaunchDarkly.CommonSdk" Version="[7.2.0,8.0.0)" />
     <PackageReference Include="LaunchDarkly.Logging" Version="[2.0.0,3.0.0)" />
+  </ItemGroup>
+
+  <!-- Use PackageReference in Debug/Release -->
+  <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences'">
+    <PackageReference Include="LaunchDarkly.CommonSdk" Version="[7.2.0,8.0.0)" />
+  </ItemGroup>
+
+  <!-- Use ProjectReference in DebugLocalReferences -->
+  <ItemGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
+    <ProjectReference Include="../../common/src/LaunchDarkly.CommonSdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\CHANGELOG.md">
+      <Link>CHANGELOG.md</Link>
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\CONTRIBUTING.md">
+      <Link>CONTRIBUTING.md</Link>
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\docfx.json">
+      <Link>docfx.json</Link>
+      <Pack>false</Pack>
+    </None>
+    <None Include="..\README.md">
+      <Link>README.md</Link>
+      <Pack>false</Pack>
+    </None>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">

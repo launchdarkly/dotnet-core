@@ -122,13 +122,14 @@ namespace LaunchDarkly.Sdk.Internal
                     }
                     catch (TaskCanceledException) { }
                 }
+                var timer = new Stopwatch();
                 while (true)
                 {
                     if (canceller.IsCancellationRequested)
                     {
                         return;
                     }
-                    var timer = Stopwatch.StartNew();
+                    timer.Restart();
                     try
                     {
                         await taskFn();

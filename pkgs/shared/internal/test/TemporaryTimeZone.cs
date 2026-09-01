@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 
 namespace LaunchDarkly.Sdk.Internal
 {
@@ -15,7 +14,9 @@ namespace LaunchDarkly.Sdk.Internal
     {
         private readonly string _previousTimeZone;
 
-        internal static bool IsSupported => !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        internal static bool IsSupported =>
+            Environment.OSVersion.Platform == PlatformID.Unix ||
+            Environment.OSVersion.Platform == PlatformID.MacOSX;
 
         internal TemporaryTimeZone(string timeZoneName)
         {

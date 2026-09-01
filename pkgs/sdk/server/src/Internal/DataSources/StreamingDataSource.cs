@@ -49,6 +49,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         private volatile bool _lastStoreUpdateFailed = false;
         internal DateTime _esStarted; // exposed for testing
+        private long _esStartedTimestamp;
 
         private IEnumerable<KeyValuePair<string, IEnumerable<string>>> _headers;
 
@@ -94,7 +95,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public Task<bool> Start()
         {
             Task.Run(() => {
-                _esStarted = DateTime.Now;
+                _esStarted = DateTime.UtcNow;
+                _esStartedTimestamp = MonotonicTime.GetTimestamp();
                 return _es.StartAsync();
             });
 
@@ -159,9 +161,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (_diagnosticStore != null)
             {
-                DateTime now = DateTime.Now;
-                _diagnosticStore.AddStreamInit(_esStarted, now - _esStarted, failed);
-                _esStarted = now;
+                var duration = MonotonicTime.ElapsedSince(_esStartedTimestamp);
+                _diagnosticStore.AddStreamInit(_esStarted, duration, failed);
+                _esStarted = DateTime.UtcNow;
+                _esStartedTimestamp = MonotonicTime.GetTimestamp();
             }
         }
 

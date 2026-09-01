@@ -127,7 +127,7 @@ namespace LaunchDarkly.Sdk.Internal
                     {
                         return;
                     }
-                    var nextTime = DateTime.Now.Add(interval);
+                    var startedAt = MonotonicTime.GetTimestamp();
                     try
                     {
                         await taskFn();
@@ -136,7 +136,7 @@ namespace LaunchDarkly.Sdk.Internal
                     {
                         LogHelpers.LogException(_log, "Unexpected exception from repeating task", e);
                     }
-                    var timeToWait = nextTime.Subtract(DateTime.Now);
+                    var timeToWait = interval - MonotonicTime.ElapsedSince(startedAt);
                     if (timeToWait.CompareTo(TimeSpan.Zero) > 0)
                     {
                         try

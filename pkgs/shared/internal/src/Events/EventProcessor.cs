@@ -254,7 +254,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
                 _diagnosticTimer = null;
                 if (enabled)
                 {
-                    TimeSpan initialDelay = _diagnosticRecordingInterval - (DateTime.Now - _diagnosticStore.DataSince);
+                    TimeSpan initialDelay = _diagnosticRecordingInterval - (DateTime.UtcNow - _diagnosticStore.DataSince);
                     TimeSpan safeDelay =
                         (initialDelay < TimeSpan.Zero) ?
                         TimeSpan.Zero :

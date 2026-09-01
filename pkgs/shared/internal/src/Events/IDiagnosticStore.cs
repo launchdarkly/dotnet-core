@@ -18,7 +18,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         /// before the SDK initialized if periodic diagnostic data has been persisted from a
         /// previous initialization, but the session was not considered ended (meaning the same
         /// diagnostic id) when the current initialization occurred. For the server SDK this will be
-        /// the time of initialization.
+        /// the time of initialization. This is a UTC time.
         /// </summary>
         DateTime DataSince { get; }
         /// <summary>

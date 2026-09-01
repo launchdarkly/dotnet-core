@@ -77,7 +77,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
             var mockDiagnosticStore = new Mock<IDiagnosticStore>(MockBehavior.Strict);
             mockDiagnosticStore.Setup(diagStore => diagStore.PersistedUnsentEvent).Returns(persistedUnsentEvent);
             mockDiagnosticStore.Setup(diagStore => diagStore.InitEvent).Returns(initEvent);
-            mockDiagnosticStore.Setup(diagStore => diagStore.DataSince).Returns(DateTime.Now);
+            mockDiagnosticStore.Setup(diagStore => diagStore.DataSince).Returns(DateTime.UtcNow);
             mockDiagnosticStore.Setup(diagStore => diagStore.RecordEventsInBatch(It.IsAny<long>()));
             mockDiagnosticStore.Setup(diagStore => diagStore.CreateEventAndReset()).Returns(statsEvent);
             return mockDiagnosticStore;

@@ -42,6 +42,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         private volatile IEventSource _eventSource;
 
         internal DateTime _esStarted; // exposed for testing
+        private long _esStartedTimestamp;
 
         internal StreamingDataSource(
             IDataSourceUpdateSink updateSink,
@@ -96,7 +97,8 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
             _eventSource.Error += OnError;
             _eventSource.Opened += OnOpen;
 
-            _esStarted = DateTime.Now;
+            _esStarted = DateTime.UtcNow;
+            _esStartedTimestamp = MonotonicTime.GetTimestamp();
 
             _ = Task.Run(() => _eventSource.StartAsync());
             return _initTask.Task;
@@ -134,9 +136,10 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         {
             if (_diagnosticStore != null)
             {
-                DateTime now = DateTime.Now;
-                _diagnosticStore.AddStreamInit(_esStarted, now - _esStarted, failed);
-                _esStarted = now;
+                var duration = MonotonicTime.ElapsedSince(_esStartedTimestamp);
+                _diagnosticStore.AddStreamInit(_esStarted, duration, failed);
+                _esStarted = DateTime.UtcNow;
+                _esStartedTimestamp = MonotonicTime.GetTimestamp();
             }
         }
 

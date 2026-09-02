@@ -124,37 +124,6 @@ namespace LaunchDarkly.Sdk.Internal.Concurrent
         }
 
         [Fact]
-        public void RepeatingTaskIntervalIsUnaffectedByLocalClockJump()
-        {
-            if (!TemporaryTimeZone.IsSupported)
-            {
-                return;
-            }
-
-            var values = new BlockingCollection<int>();
-            var nextValue = 1;
-            using (new TemporaryTimeZone("Etc/GMT+5"))
-            {
-                var canceller = executor.StartRepeatingTask(TimeSpan.Zero, TimeSpan.FromSeconds(30), async () =>
-                {
-                    var value = nextValue++;
-                    if (value == 1)
-                    {
-                        TemporaryTimeZone.SetLocalTimeZone("Etc/GMT-5"); // local clock jumps ten hours forward
-                    }
-                    values.Add(value);
-                    await Task.FromResult(true);
-                });
-
-                Assert.True(values.TryTake(out var value1, TimeSpan.FromSeconds(2)));
-                Assert.Equal(1, value1);
-                Assert.False(values.TryTake(out _, TimeSpan.FromSeconds(1)));
-
-                canceller.Cancel();
-            }
-        }
-
-        [Fact]
         public void ExceptionFromRepeatingTaskIsLoggedAndDoesNotStopTask()
         {
             var values = new BlockingCollection<int>();

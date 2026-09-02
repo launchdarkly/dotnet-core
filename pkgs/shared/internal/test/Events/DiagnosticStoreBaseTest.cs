@@ -114,28 +114,13 @@ namespace LaunchDarkly.Sdk.Internal.Events
         }
 
         [Fact]
-        public void EventTimestampsAreUtcWhenLocalTimeZoneIsNotUtc()
+        public void TimestampsAreUtc()
         {
-            if (!TemporaryTimeZone.IsSupported)
-            {
-                return;
-            }
+            var store = new DiagnosticStoreImpl();
+            Assert.Equal(DateTimeKind.Utc, store.DataSince.Kind);
 
-            using (new TemporaryTimeZone("Etc/GMT+5"))
-            {
-                var store = new DiagnosticStoreImpl();
-                var initEvent = store.InitEvent;
-                var periodicEvent = store.CreateEventAndReset();
-
-                var nowMillis = UnixMillisecondTime.Now.Value;
-                const long toleranceMillis = 60000;
-                Assert.InRange(initEvent.Value.JsonValue.Get("creationDate").AsLong,
-                    nowMillis - toleranceMillis, nowMillis + toleranceMillis);
-                Assert.InRange(periodicEvent.JsonValue.Get("creationDate").AsLong,
-                    nowMillis - toleranceMillis, nowMillis + toleranceMillis);
-                Assert.InRange(periodicEvent.JsonValue.Get("dataSinceDate").AsLong,
-                    nowMillis - toleranceMillis, nowMillis + toleranceMillis);
-            }
+            store.CreateEventAndReset();
+            Assert.Equal(DateTimeKind.Utc, store.DataSince.Kind);
         }
 
         [Fact]

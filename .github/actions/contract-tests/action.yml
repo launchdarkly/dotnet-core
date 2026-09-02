@@ -12,7 +12,7 @@ inputs:
     required: false
     default: ''
   run_fdv2_tests:
-    description: 'Whether to run contract tests from the v3.0.0-alpha.6 tag'
+    description: 'Whether to run contract tests from the latest v3 release'
     required: false
     default: 'false'
 
@@ -43,7 +43,9 @@ runs:
 
     - name: Suppression Path
       shell: bash
-      run: echo "SUPPRESSION_FILE=$(dirname ./${{ inputs.service_project_file }})/test-supressions.txt" >> $GITHUB_ENV
+      run: |
+        echo "SUPPRESSION_FILE=$(dirname ./${{ inputs.service_project_file }})/test-supressions.txt" >> $GITHUB_ENV
+        echo "SUPPRESSION_FILE_FDV2=$(dirname ./${{ inputs.service_project_file }})/test-supressions-fdv2.txt" >> $GITHUB_ENV
 
     - name: Run Contract Tests
       uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1.0.2
@@ -52,31 +54,29 @@ runs:
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}'
         token: ${{ inputs.token }}
 
-    - name: Setup Go
-      if: inputs.run_fdv2_tests == 'true'
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
-
     - name: Launch Contract Tests FDv2 Flavor
       if: inputs.run_fdv2_tests == 'true'
       id: launch-contract-tests-fdv2
       shell: bash
-      run: dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
-
-    - name: Clone and run contract tests from v3.0.0-alpha.6 tag
-      if: inputs.run_fdv2_tests == 'true'
-      shell: bash
       run: |
-        mkdir -p /tmp/sdk-test-harness
-        git clone https://github.com/launchdarkly/sdk-test-harness.git /tmp/sdk-test-harness
-        cp $(dirname ./${{ inputs.service_project_file }})/test-supressions-fdv2.txt /tmp/sdk-test-harness/testharness-suppressions-fdv2.txt
-        cd /tmp/sdk-test-harness
-        git checkout v3.0.0-alpha.6
-        go build -o test-harness .
-        ./test-harness -url http://localhost:8000 -debug -status-timeout=360 --skip-from=testharness-suppressions-fdv2.txt --stop-service-at-end
-      env:
-        GITHUB_TOKEN: ${{ inputs.token }}
+        # The previous run shuts the service down; wait for the port to be released.
+        for _ in $(seq 1 30); do
+          curl -sf -o /dev/null http://localhost:8000 || break
+          sleep 1
+        done
+        sleep 2
+        dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
+
+    - name: Run Contract Tests FDv2 Flavor
+      if: inputs.run_fdv2_tests == 'true'
+      uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1
+      with:
+        test_service_port: 8000
+        version: 'v3'
+        debug_logging: 'true'
+        enable_persistence_tests: 'false'
+        extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE_FDV2 }}'
+        token: ${{ inputs.token }}
 
     - name: Upload test service log on failure
       if: failure() && inputs.run_fdv2_tests == 'true'

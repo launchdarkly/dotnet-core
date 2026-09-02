@@ -289,6 +289,8 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
 
                     var streamInit = mockDiagnosticStore.StreamInits.ExpectValue();
                     Assert.False(streamInit.Failed);
+                    Assert.Equal(DateTimeKind.Utc, streamInit.Timestamp.Kind);
+                    Assert.True(streamInit.Duration > TimeSpan.Zero, $"duration was {streamInit.Duration}");
                 }
             }
         }

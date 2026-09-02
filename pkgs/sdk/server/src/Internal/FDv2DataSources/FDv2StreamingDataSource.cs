@@ -382,9 +382,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             if (_diagnosticStore == null) return;
 
             var duration = _esTimer.Elapsed;
-            _diagnosticStore.AddStreamInit(_esStarted, duration, failed);
+            var streamStarted = _esStarted;
             _esStarted = DateTime.UtcNow;
             _esTimer.Restart();
+            _diagnosticStore.AddStreamInit(streamStarted, duration, failed);
         }
 
         private IEventSource CreateEventSource(Uri uri, HttpConfiguration httpConfig)

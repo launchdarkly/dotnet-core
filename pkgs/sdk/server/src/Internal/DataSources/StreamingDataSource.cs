@@ -163,9 +163,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             if (_diagnosticStore != null)
             {
                 var duration = _esTimer.Elapsed;
-                _diagnosticStore.AddStreamInit(_esStarted, duration, failed);
+                var streamStarted = _esStarted;
                 _esStarted = DateTime.UtcNow;
                 _esTimer.Restart();
+                _diagnosticStore.AddStreamInit(streamStarted, duration, failed);
             }
         }
 

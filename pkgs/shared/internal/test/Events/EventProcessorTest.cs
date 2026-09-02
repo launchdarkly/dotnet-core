@@ -323,7 +323,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void DebugModeExpiresBasedOnClientTimeIfClientTimeIsLaterThanServerTime()
         {
             // Pick a server time that is somewhat behind the client time
-            var serverTime = DateTime.Now.Subtract(TimeSpan.FromSeconds(20));
+            var serverTime = DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(20));
 
             var mockSender = MakeMockSender();
             var captured = EventCapture.From(mockSender,
@@ -355,7 +355,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void DebugModeExpiresBasedOnServerTimeIfServerTimeIsLaterThanClientTime()
         {
             // Pick a server time that is somewhat ahead of the client time
-            var serverTime = DateTime.Now.Add(TimeSpan.FromSeconds(20));
+            var serverTime = DateTime.UtcNow.Add(TimeSpan.FromSeconds(20));
 
             var mockSender = MakeMockSender();
             var captured = EventCapture.From(mockSender,

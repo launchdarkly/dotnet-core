@@ -249,10 +249,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public async void StreamInitDiagnosticRecordedOnOpen()
         {
-            var receivedFailed = new EventSink<bool>();
+            var received = new EventSink<(DateTime Timestamp, TimeSpan Duration, bool Failed)>();
             var mockDiagnosticStore = new Mock<IDiagnosticStore>();
             mockDiagnosticStore.Setup(m => m.AddStreamInit(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
-                .Callback((DateTime timestamp, TimeSpan duration, bool failed) => receivedFailed.Enqueue(failed));
+                .Callback((DateTime timestamp, TimeSpan duration, bool failed) => received.Enqueue((timestamp, duration, failed)));
 
             using (var server = HttpServer.Start(StreamWithEmptyData))
             {
@@ -260,7 +260,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     await dataSource.Start();
 
-                    Assert.False(receivedFailed.ExpectValue());
+                    var streamInit = received.ExpectValue();
+                    Assert.False(streamInit.Failed);
+                    Assert.Equal(DateTimeKind.Utc, streamInit.Timestamp.Kind);
+                    Assert.True(streamInit.Duration > TimeSpan.Zero, $"duration was {streamInit.Duration}");
                 }
             }
         }

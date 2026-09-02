@@ -16,8 +16,7 @@ public static class SdkInfo
     public const string Version = "0.12.0"; // x-release-please-version
 
     /// <summary>
-    /// The implementation language. This matches the language recorded for this SDK in
-    /// the sdk-meta catalog, which is how reported telemetry is resolved back to an SDK.
+    /// The implementation language.
     /// </summary>
     public const string Language = "c#";
 }

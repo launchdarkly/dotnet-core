@@ -83,7 +83,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         /// </summary>
         protected DiagnosticStoreBase()
         {
-            _initTime = DateTime.Now;
+            _initTime = DateTime.UtcNow;
             _dataSince = _initTime.ToBinary();
         }
 
@@ -119,7 +119,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         /// <inheritdoc/>
         public DiagnosticEvent CreateEventAndReset()
         {
-            DateTime currentTime = DateTime.Now;
+            DateTime currentTime = DateTime.UtcNow;
             long droppedEvents = Interlocked.Exchange(ref _droppedEvents, 0);
             long deduplicatedUsers = Interlocked.Exchange(ref _deduplicatedUsers, 0);
             long eventsInLastBatch = Interlocked.Exchange(ref _eventsInLastBatch, 0);

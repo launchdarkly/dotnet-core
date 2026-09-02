@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -30,6 +31,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         private readonly IEventSource _es;
         private readonly TaskCompletionSource<bool> _initTask = new TaskCompletionSource<bool>();
         private DateTime _esStarted;
+        private readonly Stopwatch _esTimer = new Stopwatch();
         private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
         private readonly FDv2ProtocolHandler _protocolHandler = new FDv2ProtocolHandler();
         private readonly object _protocolLock = new object();
@@ -144,7 +146,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             _log.Info("Connecting to LaunchDarkly stream");
             Task.Run(() =>
             {
-                _esStarted = DateTime.Now;
+                _esStarted = DateTime.UtcNow;
+                _esTimer.Restart();
                 return _es.StartAsync();
             });
 
@@ -378,9 +381,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             if (_diagnosticStore == null) return;
 
-            var now = DateTime.Now;
-            _diagnosticStore.AddStreamInit(_esStarted, now - _esStarted, failed);
-            _esStarted = now;
+            var duration = _esTimer.Elapsed;
+            var streamStarted = _esStarted;
+            _esStarted = DateTime.UtcNow;
+            _esTimer.Restart();
+            _diagnosticStore.AddStreamInit(streamStarted, duration, failed);
         }
 
         private IEventSource CreateEventSource(Uri uri, HttpConfiguration httpConfig)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -121,13 +122,14 @@ namespace LaunchDarkly.Sdk.Internal
                     }
                     catch (TaskCanceledException) { }
                 }
+                var timer = new Stopwatch();
                 while (true)
                 {
                     if (canceller.IsCancellationRequested)
                     {
                         return;
                     }
-                    var nextTime = DateTime.Now.Add(interval);
+                    timer.Restart();
                     try
                     {
                         await taskFn();
@@ -136,7 +138,7 @@ namespace LaunchDarkly.Sdk.Internal
                     {
                         LogHelpers.LogException(_log, "Unexpected exception from repeating task", e);
                     }
-                    var timeToWait = nextTime.Subtract(DateTime.Now);
+                    var timeToWait = interval - timer.Elapsed;
                     if (timeToWait.CompareTo(TimeSpan.Zero) > 0)
                     {
                         try

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -49,6 +50,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         private volatile bool _lastStoreUpdateFailed = false;
         internal DateTime _esStarted; // exposed for testing
+        private readonly Stopwatch _esTimer = new Stopwatch();
 
         private IEnumerable<KeyValuePair<string, IEnumerable<string>>> _headers;
 
@@ -94,7 +96,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public Task<bool> Start()
         {
             Task.Run(() => {
-                _esStarted = DateTime.Now;
+                _esStarted = DateTime.UtcNow;
+                _esTimer.Restart();
                 return _es.StartAsync();
             });
 
@@ -159,9 +162,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (_diagnosticStore != null)
             {
-                DateTime now = DateTime.Now;
-                _diagnosticStore.AddStreamInit(_esStarted, now - _esStarted, failed);
-                _esStarted = now;
+                var duration = _esTimer.Elapsed;
+                var streamStarted = _esStarted;
+                _esStarted = DateTime.UtcNow;
+                _esTimer.Restart();
+                _diagnosticStore.AddStreamInit(streamStarted, duration, failed);
             }
         }
 

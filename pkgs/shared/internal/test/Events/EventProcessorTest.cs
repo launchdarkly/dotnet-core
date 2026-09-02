@@ -77,7 +77,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
             var mockDiagnosticStore = new Mock<IDiagnosticStore>(MockBehavior.Strict);
             mockDiagnosticStore.Setup(diagStore => diagStore.PersistedUnsentEvent).Returns(persistedUnsentEvent);
             mockDiagnosticStore.Setup(diagStore => diagStore.InitEvent).Returns(initEvent);
-            mockDiagnosticStore.Setup(diagStore => diagStore.DataSince).Returns(DateTime.Now);
+            mockDiagnosticStore.Setup(diagStore => diagStore.DataSince).Returns(DateTime.UtcNow);
             mockDiagnosticStore.Setup(diagStore => diagStore.RecordEventsInBatch(It.IsAny<long>()));
             mockDiagnosticStore.Setup(diagStore => diagStore.CreateEventAndReset()).Returns(statsEvent);
             return mockDiagnosticStore;
@@ -323,7 +323,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void DebugModeExpiresBasedOnClientTimeIfClientTimeIsLaterThanServerTime()
         {
             // Pick a server time that is somewhat behind the client time
-            var serverTime = DateTime.Now.Subtract(TimeSpan.FromSeconds(20));
+            var serverTime = DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(20));
 
             var mockSender = MakeMockSender();
             var captured = EventCapture.From(mockSender,
@@ -355,7 +355,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void DebugModeExpiresBasedOnServerTimeIfServerTimeIsLaterThanClientTime()
         {
             // Pick a server time that is somewhat ahead of the client time
-            var serverTime = DateTime.Now.Add(TimeSpan.FromSeconds(20));
+            var serverTime = DateTime.UtcNow.Add(TimeSpan.FromSeconds(20));
 
             var mockSender = MakeMockSender();
             var captured = EventCapture.From(mockSender,

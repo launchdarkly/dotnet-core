@@ -1,5 +1,14 @@
 # Changelog
 
+## [8.16.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.0...LaunchDarkly.ServerSdk-v8.16.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* bump LaunchDarkly.InternalSdk pins to 3.10.1 ([#343](https://github.com/launchdarkly/dotnet-core/issues/343)) ([fa7bcf9](https://github.com/launchdarkly/dotnet-core/commit/fa7bcf9dd0b239ade71fba2d40882e01f5f53dcb))
+* Retry after partial file reads. ([#218](https://github.com/launchdarkly/dotnet-core/issues/218)) ([93f4508](https://github.com/launchdarkly/dotnet-core/commit/93f4508f5d75f4276990798cd686dfd09dcf5c0a))
+* use monotonic clock for intervals and durations, UTC for diagnostic timestamps ([#339](https://github.com/launchdarkly/dotnet-core/issues/339)) ([e12ee4a](https://github.com/launchdarkly/dotnet-core/commit/e12ee4abec76faabc7614cc0df58b050e56030db))
+
 ## [8.16.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.15.0...LaunchDarkly.ServerSdk-v8.16.0) (2026-07-23)
 
 

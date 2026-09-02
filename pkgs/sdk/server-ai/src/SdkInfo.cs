@@ -18,5 +18,5 @@ public static class SdkInfo
     /// <summary>
     /// The implementation language.
     /// </summary>
-    public const string Language = "dotnet";
+    public const string Language = "c#";
 }

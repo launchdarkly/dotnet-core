@@ -40,7 +40,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         /// <summary>
         /// Called when a stream init completes with details of the initialization.
         /// </summary>
-        /// <param name="timestamp">The time at which the stream began attempted initialization. </param>
+        /// <param name="timestamp">The UTC time at which the stream began attempted initialization. </param>
         /// <param name="duration">The duration of the stream initialization attempt. </param>
         /// <param name="failed">True if the initialization failed, false otherwise. </param>
         void AddStreamInit(DateTime timestamp, TimeSpan duration, bool failed);

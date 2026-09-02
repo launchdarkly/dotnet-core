@@ -59,7 +59,7 @@
     <!-- Use PackageReference in Debug/Release -->
     <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences'">
         <PackageReference Include="LaunchDarkly.CommonSdk" Version="7.2.0"/>
-        <PackageReference Include="LaunchDarkly.InternalSdk" Version="3.7.0" />
+        <PackageReference Include="LaunchDarkly.InternalSdk" Version="3.10.1" />
     </ItemGroup>
 
     <!-- Use ProjectReference in DebugLocalReferences -->

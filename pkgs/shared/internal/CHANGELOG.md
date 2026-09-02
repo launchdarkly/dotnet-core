@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.InternalSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.10.0...LaunchDarkly.InternalSdk-v3.10.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* use monotonic clock for intervals and durations, UTC for diagnostic timestamps ([#339](https://github.com/launchdarkly/dotnet-core/issues/339)) ([e12ee4a](https://github.com/launchdarkly/dotnet-core/commit/e12ee4abec76faabc7614cc0df58b050e56030db))
+
 ## [3.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.9.0...LaunchDarkly.InternalSdk-v3.10.0) (2026-07-22)
 
 

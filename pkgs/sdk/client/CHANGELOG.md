@@ -3,6 +3,18 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.6...LaunchDarkly.ClientSdk-v5.10.0) (2026-09-02)
+
+
+### Features
+
+* bump LaunchDarkly.InternalSdk pins to 3.10.1 ([fa7bcf9](https://github.com/launchdarkly/dotnet-core/commit/fa7bcf9dd0b239ade71fba2d40882e01f5f53dcb))
+
+
+### Bug Fixes
+
+* use monotonic clock for intervals and durations, UTC for diagnostic timestamps ([#339](https://github.com/launchdarkly/dotnet-core/issues/339)) ([e12ee4a](https://github.com/launchdarkly/dotnet-core/commit/e12ee4abec76faabc7614cc0df58b050e56030db))
+
 ## [5.9.6](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.5...LaunchDarkly.ClientSdk-v5.9.6) (2026-08-19)
 
 

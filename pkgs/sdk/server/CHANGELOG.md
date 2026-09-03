@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.16.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.1...LaunchDarkly.ServerSdk-v8.16.2) (2026-09-03)
+
+
+### Bug Fixes
+
+* polling 304 responses handled appropriately ([#345](https://github.com/launchdarkly/dotnet-core/issues/345)) ([74ad49c](https://github.com/launchdarkly/dotnet-core/commit/74ad49cb291dc0265c8ead010bc8e4c899e1e24f))
+
 ## [8.16.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.0...LaunchDarkly.ServerSdk-v8.16.1) (2026-09-02)
 
 

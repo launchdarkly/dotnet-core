@@ -65,7 +65,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             try
             {
                 var dataAndHeaders = await _featureRequestor.GetAllDataAsync();
-                if (dataAndHeaders.DataSet is null)
+                if (dataAndHeaders is null || dataAndHeaders.DataSet is null)
                 {
                     // This means it was cached, and alreadyInited was true
                     _dataSourceUpdates.UpdateStatus(DataSourceState.Valid, null);

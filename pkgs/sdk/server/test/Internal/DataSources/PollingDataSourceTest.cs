@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
@@ -254,6 +255,41 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     Assert.Null(req1.Headers.Get("If-None-Match"));
                     Assert.Equal(etag, req2.Headers.Get("If-None-Match"));
                     Assert.Equal(etag, req3.Headers.Get("If-None-Match"));
+                }
+            }
+        }
+
+        [Fact]
+        public void StatusRemainsValidIfServerReturnsNotModifiedStatus()
+        {
+            var etag = @"""abc123"""; // note that etag strings must be quoted
+            var responses = Handlers.SequentialWithLastRepeating(
+                Handlers.Header("Etag", etag).Then(PollingResponse(AllData)),
+                Handlers.Status(304)
+                );
+
+            using (var server = HttpServer.Start(responses))
+            {
+                using (var dataSource = MakeDataSource(server.Uri,
+                    c => c.DataSource(Components.PollingDataSource().PollIntervalNoMinimum(BriefInterval))))
+                {
+                    dataSource.Start();
+
+                    _updateSink.Inits.ExpectValue();
+                    server.Recorder.RequireRequest();
+                    server.Recorder.RequireRequest();
+                    server.Recorder.RequireRequest();
+
+                    // We've set it up above so that all requests except the first one return a 304
+                    // status. That just means the data is unchanged, which is a healthy state, so it
+                    // should not be reported as an interruption or logged as a failure.
+                    Assert.All(_updateSink.GetAllStatusUpdates(), status =>
+                    {
+                        Assert.Equal(DataSourceState.Valid, status.State);
+                        Assert.Null(status.LastError);
+                    });
+                    AssertLogMessageRegex(false, Logging.LogLevel.Warn,
+                        "Polling for feature flag updates failed");
                 }
             }
         }

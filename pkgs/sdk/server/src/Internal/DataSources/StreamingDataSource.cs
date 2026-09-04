@@ -31,9 +31,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private const String PATCH = "patch";
         private const String DELETE = "delete";
 
+        private const string ErrorContextMessage = "in stream connection";
+        private const string WillRetryMessage = "will retry";
+
         private readonly IDataSourceUpdates _dataSourceUpdates;
         private readonly HttpConfiguration _httpConfig;
         private readonly TimeSpan _initialReconnectDelay;
+        private readonly TimeSpan _extendedInitialReconnectDelay;
+        private readonly TimeSpan _extendedMaxRetryDelay;
         private readonly TaskCompletionSource<bool> _initTask;
         private readonly IDiagnosticStore _diagnosticStore;
         private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
@@ -49,6 +54,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// failed, and in which case we will not log.
         /// </summary>
         private volatile bool _lastStoreUpdateFailed = false;
+
+        /// <summary>
+        /// Gates the "engaging extended backoff" message so that a sustained outage logs it once
+        /// rather than on every reconnection attempt.
+        /// </summary>
+        private volatile bool _loggedActivatedExtended = false;
         internal DateTime _esStarted; // exposed for testing
         private readonly Stopwatch _esTimer = new Stopwatch();
 
@@ -64,7 +75,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             LdClientContext context,
             IDataSourceUpdates dataSourceUpdates,
             Uri baseUri,
-            TimeSpan initialReconnectDelay
+            TimeSpan initialReconnectDelay,
+            TimeSpan extendedInitialReconnectDelay,
+            TimeSpan extendedMaxRetryDelay,
+            EventSourceCreator eventSourceCreator = null
             )
         {
             _log = context.Logger.SubLogger(LogNames.DataSourceSubLog);
@@ -73,6 +87,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             _dataSourceUpdates = dataSourceUpdates;
             _httpConfig = context.Http;
             _initialReconnectDelay = initialReconnectDelay;
+            _extendedInitialReconnectDelay = extendedInitialReconnectDelay;
+            _extendedMaxRetryDelay = extendedMaxRetryDelay;
             _diagnosticStore = context.DiagnosticStore;
             _initTask = new TaskCompletionSource<bool>();
             _streamUri = baseUri.AddPath(StandardEndpoints.StreamingRequestPath);
@@ -83,7 +99,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _dataSourceUpdates.DataStoreStatusProvider.StatusChanged += OnDataStoreStatusChanged;
             }
 
-            _es = CreateEventSource(_streamUri, _httpConfig);
+            var esc = eventSourceCreator ?? CreateEventSource;
+            _es = esc(_streamUri, _httpConfig);
             _es.MessageReceived += OnMessage;
             _es.Error += OnError;
             _es.Opened += OnOpen;
@@ -128,6 +145,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             _disposed = true;
         }
 
+        /// <summary>
+        /// Publishes a status update unless the data source is shutting down.
+        /// </summary>
+        /// <remarks>
+        /// Work already in flight when shutdown begins keeps running -- a poll or stream read is
+        /// not interrupted -- and typically fails against the resources disposal just closed. Left
+        /// unguarded, that late failure publishes Interrupted over the terminal Off, so a disposed
+        /// data source reports itself interrupted and status listeners see a spurious event after
+        /// shutdown. Shutdown publishes Off directly rather than through this method.
+        /// </remarks>
+        private void TryUpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+        {
+            if (_shuttingDown.Get())
+            {
+                return;
+            }
+            _dataSourceUpdates.UpdateStatus(newState, newError);
+        }
+
         private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
         {
             // Prevent concurrent shutdown calls - only allow the first call to proceed
@@ -140,6 +176,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _dataSourceUpdates.DataStoreStatusProvider.StatusChanged -= OnDataStoreStatusChanged;
             }
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
+            _initTask.TrySetResult(false);
         }
 
         #endregion
@@ -202,7 +239,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     Time = DateTime.Now,
                     Recoverable = true
                 };
-                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+                TryUpdateStatus(DataSourceState.Interrupted, errorInfo);
 
                 _es.Restart(false);
             }
@@ -215,7 +252,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     Time = DateTime.Now,
                     Recoverable = true
                 };
-                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+                TryUpdateStatus(DataSourceState.Interrupted, errorInfo);
                 if (!_storeStatusMonitoringEnabled)
                 {
                     if (!_lastStoreUpdateFailed)
@@ -238,41 +275,41 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var ex = e.Exception;
             DataSourceStatus.ErrorInfo errorInfo;
 
+            FailureClass failureClass;
+
             if (ex is EventSourceServiceUnsuccessfulResponseException respEx)
             {
                 int status = respEx.StatusCode;
-                var recoverable = HttpErrors.IsRecoverable(status);
-                errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status, recoverable);
+                failureClass = HttpErrors.ClassifyAndLogHttpFailure(_log, status, ErrorContextMessage,
+                    WillRetryMessage);
+                errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(status, true);
                 RecordStreamInit(true);
-                if (!recoverable)
-                {
-                    _log.Error(HttpErrors.ErrorMessage(status, "streaming connection", ""));
-                }
-                else
-                {
-                    _log.Warn(HttpErrors.ErrorMessage(status, "streaming connection", "will retry"));
-                }
             }
             else
             {
-                errorInfo = DataSourceStatus.ErrorInfo.FromException(ex, true); // default to recoverable
-                _log.Warn("Encountered EventSource error: {0}", LogValues.ExceptionSummary(ex));
+                failureClass = HttpErrors.ClassifyAndLogTransportFailure(_log, ex,
+                    ErrorContextMessage, WillRetryMessage);
+                errorInfo = DataSourceStatus.ErrorInfo.FromException(ex, true);
                 _log.Debug(LogValues.ExceptionTrace(ex));
             }
 
-            if (errorInfo.Recoverable)
+            if (failureClass == FailureClass.Unexpected)
             {
-                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
-                return;
+                // No failure permanently stops the stream. A failure that will not clear on its
+                // own gets a slower reconnection cadence instead, and the underlying library
+                // reverts to the configured bounds automatically after the reset threshold of
+                // continuous connection.
+                _es.SetTemporaryRetryDelayBounds(_extendedInitialReconnectDelay,
+                    _extendedMaxRetryDelay);
+                if (!_loggedActivatedExtended)
+                {
+                    _log.Info("Classified failure as unexpected; engaging extended backoff.");
+                    _loggedActivatedExtended = true;
+                }
             }
-            else
-            {
-                // Make _initTask complete to tell the client to stop waiting for initialization. We use
-                // TrySetResult rather than SetResult here because it might have already been completed
-                // (if for instance the stream started successfully, then restarted and got a 401).
-                _initTask.TrySetResult(false);
-                Shutdown(errorInfo);
-            }
+
+            // All HTTP errors are treated as non-permanent, so we report it as Interrupted.
+            TryUpdateStatus(DataSourceState.Interrupted, errorInfo);
         }
 
         private bool InitWithHeaders(FullDataSet<ItemDescriptor> allData,

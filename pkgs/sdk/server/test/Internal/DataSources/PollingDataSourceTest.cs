@@ -1,10 +1,17 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Net.Http;
+using System.Net;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.Model;
+using LaunchDarkly.Sdk.Server.Integrations;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers.HttpTest;
+using LaunchDarkly.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -113,29 +120,37 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Theory]
         [InlineData(401)]
         [InlineData(403)]
-        public void VerifyUnrecoverableHttpError(int errorStatus)
+        public void UnexpectedHttpErrorEngagesExtendedRegimeAndKeepsPolling(int errorStatus)
         {
             var errorCondition = ServerErrorCondition.FromStatus(errorStatus);
 
             WithServerErrorCondition(errorCondition, null, (uri, httpConfig, recorder) =>
             {
+                // The extended interval is shrunk so the retry is observable; the fields are
+                // internal, so no builder method is needed for this.
+                var builder = Components.PollingDataSource().PollIntervalNoMinimum(BriefInterval);
+                builder._extendedInitialInterval = BriefInterval;
+
                 using (var dataSource = MakeDataSource(uri,
-                    c => c.DataSource(Components.PollingDataSource().PollInterval(BriefInterval))
-                        .Http(httpConfig)))
+                    c => c.DataSource(builder).Http(httpConfig)))
                 {
                     var initTask = dataSource.Start();
-                    bool completed = initTask.Wait(TimeSpan.FromSeconds(1));
-                    Assert.True(completed);
-                    Assert.False(dataSource.Initialized);
 
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     errorCondition.VerifyDataSourceStatusError(status);
-                    Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
 
                     recorder.RequireRequest();
-                    recorder.RequireNoRequests(TimeSpan.FromMilliseconds(100)); // did not retry
+                    // Keeps polling rather than giving up, which is the point of the change.
+                    recorder.RequireRequest();
+
+                    // Initialization is never resolved by an HTTP error now; the caller's
+                    // start-wait timeout decides instead.
+                    Assert.False(initTask.Wait(TimeSpan.FromMilliseconds(100)));
+                    Assert.False(dataSource.Initialized);
 
                     errorCondition.VerifyLogMessage(LogCapture);
+                    AssertHelpers.LogMessageRegex(LogCapture, true, LogLevel.Info,
+                        "engaging extended backoff");
                 }
             });
         }
@@ -341,5 +356,314 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 }
             }
         }
+
+        #region Reschedule chain and lifecycle
+
+        /// <summary>
+        /// A data source updates sink that throws from every status update.
+        /// </summary>
+        private sealed class ThrowingUpdates : IDataSourceUpdates
+        {
+            private readonly IDataSourceUpdates _inner;
+            public ThrowingUpdates(IDataSourceUpdates inner) { _inner = inner; }
+
+            public IDataStoreStatusProvider DataStoreStatusProvider => _inner.DataStoreStatusProvider;
+            public bool Init(FullDataSet<ItemDescriptor> allData) => _inner.Init(allData);
+            public bool Upsert(DataKind kind, string key, ItemDescriptor item) =>
+                _inner.Upsert(kind, key, item);
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+            {
+                // Deliberately lets Off through. Shutdown publishes Off before Dispose(bool) runs,
+                // so throwing there would propagate out of Dispose and exercise a separate,
+                // already-known shutdown-ordering behavior instead of the poll loop.
+                if (newState == DataSourceState.Off)
+                {
+                    _inner.UpdateStatus(newState, newError);
+                    return;
+                }
+                throw new Exception("deliberate sink failure");
+            }
+        }
+
+        [Fact]
+        public void PollingSurvivesAnExceptionEscapingThePollBody()
+        {
+            // The reschedule happens in a finally, and TaskExecutor.ScheduleTask logs whatever
+            // escapes, so one bad poll must not end polling permanently.
+            using (var server = HttpServer.Start(Handlers.Status(503)))
+            {
+                var builder = BasicConfig()
+                    .DataSource(Components.PollingDataSource().PollIntervalNoMinimum(BriefInterval))
+                    .ServiceEndpoints(Components.ServiceEndpoints().Polling(server.Uri));
+                var config = builder.Build();
+                var context = ContextFrom(config)
+                    .WithDataSourceUpdates(new ThrowingUpdates(_updateSink));
+
+                using (var dataSource = config.DataSource.Build(context))
+                {
+                    _ = dataSource.Start();
+
+                    server.Recorder.RequireRequest();
+                    server.Recorder.RequireRequest();
+                    server.Recorder.RequireRequest();
+                }
+            }
+        }
+
+        [Fact]
+        public void DisposeCompletesInitializationForAnyoneWaiting()
+        {
+            // No failure path resolves initialization any more, so shutdown has to -- otherwise a
+            // caller awaiting Start() waits forever.
+            using (var server = HttpServer.Start(Handlers.Status(401)))
+            {
+                var dataSource = MakeDataSource(server.Uri,
+                    c => c.DataSource(Components.PollingDataSource()
+                        .PollIntervalNoMinimum(BriefInterval)));
+
+                var initTask = dataSource.Start();
+                Assert.False(initTask.Wait(TimeSpan.FromMilliseconds(100)));
+
+                dataSource.Dispose();
+
+                Assert.True(initTask.Wait(TimeSpan.FromSeconds(2)));
+                Assert.False(initTask.Result);
+            }
+        }
+
+        [Fact]
+        public void DisposeBeforeStartPreventsAnyPolling()
+        {
+            // The cancellation source spans the object lifetime, so disposing first leaves a later
+            // Start() with nothing to do rather than launching a loop that Shutdown cannot reach.
+            using (var server = HttpServer.Start(PollingResponse(AllData)))
+            {
+                var dataSource = MakeDataSource(server.Uri,
+                    c => c.DataSource(Components.PollingDataSource()
+                        .PollIntervalNoMinimum(BriefInterval)));
+
+                dataSource.Dispose();
+                _ = dataSource.Start();
+
+                server.Recorder.RequireNoRequests(TimeSpan.FromMilliseconds(200));
+            }
+        }
+
+        [Fact]
+        public void StartIsIdempotent()
+        {
+            using (var server = HttpServer.Start(Handlers.Status(503)))
+            {
+                using (var dataSource = MakeDataSource(server.Uri,
+                    c => c.DataSource(Components.PollingDataSource()
+                        .PollIntervalNoMinimum(TimeSpan.FromSeconds(30)))))
+                {
+                    _ = dataSource.Start();
+                    _ = dataSource.Start();
+                    _ = dataSource.Start();
+
+                    // A single chain, so exactly one request within the long interval.
+                    server.Recorder.RequireRequest();
+                    server.Recorder.RequireNoRequests(TimeSpan.FromMilliseconds(300));
+                }
+            }
+        }
+
+        #endregion
+
+        #region Poll interval bounds
+
+        [Fact]
+        public void PollIntervalIsRaisedToTheDefaultWhenTooSmall()
+        {
+            var builder = Components.PollingDataSource().PollInterval(TimeSpan.FromMilliseconds(1));
+
+            Assert.Equal(PollingDataSourceBuilder.DefaultPollInterval, builder._pollInterval);
+        }
+
+        [Fact]
+        public void PollIntervalIsCappedAtTheSchedulableMaximum()
+        {
+            // Beyond this the wait cannot be scheduled at all, so it is bounded here rather than
+            // failing later when the delay is attempted.
+            var builder = Components.PollingDataSource().PollInterval(TimeSpan.FromDays(60));
+
+            Assert.Equal(PollingDataSourceBuilder.MaximumPollInterval, builder._pollInterval);
+        }
+
+        [Fact]
+        public void PollIntervalInRangeIsKept()
+        {
+            var wanted = TimeSpan.FromMinutes(2);
+
+            Assert.Equal(wanted, Components.PollingDataSource().PollInterval(wanted)._pollInterval);
+        }
+
+        #endregion
+
+        #region Extended cadence wired into the data source
+
+        // The strategy is unit-tested in isolation; these check that the data source actually
+        // consults it, which a correct-but-unconsulted strategy would pass silently.
+
+        private const int ExtendedMs = 300;
+
+        private IDataSource MakeDataSourceWithBriefExtendedInterval(Uri baseUri)
+        {
+            var builder = Components.PollingDataSource().PollIntervalNoMinimum(BriefInterval);
+            builder._extendedInitialInterval = TimeSpan.FromMilliseconds(ExtendedMs);
+            var config = BasicConfig()
+                .DataSource(builder)
+                .ServiceEndpoints(Components.ServiceEndpoints().Polling(baseUri))
+                .Build();
+            return config.DataSource.Build(ContextFrom(config).WithDataSourceUpdates(_updateSink));
+        }
+
+        [Fact]
+        public void UnexpectedFailureUsesTheExtendedCadence()
+        {
+            using (var server = HttpServer.Start(Handlers.Status(401)))
+            {
+                using (var dataSource = MakeDataSourceWithBriefExtendedInterval(server.Uri))
+                {
+                    _ = dataSource.Start();
+
+                    server.Recorder.RequireRequest();
+                    var timer = Stopwatch.StartNew();
+                    server.Recorder.RequireRequest();
+                    timer.Stop();
+
+                    // Jitter puts the wait in (T/2, T], so T/2 is the deterministic floor. The
+                    // 20ms configured interval would put this two orders of magnitude lower.
+                    Assert.True(timer.ElapsedMilliseconds >= ExtendedMs / 2 - 30,
+                        $"second poll came after {timer.ElapsedMilliseconds}ms; the extended " +
+                        $"cadence should have delayed it by at least {ExtendedMs / 2}ms");
+                }
+            }
+        }
+
+        [Fact]
+        public void OneSuccessfulPollDoesNotLeaveTheExtendedCadence()
+        {
+            // 401 engages extended, then one success. Two consecutive successes are required to
+            // return to normal, so the gap after a single success is still the extended one.
+            var handler = Handlers.Sequential(
+                Handlers.Status(401),
+                PollingResponse(AllData),
+                PollingResponse(AllData),
+                PollingResponse(AllData));
+
+            using (var server = HttpServer.Start(handler))
+            {
+                using (var dataSource = MakeDataSourceWithBriefExtendedInterval(server.Uri))
+                {
+                    _ = dataSource.Start();
+
+                    server.Recorder.RequireRequest();  // the 401
+                    server.Recorder.RequireRequest();  // first success
+                    var timer = Stopwatch.StartNew();
+                    server.Recorder.RequireRequest();  // still extended
+                    timer.Stop();
+
+                    Assert.True(timer.ElapsedMilliseconds >= ExtendedMs / 2 - 30,
+                        $"poll after a single success came after {timer.ElapsedMilliseconds}ms; " +
+                        "one success should not leave the extended cadence");
+                }
+            }
+        }
+
+        [Fact]
+        public void TwoConsecutiveSuccessesReturnToTheNormalCadence()
+        {
+            var handler = Handlers.Sequential(
+                Handlers.Status(401),
+                PollingResponse(AllData),
+                PollingResponse(AllData),
+                PollingResponse(AllData));
+
+            using (var server = HttpServer.Start(handler))
+            {
+                using (var dataSource = MakeDataSourceWithBriefExtendedInterval(server.Uri))
+                {
+                    _ = dataSource.Start();
+
+                    server.Recorder.RequireRequest();  // the 401
+                    server.Recorder.RequireRequest();  // success 1
+                    server.Recorder.RequireRequest();  // success 2 -- resets to normal here
+
+                    // Counting requests in a window rather than timing a single gap: a lower bound
+                    // on the count is robust where an upper bound on elapsed time would be flaky.
+                    var countBefore = server.Recorder.Count;
+                    Thread.Sleep(600);
+                    var polled = server.Recorder.Count - countBefore;
+
+                    Assert.True(polled >= 3,
+                        $"saw {polled} polls in 600ms after two successes; the 20ms normal cadence " +
+                        "should produce many, the 300ms extended cadence at most two");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Holds a request open until released, so a poll can be guaranteed in flight at a chosen
+        /// moment rather than hoped for.
+        /// </summary>
+        private sealed class BlockingHandler : HttpMessageHandler
+        {
+            public readonly SemaphoreSlim Started = new SemaphoreSlim(0);
+            public readonly SemaphoreSlim Release = new SemaphoreSlim(0);
+
+            protected override async Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                Started.Release();
+                await Release.WaitAsync(cancellationToken).ConfigureAwait(false);
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+            }
+        }
+
+        [Fact]
+        public void StatusUpdatesStopAfterShutdown()
+        {
+            // A poll in flight when shutdown begins is not interrupted, and typically fails
+            // against the HttpClient disposal just closed. Unguarded, that late failure publishes
+            // Interrupted over the terminal Off.
+            //
+            // The request is held open deliberately: an earlier version of this test simply
+            // disposed during a fast poll loop and passed with the guard removed, because no poll
+            // happened to be in flight and so there was no late write to suppress.
+            using (var messageHandler = new BlockingHandler())
+            {
+                var config = BasicConfig()
+                    .DataSource(Components.PollingDataSource().PollIntervalNoMinimum(BriefInterval))
+                    .Http(Components.HttpConfiguration().MessageHandler(messageHandler))
+                    .Build();
+                var dataSource = config.DataSource.Build(
+                    ContextFrom(config).WithDataSourceUpdates(_updateSink));
+
+                _ = dataSource.Start();
+                Assert.True(messageHandler.Started.Wait(TimeSpan.FromSeconds(5)),
+                    "a poll should have started");
+
+                // Shutdown happens with the poll definitively still in flight.
+                dataSource.Dispose();
+
+                // Now let it finish and attempt to report.
+                messageHandler.Release.Release();
+
+                var deadline = DateTime.UtcNow.AddSeconds(3);
+                var reachedOff = false;
+                while (!reachedOff && DateTime.UtcNow < deadline)
+                {
+                    var status = _updateSink.StatusUpdates.ExpectValue(TimeSpan.FromMilliseconds(250));
+                    reachedOff = status.State == DataSourceState.Off;
+                }
+                Assert.True(reachedOff, "shutdown should publish Off");
+
+                _updateSink.StatusUpdates.ExpectNoValue(TimeSpan.FromSeconds(1));
+            }
+        }
+
+        #endregion
     }
 }

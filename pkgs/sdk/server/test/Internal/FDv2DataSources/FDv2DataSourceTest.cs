@@ -2204,6 +2204,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             public void Close() => IsClosed = true;
             public void Restart(bool forceNewConnection = false) { }
 
+            public void SetTemporaryRetryDelayBounds(TimeSpan initialDelay, TimeSpan maxDelay) { }
+            
+            public void ClearTemporaryRetryDelayBounds() { }
+
             public void TriggerOpen(IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) =>
                 Opened?.Invoke(this, new LaunchDarkly.EventSource.StateChangedEventArgs(
                     LaunchDarkly.EventSource.ReadyState.Open, headers));

@@ -1112,6 +1112,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 RestartCallCount++;
             }
 
+            public void SetTemporaryRetryDelayBounds(TimeSpan initialDelay, TimeSpan maxDelay) { }
+
+            public void ClearTemporaryRetryDelayBounds() { }
+
             public void TriggerOpen(IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null)
             {
                 Opened?.Invoke(this, new StateChangedEventArgs(ReadyState.Open, headers));

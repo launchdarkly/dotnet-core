@@ -365,7 +365,7 @@ namespace LaunchDarkly.Sdk.Server
         /// </summary>
         /// <remarks>
         /// Setting this to 0 will not block and will cause the constructor to return
-        /// immediately. The default value is 5 seconds.
+        /// immediately. The default value is 10 seconds.
         /// </remarks>
         /// <param name="startWaitTime">the length of time to wait</param>
         /// <returns>the same builder</returns>

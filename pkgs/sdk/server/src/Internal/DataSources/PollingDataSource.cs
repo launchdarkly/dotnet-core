@@ -16,12 +16,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     {
         private readonly IFeatureRequestor _featureRequestor;
         private readonly IDataSourceUpdates _dataSourceUpdates;
+        private const string ErrorContextMessage = "on polling request";
+        private const string WillRetryMessage = "will retry at next scheduled poll interval";
+
         private readonly TaskExecutor _taskExecutor;
         private readonly TimeSpan _pollInterval;
+        private readonly PollingStrategy _strategy;
         private readonly AtomicBoolean _initialized = new AtomicBoolean(false);
         private readonly TaskCompletionSource<bool> _initTask;
         private readonly Logger _log;
-        private CancellationTokenSource _canceller;
+        private readonly CancellationTokenSource _canceller = new CancellationTokenSource();
+        private bool _started;
 
         private bool _disposed = false;
         private readonly AtomicBoolean _shuttingDown = new AtomicBoolean(false);
@@ -30,13 +35,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             LdClientContext context,
             IFeatureRequestor featureRequestor,
             IDataSourceUpdates dataSourceUpdates,
-            TimeSpan pollInterval
+            TimeSpan pollInterval,
+            TimeSpan extendedInitialInterval
             )
         {
             _featureRequestor = featureRequestor;
             _dataSourceUpdates = dataSourceUpdates;
             _taskExecutor = context.TaskExecutor;
             _pollInterval = pollInterval;
+            _strategy = new PollingStrategy(pollInterval, extendedInitialInterval);
             _initTask = new TaskCompletionSource<bool>();
             _log = context.Logger.SubLogger(LogNames.DataSourceSubLog);
         }
@@ -47,16 +54,49 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             lock (this)
             {
-                if (_canceller == null) // means we already started
+                if (!_started)
                 {
+                    _started = true;
                     _log.Info("Starting LaunchDarkly polling with interval: {0} milliseconds",
                         _pollInterval.TotalMilliseconds);
-                    _canceller = _taskExecutor.StartRepeatingTask(TimeSpan.Zero,
-                        _pollInterval, () => UpdateTaskAsync());
+                    ScheduleNext(TimeSpan.Zero);
                 }
             }
 
             return _initTask.Task;
+        }
+
+        /// <summary>
+        /// Schedules the next poll, unless the data source has been shut down.
+        /// </summary>
+        private void ScheduleNext(TimeSpan delay)
+        {
+            if (_canceller.IsCancellationRequested)
+            {
+                return;
+            }
+            _taskExecutor.ScheduleTask(delay, PollAsync, _canceller.Token);
+        }
+
+        /// <summary>
+        /// Runs one poll and schedules the next one.
+        /// </summary>
+        /// <remarks>
+        /// The gap is no longer constant: an unexpected failure slows polling down until two
+        /// consecutive polls succeed. Rescheduling happens in a finally so that it survives any
+        /// outcome, and each poll starts on a fresh stack because the executor dispatches it, so
+        /// this does not accumulate depth despite being self-referential.
+        /// </remarks>
+        private async Task PollAsync()
+        {
+            try
+            {
+                await UpdateTaskAsync();
+            }
+            finally
+            {
+                ScheduleNext(_strategy.NextWait());
+            }
         }
 
         private async Task UpdateTaskAsync()
@@ -68,7 +108,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 if (dataAndHeaders is null || dataAndHeaders.DataSet is null)
                 {
                     // This means it was cached, and alreadyInited was true
-                    _dataSourceUpdates.UpdateStatus(DataSourceState.Valid, null);
+                    TryUpdateStatus(DataSourceState.Valid, null);
                 }
                 else
                 {
@@ -81,31 +121,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                         }
                     }
                 }
+                _strategy.OnSuccess();
             }
             catch (UnsuccessfulResponseException ex)
             {
-                var recoverable = HttpErrors.IsRecoverable(ex.StatusCode);
-                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(ex.StatusCode, recoverable);
-
-                if (errorInfo.Recoverable)
-                {
-                    _log.Warn(HttpErrors.ErrorMessage(ex.StatusCode, "polling request", "will retry"));
-                    _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
-                }
-                else
-                {
-                    _log.Error(HttpErrors.ErrorMessage(ex.StatusCode, "polling request", ""));
-                    try
-                    {
-                        // if client is initializing, make it stop waiting
-                        _initTask.SetResult(false);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // the task was already set - nothing more to do
-                    }
-                    Shutdown(errorInfo);
-                }
+                var failureClass = HttpErrors.ClassifyAndLogHttpFailure(_log, ex.StatusCode,
+                    ErrorContextMessage, WillRetryMessage);
+                // Reported as recoverable in all cases. Data sources no longer give up on any HTTP
+                // status.
+                var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(ex.StatusCode, true);
+                TryUpdateStatus(DataSourceState.Interrupted, errorInfo);
+                OnFailure(failureClass);
             }
             catch (JsonException ex)
             {
@@ -117,7 +143,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     Time = DateTime.Now,
                     Recoverable = true
                 };
-                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+                TryUpdateStatus(DataSourceState.Interrupted, errorInfo);
+                OnFailure(FailureClass.Normal);
             }
             catch (Exception ex)
             {
@@ -125,7 +152,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 _log.Warn("Polling for feature flag updates failed: {0}", LogValues.ExceptionSummary(ex));
                 _log.Debug(LogValues.ExceptionTrace(ex));
                 var errorInfo = DataSourceStatus.ErrorInfo.FromException(realEx, true); // default to recoverable
-                _dataSourceUpdates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+                TryUpdateStatus(DataSourceState.Interrupted, errorInfo);
+                OnFailure(HttpErrors.ClassifyTransportFailure(realEx));
+            }
+        }
+
+        private void OnFailure(FailureClass failureClass)
+        {
+            if (_strategy.OnFailure(failureClass))
+            {
+                _log.Info("Classified failure as unexpected; engaging extended backoff.");
             }
         }
 
@@ -145,9 +181,29 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             if (disposing) {
                 // dispose managed resources if any
                 _featureRequestor.Dispose();
+                _canceller.Dispose();
             }
 
             _disposed = true;
+        }
+
+        /// <summary>
+        /// Publishes a status update unless the data source is shutting down.
+        /// </summary>
+        /// <remarks>
+        /// Work already in flight when shutdown begins keeps running -- a poll or stream read is
+        /// not interrupted -- and typically fails against the resources disposal just closed. Left
+        /// unguarded, that late failure publishes Interrupted over the terminal Off, so a disposed
+        /// data source reports itself interrupted and status listeners see a spurious event after
+        /// shutdown. Shutdown publishes Off directly rather than through this method.
+        /// </remarks>
+        private void TryUpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+        {
+            if (_shuttingDown.Get())
+            {
+                return;
+            }
+            _dataSourceUpdates.UpdateStatus(newState, newError);
         }
 
         private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
@@ -156,8 +212,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // GetAndSet returns the OLD value, so if it was already true, we return early
             if (_shuttingDown.GetAndSet(true)) return;
 
-            _canceller?.Cancel();
+            _canceller.Cancel();
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
+            _initTask.TrySetResult(false);
         }
 
         private bool InitWithHeaders(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData,

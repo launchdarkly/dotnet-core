@@ -131,7 +131,7 @@ namespace LaunchDarkly.Sdk.Server
 
             public void VerifyDataSourceStatusError(DataSourceStatus status)
             {
-                Assert.Equal(Recoverable ? DataSourceState.Interrupted : DataSourceState.Off, status.State);
+                Assert.Equal(DataSourceState.Interrupted, status.State);
                 Assert.NotNull(status.LastError);
                 Assert.Equal(
                     IOException is null
@@ -146,13 +146,15 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     Assert.Contains(IOException.Message, status.LastError.Value.Message);
                 }
+                Assert.True(status.LastError.Value.Recoverable,
+                    "every externally-caused failure is retried, so Recoverable is always true");
             }
 
             public void VerifyLogMessage(LogCapture logCapture)
             {
                 var level = Recoverable ? LogLevel.Warn : LogLevel.Error;
                 var message = (IOException is null)
-                    ? "HTTP error " + StatusCode + ".*" + (Recoverable ? "will retry" : "giving up")
+                    ? "Error .*: HTTP error " + StatusCode
                     : IOException.Message;
                 AssertHelpers.LogMessageRegex(logCapture, true, level, message);
             }

@@ -1,4 +1,8 @@
 ﻿using System;
+using LaunchDarkly.EventSource;
+using LaunchDarkly.Sdk.Server.Integrations;
+using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
@@ -39,7 +43,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private IDataSource MakeDataSourceWithDiagnostics(Uri baseUri, IDiagnosticStore diagnosticStore)
         {
             var context = BasicContext.WithDiagnosticStore(diagnosticStore);
-            return new StreamingDataSource(context, _updateSink, baseUri, BriefReconnectDelay);
+            return new StreamingDataSource(context, _updateSink, baseUri, BriefReconnectDelay,
+                StreamingDataSourceBuilder.DefaultExtendedInitialReconnectDelay,
+                StreamingDataSourceBuilder.DefaultExtendedMaxRetryDelay);
         }
 
         private void WithDataSourceAndServer(Handler responseHandler, Action<IDataSource, HttpServer, Task> action)
@@ -218,30 +224,38 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Theory]
         [InlineData(401)]
         [InlineData(403)]
-        public void VerifyUnrecoverableHttpError(int errorStatus)
+        public void UnexpectedHttpErrorEngagesExtendedRegimeAndKeepsRetrying(int errorStatus)
         {
             var errorCondition = ServerErrorCondition.FromStatus(errorStatus);
 
-            WithServerErrorCondition(errorCondition, StreamWithEmptyData, (uri, httpConfig, recorder) =>
+            // null: every request fails, so the extended regime stays engaged and initialization
+            // is never resolved. A success-after-error handler would instead exercise recovery.
+            WithServerErrorCondition(errorCondition, null, (uri, httpConfig, recorder) =>
             {
+                // Shrunk so the extended-regime reconnect is observable within the test.
+                var builder = Components.StreamingDataSource().InitialReconnectDelay(TimeSpan.Zero);
+                builder._extendedInitialReconnectDelay = TimeSpan.FromMilliseconds(20);
+                builder._extendedMaxRetryDelay = TimeSpan.FromMilliseconds(50);
+
                 using (var dataSource = MakeDataSource(uri,
-                    c => c.DataSource(Components.StreamingDataSource().InitialReconnectDelay(TimeSpan.Zero))
-                        .Http(httpConfig)))
+                    c => c.DataSource(builder).Http(httpConfig)))
                 {
                     var initTask = dataSource.Start();
+
                     var status = _updateSink.StatusUpdates.ExpectValue();
                     errorCondition.VerifyDataSourceStatusError(status);
-                    Assert.False(status.LastError.Value.Recoverable, "Recoverable should be false for unrecoverable errors");
-
                     _updateSink.Inits.ExpectNoValue();
 
                     recorder.RequireRequest();
-                    recorder.RequireNoRequests(TimeSpan.FromMilliseconds(100));
+                    // Keeps reconnecting rather than shutting the stream down.
+                    recorder.RequireRequest();
 
-                    Assert.True(initTask.Wait(TimeSpan.FromSeconds(1)));
+                    Assert.False(initTask.Wait(TimeSpan.FromMilliseconds(100)));
                     Assert.False(dataSource.Initialized);
 
                     errorCondition.VerifyLogMessage(LogCapture);
+                    AssertHelpers.LogMessageRegex(LogCapture, true, LogLevel.Info,
+                        "engaging extended backoff");
                 }
             });
         }
@@ -269,7 +283,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public async void StreamInitDiagnosticRecordedOnError()
+        public void StreamInitDiagnosticRecordedOnError()
         {
             var receivedFailed = new EventSink<bool>();
             var mockDiagnosticStore = new Mock<IDiagnosticStore>();
@@ -280,7 +294,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 using (var dataSource = MakeDataSourceWithDiagnostics(server.Uri, mockDiagnosticStore.Object))
                 {
-                    await dataSource.Start();
+                    // Deliberately not awaited. A 401 no longer completes initialization, because
+                    // the data source keeps retrying instead of giving up; the diagnostic is
+                    // recorded on the failed attempt either way.
+                    _ = dataSource.Start();
 
                     Assert.True(receivedFailed.ExpectValue());
                 }
@@ -456,5 +473,162 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 Assert.Empty(LogCapture.GetMessages().Where(m => m.Level == Logging.LogLevel.Error));
             });
         }
+
+        [Fact]
+        public void DisposeCompletesInitializationForAnyoneWaiting()
+        {
+            // The streaming half of the same change: no failure path resolves initialization any
+            // more, so shutdown has to, or a caller awaiting Start() waits forever.
+            using (var server = HttpServer.Start(Handlers.Status(401)))
+            {
+                var dataSource = MakeDataSource(server.Uri,
+                    c => c.DataSource(Components.StreamingDataSource()
+                        .InitialReconnectDelay(BriefReconnectDelay)));
+
+                var initTask = dataSource.Start();
+                Assert.False(initTask.Wait(TimeSpan.FromMilliseconds(100)));
+
+                dataSource.Dispose();
+
+                Assert.True(initTask.Wait(TimeSpan.FromSeconds(2)));
+                Assert.False(initTask.Result);
+            }
+        }
+
+        #region Extended regime bounds handed to the event source
+
+        // These are the one thing only this class can get wrong: whether the right values reach
+        // SetTemporaryRetryDelayBounds on the right classification. The progression, ceiling and
+        // healthy-operation reset all live in the event source and are covered by its own suite.
+        //
+        // A timing test cannot catch a swapped argument pair -- reconnection would still slow
+        // down -- so these assert the values.
+
+        private sealed class RecordingEventSource : IEventSource
+        {
+            public event EventHandler<StateChangedEventArgs> Opened;
+            public event EventHandler<StateChangedEventArgs> Closed;
+            public event EventHandler<MessageReceivedEventArgs> MessageReceived;
+            public event EventHandler<ExceptionEventArgs> Error;
+            public event EventHandler<CommentReceivedEventArgs> CommentReceived;
+
+            public ReadyState ReadyState { get; private set; } = ReadyState.Raw;
+
+            public readonly List<Tuple<TimeSpan, TimeSpan>> SetBoundsCalls =
+                new List<Tuple<TimeSpan, TimeSpan>>();
+            public int ClearBoundsCallCount { get; private set; }
+
+            public Task StartAsync()
+            {
+                ReadyState = ReadyState.Open;
+                return Task.CompletedTask;
+            }
+
+            public void Close() => ReadyState = ReadyState.Shutdown;
+            public void Restart(bool forceNewConnection = false) { }
+
+            public void SetTemporaryRetryDelayBounds(TimeSpan initialDelay, TimeSpan maxDelay) =>
+                SetBoundsCalls.Add(Tuple.Create(initialDelay, maxDelay));
+
+            public void ClearTemporaryRetryDelayBounds() => ClearBoundsCallCount++;
+
+            public void TriggerHttpError(int status) =>
+                Error?.Invoke(this, new ExceptionEventArgs(
+                    new EventSourceServiceUnsuccessfulResponseException(status)));
+
+            public void TriggerTransportError(Exception e) =>
+                Error?.Invoke(this, new ExceptionEventArgs(e));
+        }
+
+        private static readonly TimeSpan TestExtendedInitial = TimeSpan.FromMinutes(7);
+        private static readonly TimeSpan TestExtendedMax = TimeSpan.FromMinutes(43);
+
+        private StreamingDataSource MakeDataSourceWithRecordingEventSource(RecordingEventSource es)
+        {
+            var config = BasicConfig().Build();
+            return new StreamingDataSource(
+                ContextFrom(config).WithDataSourceUpdates(_updateSink),
+                _updateSink,
+                new Uri("http://not-used"),
+                BriefReconnectDelay,
+                TestExtendedInitial,
+                TestExtendedMax,
+                (uri, httpConfig) => es);
+        }
+
+        [Fact]
+        public void UnexpectedFailureInstallsTheExtendedBounds()
+        {
+            var es = new RecordingEventSource();
+            using (var dataSource = MakeDataSourceWithRecordingEventSource(es))
+            {
+                _ = dataSource.Start();
+
+                es.TriggerHttpError(401);
+
+                // Distinct, asymmetric values, asserted in order: a swapped pair fails here.
+                Assert.Single(es.SetBoundsCalls);
+                Assert.Equal(TestExtendedInitial, es.SetBoundsCalls[0].Item1);
+                Assert.Equal(TestExtendedMax, es.SetBoundsCalls[0].Item2);
+            }
+        }
+
+        [Fact]
+        public void NormalFailureLeavesTheBoundsAlone()
+        {
+            var es = new RecordingEventSource();
+            using (var dataSource = MakeDataSourceWithRecordingEventSource(es))
+            {
+                _ = dataSource.Start();
+
+                es.TriggerHttpError(503);
+                es.TriggerHttpError(429);
+                es.TriggerTransportError(new IOException("connection reset"));
+
+                Assert.Empty(es.SetBoundsCalls);
+            }
+        }
+
+        [Fact]
+        public void RepeatedUnexpectedFailuresKeepReapplyingTheSameBounds()
+        {
+            var es = new RecordingEventSource();
+            using (var dataSource = MakeDataSourceWithRecordingEventSource(es))
+            {
+                _ = dataSource.Start();
+
+                es.TriggerHttpError(401);
+                es.TriggerHttpError(403);
+                es.TriggerHttpError(401);
+
+                // Reapplying is deliberate: the event source treats identical bounds as a no-op,
+                // so the progression keeps advancing rather than being pinned at the minimum.
+                Assert.Equal(3, es.SetBoundsCalls.Count);
+                Assert.All(es.SetBoundsCalls, c =>
+                {
+                    Assert.Equal(TestExtendedInitial, c.Item1);
+                    Assert.Equal(TestExtendedMax, c.Item2);
+                });
+            }
+        }
+
+        [Fact]
+        public void TheDataSourceNeverClearsTheBoundsItself()
+        {
+            // Reverting is the event source's job, on the healthy-operation reset. If this class
+            // also cleared them it would fight that mechanism.
+            var es = new RecordingEventSource();
+            using (var dataSource = MakeDataSourceWithRecordingEventSource(es))
+            {
+                _ = dataSource.Start();
+
+                es.TriggerHttpError(401);
+                es.TriggerHttpError(503);
+
+                Assert.Equal(0, es.ClearBoundsCallCount);
+            }
+        }
+
+        #endregion
     }
 }

@@ -44,33 +44,47 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         [Fact]
-        public void ClientFailsToStartInStreamingModeWith401Error()
+        public void ClientInStreamingModeKeepsRetryingOn401Error()
         {
             using (var streamServer = HttpServer.Start(Error401Response))
             {
+                var streamingBuilder = Components.StreamingDataSource()
+                    .InitialReconnectDelay(TimeSpan.FromMilliseconds(10));
+                streamingBuilder._extendedInitialReconnectDelay = TimeSpan.FromMilliseconds(20);
+                streamingBuilder._extendedMaxRetryDelay = TimeSpan.FromMilliseconds(50);
+
                 var config = BasicConfig()
-                    .DataSource(Components.StreamingDataSource())
+                    .DataSource(streamingBuilder)
                     .ServiceEndpoints(Components.ServiceEndpoints().Streaming(streamServer.Uri))
-                    .StartWaitTime(TimeSpan.FromSeconds(5))
+                    .StartWaitTime(TimeSpan.FromMilliseconds(300))
                     .Build();
 
                 using (var client = new LdClient(config))
                 {
                     Assert.False(client.Initialized);
-                    // Wait for the status to be updated to Off, as the status update happens asynchronously
-                    var statusUpdated = client.DataSourceStatusProvider.WaitFor(DataSourceState.Off, TimeSpan.FromSeconds(5));
-                    Assert.True(statusUpdated, "Status should have been updated to Off");
-                    Assert.Equal(DataSourceState.Off, client.DataSourceStatusProvider.Status.State);
 
-                    var value = client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false);
-                    Assert.False(value);
+                    // Interrupted before a first successful init is reported as Initializing
+                    // (DataSourceUpdatesImpl.MaybeUpdateStatus): you cannot be interrupted from a
+                    // state you never reached. The point is that it is not Off -- the data source
+                    // is still trying rather than finished.
+                    Assert.Equal(DataSourceState.Initializing,
+                        client.DataSourceStatusProvider.Status.State);
+                    Assert.NotEqual(DataSourceState.Off,
+                        client.DataSourceStatusProvider.Status.State);
+                    Assert.Equal(401,
+                        client.DataSourceStatusProvider.Status.LastError.Value.StatusCode);
+                    Assert.True(client.DataSourceStatusProvider.Status.LastError.Value.Recoverable);
+
+                    Assert.False(client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false));
 
                     var request = streamServer.Recorder.RequireRequest();
                     Assert.Equal(BasicSdkKey, request.Headers.Get("Authorization"));
+                    // Still reconnecting.
+                    streamServer.Recorder.RequireRequest();
 
                     Assert.NotEmpty(LogCapture.GetMessages().Where(
                         m => m.Level == Logging.LogLevel.Error && m.Text.Contains("error 401") &&
-                            m.Text.Contains("giving up permanently")));
+                            m.Text.Contains("will retry")));
                 }
             }
         }
@@ -180,33 +194,50 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         [Fact]
-        public void ClientFailsToStartInPollingModeWith401Error()
+        public void ClientInPollingModeKeepsRetryingOn401Error()
         {
             using (var pollServer = HttpServer.Start(Error401Response))
             {
+                // The extended interval is shrunk so a retry is observable: a 401 is classified
+                // unexpected, which engages the extended regime.
+                var pollingBuilder = Components.PollingDataSource()
+                    .PollIntervalNoMinimum(TimeSpan.FromMilliseconds(20));
+                pollingBuilder._extendedInitialInterval = TimeSpan.FromMilliseconds(20);
+
                 var config = BasicConfig()
-                    .DataSource(Components.PollingDataSource())
+                    .DataSource(pollingBuilder)
                     .ServiceEndpoints(Components.ServiceEndpoints().Polling(pollServer.Uri))
-                    .StartWaitTime(TimeSpan.FromSeconds(5))
+                    .StartWaitTime(TimeSpan.FromMilliseconds(300))
                     .Build();
 
                 using (var client = new LdClient(config))
                 {
+                    // A rejected SDK key no longer ends initialization. The constructor returns
+                    // because the start-wait timeout elapsed, not because the data source gave up.
                     Assert.False(client.Initialized);
-                    // Wait for the status to be updated to Off, as the status update happens asynchronously
-                    var statusUpdated = client.DataSourceStatusProvider.WaitFor(DataSourceState.Off, TimeSpan.FromSeconds(5));
-                    Assert.True(statusUpdated, "Status should have been updated to Off");
-                    Assert.Equal(DataSourceState.Off, client.DataSourceStatusProvider.Status.State);
 
-                    var value = client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false);
-                    Assert.False(value);
+                    // Interrupted before a first successful init is reported as Initializing
+                    // (DataSourceUpdatesImpl.MaybeUpdateStatus): you cannot be interrupted from a
+                    // state you never reached. The point is that it is not Off -- the data source
+                    // is still trying rather than finished.
+                    Assert.Equal(DataSourceState.Initializing,
+                        client.DataSourceStatusProvider.Status.State);
+                    Assert.NotEqual(DataSourceState.Off,
+                        client.DataSourceStatusProvider.Status.State);
+                    Assert.Equal(401,
+                        client.DataSourceStatusProvider.Status.LastError.Value.StatusCode);
+                    Assert.True(client.DataSourceStatusProvider.Status.LastError.Value.Recoverable);
+
+                    Assert.False(client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false));
 
                     var request = pollServer.Recorder.RequireRequest();
                     Assert.Equal(BasicSdkKey, request.Headers.Get("Authorization"));
+                    // Still polling, rather than having stopped.
+                    pollServer.Recorder.RequireRequest();
 
                     Assert.NotEmpty(LogCapture.GetMessages().Where(
                         m => m.Level == Logging.LogLevel.Error && m.Text.Contains("error 401") &&
-                            m.Text.Contains("giving up permanently")));
+                            m.Text.Contains("will retry")));
                 }
             }
         }

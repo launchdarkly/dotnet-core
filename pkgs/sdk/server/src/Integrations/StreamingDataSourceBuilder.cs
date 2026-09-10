@@ -36,8 +36,25 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </summary>
         public static readonly TimeSpan DefaultInitialReconnectDelay = TimeSpan.FromSeconds(1);
 
+        /// <summary>
+        /// The default reconnect delay used once a failure has been classified as unexpected:
+        /// 5 minutes.
+        /// </summary>
+        internal static readonly TimeSpan DefaultExtendedInitialReconnectDelay =
+            TimeSpan.FromMinutes(5);
+
+        /// <summary>
+        /// The default ceiling on reconnect delay once a failure has been classified as unexpected:
+        /// 1 hour.
+        /// </summary>
+        internal static readonly TimeSpan DefaultExtendedMaxRetryDelay = TimeSpan.FromHours(1);
+
         internal TimeSpan _initialReconnectDelay = DefaultInitialReconnectDelay;
 
+        // Not public: these exist so tests can shrink 5 minutes and 1 hour to milliseconds. A
+        // consumer has no reason to tune the extended regime.
+        internal TimeSpan _extendedInitialReconnectDelay = DefaultExtendedInitialReconnectDelay;
+        internal TimeSpan _extendedMaxRetryDelay = DefaultExtendedMaxRetryDelay;
         /// <summary>
         /// Sets the initial reconnect delay for the streaming connection.
         /// </summary>
@@ -69,7 +86,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 context,
                 context.DataSourceUpdates,
                 configuredBaseUri,
-                _initialReconnectDelay
+                _initialReconnectDelay,
+                _extendedInitialReconnectDelay,
+                _extendedMaxRetryDelay
                 );
         }
 

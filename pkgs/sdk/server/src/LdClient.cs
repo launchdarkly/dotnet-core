@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Hooks;
@@ -37,6 +38,9 @@ namespace LaunchDarkly.Sdk.Server
         internal readonly Evaluator _evaluator;
         private readonly Logger _log;
         private readonly Logger _evalLog;
+        // Each field changes from 0 to 1 when the matching cached-data warning logs.
+        private int _evalCachedDataWarningLogged;
+        private int _allFlagsStateCachedDataWarningLogged;
         private readonly IHookExecutor _hookExecutor;
         internal readonly IDataSystem _dataSystem;
 
@@ -364,7 +368,10 @@ namespace LaunchDarkly.Sdk.Server
             {
                 if (_dataSystem.Store.Initialized())
                 {
-                    _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store");
+                    if (Interlocked.Exchange(ref _allFlagsStateCachedDataWarningLogged, 1) == 0)
+                    {
+                        _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store. This message is logged once.");
+                    }
                 }
                 else
                 {
@@ -452,7 +459,10 @@ namespace LaunchDarkly.Sdk.Server
             {
                 if (_dataSystem.Store.Initialized())
                 {
-                    _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store");
+                    if (Interlocked.Exchange(ref _evalCachedDataWarningLogged, 1) == 0)
+                    {
+                        _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store. This message is logged once.");
+                    }
                 }
                 else
                 {

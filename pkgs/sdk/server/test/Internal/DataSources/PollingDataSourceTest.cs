@@ -604,6 +604,43 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        [Fact]
+        public void A304CountsAsASuccessForTheRetryStrategy()
+        {
+            // The 304 branch returns before the store write, so it is the one success path that
+            // does not go through InitWithHeaders. It still has to count as a success: LaunchDarkly
+            // answers 304 for unchanged data in steady state, so treating one as a failure would
+            // clear the consecutive-success streak on every poll and make the extended regime
+            // impossible to leave once entered.
+            //
+            // Sequential repeats its last handler, so every poll from the third onwards is a 304 --
+            // the steady state this is guarding.
+            var handler = Handlers.Sequential(
+                Handlers.Status(401),       // enters the extended regime
+                PollingResponse(AllData),   // success 1
+                Handlers.Status(304));      // success 2 onwards -- resets to normal here
+
+            using (var server = HttpServer.Start(handler))
+            {
+                using (var dataSource = MakeDataSourceWithBriefExtendedInterval(server.Uri))
+                {
+                    _ = dataSource.Start();
+
+                    server.Recorder.RequireRequest();  // the 401
+                    server.Recorder.RequireRequest();  // success 1, a 200
+                    server.Recorder.RequireRequest();  // success 2, a 304 -- resets to normal here
+
+                    var countBefore = server.Recorder.Count;
+                    Thread.Sleep(600);
+                    var polled = server.Recorder.Count - countBefore;
+
+                    Assert.True(polled >= 3,
+                        $"saw {polled} polls in 600ms after a 200 then sustained 304s; the 20ms " +
+                        "normal cadence should produce many, the 300ms extended cadence at most two");
+                }
+            }
+        }
+
         /// <summary>
         /// Holds a request open until released, so a poll can be guaranteed in flight at a chosen
         /// moment rather than hoped for.
@@ -651,12 +688,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 // Now let it finish and attempt to report.
                 messageHandler.Release.Release();
 
-                var deadline = DateTime.UtcNow.AddSeconds(3);
+                // TryTakeValue neither waits nor asserts, so a quiet interval costs a sleep
+                // instead of failing. ExpectValue asserts when its timeout expires, which made
+                // the deadline below unreachable: any gap longer than one poll failed the test
+                // before the remaining budget could be spent.
+                var timer = Stopwatch.StartNew();
                 var reachedOff = false;
-                while (!reachedOff && DateTime.UtcNow < deadline)
+                while (!reachedOff && timer.Elapsed < TimeSpan.FromSeconds(3))
                 {
-                    var status = _updateSink.StatusUpdates.ExpectValue(TimeSpan.FromMilliseconds(250));
-                    reachedOff = status.State == DataSourceState.Off;
+                    if (_updateSink.StatusUpdates.TryTakeValue(out var status))
+                    {
+                        reachedOff = status.State == DataSourceState.Off;
+                    }
+                    else
+                    {
+                        Thread.Sleep(20);
+                    }
                 }
                 Assert.True(reachedOff, "shutdown should publish Off");
 

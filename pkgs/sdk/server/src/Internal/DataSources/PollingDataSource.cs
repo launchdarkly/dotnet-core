@@ -26,6 +26,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly TaskCompletionSource<bool> _initTask;
         private readonly Logger _log;
         private readonly CancellationTokenSource _canceller = new CancellationTokenSource();
+        private readonly CancellationToken _cancelToken;
+
         private bool _started;
 
         private bool _disposed = false;
@@ -46,6 +48,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             _strategy = new PollingStrategy(pollInterval, extendedInitialInterval);
             _initTask = new TaskCompletionSource<bool>();
             _log = context.Logger.SubLogger(LogNames.DataSourceSubLog);
+            _cancelToken = _canceller.Token;
         }
 
         public bool Initialized => _initialized.Get();
@@ -71,11 +74,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         private void ScheduleNext(TimeSpan delay)
         {
-            if (_canceller.IsCancellationRequested)
+            if (_cancelToken.IsCancellationRequested)
             {
                 return;
             }
-            _taskExecutor.ScheduleTask(delay, PollAsync, _canceller.Token);
+            _taskExecutor.ScheduleTask(delay, PollAsync, _cancelToken);
         }
 
         /// <summary>
@@ -116,7 +119,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     {
                         if (!_initialized.GetAndSet(true))
                         {
-                            _initTask.SetResult(true);
+                            _initTask.TrySetResult(true);
                             _log.Info("First polling request successful");
                         }
                     }
@@ -176,15 +179,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private void Dispose(bool disposing)
         {
-            if (_disposed) return;
+            lock (this)
+            {
+                if (_disposed) return;
 
-            if (disposing) {
-                // dispose managed resources if any
-                _featureRequestor.Dispose();
-                _canceller.Dispose();
+                if (disposing) {
+                    // dispose managed resources if any
+                    _featureRequestor.Dispose();
+                    _canceller.Dispose();
+                }
+
+                _disposed = true;
             }
-
-            _disposed = true;
         }
 
         /// <summary>
@@ -208,11 +214,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         private void Shutdown(DataSourceStatus.ErrorInfo? errorInfo)
         {
-            // Prevent concurrent shutdown calls - only allow the first call to proceed
-            // GetAndSet returns the OLD value, so if it was already true, we return early
-            if (_shuttingDown.GetAndSet(true)) return;
+            lock (this)
+            {
+                // The lock is what makes this early return safe. A repeat caller waits here
+                // instead of racing ahead into Dispose(true) and disposing the canceller while
+                // this call is still in progress, so by the time it returns the shutdown it
+                // observed really has happened. GetAndSet returns the OLD value, so a second
+                // caller sees true.
+                if (_shuttingDown.GetAndSet(true)) return;
 
-            _canceller.Cancel();
+                _canceller.Cancel();
+            }
+
+            // Deliberately outside the lock: neither call touches the canceller, and keeping the
+            // critical section free of calls into the sink avoids holding a lock across code that
+            // can complete tasks belonging to other components.
             _dataSourceUpdates.UpdateStatus(DataSourceState.Off, errorInfo);
             _initTask.TrySetResult(false);
         }

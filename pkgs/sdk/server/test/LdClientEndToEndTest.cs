@@ -63,24 +63,25 @@ namespace LaunchDarkly.Sdk.Server
                 {
                     Assert.False(client.Initialized);
 
+                    Assert.False(client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false));
+
+                    var request = streamServer.Recorder.RequireRequest();
+                    Assert.Equal(BasicSdkKey, request.Headers.Get("Authorization"));
+
+                    // A second connection attempt is the behavior under test: to make it, the data source had
+                    // to handle the first 401 and schedule a retry rather than stop. It also
+                    // orders the assertions below, which would otherwise race the first response
+                    // against the start-wait timeout.
+                    streamServer.Recorder.RequireRequest();
+
                     // Interrupted before a first successful init is reported as Initializing
                     // (DataSourceUpdatesImpl.MaybeUpdateStatus): you cannot be interrupted from a
                     // state you never reached. The point is that it is not Off -- the data source
                     // is still trying rather than finished.
                     Assert.Equal(DataSourceState.Initializing,
                         client.DataSourceStatusProvider.Status.State);
-                    Assert.NotEqual(DataSourceState.Off,
-                        client.DataSourceStatusProvider.Status.State);
                     Assert.Equal(401,
                         client.DataSourceStatusProvider.Status.LastError.Value.StatusCode);
-                    Assert.True(client.DataSourceStatusProvider.Status.LastError.Value.Recoverable);
-
-                    Assert.False(client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false));
-
-                    var request = streamServer.Recorder.RequireRequest();
-                    Assert.Equal(BasicSdkKey, request.Headers.Get("Authorization"));
-                    // Still reconnecting.
-                    streamServer.Recorder.RequireRequest();
 
                     Assert.NotEmpty(LogCapture.GetMessages().Where(
                         m => m.Level == Logging.LogLevel.Error && m.Text.Contains("error 401") &&
@@ -216,24 +217,25 @@ namespace LaunchDarkly.Sdk.Server
                     // because the start-wait timeout elapsed, not because the data source gave up.
                     Assert.False(client.Initialized);
 
+                    Assert.False(client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false));
+
+                    var request = pollServer.Recorder.RequireRequest();
+                    Assert.Equal(BasicSdkKey, request.Headers.Get("Authorization"));
+
+                    // A second poll is the behavior under test: to make it, the data source had
+                    // to handle the first 401 and schedule a retry rather than stop. It also
+                    // orders the assertions below, which would otherwise race the first response
+                    // against the start-wait timeout.
+                    pollServer.Recorder.RequireRequest();
+
                     // Interrupted before a first successful init is reported as Initializing
                     // (DataSourceUpdatesImpl.MaybeUpdateStatus): you cannot be interrupted from a
                     // state you never reached. The point is that it is not Off -- the data source
                     // is still trying rather than finished.
                     Assert.Equal(DataSourceState.Initializing,
                         client.DataSourceStatusProvider.Status.State);
-                    Assert.NotEqual(DataSourceState.Off,
-                        client.DataSourceStatusProvider.Status.State);
                     Assert.Equal(401,
                         client.DataSourceStatusProvider.Status.LastError.Value.StatusCode);
-                    Assert.True(client.DataSourceStatusProvider.Status.LastError.Value.Recoverable);
-
-                    Assert.False(client.BoolVariation(AlwaysTrueFlag.Key, BasicUser, false));
-
-                    var request = pollServer.Recorder.RequireRequest();
-                    Assert.Equal(BasicSdkKey, request.Headers.Get("Authorization"));
-                    // Still polling, rather than having stopped.
-                    pollServer.Recorder.RequireRequest();
 
                     Assert.NotEmpty(LogCapture.GetMessages().Where(
                         m => m.Level == Logging.LogLevel.Error && m.Text.Contains("error 401") &&

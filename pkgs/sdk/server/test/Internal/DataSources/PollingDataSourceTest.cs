@@ -482,16 +482,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public void PollIntervalIsCappedAtTheSchedulableMaximum()
-        {
-            // Beyond this the wait cannot be scheduled at all, so it is bounded here rather than
-            // failing later when the delay is attempted.
-            var builder = Components.PollingDataSource().PollInterval(TimeSpan.FromDays(60));
-
-            Assert.Equal(PollingDataSourceBuilder.MaximumPollInterval, builder._pollInterval);
-        }
-
-        [Fact]
         public void PollIntervalInRangeIsKept()
         {
             var wanted = TimeSpan.FromMinutes(2);

@@ -46,17 +46,6 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </summary>
         internal static readonly TimeSpan DefaultExtendedInitialInterval = TimeSpan.FromMinutes(5);
 
-        /// <summary>
-        /// The largest interval that can be scheduled: <c>int.MaxValue</c> milliseconds, or about
-        /// 24.8 days.
-        /// </summary>
-        /// <remarks>
-        /// This is the lower of the two platform timer ceilings, not a judgement about what is a
-        /// reasonable polling cadence. An interval beyond it cannot be waited on at all, so it is
-        /// bounded here rather than failing later when the wait is attempted.
-        /// </remarks>
-        public static readonly TimeSpan MaximumPollInterval = TimeSpan.FromMilliseconds(int.MaxValue);
-
         internal TimeSpan _pollInterval = DefaultPollInterval;
 
         // Not public: exists so tests can shrink 5 minutes to milliseconds. A consumer has no
@@ -66,19 +55,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// Sets the interval at which the SDK will poll for feature flag updates.
         /// </summary>
         /// <remarks>
-        /// The default and minimum value is <see cref="DefaultPollInterval"/>. Values less than this
-        /// will be set to the default. Values greater than <see cref="MaximumPollInterval"/> are
-        /// set to that maximum, because a longer interval cannot be scheduled.
+        /// The default and minimum value is <see cref="DefaultPollInterval"/>. Values less than this will
+        /// be set to the default.
         /// </remarks>
         /// <param name="pollInterval">the polling interval</param>
         /// <returns>the builder</returns>
         public PollingDataSourceBuilder PollInterval(TimeSpan pollInterval)
         {
-            _pollInterval = pollInterval.CompareTo(DefaultPollInterval) < 0
-                ? DefaultPollInterval
-                : pollInterval.CompareTo(MaximumPollInterval) > 0
-                    ? MaximumPollInterval
-                    : pollInterval;
+            _pollInterval = pollInterval.CompareTo(DefaultPollInterval) >= 0 ?
+                pollInterval :
+                DefaultPollInterval;
             return this;
         }
 

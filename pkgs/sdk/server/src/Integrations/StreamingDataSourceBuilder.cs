@@ -55,6 +55,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         // consumer has no reason to tune the extended regime.
         internal TimeSpan _extendedInitialReconnectDelay = DefaultExtendedInitialReconnectDelay;
         internal TimeSpan _extendedMaxRetryDelay = DefaultExtendedMaxRetryDelay;
+
         /// <summary>
         /// Sets the initial reconnect delay for the streaming connection.
         /// </summary>

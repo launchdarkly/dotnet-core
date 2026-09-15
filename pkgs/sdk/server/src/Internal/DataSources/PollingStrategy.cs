@@ -18,7 +18,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     /// success against a misconfigured environment should not discard the extended schedule.
     /// </para>
     /// <para>
-    /// This type is not thread-safe. The polling loop drives it from a single task.
+    /// This type is not thread-safe, and does not need to be. The polling loop calls into it
+    /// from a chain of distinct tasks that are sequenced and never concurrent, so each poll's
+    /// writes are published to the next poll's thread by the task machinery's own
+    /// release/acquire pair rather than by anything here.
     /// </para>
     /// </remarks>
     internal sealed class PollingStrategy

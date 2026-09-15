@@ -51,6 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         // Not public: exists so tests can shrink 5 minutes to milliseconds. A consumer has no
         // reason to tune the extended regime.
         internal TimeSpan _extendedInitialInterval = DefaultExtendedInitialInterval;
+
         /// <summary>
         /// Sets the interval at which the SDK will poll for feature flag updates.
         /// </summary>

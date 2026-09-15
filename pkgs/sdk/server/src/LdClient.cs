@@ -91,7 +91,7 @@ namespace LaunchDarkly.Sdk.Server
         /// case, <see cref="Initialized"/> will be true, and the <see cref="DataSourceStatusProvider"/>
         /// will return a state of <see cref="DataSourceState.Valid"/>. </description></item>
         /// <item><description> It has not succeeded in connecting within the <see cref="ConfigurationBuilder.StartWaitTime(TimeSpan)"/>
-        /// timeout (the default for this is 5 seconds). This could happen due to a network problem or a
+        /// timeout (the default for this is 10 seconds). This could happen due to a network problem or a
         /// temporary service outage. In this case, <see cref="Initialized"/> will be false, and the
         /// <see cref="DataSourceStatusProvider"/> will return a state of <see cref="DataSourceState.Initializing"/>,
         /// indicating that the SDK will still continue trying to connect in the background. </description></item>

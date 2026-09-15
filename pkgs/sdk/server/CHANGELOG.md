@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.16.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.2...LaunchDarkly.ServerSdk-v8.16.3) (2026-09-15)
+
+
+### Bug Fixes
+
+* Log the cached-data evaluation warning only once per client ([#349](https://github.com/launchdarkly/dotnet-core/issues/349)) ([d1c4a09](https://github.com/launchdarkly/dotnet-core/commit/d1c4a09f255a95d5f91cc8f03321d43cdfd3e42f))
+
 ## [8.16.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.1...LaunchDarkly.ServerSdk-v8.16.2) (2026-09-03)
 
 

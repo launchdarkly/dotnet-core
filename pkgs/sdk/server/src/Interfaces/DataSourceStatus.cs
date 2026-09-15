@@ -64,7 +64,7 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
 
             /// <summary>
             /// Whether the error is recoverable. Recoverable errors are those that can be retried, such as network errors. Unrecoverable 
-            /// errors are those that cannot be retried, such as invalid SDK key errors.
+            /// errors are those that cannot be retried.
             /// </summary>
             public bool Recoverable { get; set; }
 

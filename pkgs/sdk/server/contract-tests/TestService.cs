@@ -47,7 +47,9 @@ namespace TestService
             "flag-value-change-listeners",
             "client-prereq-events",
             "fdv1-fallback",
-            "instance-id"
+            "instance-id",
+            "retry-conformance-fdv1-streaming",
+            "retry-conformance-fdv1-polling"
         };
 
         public readonly Handler Handler;

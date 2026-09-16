@@ -67,32 +67,11 @@ namespace LaunchDarkly.Sdk.Internal.Http
         }
 
         /// <summary>
-        /// Classifies a transport-level failure by whether it is likely to clear on its own.
+        /// Classifies a transport-level failure.
         /// </summary>
         /// <remarks>
-        /// <para>
-        /// Always <see cref="FailureClass.Normal"/>. The spec singles out certificate and TLS
-        /// trust failures as <see cref="FailureClass.Unexpected"/>, but .NET provides no way to
-        /// recognise them with confidence: a rejected certificate surfaces as
-        /// <c>AuthenticationException</c>, the same type raised for protocol and cipher mismatches
-        /// and for a connection dying mid-handshake, and the shape varies by target framework and
-        /// message handler. Nothing on the HTTP path reliably produces a certificate-specific type.
-        /// </para>
-        /// <para>
-        /// Guessing is worse than not classifying, because the costs are asymmetric. Misreading a
-        /// transient failure as unexpected slows reconnection to minutes and, for polling, requires
-        /// two consecutive successes to recover -- so a brief TLS hiccup during a load-balancer
-        /// rollout would leave a whole fleet on stale data with no action available to the customer.
-        /// Misreading a real certificate problem as transient only means retrying at the ordinary
-        /// cadence, which is bounded by the configured ceiling and clears as soon as someone fixes
-        /// the certificate. So an unrecognised failure resolves to the retryable side, which is how
-        /// the spec's own table is arranged: every transport row is normal apart from the one this
-        /// SDK cannot detect.
-        /// </para>
-        /// <para>
-        /// If a framework version exposes a certificate-specific signal, this is where to narrow
-        /// it. Matching on exception message text is the alternative, and is deliberately not done.
-        /// </para>
+        /// Always <see cref="FailureClass.Normal"/>, as the specification requires for every
+        /// transport-level failure unless a component's own specification overrides it.
         /// </remarks>
         /// <param name="e">the exception, or null; not inspected</param>
         /// <returns><see cref="FailureClass.Normal"/></returns>

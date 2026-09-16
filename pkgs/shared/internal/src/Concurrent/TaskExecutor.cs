@@ -99,6 +99,54 @@ namespace LaunchDarkly.Sdk.Internal
         }
 
         /// <summary>
+        /// Runs a task once, after a delay.
+        /// </summary>
+        /// <remarks>
+        /// An exception from <paramref name="taskFn"/> is logged, not propagated, because the task
+        /// runs detached. Cancelling from inside <paramref name="taskFn"/> stops a
+        /// self-rescheduling chain.
+        /// </remarks>
+        /// <param name="delay">how long to wait before running the task</param>
+        /// <param name="taskFn">the task to run</param>
+        /// <param name="cancellationToken">cancels the pending delay and prevents starting the task</param>
+        /// <exception cref="ArgumentOutOfRangeException">if <paramref name="delay"/> is invalid</exception>
+        /// <exception cref="ObjectDisposedException">if the token's source is already disposed</exception>
+        public void ScheduleTask(TimeSpan delay, Func<Task> taskFn,
+            CancellationToken cancellationToken)
+        {
+            // Started on the calling thread deliberately. Task.Delay validates its argument
+            // synchronously, and registering on an already-disposed CancellationTokenSource throws
+            // as well, so doing this here surfaces both to the caller instead of losing them on a
+            // detached task. It also means the delay starts now rather than whenever the thread
+            // pool picks the work up.
+            var delayTask = Task.Delay(delay, cancellationToken);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await delayTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                try
+                {
+                    await taskFn();
+                }
+                catch (Exception e)
+                {
+                    LogHelpers.LogException(_log, "Unexpected exception from scheduled task", e);
+                }
+            });
+        }
+
+        /// <summary>
         /// Starts a repeating async task.
         /// </summary>
         /// <param name="initialDelay">time to wait before first execution</param>

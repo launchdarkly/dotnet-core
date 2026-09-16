@@ -8,5 +8,5 @@
   "pkgs/sdk/server-ai": "0.13.0",
   "pkgs/shared/common": "7.2.0",
   "pkgs/shared/common-json-net": "7.0.2",
-  "pkgs/shared/internal": "3.10.1"
+  "pkgs/shared/internal": "3.11.0"
 }

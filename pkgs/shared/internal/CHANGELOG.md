@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.InternalSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.10.1...LaunchDarkly.InternalSdk-v3.11.0) (2026-09-16)
+
+
+### Features
+
+* add failure classification and one-shot task scheduling to InternalSdk ([#350](https://github.com/launchdarkly/dotnet-core/issues/350)) ([1f7a4af](https://github.com/launchdarkly/dotnet-core/commit/1f7a4af115408191b73c9eb9a9513f0cb1c0de8a))
+
 ## [3.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.10.0...LaunchDarkly.InternalSdk-v3.10.1) (2026-09-02)
 
 

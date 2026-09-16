@@ -21,7 +21,6 @@ namespace LaunchDarkly.Sdk.Internal
         private readonly Action<Action> _eventHandlerDispatcher;
         private readonly Logger _log;
 
-
         /// <summary>
         /// Creates an instance.
         /// </summary>
@@ -103,26 +102,15 @@ namespace LaunchDarkly.Sdk.Internal
         /// Runs a task once, after a delay.
         /// </summary>
         /// <remarks>
-        /// <para>
-        /// Cancelling <paramref name="cancellationToken"/> both ends a pending delay and prevents
-        /// the task from starting. A caller that reschedules from inside
-        /// <paramref name="taskFn"/> therefore stops the whole chain by cancelling once, with no
-        /// per-call handle to track or dispose.
-        /// </para>
-        /// <para>
-        /// An exception from <paramref name="taskFn"/> is logged rather than propagated. The task
-        /// runs detached, so an exception would otherwise be lost with no indication that anything
-        /// had stopped.
-        /// </para>
-        /// <para>
-        /// An invalid <paramref name="delay"/> is relayed to the caller rather than adjusted. No
-        /// ceiling is imposed here: what counts as a sensible delay depends on what the delay
-        /// means, which only the caller knows.
-        /// </para>
+        /// An exception from <paramref name="taskFn"/> is logged, not propagated, because the task
+        /// runs detached. Cancelling from inside <paramref name="taskFn"/> stops a
+        /// self-rescheduling chain.
         /// </remarks>
         /// <param name="delay">how long to wait before running the task</param>
         /// <param name="taskFn">the task to run</param>
         /// <param name="cancellationToken">cancels the pending delay and the task</param>
+        /// <exception cref="ArgumentOutOfRangeException">if <paramref name="delay"/> is invalid</exception>
+        /// <exception cref="ObjectDisposedException">if the token's source is already disposed</exception>
         public void ScheduleTask(TimeSpan delay, Func<Task> taskFn,
             CancellationToken cancellationToken)
         {

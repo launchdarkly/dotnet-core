@@ -108,7 +108,7 @@ namespace LaunchDarkly.Sdk.Internal
         /// </remarks>
         /// <param name="delay">how long to wait before running the task</param>
         /// <param name="taskFn">the task to run</param>
-        /// <param name="cancellationToken">cancels the pending delay and the task</param>
+        /// <param name="cancellationToken">cancels the pending delay and prevents starting the task</param>
         /// <exception cref="ArgumentOutOfRangeException">if <paramref name="delay"/> is invalid</exception>
         /// <exception cref="ObjectDisposedException">if the token's source is already disposed</exception>
         public void ScheduleTask(TimeSpan delay, Func<Task> taskFn,

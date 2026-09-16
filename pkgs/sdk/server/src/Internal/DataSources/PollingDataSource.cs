@@ -164,7 +164,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             if (_strategy.OnFailure(failureClass))
             {
-                _log.Info("Classified failure as unexpected; engaging extended backoff.");
+                _log.Info("Unexpected failure occurred; engaging extended backoff.");
             }
         }
 

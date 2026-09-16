@@ -197,8 +197,8 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
         /// </summary>
         /// <remarks>
         /// If it encounters an error that requires it to retry initialization, the state will remain at
-        /// <see cref="Initializing"/> until it either succeeds and becomes <see cref="Valid"/>, or
-        /// permanently fails and becomes <see cref="Off"/>.
+        /// <see cref="Initializing"/> until it either succeeds and becomes <see cref="Valid"/>, or the data
+        /// source stops and becomes <see cref="Off"/>.
         /// </remarks>
         Initializing,
 
@@ -219,7 +219,8 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
         /// <remarks>
         /// In streaming mode, this means that the stream connection failed, or had to be dropped due to some
         /// other error, and will be retried after a backoff delay. In polling mode, it means that the last poll
-        /// request failed, and a new poll request will be made after the configured polling interval.
+        /// request failed, and a new poll request will be made after a delay of at least the configured polling
+        /// interval. Some failures cause the SDK to retry on a slower schedule.
         /// </remarks>
         Interrupted,
 
@@ -227,8 +228,7 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
         /// Indicates that the data source has been permanently shut down.
         /// </summary>
         /// <remarks>
-        /// This could be because it encountered an unrecoverable error (for instance, the LaunchDarkly service
-        /// rejected the SDK key; an invalid SDK key will never become valid), or because the SDK client was
+        /// This could be because it encountered an unrecoverable error, or because the SDK client was
         /// explicitly shut down.
         /// </remarks>
         Off

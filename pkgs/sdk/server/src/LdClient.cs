@@ -95,8 +95,7 @@ namespace LaunchDarkly.Sdk.Server
         /// temporary service outage. In this case, <see cref="Initialized"/> will be false, and the
         /// <see cref="DataSourceStatusProvider"/> will return a state of <see cref="DataSourceState.Initializing"/>,
         /// indicating that the SDK will still continue trying to connect in the background. </description></item>
-        /// <item><description> It has encountered an unrecoverable error: for instance, LaunchDarkly has rejected the
-        /// SDK key. Since an invalid key will not become valid, the SDK will not retry in this case.
+        /// <item><description> It has encountered an unrecoverable error. In this case,
         /// <see cref="Initialized"/> will be false, and the <see cref="DataSourceStatusProvider"/> will
         /// return a state of <see cref="DataSourceState.Off"/>. </description></item>
         /// </list>

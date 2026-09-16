@@ -537,7 +537,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             // 401 engages extended, then one success. Two consecutive successes are required to
             // return to normal, so the gap after a single success is still the extended one.
-            var handler = Handlers.Sequential(
+            var handler = Handlers.SequentialWithLastRepeating(
                 Handlers.Status(401),
                 PollingResponse(AllData),
                 PollingResponse(AllData),
@@ -565,7 +565,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         [Fact]
         public void TwoConsecutiveSuccessesReturnToTheNormalCadence()
         {
-            var handler = Handlers.Sequential(
+            var handler = Handlers.SequentialWithLastRepeating(
                 Handlers.Status(401),
                 PollingResponse(AllData),
                 PollingResponse(AllData),
@@ -603,9 +603,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // clear the consecutive-success streak on every poll and make the extended regime
             // impossible to leave once entered.
             //
-            // Sequential repeats its last handler, so every poll from the third onwards is a 304 --
-            // the steady state this is guarding.
-            var handler = Handlers.Sequential(
+            // SequentialWithLastRepeating, not Sequential: the latter serves a 500 once the list is
+            // exhausted, which would make the sustained-304 steady state this guards untestable.
+            var handler = Handlers.SequentialWithLastRepeating(
                 Handlers.Status(401),       // enters the extended regime
                 PollingResponse(AllData),   // success 1
                 Handlers.Status(304));      // success 2 onwards -- resets to normal here

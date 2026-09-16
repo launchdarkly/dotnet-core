@@ -39,20 +39,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private TimeSpan _maxDelay;
 
         internal PollingStrategy(TimeSpan normalInterval, TimeSpan extendedInitialInterval)
-            : this(normalInterval, extendedInitialInterval, new Random())
-        {
-        }
-
-        /// <summary>
-        /// Constructs an instance with a caller-supplied <see cref="Random"/>, so that tests can
-        /// make jitter deterministic.
-        /// </summary>
-        internal PollingStrategy(TimeSpan normalInterval, TimeSpan extendedInitialInterval,
-            Random random)
         {
             _normalInterval = normalInterval;
             _extendedInitialInterval = extendedInitialInterval;
-            _random = random ?? new Random();
+            _random = new Random();
 
             // Normal regime: both bounds are the configured interval, so the formula yields that
             // interval for every attempt.
@@ -105,17 +95,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// The wait is never shorter than the configured poll interval, so the extended regime can
         /// only ever slow polling down.
         /// </remarks>
-        internal TimeSpan NextWait()
+        internal TimeSpan NextWait() => ApplyJitter(UnjitteredWait());
+
+        /// <summary>
+        /// Returns the wait the progression currently calls for, before jitter is applied.
+        /// </summary>
+        internal TimeSpan UnjitteredWait()
         {
             if (_n <= 0)
             {
                 return _normalInterval;
             }
 
-            var tMillis = UnjitteredMillis(
+            return TimeSpan.FromMilliseconds(UnjitteredMillis(
                 (long)_initialDelay.TotalMilliseconds,
                 (long)_maxDelay.TotalMilliseconds,
-                _n);
+                _n));
+        }
+
+        private TimeSpan ApplyJitter(TimeSpan unjittered)
+        {
+            var tMillis = (long)unjittered.TotalMilliseconds;
 
             // Jitter is uniform in [0, T/2), so the wait lands in (T/2, T].
             var halfT = tMillis / 2;
@@ -142,7 +142,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// rather than defensive: C# masks a 64-bit shift count to its low 6 bits, so
         /// <c>maxMillis >> 64</c> would silently mean <c>maxMillis >> 0</c>.
         /// </remarks>
-        private static long UnjitteredMillis(long initialMillis, long maxMillis, int n)
+        internal static long UnjitteredMillis(long initialMillis, long maxMillis, int n)
         {
             if (initialMillis <= 0 || maxMillis <= 0)
             {

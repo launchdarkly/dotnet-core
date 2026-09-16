@@ -55,10 +55,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         private volatile bool _lastStoreUpdateFailed = false;
 
-        /// <summary>
-        /// Gates the "engaging extended backoff" message so that a sustained outage logs it once
-        /// rather than on every reconnection attempt.
-        /// </summary>
+        // Gates the "engaging extended backoff" log to once per data source lifetime.
         private volatile bool _loggedActivatedExtended = false;
         internal DateTime _esStarted; // exposed for testing
         private readonly Stopwatch _esTimer = new Stopwatch();
@@ -303,7 +300,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     _extendedMaxRetryDelay);
                 if (!_loggedActivatedExtended)
                 {
-                    _log.Info("Classified failure as unexpected; engaging extended backoff.");
+                    _log.Info("Unexpected failure occurred; engaging extended backoff.");
                     _loggedActivatedExtended = true;
                 }
             }

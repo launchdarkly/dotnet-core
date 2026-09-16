@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Reflection;
 using LaunchDarkly.Sdk.Internal.Http;
 using Xunit;
 
@@ -17,19 +16,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// Returns zero jitter, so <c>NextWait</c> yields the un-jittered delay exactly and the
         /// progression can be asserted without ranges.
         /// </summary>
-        private sealed class NoJitter : Random
-        {
-            public override int Next(int maxValue) => 0;
-        }
-
         private static PollingStrategy Strategy(TimeSpan? normal = null, TimeSpan? extended = null) =>
-            new PollingStrategy(normal ?? Normal30s, extended ?? Extended5m, new NoJitter());
+            new PollingStrategy(normal ?? Normal30s, extended ?? Extended5m);
 
         #region Normal regime
 
         [Fact]
         public void FreshStrategyWaitsThePollInterval() =>
-            Assert.Equal(Normal30s, Strategy().NextWait());
+            Assert.Equal(Normal30s, Strategy().UnjitteredWait());
 
         [Fact]
         public void NormalFailureDoesNotEngageExtended()
@@ -53,7 +47,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             for (var i = 0; i < 5; i++)
             {
                 s.OnFailure(FailureClass.Normal);
-                Assert.Equal(Normal30s, s.NextWait());
+                Assert.Equal(Normal30s, s.UnjitteredWait());
             }
         }
 
@@ -83,7 +77,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Equal(1, s.GetN());
             Assert.Equal(Extended5m, s.GetInitialDelay());
             Assert.Equal(OneHour, s.GetMaxDelay());
-            Assert.Equal(Extended5m, s.NextWait());
+            Assert.Equal(Extended5m, s.UnjitteredWait());
         }
 
         [Fact]
@@ -99,7 +93,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // n is reset to 1 on the transition, so the first extended wait is the extended
             // initial rather than the initial already doubled by the preceding normal failures.
             Assert.Equal(1, s.GetN());
-            Assert.Equal(Extended5m, s.NextWait());
+            Assert.Equal(Extended5m, s.UnjitteredWait());
         }
 
         [Fact]
@@ -122,7 +116,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             s.OnFailure(FailureClass.Unexpected);
 
             Assert.Equal(2, s.GetN());
-            Assert.Equal(TimeSpan.FromMinutes(10), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(10), s.UnjitteredWait());
         }
 
         #endregion
@@ -135,13 +129,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var s = Strategy();
             s.OnFailure(FailureClass.Unexpected);
 
-            Assert.Equal(TimeSpan.FromMinutes(5), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(5), s.UnjitteredWait());
             s.OnFailure(FailureClass.Unexpected);
-            Assert.Equal(TimeSpan.FromMinutes(10), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(10), s.UnjitteredWait());
             s.OnFailure(FailureClass.Unexpected);
-            Assert.Equal(TimeSpan.FromMinutes(20), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(20), s.UnjitteredWait());
             s.OnFailure(FailureClass.Unexpected);
-            Assert.Equal(TimeSpan.FromMinutes(40), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(40), s.UnjitteredWait());
         }
 
         [Fact]
@@ -154,7 +148,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 s.OnFailure(FailureClass.Unexpected);
             }
 
-            Assert.Equal(OneHour, s.NextWait());
+            Assert.Equal(OneHour, s.UnjitteredWait());
         }
 
         [Fact]
@@ -166,7 +160,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             // The extended regime must never poll faster than the configured interval.
             Assert.Equal(TimeSpan.FromMinutes(10), s.GetInitialDelay());
-            Assert.Equal(TimeSpan.FromMinutes(10), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(10), s.UnjitteredWait());
         }
 
         [Fact]
@@ -176,9 +170,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             s.OnFailure(FailureClass.Unexpected);
 
             s.OnFailure(FailureClass.Unexpected);
-            Assert.Equal(TimeSpan.FromMinutes(20), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(20), s.UnjitteredWait());
             s.OnFailure(FailureClass.Unexpected);
-            Assert.Equal(TimeSpan.FromMinutes(40), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(40), s.UnjitteredWait());
         }
 
         [Fact]
@@ -187,9 +181,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             var s = Strategy(normal: Extended5m, extended: Extended5m);
             s.OnFailure(FailureClass.Unexpected);
 
-            Assert.Equal(TimeSpan.FromMinutes(5), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(5), s.UnjitteredWait());
             s.OnFailure(FailureClass.Unexpected);
-            Assert.Equal(TimeSpan.FromMinutes(10), s.NextWait());
+            Assert.Equal(TimeSpan.FromMinutes(10), s.UnjitteredWait());
         }
 
         [Fact]
@@ -203,16 +197,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Both bounds become the poll interval, so there is nothing left to escalate.
             Assert.Equal(twoHours, s.GetInitialDelay());
             Assert.Equal(twoHours, s.GetMaxDelay());
-            Assert.Equal(twoHours, s.NextWait());
+            Assert.Equal(twoHours, s.UnjitteredWait());
             s.OnFailure(FailureClass.Unexpected);
-            Assert.Equal(twoHours, s.NextWait());
+            Assert.Equal(twoHours, s.UnjitteredWait());
         }
 
         [Fact]
         public void WaitIsNeverShorterThanThePollInterval()
         {
             // Jitter can remove up to half of T; the floor keeps it at the configured interval.
-            var s = new PollingStrategy(Normal30s, Extended5m, new Random(12345));
+            var s = new PollingStrategy(Normal30s, Extended5m);
 
             for (var i = 0; i < 20; i++)
             {
@@ -235,7 +229,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             Assert.True(s.GetInExtended());
             Assert.True(s.GetPriorPollWasSuccessful());
-            Assert.Equal(Extended5m, s.NextWait());
+            Assert.Equal(Extended5m, s.UnjitteredWait());
         }
 
         [Fact]
@@ -251,7 +245,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.Equal(0, s.GetN());
             Assert.Equal(Normal30s, s.GetInitialDelay());
             Assert.Equal(Normal30s, s.GetMaxDelay());
-            Assert.Equal(Normal30s, s.NextWait());
+            Assert.Equal(Normal30s, s.UnjitteredWait());
         }
 
         [Fact]
@@ -279,7 +273,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.False(s.OnFailure(FailureClass.Normal));
 
             Assert.False(s.GetInExtended());
-            Assert.Equal(Normal30s, s.NextWait());
+            Assert.Equal(Normal30s, s.UnjitteredWait());
         }
 
         [Fact]
@@ -293,7 +287,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Having returned to normal, a later unexpected failure is a fresh transition and must
             // report itself as one so the caller logs it again.
             Assert.True(s.OnFailure(FailureClass.Unexpected));
-            Assert.Equal(Extended5m, s.NextWait());
+            Assert.Equal(Extended5m, s.UnjitteredWait());
         }
 
         #endregion
@@ -306,9 +300,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // The implementation compares against the ceiling before shifting rather than
             // computing initial * 2^(n-1) and clamping, so that no intermediate can overflow.
             // BigInteger cannot overflow, so it settles whether the shortcut is exact.
-            var method = typeof(PollingStrategy).GetMethod("UnjitteredMillis",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
 
             var interesting = new List<long>
             {
@@ -333,7 +324,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     foreach (var n in new[]
                         { -1, 0, 1, 2, 3, 4, 10, 21, 31, 32, 40, 62, 63, 64, 65, 100, 1000, 100000, int.MaxValue })
                     {
-                        var actual = (long)method.Invoke(null, new object[] { initial, max, n });
+                        var actual = PollingStrategy.UnjitteredMillis(initial, max, n);
                         var expected = Reference(initial, max, n);
                         if (actual != expected && failures.Count < 20)
                         {
@@ -374,21 +365,29 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             // T is 5 minutes on the first extended attempt, and jitter is drawn from [0, T/2),
             // so the wait must land in (T/2, T].
-            var s = new PollingStrategy(TimeSpan.FromMilliseconds(1), Extended5m, new Random(12345));
+            var s = new PollingStrategy(TimeSpan.FromMilliseconds(1), Extended5m);
             s.OnFailure(FailureClass.Unexpected);
 
             var min = TimeSpan.MaxValue;
             var max = TimeSpan.MinValue;
+            var distinct = new HashSet<TimeSpan>();
             for (var i = 0; i < 2000; i++)
             {
                 var wait = s.NextWait();
                 if (wait < min) { min = wait; }
                 if (wait > max) { max = wait; }
+                distinct.Add(wait);
             }
 
             Assert.True(min > TimeSpan.FromMinutes(2.5) - TimeSpan.FromMilliseconds(1),
                 $"minimum wait was {min}");
             Assert.True(max <= Extended5m, $"maximum wait was {max}");
+
+            // The bounds above are satisfied by any constant in range, so without this the whole
+            // test passes with jitter removed. Two thousand draws from a 150,000 ms range
+            // collapsing to one value is not something that happens by chance.
+            Assert.True(distinct.Count > 1,
+                $"jitter produced no variation across 2000 draws (every wait was {min})");
         }
 
         #endregion

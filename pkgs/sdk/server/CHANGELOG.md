@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.3...LaunchDarkly.ServerSdk-v8.17.0) (2026-09-17)
+
+
+### Features
+
+* conform FDv1 streaming and polling data sources to the RETRY spec ([#351](https://github.com/launchdarkly/dotnet-core/issues/351)) ([b099040](https://github.com/launchdarkly/dotnet-core/commit/b099040c21293e6986db8c6566477b4d01396b5a))
+
 ## [8.16.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.2...LaunchDarkly.ServerSdk-v8.16.3) (2026-09-15)
 
 

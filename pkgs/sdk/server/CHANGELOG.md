@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.0...LaunchDarkly.ServerSdk-v8.17.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* update LaunchDarkly.Logging to 2.1.0 in server SDK ([#355](https://github.com/launchdarkly/dotnet-core/issues/355)) ([751e76d](https://github.com/launchdarkly/dotnet-core/commit/751e76dd75875d64b2dd5b6301e7110c7a1fc113))
+
 ## [8.17.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.3...LaunchDarkly.ServerSdk-v8.17.0) (2026-09-17)
 
 

@@ -47,7 +47,7 @@
   <ItemGroup>
     <PackageReference Include="LaunchDarkly.Cache" Version="1.0.2" />
     <PackageReference Include="LaunchDarkly.EventSource" Version="6.0.0" />
-    <PackageReference Include="LaunchDarkly.Logging" Version="2.0.0" />
+    <PackageReference Include="LaunchDarkly.Logging" Version="2.1.0" />
   </ItemGroup>
 
   <!-- Use PackageReference in Debug/Release -->

@@ -3,6 +3,14 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.0...LaunchDarkly.ClientSdk-v5.10.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* activate plugin hooks before RegisterPlugin calls Register ([#337](https://github.com/launchdarkly/dotnet-core/issues/337)) ([1fe894e](https://github.com/launchdarkly/dotnet-core/commit/1fe894e695fb43bbbbfd10fc941b05c20dd9a131))
+* update LaunchDarkly.Logging to 2.1.0 in client SDK ([#356](https://github.com/launchdarkly/dotnet-core/issues/356)) ([60ccc75](https://github.com/launchdarkly/dotnet-core/commit/60ccc75dfb1b6a2a420418ae47da17e5cd977fba))
+
 ## [5.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.6...LaunchDarkly.ClientSdk-v5.10.0) (2026-09-02)
 
 

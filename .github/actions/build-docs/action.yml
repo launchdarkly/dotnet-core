@@ -14,7 +14,9 @@ runs:
         dotnet-version: 8.0
     - name: Install docfx
       shell: bash
-      run:  dotnet tool update -g docfx
+      # Pinned so docfx upgrades are deliberate; 2.80+ fails fast when project restore
+      # fails (dotnet/docfx#11146) instead of silently generating from stale assemblies.
+      run:  dotnet tool update -g docfx --version 2.80.1
 
     # Note: in the docfx.json file, the 'Configuration' property is set to Debug so that we don't require
     # signing to happen just to build docs.

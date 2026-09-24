@@ -21,6 +21,11 @@ jobs:
     permissions:
       id-token: write
       contents: write
+    env:
+      # Isolate dotnet installs from the SDKs preinstalled on the runner image, so tools
+      # that resolve the highest available SDK (docfx via MSBuildLocator) cannot land on
+      # an SDK band that has no mobile workloads installed.
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
     steps:
       - uses: actions/checkout@v4
         with:

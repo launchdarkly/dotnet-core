@@ -21,12 +21,15 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    env:
+    steps:
       # Isolate dotnet installs from the SDKs preinstalled on the runner image, so tools
       # that resolve the highest available SDK (docfx via MSBuildLocator) cannot land on
-      # an SDK band that has no mobile workloads installed.
-      DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
-    steps:
+      # an SDK band that has no mobile workloads installed. Set via a step because the
+      # runner context is not available in job-level env.
+      - name: Isolate dotnet SDK installs
+        shell: bash
+        run: echo "DOTNET_INSTALL_DIR=$RUNNER_TEMP/dotnet" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # fetch all history, useful for docs

@@ -109,7 +109,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
                 Reason = e.Reason,
                 PrereqOf = e.PrereqOf,
                 TrackEvents = f.TrackEvents,
-                DebugEventsUntilDate = f.DebugEventsUntilDate
+                DebugEventsUntilDate = f.DebugEventsUntilDate,
+                OverrideAffected = e.OverrideAffected
             });
         }
 
@@ -186,6 +187,95 @@ namespace LaunchDarkly.Sdk.Internal.Events
                     item => CheckIndexEvent(item, BasicEval.Timestamp, _contextJson),
                     item => CheckFeatureEvent(item, BasicFlagWithTracking, BasicEval, _contextJson),
                     item => CheckSummaryEvent(item));
+            }
+        }
+
+        [Fact]
+        public void OverrideAffectedEvaluationProducesNoFeatureEvent()
+        {
+            var mockSender = MakeMockSender();
+            var captured = EventCapture.From(mockSender);
+
+            using (var ep = MakeProcessor(_config, mockSender))
+            {
+                var eval = BasicEval;
+                eval.OverrideAffected = true;
+                RecordEval(ep, BasicFlagWithTracking, eval);
+                FlushAndWait(ep, captured);
+
+                // The flag requests individual events, but the marking alone decides: only the index
+                // event and the summary appear.
+                Assert.Collection(captured.Events,
+                    item => CheckIndexEvent(item, BasicEval.Timestamp, _contextJson),
+                    item => CheckSummaryEventDetails(item, BasicEval.Timestamp, BasicEval.Timestamp,
+                        MustHaveFlagSummary(BasicFlag.Key, LdValue.Null,
+                            MustHaveFlagSummaryCounter(BasicEval.Value, BasicEval.Variation, BasicFlag.Version, 1, true))));
+            }
+        }
+
+        [Fact]
+        public void OverrideAffectedPrerequisiteRecordProducesNoFeatureEvent()
+        {
+            var mockSender = MakeMockSender();
+            var captured = EventCapture.From(mockSender);
+
+            using (var ep = MakeProcessor(_config, mockSender))
+            {
+                var eval = BasicEval;
+                eval.OverrideAffected = true;
+                eval.PrereqOf = "parent-flag";
+                RecordEval(ep, BasicFlagWithTracking, eval);
+                FlushAndWait(ep, captured);
+
+                Assert.Collection(captured.Events,
+                    item => CheckIndexEvent(item, BasicEval.Timestamp, _contextJson),
+                    item => CheckSummaryEvent(item));
+            }
+        }
+
+        [Fact]
+        public void OverrideAffectedEvaluationProducesNoDebugEvent()
+        {
+            var mockSender = MakeMockSender();
+            var captured = EventCapture.From(mockSender);
+
+            using (var ep = MakeProcessor(_config, mockSender))
+            {
+                var flag = BasicFlagWithTracking;
+                flag.DebugEventsUntilDate = UnixMillisecondTime.Now.PlusMillis(1000000);
+                var eval = BasicEval;
+                eval.OverrideAffected = true;
+                RecordEval(ep, flag, eval);
+                FlushAndWait(ep, captured);
+
+                Assert.Collection(captured.Events,
+                    item => CheckIndexEvent(item, BasicEval.Timestamp, _contextJson),
+                    item => CheckSummaryEvent(item));
+            }
+        }
+
+        [Fact]
+        public void OverrideAffectedEvaluationsAreCountedSeparatelyFromOthers()
+        {
+            var mockSender = MakeMockSender();
+            var captured = EventCapture.From(mockSender);
+
+            using (var ep = MakeProcessor(_config, mockSender))
+            {
+                var plainEval = BasicEval;
+                var markedEval = BasicEval;
+                markedEval.OverrideAffected = true;
+                RecordEval(ep, BasicFlag, markedEval);
+                RecordEval(ep, BasicFlag, markedEval);
+                RecordEval(ep, BasicFlag, plainEval);
+                FlushAndWait(ep, captured);
+
+                Assert.Collection(captured.Events,
+                    item => CheckIndexEvent(item, BasicEval.Timestamp, _contextJson),
+                    item => CheckSummaryEventDetails(item, BasicEval.Timestamp, BasicEval.Timestamp,
+                        MustHaveFlagSummary(BasicFlag.Key, LdValue.Null,
+                            MustHaveFlagSummaryCounter(BasicEval.Value, BasicEval.Variation, BasicFlag.Version, 2, true),
+                            MustHaveFlagSummaryCounter(BasicEval.Value, BasicEval.Variation, BasicFlag.Version, 1, false))));
             }
         }
 
@@ -965,7 +1055,12 @@ namespace LaunchDarkly.Sdk.Internal.Events
             };
         }
 
-        private Action<string, LdValue> MustHaveFlagSummaryCounter(LdValue value, int? variation, int? version, int count)
+        private Action<string, LdValue> MustHaveFlagSummaryCounter(LdValue value, int? variation, int? version, int count) =>
+            MustHaveFlagSummaryCounter(value, variation, version, count, false);
+
+        // An override-affected counter carries "overrideAffected": true. Any other counter omits the property.
+        private Action<string, LdValue> MustHaveFlagSummaryCounter(LdValue value, int? variation, int? version, int count,
+            bool overrideAffected)
         {
             return (flagKey, items) =>
             {
@@ -974,11 +1069,12 @@ namespace LaunchDarkly.Sdk.Internal.Events
                     return o.Get("value").Equals(value)
                         && o.Get("version").Equals(version.HasValue ? LdValue.Of(version.Value) : LdValue.Null)
                         && o.Get("variation").Equals(variation.HasValue ? LdValue.Of(variation.Value) : LdValue.Null)
-                        && o.Get("count").Equals(LdValue.Of(count));
+                        && o.Get("count").Equals(LdValue.Of(count))
+                        && o.Get("overrideAffected").Equals(overrideAffected ? LdValue.Of(true) : LdValue.Null);
                 }))
                 {
                     Assert.True(false, "could not find counter for (" + value + ", " + version + ", " + variation + ", " + count
-                        + ") in: " + items.ToString() + " for flag " + flagKey);
+                        + ", overrideAffected=" + overrideAffected + ") in: " + items.ToString() + " for flag " + flagKey);
                 }
             };
         }

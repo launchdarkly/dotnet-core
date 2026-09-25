@@ -178,6 +178,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             return DataModel.Features.Deserialize(json).Item as FeatureFlag;
         }
 
+        /// <summary>
+        /// Constructs a flag that is off and serves the same value for every context. The flag has a
+        /// single variation and that variation as its off variation, so it evaluates with the
+        /// <see cref="EvaluationReasonKind.Off"/> reason. This is the form the override source uses for
+        /// <c>flagValues</c> entries.
+        /// </summary>
+        internal static FeatureFlag MakeOffFlagWithValue(string key, LdValue value, int version)
+        {
+            var json = LdValue.BuildObject()
+                .Add("key", key)
+                .Add("version", version)
+                .Add("on", false)
+                .Add("offVariation", 0)
+                .Add("variations", LdValue.ArrayOf(value))
+                .Build()
+                .ToJsonString();
+            return DataModel.Features.Deserialize(json).Item as FeatureFlag;
+        }
+
         // This custom JSON serializer addresses a problem that can happen when using an external YAML parser.
         // In JSON, the keys must always be strings, and System.Text.Json will refuse to either serialize or
         // deserialize anything with non-string keys. But in YAML, the keys can be of any type, so a YAML

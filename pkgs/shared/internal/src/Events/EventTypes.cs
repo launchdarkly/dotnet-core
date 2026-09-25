@@ -53,6 +53,10 @@
             // disabling events.
             public long? SamplingRatio;
             public bool ExcludeFromSummaries;
+            // True when a flag override affected the evaluation, directly or transitively. A marked
+            // evaluation produces no individual feature or debug event, whatever the flag requests, and
+            // is counted under a separate summary counter that carries the marker.
+            public bool OverrideAffected;
         }
 
         /// <summary>

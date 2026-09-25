@@ -160,6 +160,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
                     JsonConverterHelpers.WriteLdValue(w, "value", counter.Value.FlagValue);
                     JsonConverterHelpers.WriteIntIfNotNull(w, "version", counter.Key.Version);
                     JsonConverterHelpers.WriteBooleanIfTrue(w, "unknown", !counter.Key.Version.HasValue);
+                    JsonConverterHelpers.WriteBooleanIfTrue(w, "overrideAffected", counter.Key.OverrideAffected);
                     w.WriteNumber("count", counter.Value.Count);
 
                     w.WriteEndObject();

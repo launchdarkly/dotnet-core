@@ -27,10 +27,11 @@ namespace LaunchDarkly.Sdk.Internal.Events
             int? variation,
             in LdValue value,
             in LdValue defaultValue,
-            in Context context
+            in Context context,
+            bool overrideAffected
             )
         {
-            _eventsState.IncrementCounter(flagKey, variation, flagVersion, value, defaultValue, context);
+            _eventsState.IncrementCounter(flagKey, variation, flagVersion, value, defaultValue, context, overrideAffected);
             _eventsState.NoteTimestamp(timestamp);
         }
 
@@ -71,7 +72,13 @@ namespace LaunchDarkly.Sdk.Internal.Events
             Context = context;
         }
 
-        public void IncrementCounter(string key, int? variation, int? version, LdValue flagValue, LdValue defaultVal, in Context context)
+        public void IncrementCounter(string key, int? variation, int? version, LdValue flagValue, LdValue defaultVal, in Context context) =>
+            IncrementCounter(key, variation, version, flagValue, defaultVal, context, false);
+
+        // The override-affected marker is part of the counter key. Override-affected and other
+        // evaluations of the same flag key, variation, and version accumulate into separate counters.
+        public void IncrementCounter(string key, int? variation, int? version, LdValue flagValue, LdValue defaultVal,
+            in Context context, bool overrideAffected)
         {
             if (!Flags.TryGetValue(key, out var flagSummary))
             {
@@ -92,7 +99,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
                 contextKinds.Add(context.Kind.Value);
             }
 
-            EventsCounterKey counterKey = new EventsCounterKey(version, variation);
+            EventsCounterKey counterKey = new EventsCounterKey(version, variation, overrideAffected);
             if (flagSummary.Counters.TryGetValue(counterKey, out EventsCounterValue value))
             {
                 value.Increment();
@@ -135,11 +142,15 @@ namespace LaunchDarkly.Sdk.Internal.Events
     {
         public readonly int? Version;
         public readonly int? Variation;
+        public readonly bool OverrideAffected;
 
-        public EventsCounterKey(int? version, int? variation)
+        public EventsCounterKey(int? version, int? variation) : this(version, variation, false) { }
+
+        public EventsCounterKey(int? version, int? variation, bool overrideAffected)
         {
             Version = version;
             Variation = variation;
+            OverrideAffected = overrideAffected;
         }
 
         // Required because we use this class as a dictionary key
@@ -147,14 +158,14 @@ namespace LaunchDarkly.Sdk.Internal.Events
         {
             if (obj is EventsCounterKey o)
             {
-                return Variation == o.Variation && Version == o.Version;
+                return Variation == o.Variation && Version == o.Version && OverrideAffected == o.OverrideAffected;
             }
             return false;
         }
 
         // Required because we use this class as a dictionary key
         public override int GetHashCode() =>
-            (Variation ?? -1) * 17 + (Version ?? -1);
+            ((Variation ?? -1) * 17 + (Version ?? -1)) * 2 + (OverrideAffected ? 1 : 0);
     }
 
     internal sealed class EventsCounterValue

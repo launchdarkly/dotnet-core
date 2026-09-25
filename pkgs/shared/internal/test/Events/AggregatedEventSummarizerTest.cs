@@ -19,8 +19,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void AllContextsAreAggregatedIntoASingleContextlessSummary()
         {
             var summarizer = new AggregatedEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA);
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB, false);
 
             var summaries = summarizer.GetSummariesAndReset();
 
@@ -35,7 +35,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void GetSummariesAndResetClearsState()
         {
             var summarizer = new AggregatedEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
 
             Assert.Single(summarizer.GetSummariesAndReset());
             Assert.Empty(summarizer.GetSummariesAndReset());

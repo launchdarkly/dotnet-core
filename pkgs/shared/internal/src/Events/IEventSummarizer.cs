@@ -19,7 +19,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
     /// </remarks>
     internal interface IEventSummarizer
     {
-        // Adds information about an evaluation to the summary.
+        // Adds information about an evaluation to the summary. An override-affected evaluation is
+        // counted under a separate counter that carries the marker.
         void SummarizeEvent(
             UnixMillisecondTime timestamp,
             string flagKey,
@@ -27,7 +28,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
             int? variation,
             in LdValue value,
             in LdValue defaultValue,
-            in Context context
+            in Context context,
+            bool overrideAffected
             );
 
         // Returns the current summary data and resets the state to empty. The aggregated

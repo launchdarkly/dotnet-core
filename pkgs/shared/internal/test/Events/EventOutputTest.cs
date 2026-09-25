@@ -201,6 +201,9 @@ namespace LaunchDarkly.Sdk.Internal.Events
             summary.IncrementCounter("third", null, null, LdValue.Of("default3"), LdValue.Of("default3"),
                 context2); // flag doesn't exist (no version)
 
+            summary.IncrementCounter("fourth", 1, 41, LdValue.Of("value4"), LdValue.Of("default4"), context1, true);
+            summary.IncrementCounter("fourth", 1, 41, LdValue.Of("value4"), LdValue.Of("default4"), context1, false);
+
             summary.NoteTimestamp(UnixMillisecondTime.OfMillis(1000));
             summary.NoteTimestamp(UnixMillisecondTime.OfMillis(1002));
 
@@ -217,7 +220,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
             Assert.Equal(LdValue.Null, outputEvent.Get("context"));
 
             var featuresJson = outputEvent.Get("features");
-            Assert.Equal(3, featuresJson.Count);
+            Assert.Equal(4, featuresJson.Count);
 
             var firstJson = featuresJson.Get("first");
             Assert.Equal("default1", firstJson.Get("default").AsString);
@@ -242,6 +245,13 @@ namespace LaunchDarkly.Sdk.Internal.Events
                 thirdJson.Get("contextKinds")); // we evaluated this flag with only context2
             TestUtil.AssertContainsInAnyOrder(thirdJson.Get("counters").AsList(LdValue.Convert.Json),
                 LdValue.Parse(@"{""unknown"":true,""value"":""default3"",""count"":1}"));
+
+            // An override-affected counter carries the marker. The counter for the same flag,
+            // variation, and version without the marker stays separate and omits the property.
+            var fourthJson = featuresJson.Get("fourth");
+            TestUtil.AssertContainsInAnyOrder(fourthJson.Get("counters").List,
+                LdValue.Parse(@"{""value"":""value4"",""variation"":1,""version"":41,""overrideAffected"":true,""count"":1}"),
+                LdValue.Parse(@"{""value"":""value4"",""variation"":1,""version"":41,""count"":1}"));
         }
 
         [Fact]

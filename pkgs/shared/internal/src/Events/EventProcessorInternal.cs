@@ -145,7 +145,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
 
             internal void AddToSummary(EvaluationEvent ee) =>
                 _summarizer.SummarizeEvent(ee.Timestamp, ee.FlagKey, ee.FlagVersion, ee.Variation, ee.Value, ee.Default,
-                    ee.Context);
+                    ee.Context, ee.OverrideAffected);
 
             internal FlushPayload GetPayload() =>
                 new FlushPayload { Events = _events.ToArray(), Summaries = _summarizer.GetSummariesAndReset() };
@@ -312,8 +312,10 @@ namespace LaunchDarkly.Sdk.Internal.Events
                     timestamp = ee.Timestamp;
                     context = ee.Context;
                     var samplingRatio = ee.SamplingRatio ?? 1;
-                    willAddFullEvent = ee.TrackEvents && Sampler.Sample(samplingRatio);
-                    if (ShouldDebugEvent(ee) && Sampler.Sample(samplingRatio))
+                    // An override-affected evaluation appears only in the summary counters. It produces
+                    // no individual feature event and no debug event, whatever the flag requests.
+                    willAddFullEvent = ee.TrackEvents && !ee.OverrideAffected && Sampler.Sample(samplingRatio);
+                    if (!ee.OverrideAffected && ShouldDebugEvent(ee) && Sampler.Sample(samplingRatio))
                     {
                         debugEvent = new DebugEvent { FromEvent = ee };
                     }

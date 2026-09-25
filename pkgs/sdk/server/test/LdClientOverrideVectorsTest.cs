@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using LaunchDarkly.Sdk.Json;
 using LaunchDarkly.Sdk.Server.Internal.Model;
+using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -57,8 +58,9 @@ namespace LaunchDarkly.Sdk.Server
             var overrideDataSet = DataSetFrom(overrides.Get("flags"), overrides.Get("segments"), overrides.Get("flagValues"));
 
             var source = new TestOverrideSource(overrideDataSet);
+            var events = new MockEventProcessor();
             var dataSystem = Components.DataSystem().Custom().Overrides(source);
-            var config = BasicConfig();
+            var config = BasicConfig().Events(events.AsSingletonFactory<IEventProcessor>());
             if (initialized)
             {
                 dataSystem.Synchronizers(MockComponents.MockDataSourceWithData(ldDataSet));
@@ -92,6 +94,19 @@ namespace LaunchDarkly.Sdk.Server
                     Assert.Equal(expectedVariation.AsInt, detail.VariationIndex);
                 }
                 AssertReason(expect.Get("reason"), detail.Reason);
+
+                // summaryOverrideAffected is the marking the client hands to the event processor for
+                // this evaluation. The event processor keys individual-event suppression and the summary
+                // counter marker on that scalar, not on the reason.
+                var expectedSummaryMarker = expect.Get("summaryOverrideAffected");
+                if (!expectedSummaryMarker.IsNull)
+                {
+                    var flagKey = evaluate.Get("flagKey").AsString;
+                    var records = events.Events.OfType<EventProcessorTypes.EvaluationEvent>()
+                        .Where(e => e.FlagKey == flagKey).ToList();
+                    Assert.True(records.Count == 1, "expected exactly one evaluation record for the flag");
+                    Assert.Equal(expectedSummaryMarker.AsBool, records[0].OverrideAffected);
+                }
             }
         }
 

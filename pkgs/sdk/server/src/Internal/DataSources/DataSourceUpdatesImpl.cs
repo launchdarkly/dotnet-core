@@ -197,7 +197,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         #region Private methods
 
-        private bool HasFlagChangeListeners() => FlagChanged != null;
+        internal bool HasFlagChangeListeners() => FlagChanged != null;
+
+        /// <summary>
+        /// Sends a flag change event for each of the given flag keys. The override layer uses this to
+        /// report the flags that an override update affected, through the same path as a change from
+        /// LaunchDarkly.
+        /// </summary>
+        internal void SendFlagChangeEvents(IEnumerable<string> flagKeys)
+        {
+            var copyOfHandlers = FlagChanged;
+            if (copyOfHandlers == null)
+            {
+                return;
+            }
+            foreach (var key in flagKeys)
+            {
+                _taskExecutor.ScheduleEvent(new FlagChangeEvent(key), copyOfHandlers);
+            }
+        }
 
         private void SendChangeEvents(IEnumerable<KindAndKey> affectedItems)
         {

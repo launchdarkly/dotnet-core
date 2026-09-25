@@ -39,6 +39,9 @@
     <None Update="TestFiles\flag-only.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="TestFiles\override-vectors.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="TestFiles\segment-only.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

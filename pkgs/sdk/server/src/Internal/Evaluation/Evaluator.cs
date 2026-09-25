@@ -48,6 +48,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
             internal ImmutableList<PrerequisiteEvalRecord>.Builder PrereqEvals;
             internal Dictionary<string, IMembership> BigSegmentsMembership;
             internal BigSegmentsStatus? BigSegmentsStatus;
+            // True once the current evaluation scope has read a definition that carries the override
+            // marker. Evaluate sets it from the evaluated flag. MatchClause sets it for each segment
+            // that is read. CheckPrerequisites starts a nested scope from the prerequisite's own
+            // marker and merges the nested result into this scope when it returns, so the marking
+            // propagates upward only.
+            internal bool OverrideAffected;
 
             internal EvalState(Context context)
             {
@@ -57,6 +63,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                 PrereqEvals = null;
                 BigSegmentsMembership = null;
                 BigSegmentsStatus = null;
+                OverrideAffected = false;
             }
         }
 
@@ -91,39 +98,46 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
             {
                 throw new Exception(ErrorMessageForTesting);
             }
+
+            // Reading the flag's own definition is the first read of this evaluation, so the marking
+            // starts from the flag's override marker.
+            var state = new EvalState(context);
+            state.OverrideAffected = flag.IsOverride;
+
             if (!context.Valid)
             {
                 Logger.Warn("Tried to evaluate flag with invalid context: {0} returning null",
                     flag.Key);
 
-                return new EvalResult(
-                    new EvaluationDetail<LdValue>(LdValue.Null, null, EvaluationReason.ErrorReason(EvaluationErrorKind.UserNotSpecified)),
+                return new EvalResult(ErrorResult(EvaluationErrorKind.UserNotSpecified, state.OverrideAffected),
                     ImmutableList.Create<PrerequisiteEvalRecord>());
             }
 
             try
             {
-                var state = new EvalState(context);
                 var details = EvaluateInternal(ref state, flag);
+                var reason = details.Reason;
                 if (state.BigSegmentsStatus.HasValue)
                 {
-                    details = new EvaluationDetail<LdValue>(
-                        details.Value,
-                        details.VariationIndex,
-                        details.Reason.WithBigSegmentsStatus(state.BigSegmentsStatus.Value)
-                        );
+                    reason = reason.WithBigSegmentsStatus(state.BigSegmentsStatus.Value);
                 }
+                // Error reasons are marked too. A malformed override definition yields the caller's
+                // default value with an error reason, and an override still affected that result.
+                reason = reason.WithOverrideAffected(state.OverrideAffected);
+                details = new EvaluationDetail<LdValue>(details.Value, details.VariationIndex, reason);
                 return new EvalResult(details, state.PrereqEvals is null ?
                     ImmutableList.Create<PrerequisiteEvalRecord>() : state.PrereqEvals.ToImmutable());
             }
             catch (StopEvaluationException e)
             {
                 Logger.Error(@"Could not evaluate flag ""{0}"": {1}", flag.Key, string.Format(e.MessageFormat, e.MessageParams));
-                return new EvalResult(ErrorResult(e.ErrorKind), ImmutableList.Create<PrerequisiteEvalRecord>());
+                return new EvalResult(ErrorResult(e.ErrorKind, state.OverrideAffected),
+                    ImmutableList.Create<PrerequisiteEvalRecord>());
             }
             catch (Exception)
             {
-                return new EvalResult(ErrorResult(EvaluationErrorKind.Exception), ImmutableList.Create<PrerequisiteEvalRecord>());
+                return new EvalResult(ErrorResult(EvaluationErrorKind.Exception, state.OverrideAffected),
+                    ImmutableList.Create<PrerequisiteEvalRecord>());
             }
         }
 
@@ -165,6 +179,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
 
         private static EvaluationDetail<LdValue> ErrorResult(EvaluationErrorKind kind) =>
             new EvaluationDetail<LdValue>(LdValue.Null, null, EvaluationReason.ErrorReason(kind));
+
+        private static EvaluationDetail<LdValue> ErrorResult(EvaluationErrorKind kind, bool overrideAffected) =>
+            new EvaluationDetail<LdValue>(LdValue.Null, null,
+                EvaluationReason.ErrorReason(kind).WithOverrideAffected(overrideAffected));
 
         private EvaluationDetail<LdValue> GetVariation(FeatureFlag flag, int variation, in EvaluationReason reason)
         {
@@ -213,7 +231,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                     }
                     else
                     {
-                        var prereqDetails = EvaluateInternal(ref state, prereqFeatureFlag);
+                        // The nested evaluation is a scope of its own. It starts from the prerequisite's
+                        // own marker so that its record reflects only the definitions its subtree read.
+                        // When it returns, or throws, its marking merges into this scope. The marking
+                        // propagates upward only.
+                        var parentOverrideAffected = state.OverrideAffected;
+                        state.OverrideAffected = prereqFeatureFlag.IsOverride;
+                        EvaluationDetail<LdValue> prereqDetails;
+                        bool prereqOverrideAffected;
+                        try
+                        {
+                            prereqDetails = EvaluateInternal(ref state, prereqFeatureFlag);
+                        }
+                        finally
+                        {
+                            prereqOverrideAffected = state.OverrideAffected;
+                            state.OverrideAffected = parentOverrideAffected || prereqOverrideAffected;
+                        }
                         // Note that if the prerequisite flag is off, we don't consider it a match no matter
                         // what its off variation was. But we still need to evaluate it in order to generate
                         // an event.
@@ -225,7 +259,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                         {
                             state.PrereqEvals = ImmutableList.CreateBuilder<PrerequisiteEvalRecord>();
                         }
-                        state.PrereqEvals.Add(new PrerequisiteEvalRecord(prereqFeatureFlag, flag.Key, prereqDetails));
+                        var prereqRecordDetails = new EvaluationDetail<LdValue>(prereqDetails.Value, prereqDetails.VariationIndex,
+                            prereqDetails.Reason.WithOverrideAffected(prereqOverrideAffected));
+                        state.PrereqEvals.Add(new PrerequisiteEvalRecord(prereqFeatureFlag, flag.Key, prereqRecordDetails));
                     }
                     if (!prereqOk)
                     {

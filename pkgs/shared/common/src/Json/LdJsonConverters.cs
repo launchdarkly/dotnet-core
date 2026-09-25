@@ -74,6 +74,7 @@ namespace LaunchDarkly.Sdk.Json
                 string prerequisiteKey = null;
                 EvaluationErrorKind? errorKind = null;
                 bool inExperiment = false;
+                bool overrideAffected = false;
                 BigSegmentsStatus? bigSegmentsStatus = null;
 
                 RequireToken(ref reader, JsonTokenType.StartObject);
@@ -98,6 +99,9 @@ namespace LaunchDarkly.Sdk.Json
                             break;
                         case "inExperiment":
                             inExperiment = reader.GetBoolean();
+                            break;
+                        case "overrideAffected":
+                            overrideAffected = reader.GetBoolean();
                             break;
                         case "bigSegmentsStatus":
                             bigSegmentsStatus = BigSegmentsStatusConverter.FromIdentifier(reader.GetString());
@@ -146,6 +150,10 @@ namespace LaunchDarkly.Sdk.Json
                     {
                         reason = reason.WithBigSegmentsStatus(bigSegmentsStatus);
                     }
+                    if (overrideAffected)
+                    {
+                        reason = reason.WithOverrideAffected(true);
+                    }
                     return reason;
             }
 
@@ -170,6 +178,10 @@ namespace LaunchDarkly.Sdk.Json
                 if (value.InExperiment)
                 {
                     writer.WriteBoolean("inExperiment", true); // omit property if false
+                }
+                if (value.OverrideAffected)
+                {
+                    writer.WriteBoolean("overrideAffected", true); // omit property if false
                 }
                 if (value.BigSegmentsStatus.HasValue)
                 {

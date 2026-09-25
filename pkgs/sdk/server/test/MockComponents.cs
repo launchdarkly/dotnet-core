@@ -305,6 +305,54 @@ namespace LaunchDarkly.Sdk.Server
         }
     }
 
+    /// <summary>
+    /// An override source for tests. It supplies its initial data when started and forwards any later
+    /// snapshot to the sink.
+    /// </summary>
+    public sealed class TestOverrideSource : IOverrideSource, IComponentConfigurer<IOverrideSource>
+    {
+        private readonly object _lock = new object();
+        private IOverrideSink _sink;
+        private FullDataSet<ItemDescriptor> _data;
+
+        public volatile bool Started;
+        public volatile bool Disposed;
+        public volatile bool StartedBeforeBuildReturned;
+
+        public TestOverrideSource() : this(FullDataSet<ItemDescriptor>.Empty()) { }
+
+        public TestOverrideSource(FullDataSet<ItemDescriptor> initialData)
+        {
+            _data = initialData;
+        }
+
+        public void Start(IOverrideSink sink)
+        {
+            lock (_lock)
+            {
+                Started = true;
+                _sink = sink;
+                sink.SetOverrides(_data);
+            }
+        }
+
+        public void SetOverrides(FullDataSet<ItemDescriptor> data)
+        {
+            lock (_lock)
+            {
+                _data = data;
+                _sink?.SetOverrides(data);
+            }
+        }
+
+        public void Dispose()
+        {
+            Disposed = true;
+        }
+
+        public IOverrideSource Build(LdClientContext context) => this;
+    }
+
     public sealed class MockBigSegmentStore : IBigSegmentStore
     {
         private static readonly object _lock = new object();

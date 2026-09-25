@@ -41,6 +41,8 @@ namespace LaunchDarkly.Sdk.Server
         // Each field changes from 0 to 1 when the matching cached-data warning logs.
         private int _evalCachedDataWarningLogged;
         private int _allFlagsStateCachedDataWarningLogged;
+        // Changes from 0 to 1 when the warning about an all-flags state built from overrides alone logs.
+        private int _allFlagsStateOverridesOnlyWarningLogged;
         private readonly IHookExecutor _hookExecutor;
         internal readonly IDataSystem _dataSystem;
 
@@ -363,6 +365,7 @@ namespace LaunchDarkly.Sdk.Server
                 return new FeatureFlagsState(false);
             }
 
+            var overridesOnly = false;
             if (!Initialized)
             {
                 if (_dataSystem.Store.Initialized())
@@ -371,6 +374,12 @@ namespace LaunchDarkly.Sdk.Server
                     {
                         _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store. This message is logged once.");
                     }
+                }
+                else if (_dataSystem.OverridesConfigured)
+                {
+                    // No data from LaunchDarkly is available. The store read below returns only the
+                    // entries that the override layer holds. The result decides the state.
+                    overridesOnly = true;
                 }
                 else
                 {
@@ -397,6 +406,18 @@ namespace LaunchDarkly.Sdk.Server
                 LogHelpers.LogException(_log, "Exception while retrieving flags for AllFlagsState", e);
                 return new FeatureFlagsState(false);
             }
+            if (overridesOnly)
+            {
+                if (!flags.Items.Any())
+                {
+                    _evalLog.Warn("AllFlagsState() called before client initialized; data store unavailable, returning empty state");
+                    return new FeatureFlagsState(false);
+                }
+                if (Interlocked.Exchange(ref _allFlagsStateOverridesOnlyWarningLogged, 1) == 0)
+                {
+                    _evalLog.Warn("AllFlagsState() called before client initialized; returning only flags from the override layer. This message is logged once.");
+                }
+            }
             foreach (var pair in flags.Items)
             {
                 if (pair.Value.Item is null || !(pair.Value.Item is FeatureFlag flag))
@@ -416,15 +437,28 @@ namespace LaunchDarkly.Sdk.Server
                         e => e.FlagKey == flag.Key)
                         .Select(p => p.PrerequisiteFlag.Key).ToList();
 
+                    var trackEvents = flag.TrackEvents || inExperiment;
+                    var trackReason = inExperiment;
+                    var debugEventsUntilDate = flag.DebugEventsUntilDate;
+                    if (result.Result.Reason.OverrideAffected)
+                    {
+                        // A consumer of this state sends individual events according to these fields.
+                        // An override-affected evaluation produces no individual events, so the state
+                        // turns them off for this flag. The flag, its value, and its reason stay.
+                        trackEvents = false;
+                        trackReason = false;
+                        debugEventsUntilDate = null;
+                    }
+
                     builder.AddFlag(
                         flag.Key,
                         result.Result.Value,
                         result.Result.VariationIndex,
                         result.Result.Reason,
                         flag.Version,
-                        flag.TrackEvents || inExperiment,
-                        inExperiment,
-                        flag.DebugEventsUntilDate,
+                        trackEvents,
+                        trackReason,
+                        debugEventsUntilDate,
                         directPrerequisites);
                 }
                 catch (Exception e)
@@ -454,6 +488,7 @@ namespace LaunchDarkly.Sdk.Server
             bool checkType, EventFactory eventFactory)
         {
             T defaultValueOfType = converter.ToType(defaultValue);
+            var noLaunchDarklyData = false;
             if (!Initialized)
             {
                 if (_dataSystem.Store.Initialized())
@@ -462,6 +497,13 @@ namespace LaunchDarkly.Sdk.Server
                     {
                         _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store. This message is logged once.");
                     }
+                }
+                else if (_dataSystem.OverridesConfigured)
+                {
+                    // No data from LaunchDarkly is available. The store read below still finds an
+                    // entry that the override layer holds, and the SDK serves it. A miss returns the
+                    // not-ready default.
+                    noLaunchDarklyData = true;
                 }
                 else
                 {
@@ -485,6 +527,12 @@ namespace LaunchDarkly.Sdk.Server
                 featureFlag = GetFlag(featureKey);
                 if (featureFlag == null)
                 {
+                    if (noLaunchDarklyData)
+                    {
+                        _evalLog.Warn("Flag evaluation before client initialized; data store unavailable, returning default value");
+                        return (new EvaluationDetail<T>(defaultValueOfType, null,
+                            EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady)), null);
+                    }
                     _evalLog.Info("Unknown feature flag \"{0}\"; returning default value",
                         featureKey);
                     _eventProcessor.RecordEvaluationEvent(eventFactory.NewUnknownFlagEvaluationEvent(
@@ -520,8 +568,11 @@ namespace LaunchDarkly.Sdk.Server
 
                         _eventProcessor.RecordEvaluationEvent(eventFactory.NewDefaultValueEvaluationEvent(
                             featureFlag, context, defaultValue, EvaluationErrorKind.WrongType));
+                        // The type mismatch replaces the reason. The evaluation read the same
+                        // definitions, so the new reason keeps the override-affected marking.
                         return (new EvaluationDetail<T>(defaultValueOfType, null,
-                            EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType)), featureFlag);
+                            EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType)
+                                .WithOverrideAffected(evalDetail.Reason.OverrideAffected)), featureFlag);
                     }
                     returnDetail = new EvaluationDetail<T>(converter.ToType(evalDetail.Value),
                         evalDetail.VariationIndex, evalDetail.Reason);

@@ -111,8 +111,12 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// Whenever possible, you should update a file's entire contents in one atomic operation; in Unix-like OSes,
         /// that can be done by creating a temporary file, writing to it, and then renaming it to replace the original
         /// file. In Windows, that is not always possible, so FileDataSource might detect an update before the file has
-        /// been fully written; in that case it will retry several times until the file can be parsed, giving up after
-        /// repeated failures until another change to the file is detected.
+        /// been fully written; in that case it keeps the last successfully loaded data, logs the failure, and retries
+        /// after a short delay until the file can be read and parsed.
+        /// </para>
+        /// <para>
+        /// Change notifications that arrive in rapid succession are coalesced into a single reload, and a reload
+        /// whose file contents are identical to the last successful load is not applied again.
         /// </para>
         /// <para>
         /// Note that auto-updating may not work if any of the files you specified has an invalid directory path.

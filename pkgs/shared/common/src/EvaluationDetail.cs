@@ -70,11 +70,11 @@ namespace LaunchDarkly.Sdk
     public struct EvaluationReason : IJsonSerializable
     {
         private static readonly EvaluationReason _offInstance =
-            new EvaluationReason(EvaluationReasonKind.Off, null, null, null, null, false, null);
+            new EvaluationReason(EvaluationReasonKind.Off, null, null, null, null, false, null, false);
         private static readonly EvaluationReason _fallthroughInstance =
-            new EvaluationReason(EvaluationReasonKind.Fallthrough, null, null, null, null, false, null);
+            new EvaluationReason(EvaluationReasonKind.Fallthrough, null, null, null, null, false, null, false);
         private static readonly EvaluationReason _targetMatchInstance =
-            new EvaluationReason(EvaluationReasonKind.TargetMatch, null, null, null, null, false, null);
+            new EvaluationReason(EvaluationReasonKind.TargetMatch, null, null, null, null, false, null, false);
 
         private readonly EvaluationReasonKind _kind;
         private readonly int? _ruleIndex;
@@ -83,6 +83,7 @@ namespace LaunchDarkly.Sdk
         private readonly EvaluationErrorKind? _errorKind;
         private readonly bool _inExperiment;
         private readonly BigSegmentsStatus? _bigSegmentsStatus;
+        private readonly bool _overrideAffected;
 
         /// <summary>
         /// An enum indicating the general category of the reason.
@@ -130,6 +131,25 @@ namespace LaunchDarkly.Sdk
         /// </remarks>
         public BigSegmentsStatus? BigSegmentsStatus => _bigSegmentsStatus;
 
+        /// <summary>
+        /// Whether a flag override affected this evaluation, directly or transitively.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is true if the evaluated flag came from the SDK's override store. It is also true if a
+        /// prerequisite flag at any depth, or a segment read during the evaluation, came from that store.
+        /// Otherwise it is false.
+        /// </para>
+        /// <para>
+        /// In the JSON representation, the <c>overrideAffected</c> property appears only when this value
+        /// is true.
+        /// </para>
+        /// <para>
+        /// Flag overrides are currently experimental and subject to change.
+        /// </para>
+        /// </remarks>
+        public bool OverrideAffected => _overrideAffected;
+
         internal EvaluationReason(
             EvaluationReasonKind kind,
             int? ruleIndex,
@@ -137,7 +157,8 @@ namespace LaunchDarkly.Sdk
             string prereqKey,
             EvaluationErrorKind? errorKind,
             bool inExperiment,
-            BigSegmentsStatus? bigSegmentsStatus
+            BigSegmentsStatus? bigSegmentsStatus,
+            bool overrideAffected
             )
         {
             _kind = kind;
@@ -147,6 +168,7 @@ namespace LaunchDarkly.Sdk
             _errorKind = errorKind;
             _inExperiment = inExperiment;
             _bigSegmentsStatus = bigSegmentsStatus;
+            _overrideAffected = overrideAffected;
         }
 
         /// <summary>
@@ -171,7 +193,7 @@ namespace LaunchDarkly.Sdk
         /// <param name="ruleId">the unique rule ID</param>
         /// <returns>a reason descriptor</returns>
         public static EvaluationReason RuleMatchReason(int ruleIndex, string ruleId) =>
-            new EvaluationReason(EvaluationReasonKind.RuleMatch, ruleIndex, ruleId, null, null, false, null);
+            new EvaluationReason(EvaluationReasonKind.RuleMatch, ruleIndex, ruleId, null, null, false, null, false);
 
         /// <summary>
         /// Returns an EvaluationReason of the kind <see cref="EvaluationReasonKind.PrerequisiteFailed"/>.
@@ -179,7 +201,7 @@ namespace LaunchDarkly.Sdk
         /// <param name="key">the key of the prerequisite flag</param>
         /// <returns>a reason descriptor</returns>
         public static EvaluationReason PrerequisiteFailedReason(string key) =>
-            new EvaluationReason(EvaluationReasonKind.PrerequisiteFailed, null, null, key, null, false, null);
+            new EvaluationReason(EvaluationReasonKind.PrerequisiteFailed, null, null, key, null, false, null, false);
 
         /// <summary>
         /// Returns an EvaluationReason of the kind <see cref="EvaluationReasonKind.Error"/>.
@@ -187,7 +209,7 @@ namespace LaunchDarkly.Sdk
         /// <param name="errorKind"></param>
         /// <returns>a reason descriptor</returns>
         public static EvaluationReason ErrorReason(EvaluationErrorKind errorKind) =>
-            new EvaluationReason(EvaluationReasonKind.Error, null, null, null, errorKind, false, null);
+            new EvaluationReason(EvaluationReasonKind.Error, null, null, null, errorKind, false, null, false);
 
         /// <summary>
         /// Returns a copy of this EvaluationReason with a specific <see cref="BigSegmentsStatus"/> value added.
@@ -196,7 +218,20 @@ namespace LaunchDarkly.Sdk
         /// <returns>a reason descriptor</returns>
         public EvaluationReason WithBigSegmentsStatus(BigSegmentsStatus? bigSegmentsStatus) =>
             new EvaluationReason(_kind, _ruleIndex, _ruleId, _prerequisiteKey, _errorKind,
-                _inExperiment, bigSegmentsStatus);
+                _inExperiment, bigSegmentsStatus, _overrideAffected);
+
+        /// <summary>
+        /// Returns a copy of this EvaluationReason with a specific <see cref="OverrideAffected"/> value.
+        /// </summary>
+        /// <remarks>
+        /// The copy keeps all other properties of this reason. Flag overrides are currently experimental
+        /// and subject to change.
+        /// </remarks>
+        /// <param name="overrideAffected">the new property value</param>
+        /// <returns>a reason descriptor</returns>
+        public EvaluationReason WithOverrideAffected(bool overrideAffected) =>
+            new EvaluationReason(_kind, _ruleIndex, _ruleId, _prerequisiteKey, _errorKind,
+                _inExperiment, _bigSegmentsStatus, overrideAffected);
 
         /// <summary>
         /// Returns a new instance with the <see cref="InExperiment"/> property set to the specified
@@ -214,7 +249,8 @@ namespace LaunchDarkly.Sdk
             {
                 case EvaluationReasonKind.Fallthrough:
                 case EvaluationReasonKind.RuleMatch:
-                    return new EvaluationReason(_kind, _ruleIndex, _ruleId, _prerequisiteKey, _errorKind, inExperiment, _bigSegmentsStatus);
+                    return new EvaluationReason(_kind, _ruleIndex, _ruleId, _prerequisiteKey, _errorKind, inExperiment,
+                        _bigSegmentsStatus, _overrideAffected);
                 default:
                     return this;
             }
@@ -225,12 +261,13 @@ namespace LaunchDarkly.Sdk
             obj is EvaluationReason o &&
                 _kind == o._kind && _ruleId == o._ruleId && _ruleIndex == o._ruleIndex &&
                     _prerequisiteKey == o._prerequisiteKey && _errorKind == o._errorKind &&
-                    _inExperiment == o._inExperiment && _bigSegmentsStatus == o._bigSegmentsStatus;
+                    _inExperiment == o._inExperiment && _bigSegmentsStatus == o._bigSegmentsStatus &&
+                    _overrideAffected == o._overrideAffected;
 
         /// <inheritdoc/>
         public override int GetHashCode() =>
             new HashCodeBuilder().With(_kind).With(_ruleIndex).With(_ruleId).With(_prerequisiteKey)
-                .With(_errorKind).With(_inExperiment).With(_bigSegmentsStatus).Value;
+                .With(_errorKind).With(_inExperiment).With(_bigSegmentsStatus).With(_overrideAffected).Value;
 
         /// <inheritdoc/>
         public override string ToString()

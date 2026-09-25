@@ -72,6 +72,25 @@ namespace LaunchDarkly.Sdk
                 new ReasonTestCase { Reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception),
                     JsonString = @"{""kind"":""ERROR"",""errorKind"":""EXCEPTION""}",
                     ExpectedShortString = "ERROR(EXCEPTION)"
+                },
+                new ReasonTestCase { Reason = EvaluationReason.OffReason.WithOverrideAffected(true),
+                    JsonString = @"{""kind"":""OFF"",""overrideAffected"":true}", ExpectedShortString = "OFF" },
+                new ReasonTestCase {
+                    Reason = EvaluationReason.RuleMatchReason(1, "id").WithInExperiment(true).WithOverrideAffected(true),
+                    JsonString = @"{""kind"":""RULE_MATCH"",""ruleIndex"":1,""ruleId"":""id"",""inExperiment"":true,""overrideAffected"":true}",
+                    ExpectedShortString = "RULE_MATCH(1,id)"
+                },
+                new ReasonTestCase {
+                    Reason = EvaluationReason.FallthroughReason.WithBigSegmentsStatus(BigSegmentsStatus.Healthy).WithOverrideAffected(true),
+                    JsonString = @"{""kind"":""FALLTHROUGH"",""bigSegmentsStatus"":""HEALTHY"",""overrideAffected"":true}",
+                    ExpectedShortString = "FALLTHROUGH" },
+                new ReasonTestCase { Reason = EvaluationReason.PrerequisiteFailedReason("key").WithOverrideAffected(true),
+                    JsonString = @"{""kind"":""PREREQUISITE_FAILED"",""prerequisiteKey"":""key"",""overrideAffected"":true}",
+                    ExpectedShortString = "PREREQUISITE_FAILED(key)"
+                },
+                new ReasonTestCase { Reason = EvaluationReason.ErrorReason(EvaluationErrorKind.MalformedFlag).WithOverrideAffected(true),
+                    JsonString = @"{""kind"":""ERROR"",""errorKind"":""MALFORMED_FLAG"",""overrideAffected"":true}",
+                    ExpectedShortString = "ERROR(MALFORMED_FLAG)"
                 }
             })
             {
@@ -79,6 +98,60 @@ namespace LaunchDarkly.Sdk
                 Assert.Equal(test.Reason, LdJsonSerialization.DeserializeObject<EvaluationReason>(test.JsonString));
                 Assert.Equal(test.ExpectedShortString, test.Reason.ToString());
             }
+        }
+
+        [Fact]
+        public void OverrideAffectedIsFalseByDefault()
+        {
+            Assert.False(EvaluationReason.OffReason.OverrideAffected);
+            Assert.False(EvaluationReason.FallthroughReason.OverrideAffected);
+            Assert.False(EvaluationReason.TargetMatchReason.OverrideAffected);
+            Assert.False(EvaluationReason.RuleMatchReason(0, "id").OverrideAffected);
+            Assert.False(EvaluationReason.PrerequisiteFailedReason("key").OverrideAffected);
+            Assert.False(EvaluationReason.ErrorReason(EvaluationErrorKind.FlagNotFound).OverrideAffected);
+        }
+
+        [Fact]
+        public void WithOverrideAffectedKeepsOtherProperties()
+        {
+            var reason = EvaluationReason.RuleMatchReason(2, "rule").WithInExperiment(true)
+                .WithBigSegmentsStatus(BigSegmentsStatus.Stale);
+            var marked = reason.WithOverrideAffected(true);
+            Assert.True(marked.OverrideAffected);
+            Assert.Equal(EvaluationReasonKind.RuleMatch, marked.Kind);
+            Assert.Equal(2, marked.RuleIndex);
+            Assert.Equal("rule", marked.RuleId);
+            Assert.True(marked.InExperiment);
+            Assert.Equal(BigSegmentsStatus.Stale, marked.BigSegmentsStatus);
+
+            Assert.False(marked.WithOverrideAffected(false).OverrideAffected);
+            Assert.Equal(reason, marked.WithOverrideAffected(false));
+        }
+
+        [Fact]
+        public void OtherCopyMethodsKeepOverrideAffected()
+        {
+            var marked = EvaluationReason.FallthroughReason.WithOverrideAffected(true);
+            Assert.True(marked.WithInExperiment(true).OverrideAffected);
+            Assert.True(marked.WithBigSegmentsStatus(BigSegmentsStatus.Healthy).OverrideAffected);
+        }
+
+        [Fact]
+        public void OverrideAffectedIsOmittedFromJsonWhenFalse()
+        {
+            var json = LdValue.Parse(LdJsonSerialization.SerializeObject(EvaluationReason.OffReason));
+            Assert.Equal(LdValue.Null, json.Get("overrideAffected"));
+
+            var explicitFalse = EvaluationReason.OffReason.WithOverrideAffected(true).WithOverrideAffected(false);
+            json = LdValue.Parse(LdJsonSerialization.SerializeObject(explicitFalse));
+            Assert.Equal(LdValue.Null, json.Get("overrideAffected"));
+        }
+
+        [Fact]
+        public void OverrideAffectedFalseInJsonIsAccepted()
+        {
+            var reason = LdJsonSerialization.DeserializeObject<EvaluationReason>(@"{""kind"":""OFF"",""overrideAffected"":false}");
+            Assert.Equal(EvaluationReason.OffReason, reason);
         }
 
         [Fact]
@@ -127,7 +200,9 @@ namespace LaunchDarkly.Sdk
             TypeBehavior.CheckEqualsAndHashCode(
                 // each value in this list should be unequal to all the other values and equal to itself
                 () => EvaluationReason.OffReason,
+                () => EvaluationReason.OffReason.WithOverrideAffected(true),
                 () => EvaluationReason.FallthroughReason,
+                () => EvaluationReason.FallthroughReason.WithOverrideAffected(true),
                 () => EvaluationReason.FallthroughReason.WithInExperiment(true),
                 () => EvaluationReason.RuleMatchReason(0, "rule1"),
                 () => EvaluationReason.RuleMatchReason(0, "rule1").WithInExperiment(true),
@@ -136,6 +211,7 @@ namespace LaunchDarkly.Sdk
                 () => EvaluationReason.PrerequisiteFailedReason("a"),
                 () => EvaluationReason.PrerequisiteFailedReason("b"),
                 () => EvaluationReason.ErrorReason(EvaluationErrorKind.FlagNotFound),
+                () => EvaluationReason.ErrorReason(EvaluationErrorKind.FlagNotFound).WithOverrideAffected(true),
                 () => EvaluationReason.ErrorReason(EvaluationErrorKind.Exception)
                 );
         }

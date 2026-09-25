@@ -30,7 +30,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.Events
                 TrackEvents = e.TrackEvents,
                 DebugEventsUntilDate = e.DebugEventsUntilDate,
                 SamplingRatio = e.SamplingRatio,
-                ExcludeFromSummaries = e.ExcludeFromSummaries
+                ExcludeFromSummaries = e.ExcludeFromSummaries,
+                OverrideAffected = e.OverrideAffected
             });
 
         public void RecordIdentifyEvent(EventProcessorTypes.IdentifyEvent e) =>

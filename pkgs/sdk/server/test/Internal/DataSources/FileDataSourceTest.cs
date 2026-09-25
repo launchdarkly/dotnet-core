@@ -248,12 +248,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     fp.Start();
                     _updateSink.Inits.ExpectNoValue();
+                    Assert.False(fp.Initialized);
 
                     file.SetContentFromPath(TestUtils.TestFilePath("segment-only.json"));
 
-                    AssertHelpers.ExpectPredicate(_updateSink.Inits, IsSegmentOnlyDataAfterReload,
-                        "Did not receive expected update from the file data source.",
-                        TimeSpan.FromSeconds(30));
+                    // The initial load applied nothing, so the first applied load is the reload.
+                    var reloaded = _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(30));
+                    AssertJsonEqual(DataSetAsJson(ExpectedDataSetForSegmentOnlyFile(1)), DataSetAsJson(reloaded));
+                    Assert.True(fp.Initialized);
                 }
             }
         }
@@ -314,50 +316,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public void ParseRetryStopsAfterMaxAttemptsAndDoesNotInit()
-        {
-            var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
-            {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start();
-                    WaitForReads(reader, 5); // initial attempt + 4 retries
-                    Thread.Sleep(1500); // longer than two retry delays
-                    Assert.Equal(5, reader.Reads); // budget exhausted, no further attempts
-                    _updateSink.Inits.ExpectNoValue();
-                    Assert.False(fp.Initialized);
-                }
-            }
-        }
-
-        [Fact]
-        public void ParseRetryBudgetResetsForANewFailureEpisode()
-        {
-            var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
-            {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start();
-                    WaitForReads(reader, 5); // episode 1: all attempts fail
-                    Thread.Sleep(1500);
-                    Assert.Equal(5, reader.Reads); // episode 1 exhausted, nothing pending
-
-                    // A new file-change notification starts a new episode with a fresh retry
-                    // budget, even though its first read still sees partial content.
-                    file.SetContent("trigger-new-episode");
-                    WaitForReads(reader, 6);
-
-                    reader.Bad = false; // write completed; no further notification arrives
-                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-                }
-            }
-        }
-
-        [Fact]
         public void ParseRetryAppliesWhenAlternateParserIsConfigured()
         {
             var yaml = new DeserializerBuilder().Build();
@@ -396,7 +354,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public void TransientReadErrorDuringRetryDoesNotEndTheEpisode()
+        public void TransientReadErrorDuringRetryDoesNotStopRetrying()
         {
             var reader = new ScriptedFileReader();
             using (var file = TempFile.Create())
@@ -412,9 +370,45 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     WaitForReads(reader, 2);
                     reader.Throw = false;
 
-                    // The episode still has budget, so the chain must continue and load the data
-                    // instead of dying on the non-parse failure.
+                    // A read failure on a retry arms another retry, so the data still loads.
                     _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
+                }
+            }
+        }
+
+        [Fact]
+        public void RepeatedIdenticalFailureIsLoggedAtErrorLevelOnce()
+        {
+            var reader = new ScriptedFileReader();
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start();
+                    WaitForReads(reader, 3);
+                    Assert.Equal(1, LogCapture.GetMessages().Count(m => m.Level == LogLevel.Error));
+                    _updateSink.Inits.ExpectNoValue();
+                    Assert.False(fp.Initialized);
+                }
+            }
+        }
+
+        [Fact]
+        public void IdenticalContentIsNotReappliedAfterAChangeNotification()
+        {
+            using (var file = TempFile.Create())
+            {
+                factory.FilePaths(file.Path).AutoUpdate(true);
+                file.SetContentFromPath(TestUtils.TestFilePath("flag-only.json"));
+                using (var fp = MakeDataSource())
+                {
+                    fp.Start();
+                    _updateSink.Inits.ExpectValue();
+
+                    // A rewrite with identical content produces change notifications but no new data.
+                    file.SetContentFromPath(TestUtils.TestFilePath("flag-only.json"));
+                    _updateSink.Inits.ExpectNoValue(TimeSpan.FromSeconds(1));
                 }
             }
         }
@@ -437,115 +431,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     Thread.Sleep(1500);
                     Assert.Equal(readsAtDispose, reader.Reads);
                 }
-            }
-        }
-
-        // The multi-path tests below use paths in a directory that does not exist, so the file
-        // watcher fails to construct (logged and swallowed, _reloader == null). That makes the
-        // load sequence fully deterministic: the only externally triggered loads are the Start()
-        // calls, which exercise the same code path as a file-change notification.
-        private const string MultiPathA = "/nonexistent-ld-filedatasource-test-dir/a.json";
-        private const string MultiPathB = "/nonexistent-ld-filedatasource-test-dir/b.json";
-
-        private class PerPathScriptedReader : FileDataTypes.IFileReader
-        {
-            private readonly ConcurrentDictionary<string, int> _reads = new ConcurrentDictionary<string, int>();
-            private readonly ConcurrentDictionary<string, bool> _bad = new ConcurrentDictionary<string, bool>();
-
-            public void SetBad(string path, bool bad) { _bad[path] = bad; }
-            public int Reads(string path) => _reads.TryGetValue(path, out var n) ? n : 0;
-
-            public string ReadAllText(string path)
-            {
-                _reads.AddOrUpdate(path, 1, (_, n) => n + 1);
-                if (_bad.TryGetValue(path, out var bad) && bad)
-                {
-                    return TruncatedFlagJson;
-                }
-                // distinct flag keys per path, so a successful merge of both files can't throw
-                // on duplicate keys (the builder default is DuplicateKeysHandling.Throw)
-                return path == MultiPathA
-                    ? @"{""flagValues"":{""flagA"":""a""}}"
-                    : @"{""flagValues"":{""flagB"":""b""}}";
-            }
-        }
-
-        [Fact]
-        public void PendingParseRetryIsSkippedIfAnExternalReloadAlreadySucceeded()
-        {
-            var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
-            {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start(); // fails, schedules a retry
-
-                    // An externally triggered load (same code path as a file-change notification)
-                    // succeeds before the pending retry fires.
-                    reader.Bad = false;
-                    fp.Start();
-                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-                    var readsAfterSuccess = reader.Reads;
-
-                    Thread.Sleep(1500); // past the retry delay
-                    // The pending retry saw that the load already succeeded and did not reload,
-                    // so no redundant Init (which would fire spurious change events) occurred.
-                    Assert.Equal(readsAfterSuccess, reader.Reads);
-                    _updateSink.Inits.ExpectNoValue();
-                }
-            }
-        }
-
-        [Fact]
-        public void ParseFailureInANewEpisodeGetsAFullRetryBudgetAfterAnotherPathGaveUp()
-        {
-            var reader = new PerPathScriptedReader();
-            reader.SetBad(MultiPathB, true);
-            factory.FilePaths(MultiPathA, MultiPathB).AutoUpdate(true).FileReader(reader);
-            using (var fp = MakeDataSource())
-            {
-                fp.Start(); // A parses, B fails; B accumulates failures across retries
-                WaitUntil(() => reader.Reads(MultiPathB) >= 4, "4 reads of path B");
-                reader.SetBad(MultiPathA, true); // now every attempt stops at A
-                WaitUntil(() => reader.Reads(MultiPathA) >= 9, "A to exhaust its retry budget");
-                Thread.Sleep(1500); // the retry chain is dead
-                Assert.Equal(9, reader.Reads(MultiPathA));
-
-                // A new externally triggered load fails at A; A recovers before the retry fires.
-                fp.Start();
-                reader.SetBad(MultiPathA, false);
-                WaitUntil(() => reader.Reads(MultiPathB) >= 5, "the retry to reach path B");
-                reader.SetBad(MultiPathB, false);
-
-                // B's failure was its first in the new episode, so it gets a fresh retry budget
-                // instead of inheriting the dead episode's count and giving up immediately.
-                _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-            }
-        }
-
-        [Fact]
-        public void PathAbandonedWhenAnotherPathGivesUpGetsATerminalLogMessage()
-        {
-            var reader = new PerPathScriptedReader();
-            reader.SetBad(MultiPathB, true);
-            factory.FilePaths(MultiPathA, MultiPathB).AutoUpdate(true).FileReader(reader);
-            using (var fp = MakeDataSource())
-            {
-                fp.Start();
-                WaitUntil(() => reader.Reads(MultiPathB) >= 4, "4 reads of path B");
-                reader.SetBad(MultiPathA, true);
-                WaitUntil(() => reader.Reads(MultiPathA) >= 9, "A to exhaust its retry budget");
-                Thread.Sleep(1500); // the retry chain is dead
-
-                // B was last warned "will retry in 600 ms", but A's give-up ended the chain.
-                // That promise must be either fulfilled (B re-read) or terminated with an
-                // error log naming B.
-                var bRetried = reader.Reads(MultiPathB) >= 5;
-                var bTerminallyLogged = LogCapture.GetMessages().Any(m =>
-                    m.Level == LogLevel.Error && m.Text.Contains(MultiPathB));
-                Assert.True(bRetried || bTerminallyLogged,
-                    "path B was promised a retry but was never re-read and got no terminal error log");
             }
         }
 

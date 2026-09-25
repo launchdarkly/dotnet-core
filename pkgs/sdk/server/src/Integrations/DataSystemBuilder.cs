@@ -126,7 +126,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </code>
         /// </example>
         /// </remarks>
-        /// <param name="overrideSource">the override source, such as the file-based override source;
+        /// <param name="overrideSource">the override source, such as <see cref="FileOverrides.Source"/>;
         /// null removes a previously configured source</param>
         /// <returns>a reference to the builder</returns>
         public DataSystemBuilder Overrides(IComponentConfigurer<IOverrideSource> overrideSource)

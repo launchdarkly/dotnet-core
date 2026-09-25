@@ -151,7 +151,7 @@ namespace LaunchDarkly.Sdk.Server
             Assert.Null(segment1.Salt);
         }
 
-        private FeatureFlag MustParseFlag(string json)
+        internal static FeatureFlag MustParseFlag(string json)
         {
             var item = DataModel.Features.Deserialize(json);
             var flag = Assert.IsType<FeatureFlag>(item.Item);
@@ -159,7 +159,7 @@ namespace LaunchDarkly.Sdk.Server
             return flag;
         }
 
-        private Segment MustParseSegment(string json)
+        internal static Segment MustParseSegment(string json)
         {
             var item = DataModel.Segments.Deserialize(json);
             var segment = Assert.IsType<Segment>(item.Item);
@@ -167,7 +167,7 @@ namespace LaunchDarkly.Sdk.Server
             return segment;
         }
 
-        private string FlagWithAllPropertiesJson() => @"{
+        internal static string FlagWithAllPropertiesJson() => @"{
     ""key"": ""flag-key"",
     ""version"": 99,
     ""deleted"": false,
@@ -229,7 +229,7 @@ namespace LaunchDarkly.Sdk.Server
     ""debugEventsUntilDate"": 1000
 }";
 
-        private void AssertFlagHasAllProperties(FeatureFlag flag)
+        internal static void AssertFlagHasAllProperties(FeatureFlag flag)
         {
             Assert.Equal("flag-key", flag.Key);
             Assert.Equal(99, flag.Version);
@@ -311,7 +311,7 @@ namespace LaunchDarkly.Sdk.Server
             Assert.Equal(UnixMillisecondTime.OfMillis(1000), flag.DebugEventsUntilDate);
         }
 
-        private string SegmentWithAllPropertiesJson() => @"{
+        internal static string SegmentWithAllPropertiesJson() => @"{
     ""key"": ""segment-key"",
     ""version"": 99,
     ""deleted"": false,
@@ -347,7 +347,7 @@ namespace LaunchDarkly.Sdk.Server
     ""generation"": 51
 }";
 
-        private void AssertSegmentHasAllProperties(Segment segment)
+        internal static void AssertSegmentHasAllProperties(Segment segment)
         {
             Assert.Equal("segment-key", segment.Key);
             Assert.Equal(99, segment.Version);

@@ -31,10 +31,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
 
         public Migration? Migration { get; }
 
+        /// <summary>
+        /// True if this definition came from the SDK's override store rather than from LaunchDarkly
+        /// data. The evaluator reads this marker to mark the evaluation as override-affected. The
+        /// marker lives on the model only. It is never serialized.
+        /// </summary>
+        internal bool IsOverride { get; }
+
         internal FeatureFlag(string key, int version, bool deleted, bool on, IEnumerable<Prerequisite> prerequisites,
             ImmutableList<Target> targets, ImmutableList<Target> contextTargets, IEnumerable<FlagRule> rules, VariationOrRollout fallthrough, int? offVariation,
             IEnumerable<LdValue> variations, string salt, bool trackEvents, bool trackEventsFallthrough, UnixMillisecondTime? debugEventsUntilDate,
-            bool clientSide, long? samplingRatio, bool excludeFromSummaries, Migration? migration)
+            bool clientSide, long? samplingRatio, bool excludeFromSummaries, Migration? migration, bool isOverride = false)
         {
             Key = key;
             Version = version;
@@ -55,7 +62,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             SamplingRatio = samplingRatio;
             ExcludeFromSummaries = excludeFromSummaries;
             Migration = migration;
+            IsOverride = isOverride;
         }
+
+        /// <summary>
+        /// Returns a copy of this flag that carries the override marker. The copy shares its immutable
+        /// parts with this flag, which is left unchanged.
+        /// </summary>
+        internal FeatureFlag AsOverride() =>
+            IsOverride ? this :
+            new FeatureFlag(Key, Version, Deleted, On, Prerequisites, Targets, ContextTargets, Rules, Fallthrough,
+                OffVariation, Variations, Salt, TrackEvents, TrackEventsFallthrough, DebugEventsUntilDate, ClientSide,
+                SamplingRatio, ExcludeFromSummaries, Migration, true);
     }
 
     internal struct Rollout

@@ -90,6 +90,21 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// If true the event will not be included in summaries.
             /// </summary>
             public bool ExcludeFromSummaries { get; set; }
+
+            /// <summary>
+            /// True if a flag override affected the evaluation, directly or transitively.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// A marked evaluation produces no individual feature or debug event, whatever the flag's
+            /// configuration requests, and is counted in a separate summary counter that carries the
+            /// <c>overrideAffected</c> marker.
+            /// </para>
+            /// <para>
+            /// Flag overrides are currently experimental and subject to change.
+            /// </para>
+            /// </remarks>
+            public bool OverrideAffected { get; set; }
         }
 
         /// <summary>

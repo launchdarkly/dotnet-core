@@ -566,10 +566,11 @@ namespace LaunchDarkly.Sdk.Server
                             evalDetail.Value.Type,
                             featureKey);
 
-                        _eventProcessor.RecordEvaluationEvent(eventFactory.NewDefaultValueEvaluationEvent(
-                            featureFlag, context, defaultValue, EvaluationErrorKind.WrongType));
                         // The type mismatch replaces the reason. The evaluation read the same
-                        // definitions, so the new reason keeps the override-affected marking.
+                        // definitions, so the new reason and the event keep the override-affected marking.
+                        _eventProcessor.RecordEvaluationEvent(eventFactory.NewDefaultValueEvaluationEvent(
+                            featureFlag, context, defaultValue, EvaluationErrorKind.WrongType,
+                            evalDetail.Reason.OverrideAffected));
                         return (new EvaluationDetail<T>(defaultValueOfType, null,
                             EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType)
                                 .WithOverrideAffected(evalDetail.Reason.OverrideAffected)), featureFlag);

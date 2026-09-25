@@ -11,6 +11,7 @@ using LaunchDarkly.Sdk.Server.Integrations;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Migrations;
 using LaunchDarkly.Sdk.Server.Subsystems;
+using YamlDotNet.Serialization;
 
 namespace TestService
 {
@@ -663,10 +664,59 @@ namespace TestService
                     dataSystemBuilder.FDv1FallbackSynchronizer(fdv1FallbackBuilder);
                 }
 
+                // The override source is an option of the FDv2 data system.
+                if (sdkParams.Overrides != null)
+                {
+                    dataSystemBuilder.Overrides(BuildOverrideSource(sdkParams.Overrides));
+                }
+
                 builder.DataSystem(dataSystemBuilder);
+            }
+            else if (sdkParams.Overrides != null)
+            {
+                throw new ArgumentException("the overrides configuration requires a dataSystem configuration");
             }
 
             return builder.Build();
+        }
+
+        private static FileOverrideSourceBuilder BuildOverrideSource(SdkConfigOverridesParams p)
+        {
+            var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
+            var source = FileOverrides.Source()
+                .FilePaths(p.FilePaths ?? new string[0])
+                .Parser(s => yaml.Deserialize<object>(s));
+            switch (p.DuplicateKeysHandling)
+            {
+                case null:
+                    break;
+                case "fail":
+                    source.DuplicateKeysHandling(FileOverrideTypes.DuplicateKeysHandling.Fail);
+                    break;
+                case "ignore":
+                    source.DuplicateKeysHandling(FileOverrideTypes.DuplicateKeysHandling.Ignore);
+                    break;
+                default:
+                    throw new ArgumentException("unrecognized duplicateKeysHandling: " + p.DuplicateKeysHandling);
+            }
+            switch (p.ChangeDetection)
+            {
+                case null:
+                    break;
+                case "polling":
+                    source.ChangeDetection(FileOverrideTypes.ChangeDetection.Polling);
+                    break;
+                case "watching":
+                    source.ChangeDetection(FileOverrideTypes.ChangeDetection.Watching);
+                    break;
+                default:
+                    throw new ArgumentException("unrecognized changeDetection: " + p.ChangeDetection);
+            }
+            if (p.PollIntervalMs.HasValue)
+            {
+                source.PollInterval(TimeSpan.FromMilliseconds(p.PollIntervalMs.Value));
+            }
+            return source;
         }
 
         private static IComponentConfigurer<IDataSource> CreateSynchronizer(

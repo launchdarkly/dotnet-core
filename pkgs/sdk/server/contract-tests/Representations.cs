@@ -35,6 +35,15 @@ namespace TestService
         public SdkTagParams Tags { get; set; }
         public SdkHookParams Hooks { get; set; }
         public SdkConfigDataSystemParams DataSystem { get; set; }
+        public SdkConfigOverridesParams Overrides { get; set; }
+    }
+
+    public class SdkConfigOverridesParams
+    {
+        public string[] FilePaths { get; set; }
+        public string DuplicateKeysHandling { get; set; }
+        public string ChangeDetection { get; set; }
+        public long? PollIntervalMs { get; set; }
     }
 
     public class SdkTagParams

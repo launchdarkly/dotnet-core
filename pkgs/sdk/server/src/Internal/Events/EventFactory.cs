@@ -38,7 +38,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Events
                 TrackEvents = flag.TrackEvents || isExperiment,
                 DebugEventsUntilDate = flag.DebugEventsUntilDate,
                 SamplingRatio = flag.SamplingRatio,
-                ExcludeFromSummaries = flag.ExcludeFromSummaries
+                ExcludeFromSummaries = flag.ExcludeFromSummaries,
+                // The marking is carried on the reason of every result, whether or not the caller
+                // asked for reasons. The event processor keys on this scalar, not on the reason.
+                OverrideAffected = result.Reason.OverrideAffected
             };
         }
 
@@ -46,7 +49,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.Events
             FeatureFlag flag,
             Context context,
             LdValue defaultValue,
-            EvaluationErrorKind errorKind
+            EvaluationErrorKind errorKind,
+            bool overrideAffected
             )
         {
             return new EvaluationEvent
@@ -57,9 +61,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.Events
                 FlagVersion = flag.Version,
                 Value = defaultValue,
                 Default = defaultValue,
-                Reason = _withReasons ? EvaluationReason.ErrorReason(errorKind) : (EvaluationReason?)null,
+                Reason = _withReasons ?
+                    EvaluationReason.ErrorReason(errorKind).WithOverrideAffected(overrideAffected) : (EvaluationReason?)null,
                 TrackEvents = flag.TrackEvents,
-                DebugEventsUntilDate = flag.DebugEventsUntilDate
+                DebugEventsUntilDate = flag.DebugEventsUntilDate,
+                OverrideAffected = overrideAffected
             };
         }
 

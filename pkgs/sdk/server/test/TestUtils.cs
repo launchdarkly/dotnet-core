@@ -74,6 +74,30 @@ namespace LaunchDarkly.Sdk.Server
         }
     }
 
+    public class TempDirectory : IDisposable
+    {
+        public string Path { get; }
+
+        public static TempDirectory Create() => new TempDirectory();
+
+        private TempDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ld-test-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        public string PathOf(string name) => System.IO.Path.Combine(Path, name);
+
+        public void Dispose()
+        {
+            try
+            {
+                Directory.Delete(Path, true);
+            }
+            catch { }
+        }
+    }
+
     public class TempFile : IDisposable
     {
         public string Path { get; }

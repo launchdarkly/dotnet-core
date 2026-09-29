@@ -56,8 +56,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
             {
                 if (redactAll)
                 {
-                    // A name is reported as an escaped reference. Otherwise a consumer reads a
-                    // name that begins with a slash as a path to a nested property.
+                    // An escaped reference keeps a leading slash from reading as a path.
                     AddRedacted(ref redactedList, AttributeRef.FromLiteral(attr).ToString());
                     continue;
                 }

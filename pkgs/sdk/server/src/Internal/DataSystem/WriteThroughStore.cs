@@ -4,10 +4,11 @@ using LaunchDarkly.Sdk.Server.Subsystems;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 {
-    internal class WriteThroughStore : IDataStore, ITransactionalDataStore
+    internal class WriteThroughStore : IDataStore, ITransactionalDataStore, IDataStoreMetadata
     {
         private readonly IDataStore _memoryStore;
         private readonly ITransactionalDataStore _txMemoryStore;
+        private readonly IDataStoreMetadata _metadataMemoryStore;
         private readonly IDataStore _persistentStore;
         private bool _disposed = false;
 
@@ -33,6 +34,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         {
             _memoryStore = memoryStore;
             _txMemoryStore = (ITransactionalDataStore)_memoryStore;
+            _metadataMemoryStore = (IDataStoreMetadata)_memoryStore;
             _persistentStore = persistentStore;
             _hasPersistence = persistentStore != null;
             // During initializations read will happen from the persistent store.
@@ -66,6 +68,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 _persistentStore?.Init(allData);
             }
         }
+
+        public void InitWithMetadata(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData,
+            DataStoreTypes.InitMetadata metadata)
+        {
+            _metadataMemoryStore.InitWithMetadata(allData, metadata);
+            MaybeSwitchStore();
+
+            if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
+            {
+                _persistentStore?.Init(allData);
+            }
+        }
+
+        /// <summary>
+        /// Only the memory store tracks metadata, because metadata comes from the payloads that the
+        /// data sources deliver. A persistent store has no metadata of its own to report.
+        /// </summary>
+        public DataStoreTypes.InitMetadata GetMetadata() => _metadataMemoryStore.GetMetadata();
 
         public DataStoreTypes.ItemDescriptor? Get(DataStoreTypes.DataKind kind, string key)
         {

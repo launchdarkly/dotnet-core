@@ -56,7 +56,9 @@ namespace LaunchDarkly.Sdk.Internal.Events
             {
                 if (redactAll)
                 {
-                    AddRedacted(ref redactedList, attr); // the entire attribute is redacted
+                    // A name is reported as an escaped reference. Otherwise a consumer reads a
+                    // name that begins with a slash as a path to a nested property.
+                    AddRedacted(ref redactedList, AttributeRef.FromLiteral(attr).ToString());
                     continue;
                 }
                 WriteOrRedact(attr, c, w, privateRefs, ref redactedList);
@@ -94,7 +96,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
             {
                 if (a.Depth == 1 && a.GetComponent(0) == attrName)
                 {
-                    AddRedacted(ref redactedList, attrName); // the entire attribute is redacted
+                    AddRedacted(ref redactedList, AttributeRef.FromLiteral(attrName).ToString());
                     return;
                 }
             }

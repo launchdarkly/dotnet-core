@@ -74,6 +74,39 @@ namespace LaunchDarkly.Sdk.Internal.Events
             },
             new Params
             {
+                name = "all attributes private globally, slash-prefixed attribute name",
+                context = Context.Builder("my-key").Kind("org").
+                    Set("/ssn", "123-45-6789").
+                    Set("a/b~c", "value1").
+                    Build(),
+                config = new EventsConfiguration { AllAttributesPrivate = true },
+                json = @"{
+                    ""kind"": ""org"",
+                    ""key"": ""my-key"",
+                    ""_meta"": {
+                        ""redactedAttributes"": [""/~1ssn"", ""a/b~c""]
+                    }
+		        }"
+            },
+            new Params
+            {
+                name = "slash-prefixed attribute name is private",
+                context = Context.Builder("my-key").Kind("org").
+                    Name("my-name").
+                    Set("/ssn", "123-45-6789").
+                    Private("/~1ssn").
+                    Build(),
+                json = @"{
+                    ""kind"": ""org"",
+                    ""key"": ""my-key"",
+                    ""name"": ""my-name"",
+                    ""_meta"": {
+                        ""redactedAttributes"": [""/~1ssn""]
+                    }
+		        }"
+            },
+            new Params
+            {
                 name = "some top-level attributes private",
                 context = Context.Builder("my-key").Kind("org").
                     Name("my-name").
@@ -156,6 +189,26 @@ namespace LaunchDarkly.Sdk.Internal.Events
             var json = Encoding.UTF8.GetString(stream.ToArray());
 
             var expectedJson = @"{""kind"": ""org"", ""key"": ""my-key"", ""anonymous"": true, ""_meta"": { ""redactedAttributes"": [""attr1"", ""name""]}}";
+
+            LdValue parsedJson = TestUtil.TryParseJson(json);
+            AssertJsonEqual(expectedJson, ValueWithRedactedAttributesSorted(parsedJson).ToJsonString());
+        }
+
+        [Fact]
+        public void TestRedactedAnonymousAttributeNamesAreEscaped()
+        {
+            var context = Context.Builder("my-key").Kind("org").
+                Anonymous(true).
+                Set("/ssn", "123-45-6789").
+                Build();
+
+            var stream = new MemoryStream();
+            var w = new Utf8JsonWriter(stream);
+            new EventContextFormatter(new EventsConfiguration()).Write(context, w, redactAnonymous: true);
+            w.Flush();
+            var json = Encoding.UTF8.GetString(stream.ToArray());
+
+            var expectedJson = @"{""kind"": ""org"", ""key"": ""my-key"", ""anonymous"": true, ""_meta"": { ""redactedAttributes"": [""/~1ssn""]}}";
 
             LdValue parsedJson = TestUtil.TryParseJson(json);
             AssertJsonEqual(expectedJson, ValueWithRedactedAttributesSorted(parsedJson).ToJsonString());

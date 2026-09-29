@@ -3,6 +3,40 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.0...LaunchDarkly.ClientSdk-v5.10.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* activate plugin hooks before RegisterPlugin calls Register ([#337](https://github.com/launchdarkly/dotnet-core/issues/337)) ([1fe894e](https://github.com/launchdarkly/dotnet-core/commit/1fe894e695fb43bbbbfd10fc941b05c20dd9a131))
+* update LaunchDarkly.Logging to 2.1.0 in client SDK ([#356](https://github.com/launchdarkly/dotnet-core/issues/356)) ([60ccc75](https://github.com/launchdarkly/dotnet-core/commit/60ccc75dfb1b6a2a420418ae47da17e5cd977fba))
+
+## [5.10.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.6...LaunchDarkly.ClientSdk-v5.10.0) (2026-09-02)
+
+
+### Features
+
+* bump LaunchDarkly.InternalSdk pins to 3.10.1 ([fa7bcf9](https://github.com/launchdarkly/dotnet-core/commit/fa7bcf9dd0b239ade71fba2d40882e01f5f53dcb))
+
+
+### Bug Fixes
+
+* use monotonic clock for intervals and durations, UTC for diagnostic timestamps ([#339](https://github.com/launchdarkly/dotnet-core/issues/339)) ([e12ee4a](https://github.com/launchdarkly/dotnet-core/commit/e12ee4abec76faabc7614cc0df58b050e56030db))
+
+## [5.9.6](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.5...LaunchDarkly.ClientSdk-v5.9.6) (2026-08-19)
+
+
+### Bug Fixes
+
+* honor BackgroundPollInterval when app is in background ([#334](https://github.com/launchdarkly/dotnet-core/issues/334)) ([22e139b](https://github.com/launchdarkly/dotnet-core/commit/22e139bdfd4c2cabc0497888211f51e74f8e5470))
+
+## [5.9.5](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.4...LaunchDarkly.ClientSdk-v5.9.5) (2026-08-17)
+
+
+### Bug Fixes
+
+* Correct nuget license format. ([#332](https://github.com/launchdarkly/dotnet-core/issues/332)) ([cc1ff83](https://github.com/launchdarkly/dotnet-core/commit/cc1ff83705794fe36d1d14ea5e10d232ce23997d))
+
 ## [5.9.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.9.3...LaunchDarkly.ClientSdk-v5.9.4) (2026-08-10)
 
 

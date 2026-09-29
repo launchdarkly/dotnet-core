@@ -289,6 +289,54 @@ AssertLogMessage(false, LogLevel.Warn,
         }
 
         [Fact]
+        public void EvaluationBeforeInitWithInitedStoreLogsCachedDataWarningOnce()
+        {
+            var dataStore = new InMemoryDataStore();
+            dataStore.Init(FullDataSet<ItemDescriptor>.Empty());
+            var flag = new FeatureFlagBuilder("key").OffWithValue(LdValue.Of(1)).Build();
+            TestUtils.UpsertFlag(dataStore, flag);
+
+            var config = BasicConfig()
+                .DataStore(dataStore.AsSingletonFactory<IDataStore>())
+                .DataSource(MockDataSourceThatNeverStarts())
+                .Build();
+
+            using (var client = new LdClient(config))
+            {
+                Assert.Equal(1, client.IntVariation("key", Context.New("user"), 0));
+                Assert.Equal(1, client.IntVariation("key", Context.New("user"), 0));
+
+                var warnings = LogCapture.GetMessages().FindAll(m =>
+                    m.Level == LogLevel.Warn && m.Text.Contains("using last known values from data store"));
+                Assert.Single(warnings);
+            }
+        }
+
+        [Fact]
+        public void AllFlagsStateBeforeInitWithInitedStoreLogsCachedDataWarningOnce()
+        {
+            var dataStore = new InMemoryDataStore();
+            dataStore.Init(FullDataSet<ItemDescriptor>.Empty());
+            var flag = new FeatureFlagBuilder("key").OffWithValue(LdValue.Of(1)).Build();
+            TestUtils.UpsertFlag(dataStore, flag);
+
+            var config = BasicConfig()
+                .DataStore(dataStore.AsSingletonFactory<IDataStore>())
+                .DataSource(MockDataSourceThatNeverStarts())
+                .Build();
+
+            using (var client = new LdClient(config))
+            {
+                Assert.True(client.AllFlagsState(Context.New("user")).Valid);
+                Assert.True(client.AllFlagsState(Context.New("user")).Valid);
+
+                var warnings = LogCapture.GetMessages().FindAll(m =>
+                    m.Level == LogLevel.Warn && m.Text.Contains("using last known values from data store"));
+                Assert.Single(warnings);
+            }
+        }
+
+        [Fact]
         public void DataSetIsPassedToDataStoreInCorrectOrder()
         {
             // The underlying functionality here is also covered in DataStoreSorterTest, but we want to verify that the

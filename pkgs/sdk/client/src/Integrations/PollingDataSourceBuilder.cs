@@ -112,7 +112,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
                 clientContext.DataSourceUpdateSink,
                 clientContext.CurrentContext,
                 requestor,
-                _pollInterval,
+                !clientContext.InBackground ? _pollInterval : _backgroundPollInterval,
                 TimeSpan.Zero,
                 clientContext.TaskExecutor,
                 logger

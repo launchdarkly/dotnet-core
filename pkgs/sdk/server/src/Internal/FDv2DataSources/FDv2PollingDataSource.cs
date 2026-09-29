@@ -255,7 +255,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             
             // Only mark as initialized after successfully applying a changeset
             if (_initialized.GetAndSet(true)) return;
-            _initTask.SetResult(true);
+            _initTask.TrySetResult(true);
             _log.Info("First polling request successful");
         }
 

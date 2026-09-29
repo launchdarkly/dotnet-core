@@ -1,4 +1,5 @@
 ﻿using System;
+using LaunchDarkly.Sdk.Client.Internal.DataSources;
 using LaunchDarkly.TestHelpers;
 using Xunit;
 
@@ -28,6 +29,30 @@ namespace LaunchDarkly.Sdk.Client.Integrations
             prop.AssertSetIsChangedTo(
                 PollingDataSourceBuilder.DefaultPollInterval.Subtract(TimeSpan.FromMilliseconds(1)),
                 PollingDataSourceBuilder.DefaultPollInterval);
+        }
+
+        [Fact]
+        public void BuildUsesPollIntervalWhenForeground()
+        {
+            var builder = Components.PollingDataSource()
+                .PollInterval(TimeSpan.FromMinutes(10))
+                .BackgroundPollInterval(TimeSpan.FromMinutes(30));
+
+            var dataSource = (PollingDataSource)builder.Build(TestUtil.SimpleContext.WithInBackground(false));
+
+            Assert.Equal(TimeSpan.FromMinutes(10), dataSource.PollingInterval);
+        }
+
+        [Fact]
+        public void BuildUsesBackgroundPollIntervalWhenInBackground()
+        {
+            var builder = Components.PollingDataSource()
+                .PollInterval(TimeSpan.FromMinutes(10))
+                .BackgroundPollInterval(TimeSpan.FromMinutes(30));
+
+            var dataSource = (PollingDataSource)builder.Build(TestUtil.SimpleContext.WithInBackground(true));
+
+            Assert.Equal(TimeSpan.FromMinutes(30), dataSource.PollingInterval);
         }
     }
 }

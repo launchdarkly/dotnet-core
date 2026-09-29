@@ -104,6 +104,7 @@ namespace LaunchDarkly.Sdk.Client.Integrations
             {
                 // When in the background, always use polling instead of streaming
                 return new PollingDataSourceBuilder()
+                    .PollInterval(_backgroundPollInterval) // pass here as well, doesn't hurt
                     .BackgroundPollInterval(_backgroundPollInterval)
                     .Build(clientContext);
             }

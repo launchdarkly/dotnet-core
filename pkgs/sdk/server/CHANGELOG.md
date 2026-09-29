@@ -1,5 +1,42 @@
 # Changelog
 
+## [8.17.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.0...LaunchDarkly.ServerSdk-v8.17.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* update LaunchDarkly.Logging to 2.1.0 in server SDK ([#355](https://github.com/launchdarkly/dotnet-core/issues/355)) ([751e76d](https://github.com/launchdarkly/dotnet-core/commit/751e76dd75875d64b2dd5b6301e7110c7a1fc113))
+
+## [8.17.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.3...LaunchDarkly.ServerSdk-v8.17.0) (2026-09-17)
+
+
+### Features
+
+* conform FDv1 streaming and polling data sources to the RETRY spec ([#351](https://github.com/launchdarkly/dotnet-core/issues/351)) ([b099040](https://github.com/launchdarkly/dotnet-core/commit/b099040c21293e6986db8c6566477b4d01396b5a))
+
+## [8.16.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.2...LaunchDarkly.ServerSdk-v8.16.3) (2026-09-15)
+
+
+### Bug Fixes
+
+* Log the cached-data evaluation warning only once per client ([#349](https://github.com/launchdarkly/dotnet-core/issues/349)) ([d1c4a09](https://github.com/launchdarkly/dotnet-core/commit/d1c4a09f255a95d5f91cc8f03321d43cdfd3e42f))
+
+## [8.16.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.1...LaunchDarkly.ServerSdk-v8.16.2) (2026-09-03)
+
+
+### Bug Fixes
+
+* polling 304 responses handled appropriately ([#345](https://github.com/launchdarkly/dotnet-core/issues/345)) ([74ad49c](https://github.com/launchdarkly/dotnet-core/commit/74ad49cb291dc0265c8ead010bc8e4c899e1e24f))
+
+## [8.16.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.16.0...LaunchDarkly.ServerSdk-v8.16.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* bump LaunchDarkly.InternalSdk pins to 3.10.1 ([#343](https://github.com/launchdarkly/dotnet-core/issues/343)) ([fa7bcf9](https://github.com/launchdarkly/dotnet-core/commit/fa7bcf9dd0b239ade71fba2d40882e01f5f53dcb))
+* Retry after partial file reads. ([#218](https://github.com/launchdarkly/dotnet-core/issues/218)) ([93f4508](https://github.com/launchdarkly/dotnet-core/commit/93f4508f5d75f4276990798cd686dfd09dcf5c0a))
+* use monotonic clock for intervals and durations, UTC for diagnostic timestamps ([#339](https://github.com/launchdarkly/dotnet-core/issues/339)) ([e12ee4a](https://github.com/launchdarkly/dotnet-core/commit/e12ee4abec76faabc7614cc0df58b050e56030db))
+
 ## [8.16.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.15.0...LaunchDarkly.ServerSdk-v8.16.0) (2026-07-23)
 
 

@@ -8,7 +8,7 @@
     <Description>LaunchDarkly .NET Shared Tests</Description>
     <Company>LaunchDarkly</Company>
     <Copyright>Copyright 2020 Catamorphic, Co.</Copyright>
-    <LicenseExpression>Apache-2.0</LicenseExpression>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RootNamespace>LaunchDarkly.Sdk.Server.SharedTests</RootNamespace>
     <Configurations>Debug;Release;DebugLocalReferences</Configurations>
     <Platforms>AnyCPU</Platforms>

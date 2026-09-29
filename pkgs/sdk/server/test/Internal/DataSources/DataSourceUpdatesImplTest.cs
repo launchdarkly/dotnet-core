@@ -840,5 +840,45 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             Assert.Equal("test-env-id", legacyStore.GetMetadata().EnvironmentId);
         }
+
+        [Fact]
+        public void UpdateStatusIgnoresEverythingAfterOff()
+        {
+            var updates = MakeInstance();
+            var statuses = new EventSink<DataSourceStatus>();
+            updates.StatusChanged += statuses.Add;
+
+            var errorInfo = DataSourceStatus.ErrorInfo.FromHttpError(401, true);
+            updates.UpdateStatus(DataSourceState.Off, errorInfo);
+            Assert.Equal(DataSourceState.Off, statuses.ExpectValue().State);
+
+            // Off is terminal. Work still in flight when shutdown began keeps running and can
+            // complete afterwards; none of it may move the state again.
+            updates.UpdateStatus(DataSourceState.Valid, null);
+            updates.UpdateStatus(DataSourceState.Interrupted, errorInfo);
+            updates.UpdateStatus(DataSourceState.Initializing, null);
+
+            statuses.ExpectNoValue();
+            Assert.Equal(DataSourceState.Off, updates.LastStatus.State);
+        }
+
+        [Fact]
+        public void InitAfterOffWritesTheStoreWithoutPublishingValid()
+        {
+            var updates = MakeInstance();
+            var statuses = new EventSink<DataSourceStatus>();
+            updates.StatusChanged += statuses.Add;
+
+            updates.UpdateStatus(DataSourceState.Off, DataSourceStatus.ErrorInfo.FromHttpError(401, true));
+            Assert.Equal(DataSourceState.Off, statuses.ExpectValue().State);
+
+            // This is the path a data source cannot guard for itself: Init publishes Valid from
+            // inside the sink. The store write is harmless and still expected to succeed -- only
+            // the status publication is suppressed.
+            Assert.True(updates.Init(new DataSetBuilder().Flags(flag1).Segments(segment1).Build()));
+
+            statuses.ExpectNoValue();
+            Assert.Equal(DataSourceState.Off, updates.LastStatus.State);
+        }
     }
 }

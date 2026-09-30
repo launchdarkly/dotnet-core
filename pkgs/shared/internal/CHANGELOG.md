@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.InternalSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.11.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.11.0...LaunchDarkly.InternalSdk-v3.11.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* Escape attribute names reported in redactedAttributes ([#369](https://github.com/launchdarkly/dotnet-core/issues/369)) ([eeed557](https://github.com/launchdarkly/dotnet-core/commit/eeed5572dc8ddf7a5302ad6afdf1faea62708b21))
+
 ## [3.11.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.10.1...LaunchDarkly.InternalSdk-v3.11.0) (2026-09-16)
 
 

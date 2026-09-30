@@ -48,24 +48,14 @@ runs:
         echo "SUPPRESSION_FILE_FDV2=$(dirname ./${{ inputs.service_project_file }})/test-supressions-fdv2.txt" >> $GITHUB_ENV
 
     - name: Run Contract Tests
-      uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1.0.2
+      uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1
       with:
         test_service_port: 8000
+        enable_persistence_tests: 'true'
+        # Leave the service up for the FDv2 run that follows.
+        stop_service: ${{ inputs.run_fdv2_tests == 'true' && 'false' || 'true' }}
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}'
         token: ${{ inputs.token }}
-
-    - name: Launch Contract Tests FDv2 Flavor
-      if: inputs.run_fdv2_tests == 'true'
-      id: launch-contract-tests-fdv2
-      shell: bash
-      run: |
-        # The previous run shuts the service down; wait for the port to be released.
-        for _ in $(seq 1 30); do
-          curl -sf -o /dev/null http://localhost:8000 || break
-          sleep 1
-        done
-        sleep 2
-        dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
 
     - name: Run Contract Tests FDv2 Flavor
       if: inputs.run_fdv2_tests == 'true'
@@ -74,7 +64,7 @@ runs:
         test_service_port: 8000
         version: 'v3'
         debug_logging: 'true'
-        enable_persistence_tests: 'false'
+        enable_persistence_tests: 'true'
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE_FDV2 }}'
         token: ${{ inputs.token }}
 

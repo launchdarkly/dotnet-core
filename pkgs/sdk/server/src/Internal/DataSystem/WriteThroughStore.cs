@@ -58,16 +58,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         public bool StatusMonitoringEnabled => _persistentStore?.StatusMonitoringEnabled ?? false;
 
-        public void Init(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData)
-        {
-            _memoryStore.Init(allData);
-            MaybeSwitchStore();
-
-            if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
-            {
-                _persistentStore?.Init(allData);
-            }
-        }
+        public void Init(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData) =>
+            InitWithMetadata(allData, new DataStoreTypes.InitMetadata());
 
         public void InitWithMetadata(DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor> allData,
             DataStoreTypes.InitMetadata metadata)

@@ -633,6 +633,93 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         #endregion
 
+        #region Metadata Tests
+
+        [Fact]
+        public void GetMetadata_AfterApplyFullChangeSet_ReturnsEnvironmentId()
+        {
+            var memoryStore = new InMemoryDataStore();
+
+            using (var store =
+                   new WriteThroughStore(memoryStore, null, DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                var changeSet = new ChangeSet<ItemDescriptor>(
+                    ChangeSetType.Full,
+                    Selector.Make(1, "state1"),
+                    ImmutableList<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>.Empty,
+                    "environment-id"
+                );
+
+                store.Apply(changeSet);
+
+                Assert.Equal("environment-id", store.GetMetadata().EnvironmentId);
+            }
+        }
+
+        [Fact]
+        public void GetMetadata_WithPersistence_ReturnsMemoryStoreMetadata()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                Assert.Null(store.GetMetadata());
+
+                var changeSet = new ChangeSet<ItemDescriptor>(
+                    ChangeSetType.Full,
+                    Selector.Make(1, "state1"),
+                    ImmutableList<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>.Empty,
+                    "environment-id"
+                );
+
+                store.Apply(changeSet);
+
+                Assert.Equal("environment-id", store.GetMetadata().EnvironmentId);
+            }
+        }
+
+        [Fact]
+        public void InitWithMetadata_WithPersistenceReadWrite_InitializesBothStores()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.InitWithMetadata(CreateTestDataSet(), new InitMetadata("environment-id"));
+
+                Assert.Equal("environment-id", store.GetMetadata().EnvironmentId);
+                Assert.True(persistentStore.WasInitCalled);
+
+                // The memory store is now the active read store.
+                persistentStore.ResetCallTracking();
+                var result = store.Get(TestDataKind, Item1Key);
+                Assert.NotNull(result);
+                Assert.False(persistentStore.WasGetCalled);
+            }
+        }
+
+        [Fact]
+        public void InitWithMetadata_WithPersistenceReadOnly_InitializesMemoryStoreOnly()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadOnly))
+            {
+                store.InitWithMetadata(CreateTestDataSet(), new InitMetadata("environment-id"));
+
+                Assert.Equal("environment-id", store.GetMetadata().EnvironmentId);
+                Assert.False(persistentStore.WasInitCalled);
+            }
+        }
+
+        #endregion
+
         #region StatusMonitoringEnabled Tests
 
         [Fact]

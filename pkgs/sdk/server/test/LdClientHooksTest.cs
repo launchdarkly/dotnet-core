@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Hooks;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit;
@@ -314,6 +315,37 @@ namespace LaunchDarkly.Sdk.Server
         {
             var testHook = new TestHookWithEnvironmentId("test");
             var config = BasicConfig().DataStore(new MetadataDataStoreConfigurer())
+                .Hooks(Components.Hooks().Add(testHook)).Build();
+            using (var client = new LdClient(config))
+            {
+                client.BoolVariation("toaster", Context.New("user-key"));
+            }
+
+            Assert.Equal("environment-id", testHook.BeforeEnvironmentId);
+            Assert.Equal("environment-id", testHook.AfterEnvironmentId);
+        }
+
+        [Fact]
+        public void EvaluationContextIncludesEnvironmentIdFromDataSystem()
+        {
+            var testHook = new TestHookWithEnvironmentId("test");
+
+            // The data sources report the environment ID the same way the streaming and polling
+            // endpoints do: as a response header.
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+            {
+                new KeyValuePair<string, IEnumerable<string>>("X-LD-EnvID", new[] { "environment-id" })
+            };
+            var dataSource = MockComponents.MockDataSourceWithStartFn(updateSink =>
+            {
+                ((IDataSourceUpdatesHeaders)updateSink).InitWithHeaders(
+                    DataStoreTypes.FullDataSet<DataStoreTypes.ItemDescriptor>.Empty(), headers);
+                return Task.FromResult(true);
+            });
+
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom().Synchronizers(dataSource))
+                .StartWaitTime(TimeSpan.FromSeconds(5))
                 .Hooks(Components.Hooks().Add(testHook)).Build();
             using (var client = new LdClient(config))
             {

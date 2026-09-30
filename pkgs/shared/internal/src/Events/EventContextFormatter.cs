@@ -56,7 +56,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
             {
                 if (redactAll)
                 {
-                    AddRedacted(ref redactedList, attr); // the entire attribute is redacted
+                    // An escaped reference keeps a leading slash from reading as a path.
+                    AddRedacted(ref redactedList, AttributeRef.FromLiteral(attr).ToString());
                     continue;
                 }
                 WriteOrRedact(attr, c, w, privateRefs, ref redactedList);
@@ -94,7 +95,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
             {
                 if (a.Depth == 1 && a.GetComponent(0) == attrName)
                 {
-                    AddRedacted(ref redactedList, attrName); // the entire attribute is redacted
+                    AddRedacted(ref redactedList, AttributeRef.FromLiteral(attrName).ToString());
                     return;
                 }
             }

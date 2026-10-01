@@ -43,8 +43,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// The source reads flag and segment overrides from one or more local files and reloads them as the
         /// files change. The files use the same document format as <see cref="FileData"/>: a JSON object with
         /// optional <c>flags</c>, <c>flagValues</c>, and <c>segments</c> properties. A <c>flagValues</c>
-        /// entry is expanded into a full flag definition that is off and serves the given value for every
-        /// context. YAML files are supported when a parser is supplied with
+        /// entry is expanded into a full flag definition that is on and serves the given value as its
+        /// fallthrough for every context. YAML files are supported when a parser is supplied with
         /// <see cref="FileOverrideSourceBuilder.Parser(System.Func{string, object})"/>.
         /// </para>
         /// <para>

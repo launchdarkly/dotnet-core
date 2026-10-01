@@ -124,19 +124,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void OffFlagWithValueServesTheValueWithTheOffReason()
+        public void FallthroughFlagWithValueServesTheValueWithTheFallthroughReason()
         {
-            var flag = FileDataParser.MakeOffFlagWithValue("flag1", LdValue.Of("x"), 0);
+            var flag = FileDataParser.MakeFallthroughFlagWithValue("flag1", LdValue.Of("x"), 0);
             Assert.Equal("flag1", flag.Key);
             Assert.Equal(0, flag.Version);
-            Assert.False(flag.On);
-            Assert.Equal(0, flag.OffVariation);
+            Assert.True(flag.On);
+            Assert.Null(flag.OffVariation);
             Assert.Equal(new[] { LdValue.Of("x") }, flag.Variations);
 
             var result = Evaluation.EvaluatorTestUtil.BasicEvaluator.Evaluate(flag, Context.New("any-user"));
             Assert.Equal(LdValue.Of("x"), result.Result.Value);
             Assert.Equal(0, result.Result.VariationIndex);
-            Assert.Equal(EvaluationReason.OffReason, result.Result.Reason);
+            Assert.Equal(EvaluationReason.FallthroughReason, result.Result.Reason);
         }
     }
 }

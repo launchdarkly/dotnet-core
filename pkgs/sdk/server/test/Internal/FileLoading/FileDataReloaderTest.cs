@@ -44,7 +44,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 Paths = new[] { _path },
                 DuplicateKeysHandling = FileDataDuplicateKeysHandling.Fail,
                 Logger = TestLogger,
-                FlagValueExpander = (key, value) => FileDataParser.MakeOffFlagWithValue(key, value, 0),
+                FlagValueExpander = (key, value) => FileDataParser.MakeFallthroughFlagWithValue(key, value, 0),
                 Apply = RecordApply,
                 OnError = e => _errored.Enqueue(e)
             };

@@ -8,7 +8,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     public class FileDataMergerTest
     {
         private static FeatureFlag Expand(string key, LdValue value) =>
-            FileDataParser.MakeOffFlagWithValue(key, value, 0);
+            FileDataParser.MakeFallthroughFlagWithValue(key, value, 0);
 
         private static FileDataDocument DocWithFlag(FeatureFlag flag) =>
             new FileDataDocument(new[] { new KeyValuePair<string, FeatureFlag>(flag.Key, flag) }, null, null);

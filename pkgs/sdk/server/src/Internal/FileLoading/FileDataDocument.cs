@@ -136,19 +136,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         /// <summary>
-        /// Constructs a flag that is off and serves the same value for every context. The flag has a
-        /// single variation and that variation as its off variation, so it evaluates with the
-        /// <see cref="EvaluationReasonKind.Off"/> reason. This is the form the override source uses for
-        /// <c>flagValues</c> entries.
+        /// Constructs a flag that is on and serves the same value for every context. The flag has a
+        /// single variation and serves it as its fallthrough, so it evaluates with the
+        /// <see cref="EvaluationReasonKind.Fallthrough"/> reason. This is the form the override source
+        /// uses for <c>flagValues</c> entries.
         /// </summary>
-        internal static FeatureFlag MakeOffFlagWithValue(string key, LdValue value, int version)
+        internal static FeatureFlag MakeFallthroughFlagWithValue(string key, LdValue value, int version)
         {
             var json = LdValue.BuildObject()
                 .Add("key", key)
                 .Add("version", version)
-                .Add("on", false)
-                .Add("offVariation", 0)
+                .Add("on", true)
                 .Add("variations", LdValue.ArrayOf(value))
+                .Add("fallthrough", LdValue.BuildObject().Add("variation", 0).Build())
                 .Build()
                 .ToJsonString();
             return DataModel.Features.Deserialize(json).Item as FeatureFlag;

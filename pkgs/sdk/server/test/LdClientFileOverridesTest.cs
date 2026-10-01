@@ -93,7 +93,7 @@ namespace LaunchDarkly.Sdk.Server
                 var detail = client.StringVariationDetail("overridden-flag", context, "default");
                 Assert.Equal("override-value", detail.Value);
                 Assert.True(detail.Reason.OverrideAffected);
-                Assert.Equal(EvaluationReasonKind.Off, detail.Reason.Kind);
+                Assert.Equal(EvaluationReasonKind.Fallthrough, detail.Reason.Kind);
             }
         }
     }

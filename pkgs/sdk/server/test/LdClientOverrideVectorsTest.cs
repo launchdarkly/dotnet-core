@@ -123,8 +123,9 @@ namespace LaunchDarkly.Sdk.Server
             }
             foreach (var kv in flagValues.Dictionary)
             {
-                // A value-only entry behaves like a flag that is off and serves its single value.
-                var flag = new FeatureFlagBuilder(kv.Key).OffWithValue(kv.Value).Build();
+                // A value-only entry behaves like a flag that is on and serves its single value by
+                // fallthrough.
+                var flag = new FeatureFlagBuilder(kv.Key).On(true).FallthroughVariation(0).Variations(kv.Value).Build();
                 flagItems.Add(new KeyValuePair<string, ItemDescriptor>(kv.Key, new ItemDescriptor(flag.Version, flag)));
             }
             var segmentItems = new List<KeyValuePair<string, ItemDescriptor>>();

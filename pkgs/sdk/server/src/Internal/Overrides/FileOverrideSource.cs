@@ -71,8 +71,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                 SkipMissingPaths = true,
                 Logger = _log,
                 AlternateParser = _parser,
-                // A value-only entry behaves like a flag that is off and serves its single value.
-                FlagValueExpander = (key, value) => FileDataParser.MakeOffFlagWithValue(key, value, 0),
+                // A value-only entry behaves like a flag that is on and serves its single value by
+                // fallthrough.
+                FlagValueExpander = (key, value) => FileDataParser.MakeFallthroughFlagWithValue(key, value, 0),
                 Apply = merged =>
                 {
                     sink.SetOverrides(ToDataSet(merged));

@@ -109,17 +109,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             Assert.Equal(3, flags["flag2"].Version);
             Assert.Equal(4, SegmentsByKey(snapshot)["seg1"].Version);
 
-            // The flag-value entry was expanded into a full flag definition that is off and serves its
-            // single value for every context.
+            // The flag-value entry was expanded into a full flag definition that is on and serves its
+            // single value by fallthrough for every context.
             var expanded = flags["flag1"];
             Assert.False(expanded.IsOverride, "the source supplies plain definitions; the SDK marks them");
             Assert.Equal(new[] { LdValue.Of(true) }, expanded.Variations);
-            Assert.False(expanded.On);
-            Assert.Equal(0, expanded.OffVariation);
+            Assert.True(expanded.On);
+            Assert.Null(expanded.OffVariation);
             var result = EvaluatorTestUtil.BasicEvaluator.Evaluate(expanded, Context.New("anyone"));
             Assert.Equal(LdValue.Of(true), result.Result.Value);
             Assert.Equal(0, result.Result.VariationIndex);
-            Assert.Equal(EvaluationReasonKind.Off, result.Result.Reason.Kind);
+            Assert.Equal(EvaluationReasonKind.Fallthrough, result.Result.Reason.Kind);
         }
 
         [Fact]

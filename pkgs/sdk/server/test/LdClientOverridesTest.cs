@@ -33,7 +33,7 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         internal static FeatureFlag SingleValueFlag(string key, LdValue value) =>
-            new FeatureFlagBuilder(key).OffWithValue(value).Build();
+            new FeatureFlagBuilder(key).On(true).FallthroughVariation(0).Variations(value).Build();
 
         // A client whose data system can never obtain LaunchDarkly data.
         private LdClient MakeUninitializedClient(TestOverrideSource source, IEventProcessor events = null)
@@ -78,7 +78,7 @@ namespace LaunchDarkly.Sdk.Server
                 var detail = client.BoolVariationDetail("overridden-flag", context, false);
                 Assert.True(detail.Value);
                 Assert.Equal(0, detail.VariationIndex);
-                Assert.Equal(EvaluationReasonKind.Off, detail.Reason.Kind);
+                Assert.Equal(EvaluationReasonKind.Fallthrough, detail.Reason.Kind);
                 Assert.True(detail.Reason.OverrideAffected);
             }
         }

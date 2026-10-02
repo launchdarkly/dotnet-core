@@ -43,13 +43,13 @@ runs:
         consul: true
 
     - name: Setup DynamoDB if needed
-      uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
+      uses: launchdarkly/gh-actions/actions/persistent-stores@jb/sdk-3244/consul-2-0
       if: inputs.run_dynamodb == 'true'
       with:
         dynamodb: true
 
     - name: Setup Redis if needed
-      uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0.1.0
+      uses: launchdarkly/gh-actions/actions/persistent-stores@jb/sdk-3244/consul-2-0
       if: inputs.run_redis == 'true'
       with:
         redis: true

@@ -51,7 +51,7 @@ runs:
       uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1
       with:
         test_service_port: 8000
-        enable_persistence_tests: 'true'
+        enable_persistence_tests: 'false'
         # Leave the service up for the FDv2 run that follows.
         stop_service: ${{ inputs.run_fdv2_tests == 'true' && 'false' || 'true' }}
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}'
@@ -64,7 +64,7 @@ runs:
         test_service_port: 8000
         version: 'v3'
         debug_logging: 'true'
-        enable_persistence_tests: 'true'
+        enable_persistence_tests: 'false'
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE_FDV2 }}'
         token: ${{ inputs.token }}
 

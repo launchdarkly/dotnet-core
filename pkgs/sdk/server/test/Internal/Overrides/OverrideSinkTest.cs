@@ -133,6 +133,48 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         }
 
         [Fact]
+        public void MalformedDefinitionsDoNotStopNotifications()
+        {
+            // A prerequisite without a key and a segment match on a value that is not a string have
+            // no usable dependencies. The layer holds the entries, every changed key is notified, and
+            // each definition whose dependencies could not be computed is logged.
+            var logCapture = Logs.Capture();
+            var layer = new OverrideLayer();
+            var sink = new OverrideSink(layer, new FakeReadOnlyStore(), keys => _notified.AddRange(keys), () => true,
+                logCapture.Logger(""));
+            var keylessPrerequisite = new FeatureFlagBuilder("keyless-prerequisite").Version(1)
+                .Prerequisites(new Prerequisite(null, 0)).Build();
+            var numericSegmentMatch = new FeatureFlagBuilder("numeric-segment-match").Version(1)
+                .BooleanWithClauses(new ClauseBuilder().Op(Operator.SegmentMatch).Values(123).Build()).Build();
+
+            sink.SetOverrides(OverrideLayerTest.FlagsOnly(
+                new FeatureFlagBuilder("good").Version(1).Build(), keylessPrerequisite, numericSegmentMatch));
+
+            Assert.Equal(new[] { "good", "keyless-prerequisite", "numeric-segment-match" }, TakeNotified());
+            Assert.NotNull(layer.Get(DataModel.Features, "keyless-prerequisite"));
+            Assert.NotNull(layer.Get(DataModel.Features, "numeric-segment-match"));
+            Assert.True(logCapture.HasMessageWithRegex(LogLevel.Warn, "dependencies of features \"keyless-prerequisite\""));
+            Assert.True(logCapture.HasMessageWithRegex(LogLevel.Warn, "dependencies of features \"numeric-segment-match\""));
+        }
+
+        [Fact]
+        public void NotificationFailureDoesNotPropagateToTheSource()
+        {
+            var logCapture = Logs.Capture();
+            var layer = new OverrideLayer();
+            var sink = new OverrideSink(layer, new FakeReadOnlyStore(),
+                keys => throw new InvalidOperationException("listener failed"), () => true, logCapture.Logger(""));
+
+            var exception = Record.Exception(() =>
+                sink.SetOverrides(OverrideLayerTest.FlagsOnly(new FeatureFlagBuilder("flag1").Build())));
+
+            // The replacement is in effect, and the failure is logged instead of reported to the source.
+            Assert.Null(exception);
+            Assert.NotNull(layer.Get(DataModel.Features, "flag1"));
+            Assert.True(logCapture.HasMessageWithRegex(LogLevel.Error, "Unable to determine the flags affected"));
+        }
+
+        [Fact]
         public void LayerIsReplacedBeforeListenersAreNotified()
         {
             var baseStore = new FakeReadOnlyStore();

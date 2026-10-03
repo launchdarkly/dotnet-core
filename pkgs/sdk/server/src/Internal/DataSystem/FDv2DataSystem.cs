@@ -17,8 +17,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         private readonly WriteThroughStore _store;
         private readonly IDataSource _dataSource;
         private readonly DataSourceUpdatesImpl _dataSourceUpdates;
-        // The override source and its sink are null when no override source is configured.
+        // The override source, its layer, and its sink are null when no override source is configured.
         private readonly IOverrideSource _overrideSource;
+        private readonly OverrideLayer _overrideLayer;
         private readonly OverrideSink _overrideSink;
         private bool _disposed;
 
@@ -30,14 +31,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         {
             // The override source starts before the data sources, and its initial load completes
             // synchronously, so overrides present when the client starts are in effect before the
-            // client evaluates anything. The source has no effect on initialization.
-            _overrideSource?.Start(_overrideSink);
+            // client evaluates anything. The source has no effect on initialization. A source that
+            // fails to start fails the client constructor; the data system is disposed first, so
+            // nothing it created is left running.
+            try
+            {
+                _overrideSource?.Start(_overrideSink);
+            }
+            catch (Exception)
+            {
+                Dispose();
+                throw;
+            }
             return _dataSource.Start();
         }
 
         public bool Initialized => _dataSource.Initialized;
 
         public bool OverridesConfigured => _overrideSource != null;
+
+        public bool HasOverride(DataStoreTypes.DataKind kind, string key) =>
+            _overrideLayer != null && _overrideLayer.Get(kind, key).HasValue;
 
         public IFlagChanged FlagChanged { get; }
         public IDataSourceStatusProvider DataSourceStatusProvider { get; }
@@ -53,6 +67,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             IDataStoreStatusProvider dataStoreStatusProvider,
             DataSourceUpdatesImpl dataStoreUpdates,
             IOverrideSource overrideSource,
+            OverrideLayer overrideLayer,
             OverrideSink overrideSink
         )
         {
@@ -64,6 +79,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             _dataSourceUpdates = dataStoreUpdates;
             Store = readOnlyStore;
             _overrideSource = overrideSource;
+            _overrideLayer = overrideLayer;
             _overrideSink = overrideSink;
         }
 
@@ -122,13 +138,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             // overlay never touches the data system's own writes or its initialization status.
             IReadOnlyStore readOnlyStore = new ReadonlyStoreFacade(writeThroughStore);
             IOverrideSource overrideSource = null;
+            OverrideLayer overrideLayer = null;
             OverrideSink overrideSink = null;
             if (dataSystemConfiguration.OverrideSource != null && !configuration.Offline)
             {
                 // A configuration error in the source is reported like any other invalid component
-                // configuration: the exception propagates out of the client constructor.
-                overrideSource = dataSystemConfiguration.OverrideSource.Build(clientContext);
-                var overrideLayer = new OverrideLayer();
+                // configuration: the exception propagates out of the client constructor. The
+                // components created so far are disposed first, so a failed constructor leaves
+                // nothing running.
+                try
+                {
+                    overrideSource = dataSystemConfiguration.OverrideSource.Build(clientContext);
+                }
+                catch (Exception)
+                {
+                    compositeDataSource.Dispose();
+                    dataSourceUpdates.Dispose();
+                    writeThroughStore.Dispose();
+                    throw;
+                }
+                overrideLayer = new OverrideLayer();
                 overrideSink = new OverrideSink(overrideLayer, readOnlyStore,
                     dataSourceUpdates.SendFlagChangeEvents, dataSourceUpdates.HasFlagChangeListeners,
                     logger.SubLogger(LogNames.OverridesSubLog));
@@ -136,7 +165,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             }
 
             return new FDv2DataSystem(writeThroughStore, readOnlyStore, compositeDataSource, dataSourceStatusProvider,
-                dataStoreStatusProvider, dataSourceUpdates, overrideSource, overrideSink);
+                dataStoreStatusProvider, dataSourceUpdates, overrideSource, overrideLayer, overrideSink);
         }
 
         private static Func<IComponentConfigurer<IDataSource>, SourceFactory> FactoryWithContext(

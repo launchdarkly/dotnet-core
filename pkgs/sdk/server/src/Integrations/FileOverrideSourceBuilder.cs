@@ -37,6 +37,12 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </summary>
         public static readonly TimeSpan MinimumPollInterval = TimeSpan.FromSeconds(1);
 
+        /// <summary>
+        /// The longest polling interval the timer supports, about 49 days. A configured interval above
+        /// it is a configuration error.
+        /// </summary>
+        internal static readonly TimeSpan MaximumPollInterval = TimeSpan.FromMilliseconds(4294967294);
+
         internal readonly List<string> _paths = new List<string>();
         internal FileOverrideTypes.DuplicateKeysHandling _duplicateKeysHandling = FileOverrideTypes.DuplicateKeysHandling.Fail;
         internal FileOverrideTypes.ChangeDetection _changeDetection = FileOverrideTypes.ChangeDetection.Polling;
@@ -98,7 +104,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </summary>
         /// <remarks>
         /// The default is <see cref="DefaultPollInterval"/>. An interval below <see cref="MinimumPollInterval"/>
-        /// is raised to the minimum, and a warning is logged when the client is created.
+        /// is raised to the minimum, and a warning is logged when the client is created. An interval
+        /// longer than the timer supports, about 49 days, is a configuration error that is reported
+        /// when the client is created.
         /// </remarks>
         /// <param name="pollInterval">the polling interval</param>
         /// <returns>the same builder</returns>
@@ -144,7 +152,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// <param name="context">the client context</param>
         /// <returns>the override source</returns>
         /// <exception cref="ArgumentException">no file paths were specified</exception>
-        /// <exception cref="ArgumentOutOfRangeException">an option has a value outside its enumeration</exception>
+        /// <exception cref="ArgumentOutOfRangeException">an option has a value outside its enumeration, or
+        /// the poll interval is longer than the timer supports</exception>
         public IOverrideSource Build(LdClientContext context)
         {
             if (_paths.Count == 0)
@@ -174,10 +183,18 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 
             var logger = context.Logger.SubLogger(LogNames.OverridesSubLog);
             var pollInterval = _pollInterval;
-            if (_changeDetection == FileOverrideTypes.ChangeDetection.Polling && pollInterval < MinimumPollInterval)
+            if (_changeDetection == FileOverrideTypes.ChangeDetection.Polling)
             {
-                logger.Warn("Poll interval {0} is below the minimum; using {1}", pollInterval, MinimumPollInterval);
-                pollInterval = MinimumPollInterval;
+                if (pollInterval > MaximumPollInterval)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(PollInterval), pollInterval,
+                        "poll interval for the file-based override source must not exceed " + MaximumPollInterval);
+                }
+                if (pollInterval < MinimumPollInterval)
+                {
+                    logger.Warn("Poll interval {0} is below the minimum; using {1}", pollInterval, MinimumPollInterval);
+                    pollInterval = MinimumPollInterval;
+                }
             }
 
             return new FileOverrideSource(paths, _duplicateKeysHandling, _changeDetection, pollInterval, _parser, logger);

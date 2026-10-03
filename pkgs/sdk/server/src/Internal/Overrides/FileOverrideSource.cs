@@ -55,11 +55,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         internal IDisposable ChangeDetector => _changeDetector;
 
         /// <summary>
-        /// Performs the initial load synchronously, so overrides present in the files are in effect by
-        /// the time the client constructor returns, and then starts the change detector. A file that
-        /// does not exist yet contributes no overrides. A file that cannot be read or parsed is not
-        /// fatal: the client runs with the last good overrides, the failure is logged, and the retry
-        /// plus the change signal recover once the file is readable.
+        /// Starts the change detector and then performs the initial load synchronously, so overrides
+        /// present in the files are in effect by the time the client constructor returns, and a
+        /// change made during the load is reported rather than lost. A file that does not exist yet
+        /// contributes no overrides. A file that cannot be read or parsed is not fatal: the client
+        /// runs with the last good overrides, the failure is logged, and the retry plus the change
+        /// signal recover once the file is readable.
         /// </summary>
         public void Start(IOverrideSink sink)
         {
@@ -83,8 +84,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                 RetryDelay = FileDataReloader.DefaultRetryDelay,
                 SkipUnchanged = true
             });
-            _reloader.ReloadNow();
 
+            // Change detection is in place before the files are read. A change between the two
+            // signals a reload instead of going unnoticed until the next change.
             switch (_changeDetection)
             {
                 case FileOverrideTypes.ChangeDetection.Watching:
@@ -94,6 +96,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                     }
                     catch (Exception e)
                     {
+                        // The source runs without change detection. The initial load still happens.
                         LogHelpers.LogException(_log, "Unable to watch override files", e);
                     }
                     break;
@@ -101,6 +104,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                     _changeDetector = new FileDataPoller(_paths, _pollInterval, _reloader.Trigger, _log);
                     break;
             }
+            _reloader.ReloadNow();
         }
 
         public void Dispose()

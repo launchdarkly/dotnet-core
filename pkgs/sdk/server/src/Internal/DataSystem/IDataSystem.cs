@@ -33,6 +33,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         /// </summary>
         bool OverridesConfigured { get; }
 
+        /// <summary>
+        /// True if the override layer holds an entry of the kind with the key. Always false when no
+        /// override source is configured.
+        /// </summary>
+        bool HasOverride(DataStoreTypes.DataKind kind, string key);
+
         IFlagChanged FlagChanged { get; }
 
         IDataSourceStatusProvider DataSourceStatusProvider { get; }

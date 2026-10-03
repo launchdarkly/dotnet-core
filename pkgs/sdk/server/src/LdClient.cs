@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Hooks;
@@ -217,7 +218,18 @@ namespace LaunchDarkly.Sdk.Server
 
             this.RegisterPlugins(pluginConfig.Plugins, environmentMetadata, _log);
 
-            var initTask = _dataSystem.Start();
+            Task<bool> initTask;
+            try
+            {
+                initTask = _dataSystem.Start();
+            }
+            catch (Exception)
+            {
+                // A component that fails to start fails the constructor. The components created so
+                // far are disposed first, so a failed constructor leaves nothing running.
+                Dispose(true);
+                throw;
+            }
 
             if (!_dataSystem.Initialized)
             {
@@ -466,7 +478,10 @@ namespace LaunchDarkly.Sdk.Server
                     LogHelpers.LogException(_evalLog,
                         string.Format("Exception caught for feature flag \"{0}\" when evaluating all flags", flag.Key),
                         e);
-                    EvaluationReason reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception);
+                    // A definition from the override layer keeps the override indicator on its error
+                    // reason. This entry has no tracking fields, as for every error result here.
+                    var reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception)
+                        .WithOverrideAffected(flag.IsOverride);
                     builder.AddFlag(flag.Key, new EvaluationDetail<LdValue>(LdValue.Null, null, reason), new List<string>());
                 }
             }
@@ -498,15 +513,17 @@ namespace LaunchDarkly.Sdk.Server
                         _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store. This message is logged once.");
                     }
                 }
-                else if (_dataSystem.OverridesConfigured)
+                else if (_dataSystem.HasOverride(DataModel.Features, featureKey))
                 {
-                    // No data from LaunchDarkly is available. The store read below still finds an
-                    // entry that the override layer holds, and the SDK serves it. A miss returns the
-                    // not-ready default.
+                    // No data from LaunchDarkly is available, but the override layer holds this flag,
+                    // and the store read below serves it. The layer can be replaced before that read.
+                    // A miss then returns the not-ready default.
                     noLaunchDarklyData = true;
                 }
                 else
                 {
+                    // A flag the layer does not hold takes the same path as without an override
+                    // source.
                     _evalLog.Warn("Flag evaluation before client initialized; data store unavailable, returning default value");
                     return (new EvaluationDetail<T>(defaultValueOfType, null,
                         EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady)), null);
@@ -586,7 +603,11 @@ namespace LaunchDarkly.Sdk.Server
                 LogHelpers.LogException(_evalLog,
                     string.Format("Exception when evaluating feature flag \"{0}\"", featureKey),
                     e);
-                var reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception);
+                // When the definition that was being evaluated came from the override layer, the
+                // error reason and the event carry the override indicator, like every other result
+                // of that definition.
+                var reason = EvaluationReason.ErrorReason(EvaluationErrorKind.Exception)
+                    .WithOverrideAffected(featureFlag != null && featureFlag.IsOverride);
                 if (featureFlag == null)
                 {
                     _eventProcessor.RecordEvaluationEvent(eventFactory.NewUnknownFlagEvaluationEvent(

@@ -46,6 +46,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         // Overrides are an option of the FDv2 data system only.
         public bool OverridesConfigured => false;
 
+        public bool HasOverride(DataStoreTypes.DataKind kind, string key) => false;
+
         public IFlagChanged FlagChanged { get; }
         public IDataSourceStatusProvider DataSourceStatusProvider { get; }
         public IDataStoreStatusProvider DataStoreStatusProvider { get; }

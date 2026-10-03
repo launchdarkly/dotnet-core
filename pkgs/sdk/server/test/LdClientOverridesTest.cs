@@ -391,6 +391,19 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         [Fact]
+        public void NullFlagKeyOnUninitializedClientIsNotReady()
+        {
+            // The layer holds entries of the flag kind, but no entry has a null key. The evaluation
+            // takes the same path as without an override source.
+            var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of(true))));
+            using (var client = MakeUninitializedClient(source))
+            {
+                var detail = client.BoolVariationDetail(null, context, false);
+                Assert.Equal(EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady), detail.Reason);
+            }
+        }
+
+        [Fact]
         public void ExceptionWhileEvaluatingAnOverriddenFlagKeepsTheMarking()
         {
             var source = new TestOverrideSource(FlagsOnly(

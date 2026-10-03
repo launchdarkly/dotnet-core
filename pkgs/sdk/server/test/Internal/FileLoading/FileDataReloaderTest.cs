@@ -368,6 +368,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
+        public void SuccessfulReloadNowDisarmsThePendingRetry()
+        {
+            Write(Truncated);
+            var reloader = MakeReloader(c =>
+            {
+                c.RetryDelay = TimeSpan.FromMilliseconds(50);
+                c.SkipUnchanged = true;
+            });
+            reloader.ReloadNow();
+            RequireErrored();
+
+            // The file is fixed and loaded on demand. Whether the retry or this load applies the
+            // recovery, the content is applied once.
+            Write(Flag1True);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            // The retry armed by the failure is redundant after the recovery and does not run. A
+            // changed file with no trigger must not be picked up.
+            Write(Flag1False);
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+        }
+
+        [Fact]
         public void NoRetryWhenRetryDelayIsZero()
         {
             Write(Truncated);

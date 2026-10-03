@@ -18,7 +18,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// </para>
     /// <para>
     /// On a framework without link resolution, a path that is a link is observed by its content.
-    /// Reading the file costs more than reading its metadata, so this applies to links only.
+    /// Reading the file costs more than reading its metadata, so this applies to links only. A
+    /// reparse point that is not a link, such as a file kept by a cloud storage provider, is
+    /// observed by its own metadata.
     /// </para>
     /// <para>
     /// A file that cannot be examined counts as absent.
@@ -26,10 +28,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// </remarks>
     internal struct FileState : IEquatable<FileState>
     {
+        // Resolves the final target of a link, or returns null for a reparse point that is not a
+        // link. Null on a framework without link resolution.
 #if NET6_0_OR_GREATER
-        internal const bool LinkResolutionSupported = true;
+        private static readonly Func<FileInfo, FileSystemInfo> DefaultLinkResolver =
+            info => info.ResolveLinkTarget(returnFinalTarget: true);
 #else
-        internal const bool LinkResolutionSupported = false;
+        private static readonly Func<FileInfo, FileSystemInfo> DefaultLinkResolver = null;
 #endif
 
         internal static readonly FileState Absent = new FileState();
@@ -52,13 +57,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <summary>
         /// Observes the file at the path.
         /// </summary>
-        internal static FileState Observe(string path) => Observe(path, LinkResolutionSupported);
+        internal static FileState Observe(string path) => Observe(path, DefaultLinkResolver);
 
         /// <summary>
-        /// Observes the file at the path. When link resolution is requested and available, the
-        /// metadata of a link's final target is used. Otherwise the content of a link is used.
+        /// Observes the file at the path. With a resolver, a link is observed by the metadata of its
+        /// final target. Without one, a link is observed by its content.
         /// </summary>
-        internal static FileState Observe(string path, bool resolveLinks)
+        internal static FileState Observe(string path, Func<FileInfo, FileSystemInfo> resolveLinkTarget)
         {
             try
             {
@@ -71,19 +76,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 {
                     return new FileState(info.LastWriteTimeUtc, info.Length, null);
                 }
-#if NET6_0_OR_GREATER
-                if (resolveLinks)
+                if (resolveLinkTarget != null)
                 {
+                    var target = resolveLinkTarget(info);
+                    if (target == null)
+                    {
+                        // A reparse point that is not a link. Its own metadata describes it.
+                        return new FileState(info.LastWriteTimeUtc, info.Length, null);
+                    }
                     // A link whose target does not exist, or whose target is not a file, has no
                     // content to load. It is absent.
-                    var target = info.ResolveLinkTarget(returnFinalTarget: true) as FileInfo;
-                    if (target == null || !target.Exists)
+                    var targetFile = target as FileInfo;
+                    if (targetFile == null || !targetFile.Exists)
                     {
                         return Absent;
                     }
-                    return new FileState(target.LastWriteTimeUtc, target.Length, null);
+                    return new FileState(targetFile.LastWriteTimeUtc, targetFile.Length, null);
                 }
-#endif
                 return new FileState(default(DateTime), 0, HashContent(path));
             }
             catch (Exception)

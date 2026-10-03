@@ -93,15 +93,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 return;
             }
 
-            var state = FileState.Observe(link, resolveLinks: false);
+            var state = FileState.Observe(link, resolveLinkTarget: null);
 
             // A rewrite with the same content is the same state. A rewrite with other content, even
             // of the same size and modification time, is a different state.
             Assert.True(state.Exists);
             WriteWithModTime(target, "one", DateTime.UtcNow.AddHours(-2));
-            Assert.Equal(state, FileState.Observe(link, resolveLinks: false));
+            Assert.Equal(state, FileState.Observe(link, resolveLinkTarget: null));
             WriteWithModTime(target, "two", DateTime.UtcNow.AddHours(-2));
-            Assert.NotEqual(state, FileState.Observe(link, resolveLinks: false));
+            Assert.NotEqual(state, FileState.Observe(link, resolveLinkTarget: null));
         }
 
         [Fact]
@@ -111,10 +111,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var modTime = DateTime.UtcNow.AddHours(-1);
             WriteWithModTime(path, "one", modTime);
 
-            var state = FileState.Observe(path, resolveLinks: false);
+            var state = FileState.Observe(path, resolveLinkTarget: null);
 
             Assert.Equal(modTime, state.LastWriteTimeUtc);
             Assert.Equal(3, state.Length);
+        }
+
+        [Fact]
+        public void ReparsePointThatIsNotALinkIsObservedByItsOwnMetadata()
+        {
+            // The resolver reports that the reparse point is not a link, as the platform does for a
+            // file kept by a cloud storage provider. The file's own metadata describes it.
+            var target = _dir.PathOf("target.json");
+            WriteWithModTime(target, "one", DateTime.UtcNow.AddHours(-1));
+            var link = _dir.PathOf("link.json");
+            if (!SymbolicLinks.TryCreateFileLink(link, target))
+            {
+                TestLogger.Info("symbolic links cannot be created in this environment; skipping");
+                return;
+            }
+            var own = new FileInfo(link);
+
+            var state = FileState.Observe(link, resolveLinkTarget: info => null);
+
+            Assert.True(state.Exists);
+            Assert.Equal(own.LastWriteTimeUtc, state.LastWriteTimeUtc);
+            Assert.Equal(own.Length, state.Length);
         }
 #endif
     }

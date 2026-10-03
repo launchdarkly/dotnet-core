@@ -26,21 +26,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// ConfigMap is updated, is detected, while a busy sibling file costs no reload.
     /// </para>
     /// <para>
-    /// A directory that cannot be watched is logged and attempted again after a delay, while the
+    /// A directory that cannot be watched is logged and attempted again every second, while the
     /// other directories are watched. A watch on a directory that is deleted delivers nothing more,
-    /// so after each notification, and again after the delay, the watcher checks that the directory
-    /// still exists. A directory that no longer exists has its watch dropped and set up again once
-    /// it exists. When a watch is set up after a failure, the callback runs once so that changes
-    /// made in the meantime are picked up.
+    /// and some platforms report neither the deletion nor a new directory of the same name. So once
+    /// a second the watcher checks that each directory exists and that the state of each configured
+    /// file matches its last notification. A directory that no longer exists has its watch dropped
+    /// and set up again once it exists. A file whose state changed without a notification is
+    /// reported, and its directory's watch is set up again because it can be dead. When a watch is
+    /// set up after a failure, the callback runs once so that changes made in the meantime are
+    /// picked up.
     /// </para>
     /// </remarks>
     internal sealed class FileDataWatcher : IDisposable
     {
         /// <summary>
-        /// The delay before a failed watch setup is attempted again, and before a directory is
-        /// checked after a notification.
+        /// The interval of the periodic check of the watched directories, which is also the delay
+        /// before a failed watch setup is attempted again.
         /// </summary>
-        internal static readonly TimeSpan DefaultRetryDelay = TimeSpan.FromSeconds(1);
+        internal static readonly TimeSpan DefaultCheckInterval = TimeSpan.FromSeconds(1);
 
         // The failure key recorded for a directory that does not exist. A setup failure with the
         // same key is a repeat and is not logged again at the same level.
@@ -69,10 +72,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private readonly List<WatchedDirectory> _directories = new List<WatchedDirectory>();
         private readonly Action _onChange;
         private readonly Logger _log;
-        private readonly TimeSpan _retryDelay;
-        // Created on first use, so a watcher whose setup never fails holds no scheduled work.
-        private Timer _timer;
-        private bool _timerArmed;
+        private readonly Timer _timer;
+        private int _checking;
         private volatile bool _disposed;
 
         /// <summary>
@@ -83,15 +84,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <param name="onChange">invoked for each change notification that concerns one of the files</param>
         /// <param name="log">receives log output about watch failures</param>
         internal FileDataWatcher(IEnumerable<string> paths, Action onChange, Logger log) :
-            this(paths, onChange, log, DefaultRetryDelay)
+            this(paths, onChange, log, DefaultCheckInterval)
         {
         }
 
-        internal FileDataWatcher(IEnumerable<string> paths, Action onChange, Logger log, TimeSpan retryDelay)
+        internal FileDataWatcher(IEnumerable<string> paths, Action onChange, Logger log, TimeSpan checkInterval)
         {
             _onChange = onChange;
             _log = log ?? Logs.None.Logger("");
-            _retryDelay = retryDelay;
 
             // The full path of each file is computed once. Notifications carry the entry name, which
             // is compared to the configured names of the directory.
@@ -110,17 +110,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
 
             SetUpWatches(isRetry: false);
+            _timer = new Timer(OnCheck, null, checkInterval, checkInterval);
         }
 
         public void Dispose()
         {
             _disposed = true;
+            _timer.Dispose();
             var toDispose = new List<FileSystemWatcher>();
             lock (_lock)
             {
-                _timer?.Dispose();
-                _timer = null;
-                _timerArmed = false;
                 foreach (var directory in _directories)
                 {
                     if (directory.Watcher != null)
@@ -139,7 +138,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         // Sets up the watch on each directory that has none. A directory that cannot be watched is
-        // attempted again after the retry delay. When a setup after a failure succeeds, the callback
+        // attempted again at the next check. When a setup after a failure succeeds, the callback
         // runs once, because the files can have changed while the directory was not watched.
         private void SetUpWatches(bool isRetry)
         {
@@ -150,7 +149,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 {
                     return;
                 }
-                var failed = false;
                 foreach (var directory in _directories)
                 {
                     if (directory.Watcher != null)
@@ -163,7 +161,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     }
                     catch (Exception e)
                     {
-                        failed = true;
                         LogSetupFailure(directory, e);
                         continue;
                     }
@@ -179,10 +176,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     {
                         signal = true;
                     }
-                }
-                if (failed)
-                {
-                    ArmTimer();
                 }
             }
             if (signal)
@@ -251,7 +244,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     return;
                 }
                 var changed = false;
-                var toDispose = new List<FileSystemWatcher>();
                 lock (_lock)
                 {
                     if (_disposed || directory.Watcher != watcher)
@@ -268,15 +260,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         changed = FileState.AnyChanged(directory.LastStates, current);
                     }
                     directory.LastStates = current;
-                    // The entries of a directory are deleted before the directory is, and the
-                    // deletion of the directory itself produces no notification. The check runs now,
-                    // and again after the delay.
-                    VerifyDirectory(directory, toDispose);
-                    ArmTimer();
-                }
-                foreach (var dropped in toDispose)
-                {
-                    dropped.Dispose();
                 }
                 if (changed)
                 {
@@ -318,63 +301,74 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
         }
 
-        // Called inside the lock. Drops the watch on a directory that no longer exists, so that it
-        // is set up again once the directory exists. The caller disposes the dropped watcher outside
-        // the lock.
-        private void VerifyDirectory(WatchedDirectory directory, List<FileSystemWatcher> toDispose)
+        // The periodic check. A directory that no longer exists has its watch dropped. A configured
+        // file whose state differs from its last notification changed without one: the change is
+        // reported, and the watch is set up again because a watch that reports nothing for a changed
+        // file can be dead, for example when the directory was replaced by a new one of the same
+        // name. Finally, every directory without a watch gets one set up.
+        private void OnCheck(object state)
         {
-            if (directory.Watcher == null || Directory.Exists(directory.Path))
+            if (_disposed)
             {
                 return;
             }
-            _log.Warn("Directory {0} no longer exists; its watch is set up again when it appears", directory.Path);
-            toDispose.Add(directory.Watcher);
-            directory.Watcher = null;
-            directory.LastFailureKey = MissingDirectoryKey;
-            ArmTimer();
-        }
-
-        // Called inside the lock. An armed timer keeps its deadline.
-        private void ArmTimer()
-        {
-            if (_disposed || _timerArmed)
+            // Checks can overlap when one takes longer than the interval. One at a time is enough.
+            if (Interlocked.Exchange(ref _checking, 1) != 0)
             {
                 return;
             }
-            if (_timer == null)
-            {
-                _timer = new Timer(OnTimerElapsed, null, Timeout.Infinite, Timeout.Infinite);
-            }
-            _timerArmed = true;
-            _timer.Change(_retryDelay, Timeout.InfiniteTimeSpan);
-        }
-
-        private void OnTimerElapsed(object state)
-        {
             try
             {
+                var changed = false;
                 var toDispose = new List<FileSystemWatcher>();
                 lock (_lock)
                 {
-                    _timerArmed = false;
                     if (_disposed)
                     {
                         return;
                     }
                     foreach (var directory in _directories)
                     {
-                        VerifyDirectory(directory, toDispose);
+                        if (directory.Watcher == null)
+                        {
+                            continue;
+                        }
+                        if (!Directory.Exists(directory.Path))
+                        {
+                            _log.Warn("Directory {0} no longer exists; its watch is set up again when it appears", directory.Path);
+                            toDispose.Add(directory.Watcher);
+                            directory.Watcher = null;
+                            directory.LastFailureKey = MissingDirectoryKey;
+                            continue;
+                        }
+                        var current = FileState.ObserveAll(directory.Files);
+                        if (FileState.AnyChanged(directory.LastStates, current))
+                        {
+                            _log.Debug("A file in directory {0} changed without a notification; setting up the watch again", directory.Path);
+                            directory.LastStates = current;
+                            toDispose.Add(directory.Watcher);
+                            directory.Watcher = null;
+                            changed = true;
+                        }
                     }
                 }
                 foreach (var dropped in toDispose)
                 {
                     dropped.Dispose();
                 }
+                if (changed)
+                {
+                    _onChange();
+                }
                 SetUpWatches(isRetry: true);
             }
             catch (Exception e)
             {
                 LogHelpers.LogException(_log, "Unexpected error while checking file system watches", e);
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _checking, 0);
             }
         }
     }

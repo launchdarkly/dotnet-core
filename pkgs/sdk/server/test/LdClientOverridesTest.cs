@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Json;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Internal.Evaluation;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers;
@@ -371,6 +373,114 @@ namespace LaunchDarkly.Sdk.Server
                 Assert.Equal(EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady), detail.Reason);
                 Assert.False(client.AllFlagsState(context).Valid);
             }
+        }
+
+        [Fact]
+        public void InvalidContextOnUninitializedClientIsNotReadyWhenTheLayerLacksTheFlag()
+        {
+            // The layer does not hold the flag, so the evaluation takes the same path as without an
+            // override source: the not-ready result comes before the context is examined, and no
+            // event is recorded.
+            var events = new MockEventProcessor();
+            using (var client = MakeUninitializedClient(new TestOverrideSource(), events))
+            {
+                var detail = client.BoolVariationDetail("flag", Context.New(""), false);
+                Assert.Equal(EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady), detail.Reason);
+                Assert.Empty(events.Events);
+            }
+        }
+
+        [Fact]
+        public void ExceptionWhileEvaluatingAnOverriddenFlagKeepsTheMarking()
+        {
+            var source = new TestOverrideSource(FlagsOnly(
+                SingleValueFlag(Evaluator.FlagKeyToTriggerErrorForTesting, LdValue.Of(true))));
+            var events = new MockEventProcessor();
+            using (var client = MakeUninitializedClient(source, events))
+            {
+                var detail = client.BoolVariationDetail(Evaluator.FlagKeyToTriggerErrorForTesting, context, false);
+
+                // The definition came from the override layer, so the error reason and the recorded
+                // event carry the override indicator.
+                Assert.False(detail.Value);
+                Assert.Equal(EvaluationReason.ErrorReason(EvaluationErrorKind.Exception).WithOverrideAffected(true),
+                    detail.Reason);
+                var e = Assert.IsType<EventProcessorTypes.EvaluationEvent>(Assert.Single(events.Events));
+                Assert.Equal(detail.Reason, e.Reason.Value);
+            }
+        }
+
+        [Fact]
+        public void AllFlagsStateMarksAnExceptionResultOfAnOverriddenFlag()
+        {
+            var source = new TestOverrideSource(FlagsOnly(
+                SingleValueFlag(Evaluator.FlagKeyToTriggerErrorForTesting, LdValue.Of(true))));
+            using (var client = MakeUninitializedClient(source))
+            {
+                var state = client.AllFlagsState(context, FlagsStateOption.WithReasons);
+
+                Assert.True(state.Valid);
+                var entry = LdValue.Parse(LdJsonSerialization.SerializeObject(state))
+                    .Get("$flagsState").Get(Evaluator.FlagKeyToTriggerErrorForTesting);
+                Assert.Equal(LdValue.Of("ERROR"), entry.Get("reason").Get("kind"));
+                Assert.Equal(LdValue.Of(true), entry.Get("reason").Get("overrideAffected"));
+                Assert.Equal(LdValue.Null, entry.Get("trackEvents"));
+            }
+        }
+
+        [Fact]
+        public void OverrideSourceStartFailureDisposesTheClientComponentsAndPropagates()
+        {
+            var source = new TestOverrideSource { StartError = new InvalidOperationException("source failed") };
+            var events = new MockEventProcessor();
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
+                    .Overrides(source))
+                .Events(events.AsSingletonFactory<IEventProcessor>())
+                .Build();
+
+            var e = Assert.Throws<InvalidOperationException>(() => new LdClient(config));
+
+            Assert.Equal("source failed", e.Message);
+            Assert.True(source.Disposed);
+            Assert.True(events.Disposed);
+        }
+
+        [Fact]
+        public void OverrideSourceBuildFailureDisposesThePersistentStore()
+        {
+            var store = new DisposalTrackingDataStore();
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
+                    .PersistentStore(store.AsSingletonFactory<IDataStore>(), DataSystemConfiguration.DataStoreMode.ReadWrite)
+                    .Overrides(new FailingOverrideSourceConfigurer()))
+                .Build();
+
+            Assert.Throws<ArgumentException>(() => new LdClient(config));
+
+            Assert.True(store.Disposed);
+        }
+
+        private class DisposalTrackingDataStore : IDataStore
+        {
+            public volatile bool Disposed;
+
+            public bool StatusMonitoringEnabled => false;
+
+            public void Dispose() => Disposed = true;
+
+            public ItemDescriptor? Get(DataKind kind, string key) => null;
+
+            public KeyedItems<ItemDescriptor> GetAll(DataKind kind) =>
+                new KeyedItems<ItemDescriptor>(Enumerable.Empty<KeyValuePair<string, ItemDescriptor>>());
+
+            public void Init(FullDataSet<ItemDescriptor> allData) { }
+
+            public bool Initialized() => false;
+
+            public bool Upsert(DataKind kind, string key, ItemDescriptor item) => true;
         }
 
         private class FailingOverrideSourceConfigurer : IComponentConfigurer<IOverrideSource>

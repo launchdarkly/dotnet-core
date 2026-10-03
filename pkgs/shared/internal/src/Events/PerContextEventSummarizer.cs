@@ -29,7 +29,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
             int? variation,
             in LdValue value,
             in LdValue defaultValue,
-            in Context context
+            in Context context,
+            bool overrideAffected
             )
         {
             if (!_summarizersByContext.TryGetValue(context, out var summarizer))
@@ -37,7 +38,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
                 summarizer = new EventSummarizer(context);
                 _summarizersByContext[context] = summarizer;
             }
-            summarizer.SummarizeEvent(timestamp, flagKey, flagVersion, variation, value, defaultValue, context);
+            summarizer.SummarizeEvent(timestamp, flagKey, flagVersion, variation, value, defaultValue, context,
+                overrideAffected);
         }
 
         public IReadOnlyList<EventSummary> GetSummariesAndReset()

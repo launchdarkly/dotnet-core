@@ -19,6 +19,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public LdValue DefaultValue;
         public EvaluationReason? Reason;
         public string PrereqOf;
+        public bool OverrideAffected;
     }
 
     public struct TestCustomEventProperties

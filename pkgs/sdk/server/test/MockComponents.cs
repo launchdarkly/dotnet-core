@@ -318,6 +318,8 @@ namespace LaunchDarkly.Sdk.Server
         public volatile bool Started;
         public volatile bool Disposed;
         public volatile bool StartedBeforeBuildReturned;
+        // When set, Start throws it instead of supplying data.
+        public volatile Exception StartError;
 
         public TestOverrideSource() : this(FullDataSet<ItemDescriptor>.Empty()) { }
 
@@ -330,6 +332,10 @@ namespace LaunchDarkly.Sdk.Server
         {
             lock (_lock)
             {
+                if (StartError != null)
+                {
+                    throw StartError;
+                }
                 Started = true;
                 _sink = sink;
                 sink.SetOverrides(_data);
@@ -458,6 +464,7 @@ namespace LaunchDarkly.Sdk.Server
     public class MockEventProcessor : IEventProcessor
     {
         public List<object> Events = new List<object>();
+        public volatile bool Disposed;
 
         public void SetOffline(bool offline) { }
 
@@ -465,7 +472,7 @@ namespace LaunchDarkly.Sdk.Server
 
         public bool FlushAndWait(TimeSpan timeout) => true;
 
-        public void Dispose() { }
+        public void Dispose() => Disposed = true;
 
         public void RecordEvaluationEvent(EventProcessorTypes.EvaluationEvent e) =>
             Events.Add(e);

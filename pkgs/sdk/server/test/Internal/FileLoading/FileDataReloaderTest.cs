@@ -563,13 +563,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void ApplyExceptionOnTimerThreadIsLoggedAndDoesNotStopLaterReloads()
+        public void ApplyExceptionIsReportedAndRetried()
         {
             Write(Flag1True);
             var failNext = true;
             var reloader = MakeReloader(c =>
             {
                 c.DebounceDelay = TimeSpan.FromMilliseconds(10);
+                c.RetryDelay = TimeSpan.FromMilliseconds(20);
+                c.SkipUnchanged = true;
                 c.Apply = result =>
                 {
                     if (failNext)
@@ -581,11 +583,121 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 };
             });
 
+            // The consumer rejects the result. That is a load failure like any other.
             reloader.Trigger();
-            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "Unexpected error while reloading file data"));
+            var e = Assert.IsType<FileDataException>(RequireErrored());
+            Assert.Contains("consumer failed", e.Message);
+            Assert.IsType<InvalidOperationException>(e.InnerException);
+            AssertLogMessageRegex(true, LogLevel.Error, "Unable to load flags: error applying file data");
+
+            // The rejected result was not remembered as applied: the retry offers the unchanged content
+            // again, and this time the consumer accepts it.
+            RequireApplied();
+        }
+
+        [Fact]
+        public void OnErrorExceptionIsLoggedAndTheRetryStillRuns()
+        {
+            Write(Truncated);
+            var reloader = MakeReloader(c =>
+            {
+                c.DebounceDelay = TimeSpan.Zero;
+                c.RetryDelay = TimeSpan.FromMilliseconds(20);
+                c.OnError = e => throw new InvalidOperationException("listener failed");
+            });
 
             reloader.Trigger();
+            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "Error while reporting a file data load failure"));
+
+            // Fix the file without triggering. Only the automatic retry can observe the fix.
+            Write(Flag1True);
             RequireApplied();
+        }
+
+        [Fact]
+        public void FlagValueExpanderExceptionIsReportedAsAFailure()
+        {
+            Write(Flag1True);
+            var failNext = true;
+            var reloader = MakeReloader(c =>
+            {
+                c.RetryDelay = TimeSpan.FromMilliseconds(20);
+                c.FlagValueExpander = (key, value) =>
+                {
+                    if (failNext)
+                    {
+                        failNext = false;
+                        throw new InvalidOperationException("expander failed");
+                    }
+                    return FileDataParser.MakeFallthroughFlagWithValue(key, value, 0);
+                };
+            });
+
+            reloader.ReloadNow();
+
+            var e = RequireErrored();
+            Assert.IsType<FileDataException>(e);
+            Assert.Contains("expander failed", e.Message);
+            Assert.IsType<InvalidOperationException>(e.InnerException);
+            _applied.ExpectNoValue(TimeSpan.Zero);
+
+            // The failure armed the retry like a read failure.
+            RequireApplied();
+        }
+
+        [Fact]
+        public void TriggersDuringARunningReloadCoalesceIntoOneFollowUpReload()
+        {
+            var reader = new BlockingFileReader();
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.DebounceDelay = TimeSpan.FromMilliseconds(5);
+            });
+            try
+            {
+                reloader.Trigger();
+                Assert.True(reader.Entered.Wait(TestTimeout), "timed out waiting for the first reload to start");
+
+                // More change signals arrive while the first reload is blocked in its read. Each one is
+                // far enough apart for the settle window to expire between them.
+                for (var i = 0; i < 10; i++)
+                {
+                    reloader.Trigger();
+                    Thread.Sleep(30);
+                }
+            }
+            finally
+            {
+                reader.Release.Set();
+            }
+
+            // The signals all describe the same state of the files, so one follow-up reload serves
+            // them all: two reloads in total, and no more after that.
+            RequireApplied();
+            RequireApplied();
+            RequireQuiet(TimeSpan.FromMilliseconds(100));
+            Assert.Equal(2, reader.Reads);
+        }
+
+        // Blocks the first read until released, so a reload can be held in progress.
+        private class BlockingFileReader : FileDataTypes.IFileReader
+        {
+            public readonly ManualResetEventSlim Entered = new ManualResetEventSlim();
+            public readonly ManualResetEventSlim Release = new ManualResetEventSlim();
+            private int _reads;
+
+            public int Reads => Volatile.Read(ref _reads);
+
+            public string ReadAllText(string path)
+            {
+                if (Interlocked.Increment(ref _reads) == 1)
+                {
+                    Entered.Set();
+                    Release.Wait();
+                }
+                return "{}";
+            }
         }
 
         private static void AssertEventually(Func<bool> condition)

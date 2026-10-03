@@ -151,7 +151,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <summary>
         /// Synchronously loads the files and applies the result, or reports the failure. Use it
         /// for the initial load. A failure here arms the same automatic retry as a failed
-        /// triggered reload.
+        /// triggered reload, and a success disarms a pending retry.
         /// </summary>
         internal void ReloadNow()
         {
@@ -159,7 +159,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 return;
             }
-            if (!Reload())
+            if (Reload())
+            {
+                // A retry armed by an earlier failure is redundant after this success.
+                DisarmRetry();
+            }
+            else
             {
                 // An already armed retry keeps its earlier deadline.
                 ArmRetry(keepExistingDeadline: true);

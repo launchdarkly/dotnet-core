@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using LaunchDarkly.Logging;
@@ -17,7 +16,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// <remarks>
     /// <para>
     /// The poller samples the files once per interval and compares only modification time and size.
-    /// A rewrite that keeps both values is not detected.
+    /// A rewrite that keeps both values is not detected. The metadata is read through any symbolic
+    /// link, as <see cref="FileState"/> describes, so a change to a link's target is a change.
     /// </para>
     /// <para>
     /// Detection is generous. The callback can run for a change that does not alter the effective
@@ -27,21 +27,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// </remarks>
     internal sealed class FileDataPoller : IDisposable
     {
-        private struct FileState : IEquatable<FileState>
-        {
-            internal bool Exists;
-            internal DateTime LastWriteTimeUtc;
-            internal long Length;
-
-            public bool Equals(FileState other) =>
-                Exists == other.Exists && LastWriteTimeUtc == other.LastWriteTimeUtc && Length == other.Length;
-
-            public override bool Equals(object obj) => obj is FileState other && Equals(other);
-
-            public override int GetHashCode() =>
-                Exists.GetHashCode() ^ LastWriteTimeUtc.GetHashCode() ^ Length.GetHashCode();
-        }
-
         private readonly string[] _paths;
         private readonly Action _onChange;
         private readonly Logger _log;
@@ -62,8 +47,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         {
             _paths = paths.ToArray();
             _onChange = onChange;
-            _log = log;
-            _last = ObserveAll(_paths);
+            _log = log ?? Logs.None.Logger("");
+            _last = FileState.ObserveAll(_paths);
             _timer = new Timer(OnTick, null, interval, interval);
         }
 
@@ -93,16 +78,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             try
             {
-                var current = ObserveAll(_paths);
-                var changed = false;
-                for (var i = 0; i < current.Length; i++)
-                {
-                    if (!current[i].Equals(_last[i]))
-                    {
-                        changed = true;
-                        break;
-                    }
-                }
+                var current = FileState.ObserveAll(_paths);
+                var changed = FileState.AnyChanged(_last, current);
                 _last = current;
                 if (changed && !_disposed)
                 {
@@ -117,25 +94,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 Interlocked.Exchange(ref _examining, 0);
             }
-        }
-
-        private static FileState[] ObserveAll(string[] paths)
-        {
-            var states = new FileState[paths.Length];
-            for (var i = 0; i < paths.Length; i++)
-            {
-                var info = new FileInfo(paths[i]);
-                if (info.Exists)
-                {
-                    states[i] = new FileState
-                    {
-                        Exists = true,
-                        LastWriteTimeUtc = info.LastWriteTimeUtc,
-                        Length = info.Length
-                    };
-                }
-            }
-            return states;
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
@@ -97,6 +98,63 @@ namespace LaunchDarkly.Sdk.Server
             catch { }
         }
     }
+
+#if NET6_0_OR_GREATER
+    /// <summary>
+    /// Creates symbolic links for tests. Creating a link needs a privilege on Windows that the test
+    /// process may not have, so the Try methods report failure instead of throwing, and a test that
+    /// needs links returns early when they cannot be created.
+    /// </summary>
+    public static class SymbolicLinks
+    {
+        public static bool TryCreateFileLink(string link, string target)
+        {
+            try
+            {
+                File.CreateSymbolicLink(link, target);
+                return true;
+            }
+            catch (Exception e) when (e is UnauthorizedAccessException || e is IOException || e is PlatformNotSupportedException)
+            {
+                return false;
+            }
+        }
+
+        public static bool TryCreateDirectoryLink(string link, string target)
+        {
+            try
+            {
+                Directory.CreateSymbolicLink(link, target);
+                return true;
+            }
+            catch (Exception e) when (e is UnauthorizedAccessException || e is IOException || e is PlatformNotSupportedException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// True when <see cref="Replace"/> is available. The atomic replacement of one directory link
+        /// by another is a Unix operation.
+        /// </summary>
+        public static bool CanReplace => !OperatingSystem.IsWindows();
+
+        /// <summary>
+        /// Replaces the link at <paramref name="to"/> with the link at <paramref name="from"/> in one
+        /// step, as a ConfigMap update replaces its data directory link.
+        /// </summary>
+        public static void Replace(string from, string to)
+        {
+            if (rename(from, to) != 0)
+            {
+                throw new IOException("rename failed with error " + Marshal.GetLastWin32Error());
+            }
+        }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int rename(string oldPath, string newPath);
+    }
+#endif
 
     public class TempFile : IDisposable
     {

@@ -119,6 +119,14 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
+        public void BuildRejectsAPollIntervalAboveTheMaximum()
+        {
+            var e = Assert.Throws<ArgumentOutOfRangeException>(() => FileOverrides.Source().FilePaths("/a.json")
+                .PollInterval(FileOverrideSourceBuilder.MaximumPollInterval + TimeSpan.FromMilliseconds(1)).Build(BasicContext));
+            Assert.Contains("must not exceed", e.Message);
+        }
+
+        [Fact]
         public void BuildDoesNotWarnAboutThePollIntervalInWatchingMode()
         {
             var source = BuildSource(FileOverrides.Source().FilePaths("/a.json")

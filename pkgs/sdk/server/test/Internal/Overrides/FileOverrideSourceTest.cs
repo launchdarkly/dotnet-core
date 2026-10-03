@@ -358,14 +358,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         }
 
         [Fact]
-        public void WatchingModeWithAMissingDirectoryLogsAndStillLoads()
+        public void WatchingModeWithAnUnwatchableDirectoryLogsAndStillLoads()
         {
             var path = Path.Combine(_dir.PathOf("no-such-directory"), "overrides.json");
 
             StartSource(new[] { path }, changeDetection: FileOverrideTypes.ChangeDetection.Watching);
 
+            // The failure to watch is logged, and the source still supplies the initial data.
             Assert.Empty(FlagsByKey(RequireInitialSnapshot()));
-            AssertLogMessageRegex(true, LogLevel.Error, "Unable to watch override files");
+            AssertLogMessageRegex(true, LogLevel.Error, "Unable to watch");
+        }
+
+        [Fact]
+        public void PollingModeStartsWithTheMaximumPollInterval()
+        {
+            var path = _dir.PathOf("overrides.json");
+            Write(path, @"{""flagValues"": {""flag1"": true}}");
+
+            StartSource(new[] { path }, pollInterval: FileOverrideSourceBuilder.MaximumPollInterval);
+
+            Assert.Single(FlagsByKey(RequireInitialSnapshot()));
         }
 
         [Fact]

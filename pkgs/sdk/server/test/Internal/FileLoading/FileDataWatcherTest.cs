@@ -11,7 +11,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     {
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
         private static readonly TimeSpan QuietPeriod = TimeSpan.FromMilliseconds(300);
-        private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(50);
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromMilliseconds(50);
 
         private readonly TempDirectory _dir = TempDirectory.Create();
         private readonly EventSink<bool> _changed = new EventSink<bool>();
@@ -27,7 +27,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private FileDataWatcher StartWatcher(params string[] paths)
         {
-            _watcher = new FileDataWatcher(paths, () => _changed.Enqueue(true), TestLogger, RetryDelay);
+            _watcher = new FileDataWatcher(paths, () => _changed.Enqueue(true), TestLogger, CheckInterval);
             return _watcher;
         }
 
@@ -192,7 +192,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void DeletedAndRecreatedDirectoryIsWatchedAgain()
+        public void DeletedDirectoryIsWatchedAgainWhenItAppears()
         {
             var directory = _dir.PathOf("recreated");
             Directory.CreateDirectory(directory);
@@ -200,7 +200,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             File.WriteAllText(path, "one");
             StartWatcher(path);
 
-            // The file goes first, which is a change, and then the directory.
+            // The file goes first, which is a change, and then the directory. The directory stays
+            // missing until the watcher has noticed and dropped its watch.
             File.Delete(path);
             RequireChange();
             Directory.Delete(directory);
@@ -213,10 +214,35 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
+        public void DirectoryReplacedBetweenChecksIsWatchedAgain()
+        {
+            var directory = _dir.PathOf("replaced");
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, "data.json");
+            File.WriteAllText(path, "one");
+            StartWatcher(path);
+
+            // The file goes first, which is a change. The directory goes after a pause longer than
+            // the check interval, so a check has already found it present, and it is replaced by a
+            // new one before the next check. The platform reports none of this.
+            File.Delete(path);
+            RequireChange();
+            Thread.Sleep(CheckInterval + CheckInterval);
+            Directory.Delete(directory);
+            Directory.CreateDirectory(directory);
+
+            // The file in the new directory is reported, and so is a later change to it.
+            File.WriteAllText(path, "two");
+            RequireChange();
+            File.WriteAllText(path, "three");
+            RequireChange();
+        }
+
+        [Fact]
         public void AcceptsANullLogger()
         {
             var path = Path.Combine(_dir.PathOf("no-such-directory"), "data.json");
-            _watcher = new FileDataWatcher(new[] { path }, () => _changed.Enqueue(true), null, RetryDelay);
+            _watcher = new FileDataWatcher(new[] { path }, () => _changed.Enqueue(true), null, CheckInterval);
         }
 
 #if NET6_0_OR_GREATER

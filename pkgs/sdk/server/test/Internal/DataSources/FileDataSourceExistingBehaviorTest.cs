@@ -141,7 +141,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public void DeletingAWatchedFileDoesNotTriggerAReload()
+        public void DeletingAWatchedFileKeepsTheStoreData()
         {
             using (var file = TempFile.Create())
             {
@@ -152,11 +152,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     fp.Start();
                     _updateSink.Inits.ExpectValue();
 
-                    // Only modification, creation, and rename notifications trigger a reload.
+                    // The notifications for a deletion differ by platform: some report only the
+                    // deletion, which does not trigger a reload, and some report a modification with
+                    // it, whose reload fails on the missing file. On every platform, the data in the
+                    // store is kept, because a load that fails never replaces it.
                     file.Delete();
                     _updateSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(500));
-                    AssertLogMessageRegex(false, LogLevel.Error, "Failed to load");
-                    AssertLogMessageRegex(false, LogLevel.Warn, "Failed to read");
                 }
             }
         }

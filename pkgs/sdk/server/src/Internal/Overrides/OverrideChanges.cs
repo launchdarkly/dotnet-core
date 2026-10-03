@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 
@@ -20,13 +22,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         /// Returns the keys of all flags whose merged-view evaluation may have changed when the
         /// override layer was replaced. The result includes the flags whose override entries were
         /// added, removed, or changed. Dependency fan-out adds every flag that depends, directly or
-        /// transitively, on any added, removed, or changed entry of either kind.
+        /// transitively, on any added, removed, or changed entry of either kind. A definition whose
+        /// dependencies cannot be computed is logged and contributes no edges.
         /// </summary>
         internal static ICollection<string> ComputeAffectedFlags(
             ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> oldOverrides,
             ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> newOverrides,
             IDictionary<DataKind, Dictionary<string, ItemDescriptor>> oldMerged,
-            IDictionary<DataKind, Dictionary<string, ItemDescriptor>> newMerged
+            IDictionary<DataKind, Dictionary<string, ItemDescriptor>> newMerged,
+            Logger log
             )
         {
             var seeds = DiffOverrides(oldOverrides, newOverrides);
@@ -39,8 +43,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             // replacement can rewire dependencies. For example, removing a flag override restores the
             // prerequisite edges of the LaunchDarkly definition. Flags that depended on the override's
             // references exist as dependents only in the old view.
-            var oldTracker = TrackerFromView(oldMerged);
-            var newTracker = TrackerFromView(newMerged);
+            var oldTracker = TrackerFromView(oldMerged, log);
+            var newTracker = TrackerFromView(newMerged, log);
             var affected = new HashSet<KindAndKey>();
             foreach (var seed in seeds)
             {
@@ -142,7 +146,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             return view;
         }
 
-        private static DependencyTracker TrackerFromView(IDictionary<DataKind, Dictionary<string, ItemDescriptor>> view)
+        private static DependencyTracker TrackerFromView(
+            IDictionary<DataKind, Dictionary<string, ItemDescriptor>> view,
+            Logger log
+            )
         {
             var tracker = new DependencyTracker();
             foreach (var kind in DiffKinds)
@@ -151,7 +158,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                 {
                     foreach (var kv in items)
                     {
-                        tracker.UpdateDependenciesFrom(kind, kv.Key, kv.Value);
+                        try
+                        {
+                            tracker.UpdateDependenciesFrom(kind, kv.Key, kv.Value);
+                        }
+                        catch (Exception e)
+                        {
+                            // A malformed definition, such as a prerequisite without a key or a
+                            // segment match on a value that is not a string, has no usable
+                            // dependencies. It contributes no edges, so the fan-out does not reach
+                            // the flags that depend on it. Every directly changed key is still
+                            // notified.
+                            log.Warn("Unable to compute the dependencies of {0} \"{1}\": {2}",
+                                kind.Name, kv.Key, LogValues.ExceptionSummary(e));
+                        }
                     }
                 }
             }

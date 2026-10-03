@@ -50,8 +50,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         public bool OverridesConfigured => _overrideSource != null;
 
+        // No entry has a null key, so a null key is not held. The evaluation of a null key then
+        // takes the same path as without an override source.
         public bool HasOverride(DataStoreTypes.DataKind kind, string key) =>
-            _overrideLayer != null && _overrideLayer.Get(kind, key).HasValue;
+            key != null && _overrideLayer != null && _overrideLayer.Get(kind, key).HasValue;
 
         public IFlagChanged FlagChanged { get; }
         public IDataSourceStatusProvider DataSourceStatusProvider { get; }

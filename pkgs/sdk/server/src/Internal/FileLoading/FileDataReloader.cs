@@ -57,8 +57,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal Func<string, LdValue, FeatureFlag> FlagValueExpander { get; set; }
 
         /// <summary>
-        /// Invoked with each successfully merged result. Calls are serialized. Apply and OnError
-        /// must not call back into Dispose.
+        /// Invoked with each successfully merged result. Calls are serialized. An exception from
+        /// Apply is a load failure: it is reported through OnError, the result is not remembered as
+        /// applied, and the reload is retried. Apply and OnError must not call back into Dispose.
         /// </summary>
         internal Action<FileDataMergeResult> Apply { get; set; }
 
@@ -66,7 +67,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// Invoked when a reload fails, once per distinct failure. With automatic retries, repeats
         /// of an identical failure do not invoke it again. A success re-arms it. The exception is a
         /// <see cref="FileDataReadException"/> when a file could not be read or parsed, or a
-        /// <see cref="FileDataException"/> for a merge failure. The reloader logs failures itself.
+        /// <see cref="FileDataException"/> when the documents could not be combined or Apply threw.
+        /// The reloader logs failures itself. An exception from OnError is logged and does not stop
+        /// the retry.
         /// </summary>
         internal Action<Exception> OnError { get; set; }
 
@@ -129,6 +132,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private bool _retryArmed;
         private int _immediateReloadPending;
 
+        // Guards the state of triggered reloads. One thread at a time performs them; a request that
+        // arrives while one runs is remembered and served by one follow-up reload.
+        private readonly object _pendingLock = new object();
+        private bool _reloading;
+        private bool _reloadPending;
+
         private volatile bool _disposed;
 
         internal FileDataReloader(FileDataReloaderConfig config)
@@ -160,7 +169,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <summary>
         /// Signals that the files may have changed and a reload should happen after the debounce
         /// delay. It never blocks. Signals that arrive while a reload is already pending are
-        /// coalesced.
+        /// coalesced, and signals that arrive while a reload is running are coalesced into one
+        /// follow-up reload.
         /// </summary>
         internal void Trigger()
         {
@@ -172,11 +182,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 if (Interlocked.Exchange(ref _immediateReloadPending, 1) == 0)
                 {
-                    Task.Run(() =>
+                    Task.Run(() => RunGuarded(() =>
                     {
                         Interlocked.Exchange(ref _immediateReloadPending, 0);
-                        ReloadAfterSignal(isRetry: false);
-                    });
+                        RequestReload(isRetry: false);
+                    }));
                 }
                 return;
             }
@@ -215,12 +225,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
         }
 
-        private void OnDebounceElapsed(object state) => RunGuarded(() => ReloadAfterSignal(isRetry: false));
+        private void OnDebounceElapsed(object state) => RunGuarded(() => RequestReload(isRetry: false));
 
-        private void OnRetryElapsed(object state) => RunGuarded(() => ReloadAfterSignal(isRetry: true));
+        private void OnRetryElapsed(object state) => RunGuarded(() => RequestReload(isRetry: true));
 
-        // Timer callbacks run on thread pool threads. An unhandled exception there ends the process,
-        // so every callback logs instead.
+        // Timer callbacks and worker tasks run on thread pool threads. An unhandled exception there
+        // ends the process, so every callback logs instead.
         private void RunGuarded(Action action)
         {
             try
@@ -230,6 +240,66 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             catch (Exception e)
             {
                 LogHelpers.LogException(_log, "Unexpected error while reloading file data", e);
+            }
+        }
+
+        // Performs a triggered reload, or remembers the request when a reload is already running. The
+        // running thread performs one more reload when it finishes. All the requests that arrive
+        // during one reload describe the same state of the files, so one follow-up reload serves
+        // them all, and no thread waits for the reload lock. A retry that arrives while a reload
+        // runs is dropped: that reload decides whether a retry is needed.
+        private void RequestReload(bool isRetry)
+        {
+            lock (_pendingLock)
+            {
+                if (_reloading)
+                {
+                    if (!isRetry)
+                    {
+                        _reloadPending = true;
+                    }
+                    return;
+                }
+                _reloading = true;
+            }
+            var completed = false;
+            try
+            {
+                var retry = isRetry;
+                do
+                {
+                    ReloadAfterSignal(retry);
+                    retry = false;
+                } while (TakePendingReload());
+                completed = true;
+            }
+            finally
+            {
+                // An unexpected exception must not leave the gate closed forever.
+                if (!completed)
+                {
+                    lock (_pendingLock)
+                    {
+                        _reloading = false;
+                        _reloadPending = false;
+                    }
+                }
+            }
+        }
+
+        // Called by the reloading thread after each reload. Returns true when a request arrived
+        // during the reload. Otherwise it records that no reload runs and returns false.
+        private bool TakePendingReload()
+        {
+            lock (_pendingLock)
+            {
+                if (_reloadPending)
+                {
+                    _reloadPending = false;
+                    return true;
+                }
+                _reloading = false;
+                return false;
             }
         }
 
@@ -355,6 +425,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 {
                     return Fail(e);
                 }
+                catch (Exception e)
+                {
+                    // The flag value expander is supplied by the consumer. Its failure is a failure
+                    // to process the files, like a merge failure.
+                    return Fail(new FileDataException("error expanding flag values: " + e.Message, e));
+                }
 
                 // Documents are the present files in order. Copy their counts onto the file summaries.
                 var filesWithCounts = ImmutableList.CreateBuilder<FileDataFileSummary>();
@@ -385,17 +461,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 // the last success. The consumer heard about the failure through OnError and only
                 // Apply tells it things are good again.
                 var recovering = _lastErrorMessage != null;
-                _lastErrorMessage = null;
+                byte[] hash = null;
                 if (rawContents != null)
                 {
-                    var hash = ComputeHash(rawContents.ToString());
+                    hash = ComputeHash(rawContents.ToString());
                     if (!recovering && HashesEqual(hash, _lastGoodHash))
                     {
                         return true;
                     }
-                    _lastGoodHash = hash;
                 }
-                _config.Apply?.Invoke(merged.WithFiles(filesWithCounts.ToImmutable()));
+                // Nothing is remembered until the consumer has accepted the result. A result the
+                // consumer rejects must not become the baseline that skip-unchanged compares
+                // against, and must not count as a recovery. The rejection is a load failure.
+                try
+                {
+                    _config.Apply?.Invoke(merged.WithFiles(filesWithCounts.ToImmutable()));
+                }
+                catch (Exception e)
+                {
+                    return Fail(new FileDataException("error applying file data: " + e.Message, e));
+                }
+                _lastErrorMessage = null;
+                _lastGoodHash = hash;
                 return true;
             }
         }
@@ -419,7 +506,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             _lastErrorMessage = e.Message;
             _log.Error("Unable to load flags: {0}", e.Message);
-            _config.OnError?.Invoke(e);
+            try
+            {
+                _config.OnError?.Invoke(e);
+            }
+            catch (Exception callbackError)
+            {
+                // A consumer that throws while it is told about a failure must not stop the retry.
+                LogHelpers.LogException(_log, "Error while reporting a file data load failure", callbackError);
+            }
             return false;
         }
 

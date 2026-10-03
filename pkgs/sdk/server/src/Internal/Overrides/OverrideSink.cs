@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -63,14 +64,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                 }
 
                 _layer.SetAll(data, out var previous, out var current);
-                var oldMerged = OverrideChanges.SnapshotMergedView(_base, previous);
-                var newMerged = OverrideChanges.SnapshotMergedView(_base, current);
-
-                var affected = OverrideChanges.ComputeAffectedFlags(previous, current, oldMerged, newMerged);
-                if (affected.Count > 0)
+                // The replacement is in effect now. A failure to determine or deliver the change
+                // notifications must not reach the source, which would treat it as a failed
+                // update, so it is logged and the listeners miss this update.
+                try
                 {
-                    _log.Debug("Override update affected {0} flag(s)", affected.Count);
-                    _notify(affected);
+                    var oldMerged = OverrideChanges.SnapshotMergedView(_base, previous);
+                    var newMerged = OverrideChanges.SnapshotMergedView(_base, current);
+
+                    var affected = OverrideChanges.ComputeAffectedFlags(previous, current, oldMerged, newMerged, _log);
+                    if (affected.Count > 0)
+                    {
+                        _log.Debug("Override update affected {0} flag(s)", affected.Count);
+                        _notify(affected);
+                    }
+                }
+                catch (Exception e)
+                {
+                    LogHelpers.LogException(_log, "Unable to determine the flags affected by an override update", e);
                 }
             }
         }

@@ -157,6 +157,62 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             RequireChange();
         }
 
+#if NET6_0_OR_GREATER
+        [Fact]
+        public void DetectsAChangeToTheTargetOfALink()
+        {
+            var target = _dir.PathOf("target.json");
+            var baseTime = DateTime.UtcNow.AddHours(-1);
+            WriteWithModTime(target, "one", baseTime);
+            var link = _dir.PathOf("data.json");
+            if (!SymbolicLinks.TryCreateFileLink(link, target))
+            {
+                TestLogger.Info("symbolic links cannot be created in this environment; skipping");
+                return;
+            }
+            StartPoller(link);
+
+            RequireNoChange(QuietPeriod);
+
+            // The target changes. The link itself is untouched.
+            WriteWithModTime(target, "two!", baseTime.AddMinutes(1));
+            RequireChange();
+        }
+
+        [Fact]
+        public void DetectsAReplacedDirectoryLinkInThePath()
+        {
+            // The layout of a mounted ConfigMap: the configured file is a link into a data directory
+            // that is itself a link to the current version. An update writes a new version and
+            // replaces the data directory link. The configured file is never touched.
+            if (!SymbolicLinks.CanReplace)
+            {
+                TestLogger.Info("directory links cannot be replaced atomically in this environment; skipping");
+                return;
+            }
+            var version1 = _dir.PathOf("..version1");
+            Directory.CreateDirectory(version1);
+            File.WriteAllText(Path.Combine(version1, "data.json"), "one");
+            var configured = _dir.PathOf("data.json");
+            if (!SymbolicLinks.TryCreateDirectoryLink(_dir.PathOf("..data"), "..version1") ||
+                !SymbolicLinks.TryCreateFileLink(configured, Path.Combine("..data", "data.json")))
+            {
+                TestLogger.Info("symbolic links cannot be created in this environment; skipping");
+                return;
+            }
+            StartPoller(configured);
+
+            RequireNoChange(QuietPeriod);
+
+            var version2 = _dir.PathOf("..version2");
+            Directory.CreateDirectory(version2);
+            File.WriteAllText(Path.Combine(version2, "data.json"), "two!");
+            SymbolicLinks.TryCreateDirectoryLink(_dir.PathOf("..data_tmp"), "..version2");
+            SymbolicLinks.Replace(_dir.PathOf("..data_tmp"), _dir.PathOf("..data"));
+            RequireChange();
+        }
+#endif
+
         [Fact]
         public void StopsOnDispose()
         {

@@ -214,6 +214,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
+        public void DirectoryRemovedWithoutNotificationsIsReportedOnce()
+        {
+            var directory = _dir.PathOf("removed");
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, "data.json");
+            File.WriteAllText(path, "one");
+            StartWatcher(path);
+
+            // Moving the directory away removes the configured file with it, and the platform
+            // reports nothing. The absence of the file is a change.
+            Directory.Move(directory, _dir.PathOf("removed-elsewhere"));
+            RequireChange();
+
+            // The directory stays missing. Its watch is dropped, and nothing more is reported.
+            RequireLogMessage(Logging.LogLevel.Warn, "no longer exists");
+            _changed.ExpectNoValue(QuietPeriod);
+        }
+
+        [Fact]
         public void DirectoryReplacedBetweenChecksIsWatchedAgain()
         {
             var directory = _dir.PathOf("replaced");

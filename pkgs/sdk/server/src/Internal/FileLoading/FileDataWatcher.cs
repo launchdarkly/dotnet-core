@@ -301,11 +301,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
         }
 
-        // The periodic check. A directory that no longer exists has its watch dropped. A configured
-        // file whose state differs from its last notification changed without one: the change is
-        // reported, and the watch is set up again because a watch that reports nothing for a changed
-        // file can be dead, for example when the directory was replaced by a new one of the same
-        // name. Finally, every directory without a watch gets one set up.
+        // The periodic check. A configured file whose state differs from its last notification
+        // changed without one, and the change is reported. A directory that no longer exists has
+        // its watch dropped; its files are absent now, which is such a change when their deletion
+        // produced no notification. Otherwise the watch of a directory with a changed file is set up
+        // again, because a watch that reports nothing for a changed file can be dead, for example
+        // when the directory was replaced by a new one of the same name. Finally, every directory
+        // without a watch gets one set up.
         private void OnCheck(object state)
         {
             if (_disposed)
@@ -333,22 +335,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         {
                             continue;
                         }
+                        var current = FileState.ObserveAll(directory.Files);
+                        var stateChanged = FileState.AnyChanged(directory.LastStates, current);
+                        if (stateChanged)
+                        {
+                            directory.LastStates = current;
+                            changed = true;
+                        }
                         if (!Directory.Exists(directory.Path))
                         {
                             _log.Warn("Directory {0} no longer exists; its watch is set up again when it appears", directory.Path);
                             toDispose.Add(directory.Watcher);
                             directory.Watcher = null;
                             directory.LastFailureKey = MissingDirectoryKey;
-                            continue;
                         }
-                        var current = FileState.ObserveAll(directory.Files);
-                        if (FileState.AnyChanged(directory.LastStates, current))
+                        else if (stateChanged)
                         {
                             _log.Debug("A file in directory {0} changed without a notification; setting up the watch again", directory.Path);
-                            directory.LastStates = current;
                             toDispose.Add(directory.Watcher);
                             directory.Watcher = null;
-                            changed = true;
                         }
                     }
                 }

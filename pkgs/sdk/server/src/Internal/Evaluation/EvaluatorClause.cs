@@ -14,9 +14,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.Evaluation
                 foreach (var value in clause.Values)
                 {
                     Segment segment = SegmentGetter(value.AsString);
-                    if (segment != null && MatchSegment(ref state, segment))
+                    if (segment != null)
                     {
-                        return MaybeNegate(clause, true);
+                        // The segment definition is read here, so an override segment marks the
+                        // evaluation. A match is not required. A negated clause turns a non-match into
+                        // a match, so the definition shapes the result either way.
+                        if (segment.IsOverride)
+                        {
+                            state.OverrideAffected = true;
+                        }
+                        if (MatchSegment(ref state, segment))
+                        {
+                            return MaybeNegate(clause, true);
+                        }
                     }
                 }
                 return MaybeNegate(clause, false);

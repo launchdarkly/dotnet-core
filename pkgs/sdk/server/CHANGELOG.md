@@ -1,5 +1,13 @@
 # Changelog
 
+## [8.17.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.1...LaunchDarkly.ServerSdk-v8.17.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* Bump LaunchDarkly.InternalSdk to 3.11.1 for redactedAttributes escaping ([5cba233](https://github.com/launchdarkly/dotnet-core/commit/5cba23367b59a02512e78f0b55f47b3b1f2e9ffb))
+* Expose store metadata from the write-through store ([#371](https://github.com/launchdarkly/dotnet-core/issues/371)) ([5cba233](https://github.com/launchdarkly/dotnet-core/commit/5cba23367b59a02512e78f0b55f47b3b1f2e9ffb))
+
 ## [8.17.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.0...LaunchDarkly.ServerSdk-v8.17.1) (2026-09-22)
 
 

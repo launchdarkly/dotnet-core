@@ -249,9 +249,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // the stream continues, and exactly one reload after it stops.
             // The notifications are spaced far inside the window so that a scheduling stall on a
             // busy machine cannot let the window expire between two of them.
+            // The bound on postponing is switched off here, because this test is about the window
+            // alone; the bound has its own test below.
             Write(Flag1True);
             var window = TimeSpan.FromMilliseconds(600);
-            var reloader = MakeReloader(c => c.DebounceDelay = window);
+            var reloader = MakeReloader(c =>
+            {
+                c.DebounceDelay = window;
+                c.MaxDebounceDelay = TimeSpan.Zero;
+            });
 
             var stop = DateTime.UtcNow + TimeSpan.FromTicks(window.Ticks * 3);
             while (DateTime.UtcNow < stop)
@@ -264,6 +270,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             RequireApplied();
             RequireQuiet(TimeSpan.FromTicks(window.Ticks * 2));
             Assert.Equal(1, ApplyCount);
+        }
+
+        [Fact]
+        public void DebounceCannotBePostponedBeyondTheMaximum()
+        {
+            // A stream of notifications that never settles, for example a file that is written
+            // continuously, must still reload, no later than the maximum after the first
+            // notification of the stream. The settle window is longer than the whole stream and
+            // the notifications are spaced far inside it, so only the bound can let a reload run
+            // while the stream continues.
+            Write(Flag1True);
+            var reloader = MakeReloader(c =>
+            {
+                c.DebounceDelay = TimeSpan.FromMilliseconds(600);
+                c.MaxDebounceDelay = TimeSpan.FromMilliseconds(400);
+            });
+
+            var stop = DateTime.UtcNow + TimeSpan.FromMilliseconds(3000);
+            while (DateTime.UtcNow < stop && ApplyCount == 0)
+            {
+                reloader.Trigger();
+                Thread.Sleep(50);
+            }
+            Assert.True(ApplyCount >= 1, "no reload ran while change notifications kept arriving");
         }
 
         [Fact]

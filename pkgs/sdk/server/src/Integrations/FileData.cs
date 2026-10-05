@@ -50,7 +50,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </para>
         /// <list type="bullet">
         /// <item><description><c>flags</c>: Feature flag definitions.</description></item>
-        /// <item><description><c>flagVersions</c>: Simplified feature flags that contain only a value.</description></item>
+        /// <item><description><c>flagValues</c>: Simplified feature flags that contain only a value.</description></item>
         /// <item><description><c>segments</c>: Segment definitions.</description></item>
         /// </list>
         /// <para>

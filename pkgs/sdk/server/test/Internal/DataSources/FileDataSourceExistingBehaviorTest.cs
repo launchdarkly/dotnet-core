@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using LaunchDarkly.Logging;
@@ -14,9 +15,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
     // These tests pin behavior of the file data source that its other tests do not assert directly,
     // so that changes to the shared file loading code cannot alter it: every successful load is
-    // applied even when the content is unchanged, the retry delay and its logging, the log messages
+    // applied even when the content is unchanged, the retry budget and its logging, the log messages
     // and levels for a failed load, missing-file handling, and which file system notifications
-    // trigger a reload.
+    // trigger a reload. Where the move onto the shared file loading code changed a pinned message
+    // or rule, the test says so and names the behavior change listed in the PR body.
     public class FileDataSourceExistingBehaviorTest : BaseTest
     {
         private static readonly string ALL_DATA_JSON_FILE = TestUtils.TestFilePath("all-properties.json");
@@ -87,7 +89,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 fp.Start();
                 Assert.False(fp.Initialized);
                 _updateSink.Inits.ExpectNoValue();
-                AssertLogMessageRegex(true, LogLevel.Error, "^Failed to load bad-file-path");
+                // The message text is the shared file loading code's (a behavior change in the PR
+                // body); the level and the condition are unchanged.
+                AssertLogMessageRegex(true, LogLevel.Error,
+                    "^Unable to load flags: unable to read file: .*\\[bad-file-path\\]$");
+            }
+        }
+
+        [Fact]
+        public void EveryFailedStartLogsTheFailureAtError()
+        {
+            // A load that Start runs is a new event, so its failure is logged at Error even when it
+            // is the same failure as the previous Start's; only the automatic retries demote a
+            // repeated failure to Debug.
+            factory.FilePaths("bad-file-path");
+            using (var fp = MakeDataSource())
+            {
+                Assert.False(fp.Start().Result);
+                Assert.False(fp.Start().Result);
+                Assert.Equal(2, LogCapture.GetMessages().Count(m =>
+                    m.Level == LogLevel.Error && m.Text.Contains("[bad-file-path]")));
             }
         }
 
@@ -100,7 +121,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 fp.Start();
                 Assert.False(fp.Initialized);
                 _updateSink.Inits.ExpectNoValue();
-                AssertLogMessageRegex(true, LogLevel.Error, "^Failed to parse .*bad-file.txt");
+                // The message text is the shared file loading code's (a behavior change in the PR
+                // body); the level and the condition are unchanged.
+                AssertLogMessageRegex(true, LogLevel.Error,
+                    "^Unable to load flags: error parsing file: .*bad-file.txt\\]$");
             }
         }
 
@@ -118,8 +142,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     fp.Start();
                     Assert.False(fp.Initialized);
                     _updateSink.Inits.ExpectNoValue();
+                    // The message text is the shared file loading code's (a behavior change in the
+                    // PR body); the level and the condition are unchanged, and the key is still named.
                     AssertLogMessageRegex(true, LogLevel.Error,
-                        "^Failed to load .*: .*in \"features\", key \"flag1\" was already defined");
+                        "^Unable to load flags: flag \"flag1\" is specified by multiple files$");
                 }
             }
         }
@@ -136,7 +162,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 fp.Start();
                 Assert.False(fp.Initialized);
                 _updateSink.Inits.ExpectNoValue();
-                AssertLogMessageRegex(true, LogLevel.Error, "^Failed to load " + missingDirectoryPath);
+                // The message text is the shared file loading code's (behavior change D6 in the PR
+                // body); the level and the condition are unchanged.
+                AssertLogMessageRegex(true, LogLevel.Error,
+                    "^Unable to load flags: unable to read file: .*" + missingDirectoryPath);
             }
         }
 
@@ -152,10 +181,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     fp.Start();
                     _updateSink.Inits.ExpectValue();
 
-                    // The notifications for a deletion differ by platform: some report only the
-                    // deletion, which does not trigger a reload, and some report a modification with
-                    // it, whose reload fails on the missing file. On every platform, the data in the
-                    // store is kept, because a load that fails never replaces it.
+                    // A deletion is a change, and the reload it starts fails on the missing file. The
+                    // data in the store is kept, because a load that fails never replaces it.
                     file.Delete();
                     _updateSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(500));
                 }
@@ -163,19 +190,31 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public void EveryFailedParseAttemptLogsAWarningWithTheRetryDelay()
+        public void FailedLoadAttemptsLogOneErrorThenDebugAndOneErrorWhenGivingUp()
         {
+            // This replaces the pin of a warning per failed parse attempt (a behavior change in the
+            // PR body): the first failure is logged once at Error, the identical failures of the
+            // retries at Debug, and the end of the retry budget once at Error.
+            // The path is in a directory that does not exist, so no change notification can start
+            // a second run of attempts; the reader ignores the path anyway.
             var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
+            using (var dir = TempDirectory.Create())
             {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
+                factory.FilePaths(Path.Combine(dir.PathOf("no-such-directory"), "data.json"))
+                    .AutoUpdate(true).FileReader(reader);
                 using (var fp = MakeDataSource())
                 {
                     fp.Start();
-                    WaitUntil(() => reader.Reads >= 3, "3 file reads");
-                    var warnings = LogCapture.GetMessages().Where(m =>
-                        m.Level == LogLevel.Warn && m.Text.Contains("will retry in 600 ms")).ToList();
-                    Assert.True(warnings.Count >= 2, "expected a warning per failed attempt, got " + warnings.Count);
+                    WaitUntil(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "after 5 attempts"),
+                        "the retry budget to end");
+                    var messages = LogCapture.GetMessages();
+                    Assert.Equal(1, messages.Count(m => m.Level == LogLevel.Error &&
+                        m.Text.StartsWith("Unable to load flags: error parsing file")));
+                    Assert.Equal(4, messages.Count(m => m.Level == LogLevel.Debug &&
+                        m.Text.StartsWith("Unable to load flags: error parsing file")));
+                    Assert.Equal(1, messages.Count(m => m.Level == LogLevel.Error &&
+                        m.Text.Contains("attempts")));
+                    Assert.Equal(5, reader.Reads);
                     Assert.False(fp.Initialized);
                 }
             }

@@ -81,6 +81,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private int ErrorLogCount() => LogCapture.GetMessages().Count(m => m.Level == LogLevel.Error);
 
+        private int GiveUpLogCount() =>
+            LogCapture.GetMessages().Count(m => m.Level == LogLevel.Error && m.Text.Contains("attempts"));
+
         [Fact]
         public void FailsOnMissingPathByDefault()
         {
@@ -732,6 +735,233 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             RequireApplied();
             RequireQuiet(TimeSpan.FromMilliseconds(100));
             Assert.Equal(2, reader.Reads);
+        }
+
+        [Fact]
+        public void GivesUpAfterMaxLoadAttempts()
+        {
+            Write(Truncated);
+            var reader = new CountingFileReader();
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.RetryDelay = TimeSpan.FromMilliseconds(10);
+                c.MaxLoadAttempts = 3;
+            });
+
+            reloader.ReloadNow();
+            RequireErrored();
+
+            // The initial attempt and two retries fail, and the end of the budget is logged once.
+            // Then nothing runs: a fix without a trigger is not picked up.
+            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "after 3 attempts"));
+            Write(Flag1True);
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+            Assert.Equal(3, reader.Reads);
+            Assert.Equal(1, GiveUpLogCount());
+        }
+
+        [Fact]
+        public void TriggerAfterGivingUpStartsOverWithAFreshBudget()
+        {
+            Write(Truncated);
+            var reader = new CountingFileReader();
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.DebounceDelay = TimeSpan.Zero;
+                c.RetryDelay = TimeSpan.FromMilliseconds(10);
+                c.MaxLoadAttempts = 3;
+            });
+            reloader.ReloadNow();
+            RequireErrored();
+            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "after 3 attempts"));
+
+            // The file is still bad. A change signal is a new run of attempts: three more, not
+            // one, before the reloader gives up again. The new run reports the failure again.
+            reloader.Trigger();
+            RequireErrored();
+            AssertEventually(() => reader.Reads >= 6);
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+            Assert.Equal(6, reader.Reads);
+            Assert.Equal(2, GiveUpLogCount());
+
+            // A signal after the file is fixed loads it.
+            Write(Flag1True);
+            reloader.Trigger();
+            RequireApplied();
+        }
+
+        [Fact]
+        public void RetriesWithoutBoundByDefault()
+        {
+            Write(Truncated);
+            var reader = new CountingFileReader();
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.RetryDelay = TimeSpan.FromMilliseconds(10);
+            });
+            reloader.ReloadNow();
+            RequireErrored();
+
+            // Far more attempts than any bound a consumer would set, and no giving up.
+            AssertEventually(() => reader.Reads >= 20);
+            AssertLogMessageRegex(false, LogLevel.Error, "attempts");
+
+            Write(Flag1True);
+            RequireApplied();
+        }
+
+        [Fact]
+        public void NoGiveUpWithoutRetries()
+        {
+            Write(Truncated);
+            var reloader = MakeReloader(c =>
+            {
+                c.RetryDelay = TimeSpan.Zero;
+                c.MaxLoadAttempts = 1;
+            });
+            reloader.ReloadNow();
+            RequireErrored();
+            reloader.ReloadNow();
+            RequireErrored();
+
+            // Without retries there is nothing to give up: each load is one attempt, reported as a
+            // failure, and no line announces the end of a retry budget.
+            AssertLogMessageRegex(false, LogLevel.Error, "attempts");
+        }
+
+        [Fact]
+        public void GiveUpLineNamesTheFailure()
+        {
+            Write(Truncated);
+            var reloader = MakeReloader(c =>
+            {
+                c.RetryDelay = TimeSpan.FromMilliseconds(10);
+                c.MaxLoadAttempts = 2;
+            });
+            reloader.ReloadNow();
+            var e = RequireErrored();
+
+            // The attempts before the end of the budget may have repeated an earlier failure at
+            // debug level only, so the line that ends it says why.
+            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "after 2 attempts"));
+            Assert.Contains(LogCapture.GetMessages(), m => m.Level == LogLevel.Error &&
+                m.Text.Contains("after 2 attempts") && m.Text.EndsWith(e.Message));
+        }
+
+        [Fact]
+        public void FailureThatRepeatsOnANewReloadIsReportedAgain()
+        {
+            Write(Truncated);
+            var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(10));
+            reloader.ReloadNow();
+            var first = RequireErrored();
+
+            // The automatic retries repeat the failure at debug level only.
+            RequireQuiet(TimeSpan.FromMilliseconds(100));
+            Assert.Equal(1, ErrorLogCount());
+
+            // A reload that is not a retry is a new event: the same failure is reported and logged
+            // at error level again, with its reason.
+            reloader.ReloadNow();
+            var second = RequireErrored();
+            Assert.Equal(first.Message, second.Message);
+            Assert.Equal(2, LogCapture.GetMessages().Count(m => m.Level == LogLevel.Error &&
+                m.Text.Contains("error parsing file")));
+        }
+
+        [Fact]
+        public void RetryThatFiresDuringASuccessfulReloadDoesNotApplyAgain()
+        {
+            Write(Truncated);
+            var reader = new BlockingSecondReadFileReader();
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.RetryDelay = TimeSpan.FromMilliseconds(300);
+            });
+            reloader.ReloadNow();
+            RequireErrored(); // a retry is due in 300 ms
+
+            // The next synchronous reload blocks in its read past the retry deadline. The retry
+            // fires and waits for the reload lock while that reload succeeds.
+            Write(Flag1True);
+            var second = Task.Run(() => reloader.ReloadNow());
+            try
+            {
+                Assert.True(reader.Entered.Wait(TestTimeout), "timed out waiting for the second read");
+                Thread.Sleep(600); // twice the retry delay: the retry has fired by now
+            }
+            finally
+            {
+                reader.Release.Set();
+            }
+            Assert.True(second.Wait(TestTimeout), "the second reload did not finish");
+
+            // The stale retry reads and applies nothing: nothing has failed since the success.
+            RequireApplied();
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+            Assert.Equal(1, ApplyCount);
+            Assert.Equal(2, reader.Reads);
+        }
+
+        [Fact]
+        public void MissingDirectoryFailsWhenFailOnMissingDirectoryIsSet()
+        {
+            Write(Flag1True);
+            var missingFile = _dir.PathOf("missing.json");
+            var inMissingDirectory = Path.Combine(_dir.PathOf("no-such-directory"), "data.json");
+            var reloader = MakeReloader(c =>
+            {
+                c.Paths = new[] { _path, missingFile, inMissingDirectory };
+                c.SkipMissingPaths = true;
+                c.FailOnMissingDirectory = true;
+            });
+
+            reloader.ReloadNow();
+
+            // The missing file is still skipped; the path in the missing directory fails the load.
+            var e = Assert.IsType<FileDataReadException>(RequireErrored());
+            Assert.Equal(inMissingDirectory, e.Path);
+            _applied.ExpectNoValue(TimeSpan.Zero);
+        }
+
+        // Reads the file as the default reader does, and counts the reads, so a test can observe
+        // how many load attempts were made.
+        private class CountingFileReader : FileDataTypes.IFileReader
+        {
+            private int _reads;
+
+            public int Reads => Volatile.Read(ref _reads);
+
+            public string ReadAllText(string path)
+            {
+                Interlocked.Increment(ref _reads);
+                return FileDataReader.Instance.ReadAllText(path);
+            }
+        }
+
+        // Reads the file as the default reader does, but holds the second read until released, so
+        // a reload can be held in progress after an earlier one has failed.
+        private class BlockingSecondReadFileReader : FileDataTypes.IFileReader
+        {
+            public readonly ManualResetEventSlim Entered = new ManualResetEventSlim();
+            public readonly ManualResetEventSlim Release = new ManualResetEventSlim();
+            private int _reads;
+
+            public int Reads => Volatile.Read(ref _reads);
+
+            public string ReadAllText(string path)
+            {
+                if (Interlocked.Increment(ref _reads) == 2)
+                {
+                    Entered.Set();
+                    Release.Wait();
+                }
+                return FileDataReader.Instance.ReadAllText(path);
+            }
         }
 
         // Blocks the first read until released, so a reload can be held in progress.

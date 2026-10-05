@@ -42,7 +42,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal Logger Logger { get; set; }
 
         /// <summary>
-        /// Reads file contents. Defaults to the SDK's standard file reader.
+        /// Reads file contents. Defaults to <see cref="FileDataReader"/>, which does not block a
+        /// writer of the file while it reads.
         /// </summary>
         internal FileDataTypes.IFileReader FileReader { get; set; }
 
@@ -144,7 +145,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         {
             _config = config;
             _parser = new FileDataParser(config.AlternateParser);
-            _fileReader = config.FileReader ?? Internal.DataSources.FlagFileReader.Instance;
+            _fileReader = config.FileReader ?? FileDataReader.Instance;
             _log = config.Logger ?? Logs.None.Logger("");
         }
 

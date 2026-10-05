@@ -58,18 +58,30 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// </summary>
         public DataStoreMode PersistentDataStoreMode { get; }
 
+        /// <summary>
+        /// An optional factory for creating the override source. This is null when no override source is
+        /// configured, in which case the SDK behaves exactly as it does without the flag overrides feature.
+        /// </summary>
+        /// <remarks>
+        /// Flag overrides are currently experimental and subject to change.
+        /// </remarks>
+        /// <seealso cref="Integrations.DataSystemBuilder.Overrides(IComponentConfigurer{IOverrideSource})"/>
+        public IComponentConfigurer<IOverrideSource> OverrideSource { get; }
+
         internal DataSystemConfiguration(
             IReadOnlyList<IComponentConfigurer<IDataSource>> initializers,
             IReadOnlyList<IComponentConfigurer<IDataSource>> synchronizers,
             IComponentConfigurer<IDataSource> fDv1FallbackSynchronizer,
             IComponentConfigurer<IDataStore> persistentStore,
-            DataStoreMode persistentDataStoreMode)
+            DataStoreMode persistentDataStoreMode,
+            IComponentConfigurer<IOverrideSource> overrideSource)
         {
             Initializers = initializers;
             Synchronizers = synchronizers;
             FDv1FallbackSynchronizer = fDv1FallbackSynchronizer;
             PersistentStore = persistentStore;
             PersistentDataStoreMode = persistentDataStoreMode;
+            OverrideSource = overrideSource;
         }
     }
 }

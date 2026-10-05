@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -82,6 +83,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal TimeSpan DebounceDelay { get; set; }
 
         /// <summary>
+        /// The longest that a stream of Trigger calls which never settles can postpone a reload,
+        /// measured from the first call of the stream. A file that is written continuously, or a
+        /// directory with constant activity, still reloads at this interval. Defaults to
+        /// <see cref="FileDataReloader.DefaultMaxDebounceDelay"/>; zero or negative means no bound.
+        /// Ignored when DebounceDelay is zero or negative.
+        /// </summary>
+        internal TimeSpan MaxDebounceDelay { get; set; } = FileDataReloader.DefaultMaxDebounceDelay;
+
+        /// <summary>
         /// How long to wait after a failed reload before retrying, so that a failure observed while
         /// a file was being rewritten recovers even if no further change notification arrives. If
         /// zero or negative, there is no automatic retry.
@@ -109,6 +119,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal static readonly TimeSpan DefaultDebounceDelay = TimeSpan.FromMilliseconds(100);
 
         /// <summary>
+        /// The bound on how long settling can postpone a reload. A second of stale data is
+        /// acceptable; postponing without end while a file is written continuously is not.
+        /// </summary>
+        internal static readonly TimeSpan DefaultMaxDebounceDelay = TimeSpan.FromSeconds(1);
+
+        /// <summary>
         /// Bounds how long a failed reload can go uncorrected when no further change notification
         /// arrives, for example when the failure came from reading a file mid-write. Reading a
         /// local file is cheap, so this can be short.
@@ -129,6 +145,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // used holds no scheduled work.
         private readonly object _timerLock = new object();
         private Timer _debounceTimer;
+        // Stopwatch timestamp of the first trigger of the pending stream, or NoBurst when no reload is
+        // pending. Guarded by _timerLock.
+        private long _burstStartTimestamp = NoBurst;
+        private const long NoBurst = -1;
         private Timer _retryTimer;
         private bool _retryArmed;
         private int _immediateReloadPending;
@@ -206,8 +226,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 {
                     _debounceTimer = new Timer(OnDebounceElapsed, null, Timeout.Infinite, Timeout.Infinite);
                 }
-                // Each trigger moves the deadline out again. The reload runs after activity settles.
-                _debounceTimer.Change(_config.DebounceDelay, Timeout.InfiniteTimeSpan);
+                // Each trigger moves the deadline out again. The reload runs after activity settles,
+                // or when the stream of triggers has postponed it for as long as the bound allows.
+                var now = Stopwatch.GetTimestamp();
+                if (_burstStartTimestamp == NoBurst)
+                {
+                    _burstStartTimestamp = now;
+                }
+                var delay = _config.DebounceDelay;
+                if (_config.MaxDebounceDelay > TimeSpan.Zero)
+                {
+                    var elapsed = TimeSpan.FromTicks((now - _burstStartTimestamp) * TimeSpan.TicksPerSecond /
+                        Stopwatch.Frequency);
+                    var remaining = _config.MaxDebounceDelay - elapsed;
+                    if (remaining < delay)
+                    {
+                        delay = remaining < TimeSpan.Zero ? TimeSpan.Zero : remaining;
+                    }
+                }
+                _debounceTimer.Change(delay, Timeout.InfiniteTimeSpan);
             }
         }
 
@@ -231,7 +268,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
         }
 
-        private void OnDebounceElapsed(object state) => RunGuarded(() => RequestReload(isRetry: false));
+        private void OnDebounceElapsed(object state)
+        {
+            lock (_timerLock)
+            {
+                // The next trigger starts a new stream, with a fresh bound.
+                _burstStartTimestamp = NoBurst;
+            }
+            RunGuarded(() => RequestReload(isRetry: false));
+        }
 
         private void OnRetryElapsed(object state) => RunGuarded(() => RequestReload(isRetry: true));
 

@@ -27,14 +27,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// </para>
     /// <para>
     /// A directory that cannot be watched is logged and attempted again every second, while the
-    /// other directories are watched. A watch on a directory that is deleted delivers nothing more,
-    /// and some platforms report neither the deletion nor a new directory of the same name. So once
-    /// a second the watcher checks that each directory exists and that the state of each configured
-    /// file matches its last notification. A directory that no longer exists has its watch dropped
-    /// and set up again once it exists. A file whose state changed without a notification is
-    /// reported, and its directory's watch is set up again because it can be dead. When a watch is
-    /// set up after a failure, the callback runs once so that changes made in the meantime are
-    /// picked up.
+    /// other directories are watched. A watch on a directory that is deleted delivers nothing more.
+    /// Some platforms report the deletion as an error of the watch, and others report neither the
+    /// deletion nor a new directory of the same name. So once a second the watcher checks that each
+    /// directory exists and that the state of each configured file matches its last notification.
+    /// A directory that no longer exists, whether the platform reported it or the check found it,
+    /// has its watch dropped and set up again once it exists. A file whose state changed without a
+    /// notification is reported, and its directory's watch is set up again because it can be dead.
+    /// When a watch is set up after a failure, the callback runs once so that changes made in the
+    /// meantime are picked up.
     /// </para>
     /// </remarks>
     internal sealed class FileDataWatcher : IDisposable
@@ -274,7 +275,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         // An error from the file system, such as a full notification buffer, means that changes may
         // have been dropped, or that the watch itself failed. The watch is set up again, and the
-        // files are read again.
+        // files are read again. Some platforms report the deletion of the watched directory as an
+        // error, which is handled as the periodic check handles a directory that no longer exists.
         private void OnWatcherError(WatchedDirectory directory, FileSystemWatcher watcher, Exception error)
         {
             try
@@ -283,22 +285,50 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 {
                     return;
                 }
+                var changed = false;
                 lock (_lock)
                 {
                     if (_disposed || directory.Watcher != watcher)
                     {
                         return;
                     }
-                    LogHelpers.LogException(_log, "Error from file system watcher for directory " + directory.Path, error);
                     directory.Watcher = null;
+                    if (Directory.Exists(directory.Path))
+                    {
+                        LogHelpers.LogException(_log, "Error from file system watcher for directory " + directory.Path, error);
+                    }
+                    else
+                    {
+                        // The files are absent now, which is a change when their deletion produced
+                        // no notification.
+                        _log.Debug("File system watcher for directory {0} reported an error after the directory was removed: {1}",
+                            directory.Path, LogValues.ExceptionSummary(error));
+                        var current = FileState.ObserveAll(directory.Files);
+                        changed = FileState.AnyChanged(directory.LastStates, current);
+                        directory.LastStates = current;
+                        NoteMissingDirectory(directory);
+                    }
                 }
                 watcher.Dispose();
+                if (changed)
+                {
+                    _onChange();
+                }
                 SetUpWatches(isRetry: true);
             }
             catch (Exception e)
             {
                 LogHelpers.LogException(_log, "Unexpected error while handling a file system watcher error", e);
             }
+        }
+
+        // Called inside the lock for a directory whose watch was dropped because the directory no
+        // longer exists. The setup failures that follow until it exists again repeat this cause,
+        // and are logged at debug level only.
+        private void NoteMissingDirectory(WatchedDirectory directory)
+        {
+            _log.Warn("Directory {0} no longer exists; its watch is set up again when it appears", directory.Path);
+            directory.LastFailureKey = MissingDirectoryKey;
         }
 
         // The periodic check. A configured file whose state differs from its last notification
@@ -344,10 +374,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         }
                         if (!Directory.Exists(directory.Path))
                         {
-                            _log.Warn("Directory {0} no longer exists; its watch is set up again when it appears", directory.Path);
                             toDispose.Add(directory.Watcher);
                             directory.Watcher = null;
-                            directory.LastFailureKey = MissingDirectoryKey;
+                            NoteMissingDirectory(directory);
                         }
                         else if (stateChanged)
                         {

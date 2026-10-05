@@ -9,7 +9,6 @@ This project adheres to [Semantic Versioning](http://semver.org).
 ### Bug Fixes
 
 * Bump LaunchDarkly.InternalSdk to 3.11.1 for redactedAttributes escaping ([5cba233](https://github.com/launchdarkly/dotnet-core/commit/5cba23367b59a02512e78f0b55f47b3b1f2e9ffb))
-* Expose store metadata from the write-through store ([#371](https://github.com/launchdarkly/dotnet-core/issues/371)) ([5cba233](https://github.com/launchdarkly/dotnet-core/commit/5cba23367b59a02512e78f0b55f47b3b1f2e9ffb))
 
 ## [5.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.0...LaunchDarkly.ClientSdk-v5.10.1) (2026-09-22)
 

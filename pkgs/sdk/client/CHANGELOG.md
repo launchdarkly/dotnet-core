@@ -3,6 +3,14 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.10.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.1...LaunchDarkly.ClientSdk-v5.10.2) (2026-10-02)
+
+
+### Bug Fixes
+
+* Bump LaunchDarkly.InternalSdk to 3.11.1 for redactedAttributes escaping ([5cba233](https://github.com/launchdarkly/dotnet-core/commit/5cba23367b59a02512e78f0b55f47b3b1f2e9ffb))
+* Expose store metadata from the write-through store ([#371](https://github.com/launchdarkly/dotnet-core/issues/371)) ([5cba233](https://github.com/launchdarkly/dotnet-core/commit/5cba23367b59a02512e78f0b55f47b3b1f2e9ffb))
+
 ## [5.10.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.0...LaunchDarkly.ClientSdk-v5.10.1) (2026-09-22)
 
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using LaunchDarkly.TestHelpers;
@@ -14,7 +15,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMilliseconds(50);
 
         private readonly TempDirectory _dir = TempDirectory.Create();
-        private readonly EventSink<bool> _changed = new EventSink<bool>();
+        private readonly BlockingCollection<bool> _changes = new BlockingCollection<bool>();
         private FileDataWatcher _watcher;
 
         public FileDataWatcherTest(ITestOutputHelper testOutput) : base(testOutput) { }
@@ -27,11 +28,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private FileDataWatcher StartWatcher(params string[] paths)
         {
-            _watcher = new FileDataWatcher(paths, () => _changed.Enqueue(true), TestLogger, CheckInterval);
+            _watcher = new FileDataWatcher(paths, () => _changes.Add(true), TestLogger, CheckInterval);
             return _watcher;
         }
 
-        private void RequireChange() => _changed.ExpectValue(TestTimeout);
+        private void RequireChange() =>
+            Assert.True(_changes.TryTake(out _, TestTimeout), "expected a change notification");
+
+        private void RequireNoChange() =>
+            Assert.False(_changes.TryTake(out _, QuietPeriod), "expected no change notification");
+
+        // On macOS, a notification for a write made shortly before the watch was set up can be
+        // delivered after it, tens of milliseconds later, and a notification that names a
+        // configured file is reported without comparing its state. A test that asserts silence
+        // first lets such notifications arrive and discards them.
+        private void DiscardStaleNotifications()
+        {
+            Thread.Sleep(QuietPeriod);
+            while (_changes.TryTake(out _))
+            {
+            }
+        }
 
         private void RequireLogMessage(Logging.LogLevel level, string pattern)
         {
@@ -96,10 +113,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var other = _dir.PathOf("other.json");
             File.WriteAllText(path, "one");
             StartWatcher(path);
+            DiscardStaleNotifications();
 
             File.WriteAllText(other, "unrelated");
             File.WriteAllText(other, "unrelated again");
-            _changed.ExpectNoValue(QuietPeriod);
+            RequireNoChange();
         }
 
         [Fact]
@@ -155,12 +173,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var path = _dir.PathOf("data.json");
             File.WriteAllText(path, "one");
             var watcher = StartWatcher(path);
+            DiscardStaleNotifications();
 
             watcher.Dispose();
             watcher.Dispose();
 
             File.WriteAllText(path, "two");
-            _changed.ExpectNoValue(QuietPeriod);
+            RequireNoChange();
         }
 
         [Fact]
@@ -221,6 +240,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var path = Path.Combine(directory, "data.json");
             File.WriteAllText(path, "one");
             StartWatcher(path);
+            DiscardStaleNotifications();
 
             // Moving the directory away removes the configured file with it, and the platform
             // reports nothing. The absence of the file is a change.
@@ -229,7 +249,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             // The directory stays missing. Its watch is dropped, and nothing more is reported.
             RequireLogMessage(Logging.LogLevel.Warn, "no longer exists");
-            _changed.ExpectNoValue(QuietPeriod);
+            RequireNoChange();
         }
 
         [Fact]
@@ -261,7 +281,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void AcceptsANullLogger()
         {
             var path = Path.Combine(_dir.PathOf("no-such-directory"), "data.json");
-            _watcher = new FileDataWatcher(new[] { path }, () => _changed.Enqueue(true), null, CheckInterval);
+            _watcher = new FileDataWatcher(new[] { path }, () => _changes.Add(true), null, CheckInterval);
         }
 
 #if NET6_0_OR_GREATER

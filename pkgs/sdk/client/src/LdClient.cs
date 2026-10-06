@@ -193,7 +193,8 @@ namespace LaunchDarkly.Sdk.Client
             var dataSourceFactory = _config.DataSource ?? Components.StreamingDataSource();
 
             _connectivityStateManager = Factory.CreateConnectivityStateManager(_config);
-            var isConnected = _connectivityStateManager.IsConnected;
+            var networkAccess = _connectivityStateManager.NetworkAccess;
+            var isConnected = ConnectionManager.IsConsideredConnected(networkAccess);
 
             diagnosticDisabler?.SetDisabled(!isConnected || _config.Offline);
 
@@ -205,6 +206,7 @@ namespace LaunchDarkly.Sdk.Client
                 _clientContext,
                 dataSourceFactory,
                 _dataSourceUpdateSink,
+                () => dataSourceUpdateSink.CurrentStatus,
                 _eventProcessor,
                 diagnosticDisabler,
                 _config.EnableBackgroundUpdating,
@@ -212,16 +214,16 @@ namespace LaunchDarkly.Sdk.Client
                 _log
             );
             _connectionManager.SetForceOffline(_config.Offline);
-            _connectionManager.SetNetworkEnabled(isConnected);
+            _connectionManager.SetNetworkAccess(networkAccess);
             if (_config.Offline)
             {
                 _log.Info("Starting LaunchDarkly client in offline mode");
             }
 
-            _connectivityStateManager.ConnectionChanged += networkAvailable =>
+            _connectivityStateManager.ConnectionChanged += access =>
             {
-                _log.Debug("Setting online to {0} due to a connectivity change event", networkAvailable);
-                _ = _connectionManager.SetNetworkEnabled(networkAvailable); // do not await the result
+                _log.Debug("Setting network access to {0} due to a connectivity change event", access);
+                _ = _connectionManager.SetNetworkAccess(access); // do not await the result
             };
 
             // Build the plugin config and environment metadata

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Internal.Events;
+using LaunchDarkly.Sdk.Client.PlatformSpecific;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Client.Subsystems;
 
@@ -15,7 +16,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
     /// </summary>
     /// <remarks>
     /// Whenever the state of this object is modified by <see cref="SetForceOffline(bool)"/>,
-    /// <see cref="SetNetworkEnabled(bool)"/>, <see cref="SetInBackground(bool)"/>,
+    /// <see cref="SetNetworkAccess(LdNetworkAccess)"/>, <see cref="SetInBackground(bool)"/>,
     /// <see cref="SetContext(Context)"/>, or <see cref="Start"/>, it will decide whether to make a new
     /// connection, drop an existing connection, both, or neither. If the caller wants to know when a
     /// new connection (if any) is ready, it should <c>await</c> the returned task.
@@ -32,6 +33,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         private readonly LdClientContext _clientContext;
         private readonly IComponentConfigurer<IDataSource> _dataSourceFactory;
         private readonly IDataSourceUpdateSink _updateSink;
+        private readonly Func<DataSourceStatus> _currentStatus;
         private readonly IEventProcessor _eventProcessor;
         private readonly DiagnosticDisablerImpl _diagnosticDisabler;
         private readonly bool _enableBackgroundUpdating;
@@ -40,6 +42,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         private bool _initialized = false;
         private bool _forceOffline = false;
         private bool _networkEnabled = false;
+        private LdNetworkAccess _networkAccess = LdNetworkAccess.None;
         private bool _inBackground = false;
         private Context _context;
         private IDataSource _dataSource = null;
@@ -53,8 +56,8 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         public bool ForceOffline => LockUtils.WithReadLock(_lock, () => _forceOffline);
 
         /// <summary>
-        /// True if we have been told there is network connectivity (<see cref="SetNetworkEnabled(bool)"/>
-        /// was set to true).
+        /// True if we have been told there is network connectivity (<see cref="SetNetworkAccess(LdNetworkAccess)"/>
+        /// was last given an access level that counts as connected).
         /// </summary>
         public bool NetworkEnabled => LockUtils.WithReadLock(_lock, () => _networkEnabled);
 
@@ -68,6 +71,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
             LdClientContext clientContext,
             IComponentConfigurer<IDataSource> dataSourceFactory,
             IDataSourceUpdateSink updateSink,
+            Func<DataSourceStatus> currentStatus,
             IEventProcessor eventProcessor,
             DiagnosticDisablerImpl diagnosticDisabler,
             bool enableBackgroundUpdating,
@@ -78,6 +82,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
             _clientContext = clientContext;
             _dataSourceFactory = dataSourceFactory;
             _updateSink = updateSink;
+            _currentStatus = currentStatus;
             _eventProcessor = eventProcessor;
             _diagnosticDisabler = diagnosticDisabler;
             _enableBackgroundUpdating = enableBackgroundUpdating;
@@ -128,46 +133,86 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         }
 
         /// <summary>
-        /// Sets whether we should be able to make network connections, and attempts to connect if appropriate.
+        /// Sets the current network access level, derives whether we can make network connections, and
+        /// attempts to connect, drop, or re-establish the connection as appropriate.
         /// </summary>
         /// <remarks>
-        /// Besides updating the value of the <see cref="NetworkEnabled"/> property, we do the
-        /// following:
-        /// 
-        /// If <c>networkEnabled</c> is false, we drop our current connection (if any), and we will not
-        /// make any connections no matter what other properties are changed as long as this property is
-        /// still true.
+        /// The access level is reduced to a connected/offline decision via
+        /// <see cref="IsConsideredConnected(LdNetworkAccess)"/>:
         ///
-        /// If <c>networkEnabled</c> is true and we already have a connection, nothing happens.
+        /// If that decision changes, we behave like the old network-enabled toggle: if it becomes
+        /// false we drop our current connection (if any); if it becomes true and we have no
+        /// connection we create a data source and start it.
         ///
-        /// If <c>networkEnabled</c> is true and we have no connection, but other conditions disallow
-        /// making a connection (or we do not have an update processor factory), nothing happens.
-        ///
-        /// If <c>networkEnabled</c> is true, and we do not yet have a connection, and no other
-        /// conditions disallow making a connection, and we have an update processor factory,
-        /// we create an update processor and tell it to start.
+        /// If the decision does not change but we have just recovered up to real
+        /// <see cref="LdNetworkAccess.Internet"/> from a weaker level that was only optimistically
+        /// treated as connected (<see cref="LdNetworkAccess.Unknown"/> /
+        /// <see cref="LdNetworkAccess.ConstrainedInternet"/>), we re-establish the data source so a
+        /// connection that was started prematurely is not left stuck -- but only if the current data
+        /// source is not already healthy (<see cref="DataSourceState.Valid"/>), so a nominal
+        /// connectivity flap never tears down a working stream.
         ///
         /// The returned task is immediately completed unless we are making a new connection, in which
-        /// case it is completed when the update processor signals success or failure. The task yields
-        /// a true result if we successfully made a connection <i>or</i> if we decided not to connect
-        /// because we are in offline mode. In other words, the result is true if
-        /// <see cref="Initialized"/> is true.
+        /// case it is completed when the data source signals success or failure.
         /// </remarks>
-        /// <param name="networkEnabled">true if we think we can make network connections</param>
+        /// <param name="access">the current network access level reported by the platform</param>
         /// <returns>a task as described above</returns>
-        public Task<bool> SetNetworkEnabled(bool networkEnabled)
+        public Task<bool> SetNetworkAccess(LdNetworkAccess access)
         {
             return LockUtils.WithWriteLock(_lock, () =>
             {
-                if (_disposed || _networkEnabled == networkEnabled)
+                if (_disposed)
                 {
                     return Task.FromResult(false);
                 }
-                _networkEnabled = networkEnabled;
-                _log.Info("Network availability is now {0}", networkEnabled);
-                return OpenOrCloseConnectionIfNecessary(false); // not awaiting
+
+                var networkEnabled = IsConsideredConnected(access);
+                var previousAccess = _networkAccess;
+                _networkAccess = access;
+
+                if (networkEnabled != _networkEnabled)
+                {
+                    _networkEnabled = networkEnabled;
+                    _log.Info("Network availability is now {0} (access level {1})", networkEnabled, access);
+                    return OpenOrCloseConnectionIfNecessary(false); // not awaiting
+                }
+
+                // The connected/offline decision did not change. If we just reached real Internet
+                // access from a weaker level that IsConsideredConnected optimistically treats as
+                // connected, a data source that was started prematurely may be stuck; re-establish it,
+                // but only if it is not already healthy (anti-churn: never rebuild a Valid stream).
+                if (networkEnabled
+                    && IsRecoveryToInternet(previousAccess, access)
+                    && !IsCurrentDataSourceHealthy())
+                {
+                    _log.Info("Network access recovered to {0}; re-establishing data source", access);
+                    return OpenOrCloseConnectionIfNecessary(true); // reinitialize; not awaiting
+                }
+
+                return Task.FromResult(false);
             });
         }
+
+        private bool IsCurrentDataSourceHealthy() =>
+            _currentStatus != null && _currentStatus().State == DataSourceState.Valid;
+
+        // Unknown covers MAUI Connectivity's cold-start race; ConstrainedInternet typically
+        // resolves upward. Local/None stay disconnected so the transition to a connected level
+        // triggers a fresh connect. (Relocated from DefaultConnectivityStateManager; mapping
+        // unchanged, preserving the cold-start optimism added in 5.9.3.)
+        internal static bool IsConsideredConnected(LdNetworkAccess access) =>
+            access == LdNetworkAccess.Internet
+            || access == LdNetworkAccess.Unknown
+            || access == LdNetworkAccess.ConstrainedInternet;
+
+        // True when access has just reached real Internet from a weaker state that
+        // IsConsideredConnected optimistically treats as connected (Unknown / ConstrainedInternet).
+        // Reaching Internet from Internet (a duplicate event) or from a disconnected level (which is
+        // already handled by the connected/offline edge) does not qualify.
+        internal static bool IsRecoveryToInternet(LdNetworkAccess previous, LdNetworkAccess current) =>
+            current == LdNetworkAccess.Internet
+            && previous != LdNetworkAccess.Internet
+            && IsConsideredConnected(previous);
 
         /// <summary>
         /// Sets whether the application is currently in the background.

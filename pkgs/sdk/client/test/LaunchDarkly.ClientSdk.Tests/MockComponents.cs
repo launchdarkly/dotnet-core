@@ -87,32 +87,24 @@ namespace LaunchDarkly.Sdk.Client
 
     internal class MockConnectivityStateManager : IConnectivityStateManager
     {
-        public Action<bool> ConnectionChanged { get; set; }
+        public Action<LdNetworkAccess> ConnectionChanged { get; set; }
 
         public MockConnectivityStateManager(bool isOnline)
         {
-            isConnected = isOnline;
+            _access = ToAccess(isOnline);
         }
 
-        bool isConnected;
-        public bool IsConnected
-        {
-            get
-            {
-                return isConnected;
-            }
-
-            set
-            {
-                isConnected = value;
-            }
-        }
+        private LdNetworkAccess _access;
+        public LdNetworkAccess NetworkAccess => _access;
 
         public void Connect(bool online)
         {
-            IsConnected = online;
-            ConnectionChanged?.Invoke(IsConnected);
+            _access = ToAccess(online);
+            ConnectionChanged?.Invoke(_access);
         }
+
+        private static LdNetworkAccess ToAccess(bool online) =>
+            online ? LdNetworkAccess.Internet : LdNetworkAccess.None;
     }
 
     internal class MockDataSourceUpdateSink : IDataSourceUpdateSink

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Hooks;
@@ -37,6 +38,9 @@ namespace LaunchDarkly.Sdk.Server
         internal readonly Evaluator _evaluator;
         private readonly Logger _log;
         private readonly Logger _evalLog;
+        // Each field changes from 0 to 1 when the matching cached-data warning logs.
+        private int _evalCachedDataWarningLogged;
+        private int _allFlagsStateCachedDataWarningLogged;
         private readonly IHookExecutor _hookExecutor;
         internal readonly IDataSystem _dataSystem;
 
@@ -91,12 +95,11 @@ namespace LaunchDarkly.Sdk.Server
         /// case, <see cref="Initialized"/> will be true, and the <see cref="DataSourceStatusProvider"/>
         /// will return a state of <see cref="DataSourceState.Valid"/>. </description></item>
         /// <item><description> It has not succeeded in connecting within the <see cref="ConfigurationBuilder.StartWaitTime(TimeSpan)"/>
-        /// timeout (the default for this is 5 seconds). This could happen due to a network problem or a
+        /// timeout (the default for this is 10 seconds). This could happen due to a network problem or a
         /// temporary service outage. In this case, <see cref="Initialized"/> will be false, and the
         /// <see cref="DataSourceStatusProvider"/> will return a state of <see cref="DataSourceState.Initializing"/>,
         /// indicating that the SDK will still continue trying to connect in the background. </description></item>
-        /// <item><description> It has encountered an unrecoverable error: for instance, LaunchDarkly has rejected the
-        /// SDK key. Since an invalid key will not become valid, the SDK will not retry in this case.
+        /// <item><description> It has encountered an unrecoverable error. In this case,
         /// <see cref="Initialized"/> will be false, and the <see cref="DataSourceStatusProvider"/> will
         /// return a state of <see cref="DataSourceState.Off"/>. </description></item>
         /// </list>
@@ -364,7 +367,10 @@ namespace LaunchDarkly.Sdk.Server
             {
                 if (_dataSystem.Store.Initialized())
                 {
-                    _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store");
+                    if (Interlocked.Exchange(ref _allFlagsStateCachedDataWarningLogged, 1) == 0)
+                    {
+                        _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store. This message is logged once.");
+                    }
                 }
                 else
                 {
@@ -452,7 +458,10 @@ namespace LaunchDarkly.Sdk.Server
             {
                 if (_dataSystem.Store.Initialized())
                 {
-                    _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store");
+                    if (Interlocked.Exchange(ref _evalCachedDataWarningLogged, 1) == 0)
+                    {
+                        _evalLog.Warn("Flag evaluation before client initialized; using last known values from data store. This message is logged once.");
+                    }
                 }
                 else
                 {

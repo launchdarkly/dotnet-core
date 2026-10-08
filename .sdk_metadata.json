@@ -97,6 +97,35 @@
         "tag-prefix": "LaunchDarkly.ClientSdk-"
       },
       "userAgents": ["DotnetClientSide", "XamarinClient"]
+    },
+    "dotnet-server-sdk-ai": {
+      "name": ".NET Server AI SDK",
+      "type": "ai",
+      "path": "pkgs/sdk/server-ai",
+      "languages": [
+        "C#"
+      ],
+      "aiSdkNames": ["LaunchDarkly.ServerSdk.Ai"],
+      "features": {
+        "aiAgentConfig": {
+          "introduced": "0.11"
+        },
+        "aiAgentGraph": {
+          "introduced": "0.12"
+        },
+        "aiCompletionConfig": {
+          "introduced": "0.1"
+        },
+        "aiJudgeConfig": {
+          "introduced": "0.11"
+        },
+        "aiTrackMetrics": {
+          "introduced": "0.1"
+        }
+      },
+      "releases": {
+        "tag-prefix": "LaunchDarkly.ServerSdk.Ai-"
+      }
     }
   }
 }

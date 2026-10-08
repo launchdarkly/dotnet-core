@@ -41,7 +41,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </summary>
         public static readonly TimeSpan DefaultPollInterval = TimeSpan.FromSeconds(30);
 
+        /// <summary>
+        /// The default interval used once a failure has been classified as unexpected: 5 minutes.
+        /// </summary>
+        internal static readonly TimeSpan DefaultExtendedInitialInterval = TimeSpan.FromMinutes(5);
+
         internal TimeSpan _pollInterval = DefaultPollInterval;
+
+        // Not public: exists so tests can shrink 5 minutes to milliseconds. A consumer has no
+        // reason to tune the extended regime.
+        internal TimeSpan _extendedInitialInterval = DefaultExtendedInitialInterval;
 
         /// <summary>
         /// Sets the interval at which the SDK will poll for feature flag updates.
@@ -80,7 +89,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 context,
                 requestor,
                 context.DataSourceUpdates,
-                _pollInterval
+                _pollInterval,
+                _extendedInitialInterval
                 );
         }
 

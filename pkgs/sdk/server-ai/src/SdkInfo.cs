@@ -13,10 +13,10 @@ public static class SdkInfo
     /// <summary>
     /// The version of the AI SDK package.
     /// </summary>
-    public const string Version = "0.12.0"; // x-release-please-version
+    public const string Version = "0.13.0"; // x-release-please-version
 
     /// <summary>
     /// The implementation language.
     /// </summary>
-    public const string Language = "dotnet";
+    public const string Language = "c#";
 }

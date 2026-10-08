@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -42,6 +43,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         private volatile IEventSource _eventSource;
 
         internal DateTime _esStarted; // exposed for testing
+        private readonly Stopwatch _esTimer = new Stopwatch();
 
         internal StreamingDataSource(
             IDataSourceUpdateSink updateSink,
@@ -96,7 +98,8 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
             _eventSource.Error += OnError;
             _eventSource.Opened += OnOpen;
 
-            _esStarted = DateTime.Now;
+            _esStarted = DateTime.UtcNow;
+            _esTimer.Restart();
 
             _ = Task.Run(() => _eventSource.StartAsync());
             return _initTask.Task;
@@ -134,9 +137,11 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         {
             if (_diagnosticStore != null)
             {
-                DateTime now = DateTime.Now;
-                _diagnosticStore.AddStreamInit(_esStarted, now - _esStarted, failed);
-                _esStarted = now;
+                var duration = _esTimer.Elapsed;
+                var streamStarted = _esStarted;
+                _esStarted = DateTime.UtcNow;
+                _esTimer.Restart();
+                _diagnosticStore.AddStreamInit(streamStarted, duration, failed);
             }
         }
 

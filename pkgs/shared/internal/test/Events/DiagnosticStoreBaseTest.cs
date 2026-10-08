@@ -114,6 +114,16 @@ namespace LaunchDarkly.Sdk.Internal.Events
         }
 
         [Fact]
+        public void TimestampsAreUtc()
+        {
+            var store = new DiagnosticStoreImpl();
+            Assert.Equal(DateTimeKind.Utc, store.DataSince.Kind);
+
+            store.CreateEventAndReset();
+            Assert.Equal(DateTimeKind.Utc, store.DataSince.Kind);
+        }
+
+        [Fact]
         public void CreatingEventResetsFields()
         {
             var store = new DiagnosticStoreImpl();

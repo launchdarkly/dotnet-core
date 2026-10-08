@@ -136,6 +136,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             StateAndError update
         )
         {
+            if (oldStatus.State == DataSourceState.Off)
+            {
+                return null;
+            }
+
             var newState =
                 (update.State == DataSourceState.Interrupted && oldStatus.State == DataSourceState.Initializing)
                     ? DataSourceState.Initializing // see comment on IDataSourceUpdates.UpdateStatus

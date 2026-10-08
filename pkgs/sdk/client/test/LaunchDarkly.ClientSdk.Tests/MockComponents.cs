@@ -182,7 +182,7 @@ namespace LaunchDarkly.Sdk.Client
 
         internal readonly EventSink<StreamInit> StreamInits = new EventSink<StreamInit>();
 
-        public DateTime DataSince => DateTime.Now;
+        public DateTime DataSince => DateTime.UtcNow;
 
         public DiagnosticEvent? InitEvent => null;
 

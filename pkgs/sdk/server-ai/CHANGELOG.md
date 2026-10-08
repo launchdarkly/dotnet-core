@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.13.0...LaunchDarkly.ServerSdk.Ai-v0.14.0) (2026-10-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* Make AgentGraph traversal topological ([#325](https://github.com/launchdarkly/dotnet-core/issues/325))
+
+### Bug Fixes
+
+* Make AgentGraph traversal topological ([#325](https://github.com/launchdarkly/dotnet-core/issues/325)) ([6de5aa1](https://github.com/launchdarkly/dotnet-core/commit/6de5aa179a5fb4e3ddb07fa09dee1b87a8ae1d55))
+
 ## [0.13.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.Ai-v0.12.0...LaunchDarkly.ServerSdk.Ai-v0.13.0) (2026-09-02)
 
 

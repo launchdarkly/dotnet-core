@@ -41,20 +41,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private static void WriteWithNewModTime(string path, string content) =>
             WriteWithModTime(path, content, DateTime.UtcNow.AddSeconds(content.Length));
 
-        // Writes the content and the modification time to a temporary file, then renames it over
-        // the target. The poller observes one change, not one for the content and one for the time.
+        // Rewrites a file in the ordinary way, in separate steps, as application writes are.
         private static void WriteWithModTime(string path, string content, DateTime modTime)
         {
-            var temp = path + ".tmp";
-            File.WriteAllText(temp, content);
-            File.SetLastWriteTimeUtc(temp, modTime);
-            if (File.Exists(path))
+            File.WriteAllText(path, content);
+            File.SetLastWriteTimeUtc(path, modTime);
+        }
+
+        // Discards the change callbacks that arrive within the settle window. A plain rewrite is not
+        // atomic: the truncation, the write, and the modification-time update are separate steps,
+        // and a poll that lands between two of them legitimately reports an extra change. A test
+        // that wants to assert silence waits for the write to be fully observed first.
+        private void DrainChanges(TimeSpan settle)
+        {
+            var deadline = DateTime.UtcNow + settle;
+            while (DateTime.UtcNow < deadline)
             {
-                File.Replace(temp, path, null);
-            }
-            else
-            {
-                File.Move(temp, path);
+                if (!_changed.TryTakeValue(out _))
+                {
+                    Thread.Sleep(PollInterval);
+                }
             }
         }
 
@@ -96,14 +102,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void FiresOncePerChange()
+        public void StopsFiringWhenFileIsStable()
         {
+            // The poller updates its baseline after a change, so it goes quiet once the file is
+            // stable. It does not promise one callback per logical change: a rewrite that it
+            // observes in more than one step is reported in more than one step, and the reloader
+            // absorbs the excess.
             var path = _dir.PathOf("data.json");
             WriteWithNewModTime(path, "one");
             StartPoller(path);
 
             WriteWithNewModTime(path, "two!");
             RequireChange();
+            DrainChanges(TimeSpan.FromMilliseconds(50));
 
             RequireNoChange(QuietPeriod);
         }

@@ -23,6 +23,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
         internal int? Generation { get; }
         internal PreprocessedData Preprocessed { get; }
 
+        /// <summary>
+        /// True if this definition came from the SDK's override store rather than from LaunchDarkly
+        /// data. The evaluator reads this marker to mark the evaluation as override-affected. The
+        /// marker lives on the model only. It is never serialized.
+        /// </summary>
+        internal bool IsOverride { get; }
+
         internal Segment(
             string key,
             int version,
@@ -35,7 +42,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             string salt,
             bool unbounded,
             ContextKind? unboundedContextKind,
-            int? generation
+            int? generation,
+            bool isOverride = false
             )
         {
             Key = key;
@@ -50,8 +58,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             Unbounded = unbounded;
             UnboundedContextKind = unboundedContextKind;
             Generation = generation;
+            IsOverride = isOverride;
             Preprocessed = Preprocess(Included, Excluded);
         }
+
+        /// <summary>
+        /// Returns a copy of this segment that carries the override marker. The copy shares its
+        /// immutable parts with this segment, which is left unchanged.
+        /// </summary>
+        internal Segment AsOverride() =>
+            IsOverride ? this :
+            new Segment(Key, Version, Deleted, Included, Excluded, IncludedContexts, ExcludedContexts, Rules, Salt,
+                Unbounded, UnboundedContextKind, Generation, true);
 
         private static PreprocessedData Preprocess(IEnumerable<string> included, IEnumerable<string> excluded) =>
             new PreprocessedData

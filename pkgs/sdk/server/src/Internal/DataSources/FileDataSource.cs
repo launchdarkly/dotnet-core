@@ -1,45 +1,67 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Integrations;
+using LaunchDarkly.Sdk.Server.Internal.FileLoading;
+using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
 
 namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 {
+    /// <summary>
+    /// The data source configured by <see cref="FileDataSourceBuilder"/>. It loads flag and
+    /// segment data from local files and, with auto-update, reloads them when they change.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The loading, retrying, and change detection are the shared <see cref="FileDataReloader"/>
+    /// and <see cref="FileDataWatcher"/>. This class supplies what is particular to the file data
+    /// source: every item of a successful load is stamped with one version number that counts the
+    /// successful loads, every successful load replaces the whole data set, and the result of
+    /// Start reports whether any load has ever succeeded.
+    /// </para>
+    /// <para>
+    /// A load that fails leaves the data of the last successful load in place. With auto-update,
+    /// a failed load is retried a bounded number of times, because a change notification can
+    /// arrive while the file is still being written. Without it, files are loaded once per Start.
+    /// </para>
+    /// </remarks>
     internal sealed class FileDataSource : IDataSource
     {
+        /// <summary>
+        /// How many times a failing load is attempted with auto-update before the data source
+        /// waits for the next detected change.
+        /// </summary>
+        internal const int MaxLoadAttempts = 5;
+
+        /// <summary>
+        /// How long to wait before a failed load is attempted again with auto-update.
+        /// </summary>
+        internal static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(600);
+
         private readonly IDataSourceUpdates _dataSourceUpdates;
         private readonly List<string> _paths;
-        private readonly IDisposable _reloader;
-        private readonly FlagFileParser _parser;
-        private readonly FlagFileDataMerger _dataMerger;
-        private readonly FileDataTypes.IFileReader _fileReader;
-        private readonly bool _skipMissingPaths;
         private readonly bool _autoUpdate;
         private readonly Logger _logger;
-        private volatile bool _started;
-        private volatile bool _loadedValidData;
-        private volatile bool _disposed;
-        private volatile int _lastVersion;
-        private object _updateLock = new object();
+        private readonly FileDataReloader _reloader;
 
-        private const int MaxLoadAttempts = 5;
-        private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(600);
-        // Consecutive load failures (parse or read) per path within the current failure episode.
-        // An externally triggered load (Start or a file-change notification) starts a new episode
-        // and clears this, so the retry budget is per-episode, not per-lifetime. Only touched
-        // inside _updateLock.
-        private readonly Dictionary<string, int> _loadFailureCounts = new Dictionary<string, int>();
-        // Whether a delayed retry is already scheduled; at most one retry chain exists at a time,
-        // since each retry re-reads every path anyway. Only touched inside _updateLock.
-        private bool _retryPending;
+        // Guards the watcher and the disposed flag, so that a Start that races Dispose cannot
+        // leave a watcher running.
+        private readonly object _lock = new object();
+        private FileDataWatcher _watcher;
+        // Set when the watcher could not be constructed, so that the failure is logged once and not
+        // on every Start.
+        private bool _watcherFailed;
+        private bool _disposed;
+
+        private volatile bool _loadedValidData;
+        // Read and written only in Apply, whose calls the reloader serializes.
+        private volatile int _lastVersion;
 
         /// <summary>
         /// Constructs a file data source that loads flag and segment data from local files.
@@ -61,356 +83,164 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             _logger = logger;
             _dataSourceUpdates = dataSourceUpdates;
-            _paths = new List<string>(paths);
-            _parser = new FlagFileParser(alternateParser);
-            _dataMerger = new FlagFileDataMerger(duplicateKeysHandling);
-            _fileReader = fileReader;
-            _skipMissingPaths = skipMissingPaths;
             _autoUpdate = autoUpdate;
-            _lastVersion = 0;
-            if (autoUpdate)
+            // The paths are kept as configured: a custom file reader receives them as given, and
+            // the watcher resolves them against the current directory itself.
+            _paths = new List<string>(paths);
+            _reloader = new FileDataReloader(new FileDataReloaderConfig
             {
-                try
-                {
-                    _reloader = new FileWatchingReloader(_paths, TriggerReload);
-                }
-                catch (Exception e)
-                {
-                    LogHelpers.LogException(_logger, "Unable to watch files for auto-updating", e);
-                    _reloader = null;
-                }
-            }
-            else
-            {
-                _reloader = null;
-            }
+                Paths = _paths,
+                DuplicateKeysHandling = duplicateKeysHandling == FileDataTypes.DuplicateKeysHandling.Ignore ?
+                    FileDataDuplicateKeysHandling.Ignore : FileDataDuplicateKeysHandling.Fail,
+                SkipMissingPaths = skipMissingPaths,
+                // As before, SkipMissingPaths covers a file that is missing from a directory that
+                // exists. A path whose directory does not exist fails the load, so a directory that
+                // disappears cannot empty the store.
+                FailOnMissingDirectory = true,
+                Logger = logger,
+                FileReader = fileReader,
+                AlternateParser = alternateParser,
+                // The version given here is replaced in Apply, like the version of every other item.
+                FlagValueExpander = (key, value) =>
+                    FileDataParser.MakeFallthroughFlagWithValue(key, value, 0),
+                Apply = Apply,
+                // Without auto-update, files are documented to be loaded only once, so a failure
+                // is not retried in the background and the result of Start is final.
+                DebounceDelay = autoUpdate ? FileDataReloader.DefaultDebounceDelay : TimeSpan.Zero,
+                RetryDelay = autoUpdate ? RetryDelay : TimeSpan.Zero,
+                MaxLoadAttempts = autoUpdate ? MaxLoadAttempts : 0,
+                // Every successful load is applied, even when the files did not change.
+                SkipUnchanged = false
+            });
         }
 
         public Task<bool> Start()
         {
-            _started = true;
-            LoadAll(isRetry: false);
+            if (!IsDisposed())
+            {
+                if (_autoUpdate)
+                {
+                    EnsureWatcher();
+                }
+                // Synchronous: Apply has run, or the failure has been logged, when this returns.
+                _reloader.ReloadNow();
+            }
 
             // We always complete the start task regardless of whether we successfully loaded data or not;
             // if the data files were bad, they're unlikely to become good within the short interval that
             // LdClient waits on this task, even if auto-updating is on.
-            TaskCompletionSource<bool> initTask = new TaskCompletionSource<bool>();
-            initTask.SetResult(_loadedValidData);
-            return initTask.Task;
+            return Task.FromResult(_loadedValidData);
         }
 
         public bool Initialized => _loadedValidData;
 
         public void Dispose()
         {
-            Dispose(true);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _disposed = true;
-                _reloader?.Dispose();
-            }
-        }
-
-        private void LoadAll(bool isRetry)
-        {
-            lock (_updateLock)
+            FileDataWatcher watcher;
+            lock (_lock)
             {
                 if (_disposed)
                 {
                     return;
                 }
-                if (!isRetry)
+                _disposed = true;
+                watcher = _watcher;
+                _watcher = null;
+            }
+            // The watcher goes first so that it cannot signal a reloader that is being stopped.
+            watcher?.Dispose();
+            _reloader.Dispose();
+        }
+
+        private bool IsDisposed()
+        {
+            lock (_lock)
+            {
+                return _disposed;
+            }
+        }
+
+        // Creates the watcher on the first Start. It is created before the initial load so that a
+        // change made during the load is not lost. A directory that cannot be watched yet is the
+        // watcher's own business; only a failure to construct it lands here, and the data source
+        // then runs without change detection, as it always has.
+        private void EnsureWatcher()
+        {
+            lock (_lock)
+            {
+                if (_disposed || _watcher != null || _watcherFailed)
                 {
-                    // An externally triggered load starts a new failure episode: failures
-                    // observed from here on get a fresh retry budget, and any state left over
-                    // from a previous episode is discarded.
-                    _loadFailureCounts.Clear();
+                    return;
                 }
-                else
-                {
-                    _retryPending = false;
-                    if (_loadFailureCounts.Count == 0)
-                    {
-                        // The failure state was cleared in the meantime (an externally triggered
-                        // load succeeded, or the chain gave up) — a reload would be redundant and
-                        // would re-Init identical data at bumped versions, firing spurious change
-                        // events.
-                        return;
-                    }
-                }
-                var version = Interlocked.Increment(ref _lastVersion);
-                var flags = new Dictionary<string, ItemDescriptor>();
-                var segments = new Dictionary<string, ItemDescriptor>();
-                foreach (var path in _paths)
-                {
-                    try
-                    {
-                        var content = _fileReader.ReadAllText(path);
-                        _logger.Debug("file data: {0}", content);
-                        FullDataSet<ItemDescriptor> data;
-                        try
-                        {
-                            data = _parser.Parse(content, version);
-                        }
-                        catch (Exception e)
-                        {
-                            // A file-change notification can fire while the file is mid-write, so a parse
-                            // failure may just mean we read an empty or partially written file. This applies
-                            // to any configured parser (JSON or alternate), so we treat every failure of
-                            // Parse — as opposed to reading the file — as potentially transient.
-                            HandleParseFailure(path, e);
-                            return;
-                        }
-                        _loadFailureCounts.Remove(path);
-                        _dataMerger.AddToData(data, flags, segments);
-                    }
-                    catch (FileNotFoundException) when (_skipMissingPaths)
-                    {
-                        _logger.Debug("{0}: {1}", path, "File not found");
-                    }
-                    catch (Exception e)
-                    {
-                        if (isRetry)
-                        {
-                            // A transient read error (for example, a writer replacing the file)
-                            // must not end a retry episode early: paths that were promised
-                            // retries would keep stale data with budget remaining, and another
-                            // file-change notification is not guaranteed. Charge the failure to
-                            // the same per-path budget and continue the chain; it logs a Warn
-                            // while retrying and an Error only on give-up.
-                            HandleRetryLoadFailure(path, e);
-                        }
-                        else
-                        {
-                            LogHelpers.LogException(_logger, "Failed to load " + path, e);
-                        }
-                        return;
-                    }
-                }
-
-                var allData = new FullDataSet<ItemDescriptor>(
-                    ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()
-                        .SetItem(DataModel.Features, new KeyedItems<ItemDescriptor>(flags))
-                        .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments))
-                );
-                _dataSourceUpdates.Init(allData);
-                _loadedValidData = true;
-            }
-        }
-
-        // Called under _updateLock when parsing a path's content fails. Since an externally
-        // triggered load clears _loadFailureCounts before reading, any existing count for the
-        // path belongs to the current episode.
-        private void HandleParseFailure(string path, Exception e)
-        {
-            if (!_autoUpdate)
-            {
-                // With auto-update off, files are documented to be loaded only once, so we don't
-                // retry in the background — Start()'s result stays final.
-                LogHelpers.LogException(_logger, "Failed to parse " + path, e);
-                return;
-            }
-
-            _loadFailureCounts.TryGetValue(path, out var previousAttempts);
-            var attempts = previousAttempts + 1;
-            _loadFailureCounts[path] = attempts;
-
-            if (attempts < MaxLoadAttempts)
-            {
-                _logger.Warn("{0}: Failed to parse file ({1}); will retry in {2} ms in case it was incompletely written",
-                    path, LogValues.ExceptionSummary(e), RetryDelay.TotalMilliseconds);
-                _logger.Debug("{0}", LogValues.ExceptionTrace(e));
-                ScheduleRetry();
-            }
-            else
-            {
-                EndEpisode(path);
-                LogHelpers.LogException(_logger,
-                    string.Format("{0}: Failed to parse file after {1} attempts", path, MaxLoadAttempts), e);
-            }
-        }
-
-        // Called under _updateLock when a retry attempt fails before parsing (for example, a
-        // transient read error). Charges the failure to the path's per-episode budget and
-        // continues or ends the retry chain.
-        private void HandleRetryLoadFailure(string path, Exception e)
-        {
-            _loadFailureCounts.TryGetValue(path, out var previousAttempts);
-            var attempts = previousAttempts + 1;
-            _loadFailureCounts[path] = attempts;
-
-            if (attempts < MaxLoadAttempts)
-            {
-                _logger.Warn("{0}: Failed to read file on a retry ({1}); will retry again in {2} ms",
-                    path, LogValues.ExceptionSummary(e), RetryDelay.TotalMilliseconds);
-                _logger.Debug("{0}", LogValues.ExceptionTrace(e));
-                ScheduleRetry();
-            }
-            else
-            {
-                EndEpisode(path);
-                LogHelpers.LogException(_logger,
-                    string.Format("{0}: Failed to load file after {1} attempts; will not retry until the next detected file change",
-                        path, MaxLoadAttempts), e);
-            }
-        }
-
-        // Called under _updateLock. Ends the current failure episode for every path: the chain
-        // stopped at failedPath on every attempt, so any other paths with recorded failures were
-        // never re-attempted and their promised retries cannot happen.
-        private void EndEpisode(string failedPath)
-        {
-            _loadFailureCounts.Remove(failedPath);
-            foreach (var abandoned in _loadFailureCounts.Keys)
-            {
-                _logger.Error("{0}: Will not be retried because {1} repeatedly failed to load; both will be re-read on the next detected file change",
-                    abandoned, failedPath);
-            }
-            _loadFailureCounts.Clear();
-        }
-
-        // Called under _updateLock.
-        private void ScheduleRetry()
-        {
-            if (_retryPending)
-            {
-                return; // the already-scheduled retry will re-read every path
-            }
-            _retryPending = true;
-            Task.Run(async () =>
-            {
-                await Task.Delay(RetryDelay).ConfigureAwait(false);
                 try
                 {
-                    LoadAll(isRetry: true);
+                    _watcher = new FileDataWatcher(_paths, OnChangeDetected, _logger);
                 }
                 catch (Exception e)
                 {
-                    // Nothing observes this task, so any escaping exception would otherwise vanish.
-                    LogHelpers.LogException(_logger, "Unexpected error while retrying file data load", e);
-                }
-            });
-        }
-
-        private void TriggerReload()
-        {
-            if (_started)
-            {
-                _logger.Info("detected file modification, reloading");
-                LoadAll(isRetry: false);
-            }
-        }
-    }
-
-    // Provides the logic for merging sets of feature flag and segment data.
-    internal sealed class FlagFileDataMerger
-    {
-        private readonly FileDataTypes.DuplicateKeysHandling _duplicateKeysHandling;
-
-        public FlagFileDataMerger(FileDataTypes.DuplicateKeysHandling duplicateKeysHandling)
-        {
-            _duplicateKeysHandling = duplicateKeysHandling;
-        }
-
-        public void AddToData(
-            FullDataSet<ItemDescriptor> data,
-            IDictionary<string, ItemDescriptor> flagsOut,
-            IDictionary<string, ItemDescriptor> segmentsOut
-            )
-        {
-            foreach (var kv0 in data.Data)
-            {
-                var kind = kv0.Key;
-                foreach (var kv1 in kv0.Value.Items)
-                {
-                    var items = kind == DataModel.Segments ? segmentsOut : flagsOut;
-                    var key = kv1.Key;
-                    var item = kv1.Value;
-                    if (items.ContainsKey(key))
-                    {
-                        switch (_duplicateKeysHandling)
-                        {
-                            case FileDataTypes.DuplicateKeysHandling.Throw:
-                                throw new System.Exception("in \"" + kind.Name + "\", key \"" + key +
-                                    "\" was already defined");
-                            case FileDataTypes.DuplicateKeysHandling.Ignore:
-                                break;
-                            default:
-                                throw new NotImplementedException("Unknown duplicate keys handling: " + _duplicateKeysHandling);
-                        }
-                    }
-                    else
-                    {
-                        items[key] = item;
-                    }
+                    _watcherFailed = true;
+                    LogHelpers.LogException(_logger, "Unable to watch files for auto-updating", e);
                 }
             }
         }
-    }
 
-    /// <summary>
-    /// Implementation of file monitoring using FileSystemWatcher.
-    /// </summary>
-    internal sealed class FileWatchingReloader : IDisposable
-    {
-        private readonly ISet<string> _filePaths;
-        private readonly Action _reload;
-        private readonly List<FileSystemWatcher> _watchers;
-
-        public FileWatchingReloader(List<string> paths, Action reload)
+        private void OnChangeDetected()
         {
-            _reload = reload;
-
-            _filePaths = new HashSet<string>();
-            var dirPaths = new HashSet<string>();
-            foreach (var p in paths)
+            if (IsDisposed())
             {
-                var absPath = Path.GetFullPath(p);
-                _filePaths.Add(absPath);
-                var dirPath = Path.GetDirectoryName(absPath);
-                dirPaths.Add(dirPath);
+                return;
             }
-
-            _watchers = new List<FileSystemWatcher>();
-            foreach (var dir in dirPaths)
-            {
-                var w = new FileSystemWatcher(dir);
-
-                w.Changed += (s, args) => ChangedPath(args.FullPath);
-                w.Created += (s, args) => ChangedPath(args.FullPath);
-                w.Renamed += (s, args) => ChangedPath(args.FullPath);
-                w.EnableRaisingEvents = true;
-
-                _watchers.Add(w);
-            }
+            _logger.Info("detected file modification, reloading");
+            _reloader.Trigger();
         }
 
-        private void ChangedPath(string path)
+        // Called by the reloader with each successfully merged result. Calls are serialized, so
+        // the version counter advances once per successful load, in order.
+        private void Apply(FileDataMergeResult merged)
         {
-            if (_filePaths.Contains(path))
+            // The version is consumed only once Init has accepted the data. An Init that throws is
+            // a failed load, and the next successful load gets this version.
+            var version = _lastVersion + 1;
+            var flags = new List<KeyValuePair<string, ItemDescriptor>>(merged.Flags.Count);
+            foreach (var kv in merged.Flags)
             {
-                _reload();
+                var flag = FlagWithVersion((FeatureFlag)kv.Value.Item, version);
+                flags.Add(new KeyValuePair<string, ItemDescriptor>(kv.Key,
+                    new ItemDescriptor(version, flag)));
             }
+            var segments = new List<KeyValuePair<string, ItemDescriptor>>(merged.Segments.Count);
+            foreach (var kv in merged.Segments)
+            {
+                var segment = SegmentWithVersion((Segment)kv.Value.Item, version);
+                segments.Add(new KeyValuePair<string, ItemDescriptor>(kv.Key,
+                    new ItemDescriptor(version, segment)));
+            }
+            // Both kinds are always present, so a load with no segments clears the segments.
+            var allData = new FullDataSet<ItemDescriptor>(
+                ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()
+                    .SetItem(DataModel.Features, new KeyedItems<ItemDescriptor>(flags))
+                    .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments))
+            );
+            _dataSourceUpdates.Init(allData);
+            _lastVersion = version;
+            _loadedValidData = true;
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        private static FeatureFlag FlagWithVersion(FeatureFlag flag, int version) =>
+            flag.Version == version ? flag :
+            new FeatureFlag(
+                flag.Key,
+                version,
+                flag.Deleted, flag.On, flag.Prerequisites, flag.Targets, flag.ContextTargets, flag.Rules, flag.Fallthrough,
+                flag.OffVariation, flag.Variations, flag.Salt, flag.TrackEvents, flag.TrackEventsFallthrough,
+                flag.DebugEventsUntilDate, flag.ClientSide, flag.SamplingRatio, flag.ExcludeFromSummaries, flag.Migration);
 
-        private void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                foreach (var w in _watchers)
-                {
-                    w.Dispose();
-                }
-            }
-        }
+        private static Segment SegmentWithVersion(Segment segment, int version) =>
+            segment.Version == version ? segment :
+            new Segment(
+                segment.Key,
+                version,
+                segment.Deleted, segment.Included, segment.Excluded, segment.IncludedContexts, segment.ExcludedContexts,
+                segment.Rules, segment.Salt, segment.Unbounded, segment.UnboundedContextKind, segment.Generation);
     }
 }

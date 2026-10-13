@@ -115,7 +115,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// repeated failures until another change to the file is detected.
         /// </para>
         /// <para>
-        /// Note that auto-updating may not work if any of the files you specified has an invalid directory path.
+        /// The data source watches the directory of each file, so a file that is created, replaced, or deleted
+        /// is detected, and a directory that does not exist yet is watched once it appears. While a load fails
+        /// for any reason, the previously loaded flags stay in effect.
         /// </para>
         /// </remarks>
         /// <param name="autoUpdate">true if flags should be reloaded whenever a source file changes</param>

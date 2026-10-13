@@ -77,6 +77,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             _errored.ExpectNoValue(TimeSpan.Zero);
         }
 
+        // The test's own writes are ordinary, not atomic. An automatic retry that runs while the
+        // file is being rewritten reads it empty or half written and reports that failure. Those
+        // reports are a correct response to what the retry saw, and tests that only check what
+        // happens after the recovery discard them before they require silence.
+        private void DrainErrors()
+        {
+            while (_errored.TryTakeValue(out _))
+            {
+            }
+        }
+
         private static string[] FlagKeys(FileDataMergeResult result) => result.Flags.Select(kv => kv.Key).ToArray();
 
         private int ErrorLogCount() => LogCapture.GetMessages().Count(m => m.Level == LogLevel.Error);
@@ -390,6 +401,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             Write(Flag1True);
             RequireApplied();
+            DrainErrors();
 
             // After the successful reload there are no further attempts. A changed file with no
             // trigger must not be picked up.
@@ -414,6 +426,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Write(Flag1True);
             reloader.ReloadNow();
             RequireApplied();
+            DrainErrors();
 
             // The retry armed by the failure is redundant after the recovery and does not run. A
             // changed file with no trigger must not be picked up.

@@ -95,6 +95,17 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
+        public void BuildDropsARepeatedPathAndWarns()
+        {
+            // Under the default fail handling the same file listed twice would make every one of its
+            // keys a duplicate of itself. The repeat is ignored and the first occurrence keeps its place.
+            var source = BuildSource(FileOverrides.Source().FilePaths("/a.json", "/b.json", "/a.json"));
+
+            Assert.Equal(new[] { Path.GetFullPath("/a.json"), Path.GetFullPath("/b.json") }, source.Paths);
+            AssertLogMessageRegex(true, LogLevel.Warn, "more than once");
+        }
+
+        [Fact]
         public void BuildDefaultsToPollingEverySecond()
         {
             var source = BuildSource(FileOverrides.Source().FilePaths("/a.json"));

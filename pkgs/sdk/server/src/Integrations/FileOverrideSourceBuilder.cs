@@ -160,7 +160,16 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             {
                 throw new ArgumentException("no file paths were specified for the file-based override source");
             }
-            var paths = _paths.Select(Path.GetFullPath).ToList();
+            var logger = context.Logger.SubLogger(LogNames.OverridesSubLog);
+
+            // A path listed more than once would make every entry of that file a duplicate of itself, so
+            // the repeats are dropped and the first occurrence keeps its place in the order.
+            var allPaths = _paths.Select(Path.GetFullPath).ToList();
+            var paths = allPaths.Distinct().ToList();
+            if (paths.Count != allPaths.Count)
+            {
+                logger.Warn("File paths list the same file more than once; the repeats are ignored");
+            }
 
             switch (_duplicateKeysHandling)
             {
@@ -181,7 +190,6 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                         "unrecognized change detection mode for the file-based override source");
             }
 
-            var logger = context.Logger.SubLogger(LogNames.OverridesSubLog);
             var pollInterval = _pollInterval;
             if (_changeDetection == FileOverrideTypes.ChangeDetection.Polling)
             {

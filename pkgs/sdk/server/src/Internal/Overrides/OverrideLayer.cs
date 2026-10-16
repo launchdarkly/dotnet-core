@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
@@ -15,7 +18,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
     /// parts with the caller's entity, and the caller's entity is never marked. A source may retain
     /// the entities it supplied and supply them again.
     /// </remarks>
-    internal sealed class OverrideLayer
+    internal sealed class OverrideLayer : IExternalDependencies
     {
         internal static readonly ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> EmptyContents =
             ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>>.Empty;
@@ -25,6 +28,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
 
         private readonly object _writeLock = new object();
         private volatile ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> _contents = EmptyContents;
+
+        // The dependency edges of the layer's own entries: which entries reference which flags and
+        // segments. Rebuilt with the contents on every replacement and swapped with them.
+        private volatile DependencyTracker _dependencies = new DependencyTracker();
 
         /// <summary>
         /// True if the layer holds no entries.
@@ -57,12 +64,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             )
         {
             var builder = ImmutableDictionary.CreateBuilder<DataKind, ImmutableDictionary<string, ItemDescriptor>>();
+            var dependencies = new DependencyTracker();
             foreach (var kindAndItems in data.Data)
             {
                 var items = ImmutableDictionary.CreateBuilder<string, ItemDescriptor>();
                 foreach (var keyAndItem in kindAndItems.Value.Items)
                 {
-                    items[keyAndItem.Key] = MarkedCopy(keyAndItem.Value);
+                    var copied = MarkedCopy(keyAndItem.Value);
+                    items[keyAndItem.Key] = copied;
+                    try
+                    {
+                        dependencies.UpdateDependenciesFrom(kindAndItems.Key, keyAndItem.Key, copied);
+                    }
+                    catch (Exception)
+                    {
+                        // A definition whose references cannot be read (a prerequisite without a key, a
+                        // segmentMatch value that is not a string) still enters the layer; it evaluates to
+                        // an error on its own. It contributes no edges, the same as the change
+                        // computation in OverrideChanges skips it.
+                    }
                 }
                 builder[kindAndItems.Key] = items.ToImmutable();
             }
@@ -71,9 +91,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             {
                 previous = _contents;
                 _contents = replacement;
+                _dependencies = dependencies;
             }
             current = replacement;
         }
+
+        /// <summary>
+        /// Adds the given item to the set together with every item whose override entry depends on
+        /// it, directly or through other override entries. A LaunchDarkly update uses this so that a
+        /// change to a LaunchDarkly segment or prerequisite notifies the overridden flags that
+        /// reference it, which the data system's own dependency tracking cannot see.
+        /// </summary>
+        public void AddAffectedItems(ISet<KindAndKey> itemsOut, KindAndKey item) =>
+            _dependencies.AddAffectedItems(itemsOut, item);
 
         /// <summary>
         /// Returns the override entry for a key, or null if the layer has none.

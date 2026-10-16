@@ -20,7 +20,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         private IComponentConfigurer<IDataStore> _persistentStore;
 
         private DataSystemConfiguration.DataStoreMode _persistentDataStoreMode;
-        
+
+        private IComponentConfigurer<IOverrideSource> _overrideSource;
+
         /// <summary>
         /// Add one or more initializers to the builder.
         /// To replace initializers, please refer to <see cref="DataSystemBuilder.ReplaceInitializers"/>.
@@ -101,6 +103,38 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             return this;
         }
 
+        /// <summary>
+        /// Configures an override source. Flag overrides are currently experimental and subject to change.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The source supplies flag and segment definitions that take precedence over data received from
+        /// LaunchDarkly on a per-key basis. Overrides let an operator force one or more flags to a known
+        /// state on a running client, whether or not the client can reach LaunchDarkly. Flags not present
+        /// in the override data are unaffected.
+        /// </para>
+        /// <para>
+        /// The override source is not a data source. It has no effect on the client's initialization status
+        /// or data source status. Configuring it changes nothing until the source actually supplies an
+        /// override. At most one override source can be configured. A later call replaces the earlier one.
+        /// </para>
+        /// <example>
+        /// <code>
+        /// var config = Configuration.Builder("my-sdk-key")
+        ///   .DataSystem(Components.DataSystem().Default()
+        ///     .Overrides(FileOverrides.Source().FilePaths("/etc/launchdarkly/overrides.json")));
+        /// </code>
+        /// </example>
+        /// </remarks>
+        /// <param name="overrideSource">the override source, such as the file-based override source;
+        /// null removes a previously configured source</param>
+        /// <returns>a reference to the builder</returns>
+        public DataSystemBuilder Overrides(IComponentConfigurer<IOverrideSource> overrideSource)
+        {
+            _overrideSource = overrideSource;
+            return this;
+        }
+
         internal DataSystemConfiguration Build()
         {
             // This function should remain internal.
@@ -110,7 +144,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 _synchronizers.ToImmutableList(),
                 _fdV1FallbackSynchronizer,
                 _persistentStore,
-                _persistentDataStoreMode);
+                _persistentDataStoreMode,
+                _overrideSource);
         }
     }
 }

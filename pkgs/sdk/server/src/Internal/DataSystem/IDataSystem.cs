@@ -27,6 +27,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         Task<bool> Start();
         bool Initialized { get; }
 
+        /// <summary>
+        /// True if the data system was built with an override source. When true, the store applies the
+        /// override layer, and the client consults it before its not-initialized short-circuit.
+        /// </summary>
+        bool OverridesConfigured { get; }
+
+        /// <summary>
+        /// True if the override layer holds an entry of the kind with the key. Always false when no
+        /// override source is configured.
+        /// </summary>
+        bool HasOverride(DataStoreTypes.DataKind kind, string key);
+
         IFlagChanged FlagChanged { get; }
 
         IDataSourceStatusProvider DataSourceStatusProvider { get; }

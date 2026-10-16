@@ -22,7 +22,8 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
     /// <para>
     /// The SDK constructs the source from the <see cref="IComponentConfigurer{T}"/> given to
     /// <see cref="Integrations.DataSystemBuilder.Overrides(IComponentConfigurer{IOverrideSource})"/>,
-    /// starts it when the client starts, and disposes it when the client is disposed.
+    /// starts it when the client starts, and disposes it when the client is disposed. The built-in
+    /// file-based source is <see cref="Integrations.FileOverrides"/>.
     /// </para>
     /// <para>
     /// Flag overrides are currently experimental and subject to change.

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using Xunit;
 
@@ -141,6 +143,51 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             // The snapshot is immutable: a later replacement does not change it.
             layer.SetAll(FullDataSet<ItemDescriptor>.Empty(), out _, out _);
             Assert.Equal(2, flags.Count);
+        }
+    
+        private static ISet<KindAndKey> AffectedFrom(OverrideLayer layer, DataKind kind, string key)
+        {
+            var affected = new HashSet<KindAndKey>();
+            layer.AddAffectedItems(affected, new KindAndKey(kind, key));
+            return affected;
+        }
+
+        private static FeatureFlag FlagMatchingSegment(string key, string segmentKey) =>
+            new FeatureFlagBuilder(key).Version(1).On(true)
+                .Rules(new RuleBuilder().Id("rule").Variation(0).Clauses(ClauseBuilder.ShouldMatchSegment(segmentKey)).Build())
+                .Build();
+
+        [Fact]
+        public void ReportsEntriesThatDependOnAnItem()
+        {
+            // a matches a segment; b has a as a prerequisite, so b depends on the segment through a.
+            var a = FlagMatchingSegment("a", "seg");
+            var b = new FeatureFlagBuilder("b").Version(1).On(true).Prerequisites(new Prerequisite("a", 0)).Build();
+            var layer = new OverrideLayer();
+            layer.SetAll(FlagsOnly(a, b), out _, out _);
+
+            Assert.Equal(
+                new HashSet<KindAndKey> { new KindAndKey(DataModel.Segments, "seg"), new KindAndKey(DataModel.Features, "a"), new KindAndKey(DataModel.Features, "b") },
+                AffectedFrom(layer, DataModel.Segments, "seg"));
+            Assert.Equal(
+                new HashSet<KindAndKey> { new KindAndKey(DataModel.Features, "a"), new KindAndKey(DataModel.Features, "b") },
+                AffectedFrom(layer, DataModel.Features, "a"));
+            Assert.Equal(
+                new HashSet<KindAndKey> { new KindAndKey(DataModel.Segments, "unreferenced") },
+                AffectedFrom(layer, DataModel.Segments, "unreferenced"));
+        }
+
+        [Fact]
+        public void ForgetsEdgesOfReplacedEntries()
+        {
+            var layer = new OverrideLayer();
+            layer.SetAll(FlagsOnly(FlagMatchingSegment("a", "seg")), out _, out _);
+            layer.SetAll(FlagsOnly(FlagMatchingSegment("c", "seg2")), out _, out _);
+
+            Assert.Equal(new HashSet<KindAndKey> { new KindAndKey(DataModel.Segments, "seg") }, AffectedFrom(layer, DataModel.Segments, "seg"));
+            Assert.Equal(
+                new HashSet<KindAndKey> { new KindAndKey(DataModel.Segments, "seg2"), new KindAndKey(DataModel.Features, "c") },
+                AffectedFrom(layer, DataModel.Segments, "seg2"));
         }
     }
 }

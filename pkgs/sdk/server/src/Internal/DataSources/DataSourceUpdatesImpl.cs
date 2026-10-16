@@ -32,6 +32,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly StateMonitor<DataSourceStatus, StateAndError> _status;
         private readonly Logger _log;
         private readonly DependencyTracker _dependencyTracker;
+        // Dependencies of definitions the data system does not hold. The override layer supplies its
+        // entries' dependencies, so that a change to a LaunchDarkly item also notifies the overridden
+        // flags that reference it. Null when no override source is configured.
+        private volatile IExternalDependencies _externalDependencies;
         private readonly DataSourceOutageTracker _outageTracker;
 
         private volatile bool _lastStoreUpdateFailed = false;
@@ -90,6 +94,56 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         #endregion
 
+        #region Internal methods
+
+        /// <summary>
+        /// Registers dependency edges that live outside the LaunchDarkly data, such as the override
+        /// layer's. Called once during construction of the data system.
+        /// </summary>
+        internal void SetExternalDependencies(IExternalDependencies externalDependencies)
+        {
+            _externalDependencies = externalDependencies;
+        }
+
+        // Adds the modified item and everything that depends on it to the set. The LaunchDarkly data
+        // and the external dependencies each know their own edges, and a chain can cross between them
+        // in either direction: an overridden flag can reference a LaunchDarkly segment, and a
+        // LaunchDarkly flag can have an overridden prerequisite. Each newly reached item is therefore
+        // expanded through both until nothing new is found.
+        private void AddAffectedItems(ISet<KindAndKey> itemsOut, KindAndKey item)
+        {
+            var external = _externalDependencies;
+            if (external is null)
+            {
+                _dependencyTracker.AddAffectedItems(itemsOut, item);
+                return;
+            }
+            var pending = new Stack<KindAndKey>();
+            pending.Push(item);
+            while (pending.Count > 0)
+            {
+                var next = pending.Pop();
+                // Each tracker gets its own set: a tracker skips an item that is already in the set it
+                // is given, so sharing one set would stop the second tracker at the starting item.
+                var viaData = new HashSet<KindAndKey>();
+                _dependencyTracker.AddAffectedItems(viaData, next);
+                var viaExternal = new HashSet<KindAndKey>();
+                external.AddAffectedItems(viaExternal, next);
+                foreach (var reached in new[] { viaData, viaExternal })
+                {
+                    foreach (var reachedItem in reached)
+                    {
+                        if (itemsOut.Add(reachedItem))
+                        {
+                            pending.Push(reachedItem);
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
+
         #region IDataSourceUpdatesImpl methods
 
         public bool Init(FullDataSet<ItemDescriptor> allData)
@@ -117,7 +171,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 if (HasFlagChangeListeners())
                 {
                     var affectedItems = new HashSet<KindAndKey>();
-                    _dependencyTracker.AddAffectedItems(affectedItems, new KindAndKey(kind, key));
+                    AddAffectedItems(affectedItems, new KindAndKey(kind, key));
                     SendChangeEvents(affectedItems);
                 }
             }
@@ -339,7 +393,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     var key = itemEntry.Key;
                     _dependencyTracker.UpdateDependenciesFrom(kind, key, itemEntry.Value);
-                    _dependencyTracker.AddAffectedItems(affectedItems, new KindAndKey(kind, key));
+                    AddAffectedItems(affectedItems, new KindAndKey(kind, key));
                 }
             }
 
@@ -369,7 +423,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
                     if (!hasOldItem || !hasNewItem || (oldItem.Version < newItem.Version))
                     {
-                        _dependencyTracker.AddAffectedItems(affectedItems, new KindAndKey(kind, key));
+                        AddAffectedItems(affectedItems, new KindAndKey(kind, key));
                     }
                     // Note that comparing the version numbers is sufficient; we don't have to compare every detail of the
                     // flag or segment configuration, because it's a basic underlying assumption of the entire LD data model

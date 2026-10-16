@@ -160,6 +160,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                     throw;
                 }
                 overrideLayer = new OverrideLayer();
+                // A LaunchDarkly change must also notify the flags whose overrides depend on it.
+                dataSourceUpdates.SetExternalDependencies(overrideLayer);
                 overrideSink = new OverrideSink(overrideLayer, readOnlyStore,
                     dataSourceUpdates.SendFlagChangeEvents, dataSourceUpdates.HasFlagChangeListeners,
                     logger.SubLogger(LogNames.OverridesSubLog));

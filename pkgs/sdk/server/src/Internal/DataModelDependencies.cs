@@ -29,6 +29,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
     }
 
+    /// <summary>
+    /// Dependency edges that live outside the LaunchDarkly data, such as those of the override
+    /// layer's entries. Given an item, adds it and everything that depends on it through those edges.
+    /// </summary>
+    internal interface IExternalDependencies
+    {
+        void AddAffectedItems(ISet<KindAndKey> itemsOut, KindAndKey item);
+    }
+
     internal class DependencyTracker
     {
         private readonly Dictionary<KindAndKey, ISet<KindAndKey>> _dependenciesFrom;

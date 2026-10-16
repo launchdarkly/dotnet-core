@@ -12,9 +12,11 @@ namespace TestService
     {
         public static void Main(string[] args)
         {
+            // An optional first argument selects the port, so that several test services can run at once.
+            var port = args.Length > 0 ? int.Parse(args[0]) : 8000;
             var quitSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
             var app = new Webapp(quitSignal);
-            var server = HttpServer.Start(8000, app.Handler);
+            var server = HttpServer.Start(port, app.Handler);
             server.Recorder.Enabled = false;
             quitSignal.WaitOne();
             server.Dispose();
@@ -49,7 +51,8 @@ namespace TestService
             "fdv1-fallback",
             "instance-id",
             "retry-conformance-fdv1-streaming",
-            "retry-conformance-fdv1-polling"
+            "retry-conformance-fdv1-polling",
+            "flag-overrides"
         };
 
         public readonly Handler Handler;

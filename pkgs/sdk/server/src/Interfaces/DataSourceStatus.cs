@@ -93,6 +93,12 @@ namespace LaunchDarkly.Sdk.Server.Interfaces
             public bool FDv1Fallback { get; set; }
 
             /// <summary>
+            /// When <see cref="FDv1Fallback"/> is true, how long to stay on FDv1 before attempting to
+            /// recover to FDv2. Null means the directive carried no TTL, so the default applies.
+            /// </summary>
+            internal TimeSpan? FDv1FallbackTtl { get; set; }
+
+            /// <summary>
             /// Constructs an instance based on an exception.
             /// </summary>
             /// <param name="e">the exception</param>

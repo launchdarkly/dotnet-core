@@ -1020,6 +1020,86 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
+        public async Task SuccessfulResponseWithFallbackTtlHeaderSignalsTtl()
+        {
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+            {
+                new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" }),
+                new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback-ttl", new[] { "60" })
+            };
+
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(CreatePollingResponseWithHeaders(
+                    new[] { CreateServerIntentEvent("none", "test-payload", 1) },
+                    headers));
+
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.True(changeSet.FDv1Fallback);
+                Assert.Equal(TimeSpan.FromSeconds(60), changeSet.FDv1FallbackTtl);
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.True(status.LastError.Value.FDv1Fallback);
+                Assert.Equal(TimeSpan.FromSeconds(60), status.LastError.Value.FDv1FallbackTtl);
+
+                Assert.True(await startTask);
+            }
+        }
+
+        [Fact]
+        public void ErrorResponseWithFallbackTtlHeaderSignalsTtl()
+        {
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+            {
+                new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" }),
+                new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback-ttl", new[] { "30" })
+            };
+
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ThrowsAsync(new UnsuccessfulResponseException(503, headers));
+
+            using (var dataSource = MakeDataSource())
+            {
+                dataSource.Start();
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.True(status.LastError.Value.FDv1Fallback);
+                Assert.Equal(TimeSpan.FromSeconds(30), status.LastError.Value.FDv1FallbackTtl);
+            }
+        }
+
+        [Fact]
+        public async Task GoodbyeWithProtocolFallbackTtlAppliesPayloadThenSignalsFDv1Fallback()
+        {
+            var goodbye = new FDv2Event(FDv2EventTypes.Goodbye,
+                JsonDocument.Parse(@"{""reason"":""fallback"",""protocolFallbackTTL"":45}").RootElement);
+
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(CreatePollingResponse(
+                    CreateServerIntentEvent("none", "test-payload", 1),
+                    goodbye));
+
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.None, changeSet.Type);
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.True(status.LastError.Value.FDv1Fallback);
+                Assert.Equal(TimeSpan.FromSeconds(45), status.LastError.Value.FDv1FallbackTtl);
+
+                Assert.True(await startTask);
+            }
+        }
+
+        [Fact]
         public async Task SuccessfulResponseWithoutFallbackHeaderDoesNotSignalFDv1Fallback()
         {
             // Sanity check: a successful response with no fallback header must NOT trigger fallback.

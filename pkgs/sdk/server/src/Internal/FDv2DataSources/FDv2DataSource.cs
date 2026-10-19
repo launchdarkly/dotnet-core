@@ -46,9 +46,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             // The FDv1 fallback applier is phase-agnostic: when the directive is observed it
             // calls BlockAll(FDv2) to remove every FDv2 entry from the outer list, then GoToNext
-            // lands on the FDv1 fallback entry (or on exhaustion when none was configured).
+            // lands on the FDv1 fallback entry (when one is configured). Either way it schedules
+            // an FDv2 recovery attempt after the directive's Fallback TTL.
+            var directedFallbackRecovery = new DirectedFallbackRecovery(Any(fdv1Synchronizers), sublogger);
             ActionApplierFactory fdv1FallbackApplierFactory =
-                (actionable) => new FDv1FallbackActionApplier(actionable);
+                (actionable) => new FDv1FallbackActionApplier(actionable, directedFallbackRecovery);
 
             var initializationTracker =
                 new InitializationTracker(Any(initializers), Any(synchronizers), Any(fdv1Synchronizers));
@@ -136,7 +138,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
 
             return new CompletingDataSource(new CompositeSource("FDv2DataSource", updatesSink, underlyingComposites, sublogger, circular: false),
-                initializationTracker);
+                initializationTracker, directedFallbackRecovery);
         }
 
         /// <summary>
@@ -432,8 +434,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         /// <summary>
-        /// Action applier that observes an FDv1 fallback signal and advances the outer composite
-        /// to the FDv1 fallback synchronizer entry. The directive may arrive either on
+        /// Action applier that observes an FDv1 fallback signal, advances the outer composite
+        /// to the FDv1 fallback synchronizer entry, and schedules FDv2 recovery after the
+        /// directive's Fallback TTL. The directive may arrive either on
         /// <see cref="UpdateStatus"/> (errorInfo.FDv1Fallback) or on <see cref="Apply"/>
         /// (changeSet.FDv1Fallback) when a successful payload also carried the directive header.
         /// </summary>
@@ -441,8 +444,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// Phase-agnostic: when attached to either the initializers entry or the synchronizers
         /// entry of the outer FDv2 composite, <see cref="ICompositeSourceActionable.BlockAll"/>
         /// removes every FDv2 entry in one shot, leaving the FDv1 fallback entry (if configured)
-        /// as the next stop. When no FDv1 fallback entry was configured the outer list is exhausted
-        /// and the composite halts the data system.
+        /// as the next stop. When no FDv1 fallback entry was configured, no source runs (the data
+        /// system reports Interrupted) until the recovery attempt.
         ///
         /// The single-shot _triggered flag makes this applier idempotent in case the directive
         /// arrives more than once on the same propagation chain (for example, on a successful FDv2
@@ -452,26 +455,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         internal class FDv1FallbackActionApplier : IDataSourceObserver
         {
             private readonly ICompositeSourceActionable _actionable;
+            private readonly DirectedFallbackRecovery _recovery;
             private int _triggered;
 
-            public FDv1FallbackActionApplier(ICompositeSourceActionable actionable)
+            public FDv1FallbackActionApplier(ICompositeSourceActionable actionable, DirectedFallbackRecovery recovery)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
+                _recovery = recovery ?? throw new ArgumentNullException(nameof(recovery));
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
             {
                 if (newError?.FDv1Fallback != true) return;
-                Trigger();
+                Trigger(newError.Value.FDv1FallbackTtl);
             }
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
                 if (!changeSet.FDv1Fallback) return;
-                Trigger();
+                Trigger(changeSet.FDv1FallbackTtl);
             }
 
-            private void Trigger()
+            private void Trigger(TimeSpan? ttl)
             {
                 if (Interlocked.CompareExchange(ref _triggered, 1, 0) != 0) return;
 
@@ -480,8 +485,102 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 // itself down by the time the directive is observed, but DisposeCurrent is
                 // idempotent and guards against sources that don't.
                 _actionable.DisposeCurrent();
-                _actionable.GoToNext();
-                _actionable.StartCurrent();
+                if (_recovery.HasFDv1FallbackSynchronizer)
+                {
+                    _actionable.GoToNext();
+                    _actionable.StartCurrent();
+                }
+
+                _recovery.Schedule(_actionable, ttl ?? FDv1FallbackTtl.Default());
+            }
+        }
+
+        /// <summary>
+        /// Schedules the FDv2 recovery attempt that ends a Directed Fallback once its Fallback TTL
+        /// elapses. Shared by every <see cref="FDv1FallbackActionApplier"/> of one FDv2 data source.
+        /// </summary>
+        /// <remarks>
+        /// Recovery restores the FDv2 entries and goes to the first one, re-running the full
+        /// initialization and synchronization flow. Going to an entry disposes and disconnects the
+        /// current (FDv1) source first, so FDv1 and FDv2 never write to the store at the same time.
+        /// A later directive replaces any pending recovery with one using the new TTL.
+        /// </remarks>
+        internal sealed class DirectedFallbackRecovery : IDisposable
+        {
+            private readonly object _lock = new object();
+            private readonly Logger _log;
+            private CancellationTokenSource _canceller;
+            private bool _disposed;
+
+            public bool HasFDv1FallbackSynchronizer { get; }
+
+            public DirectedFallbackRecovery(bool hasFDv1FallbackSynchronizer, Logger logger)
+            {
+                HasFDv1FallbackSynchronizer = hasFDv1FallbackSynchronizer;
+                _log = logger ?? throw new ArgumentNullException(nameof(logger));
+            }
+
+            public void Schedule(ICompositeSourceActionable actionable, TimeSpan ttl)
+            {
+                CancellationToken token;
+                lock (_lock)
+                {
+                    if (_disposed) return;
+                    CancelPendingRecovery();
+                    _canceller = new CancellationTokenSource();
+                    token = _canceller.Token;
+                }
+
+                if (HasFDv1FallbackSynchronizer)
+                {
+                    _log.Info("Falling back to FDv1; will attempt to recover to FDv2 in {0} seconds.",
+                        ttl.TotalSeconds);
+                }
+                else
+                {
+                    _log.Warn("Received an FDv1 fallback directive, but no FDv1 fallback synchronizer is " +
+                              "configured; will attempt to recover to FDv2 in {0} seconds.", ttl.TotalSeconds);
+                }
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(ttl, token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
+                    lock (_lock)
+                    {
+                        if (_disposed || token.IsCancellationRequested) return;
+                    }
+
+                    _log.Info("FDv1 fallback TTL elapsed; attempting to recover to FDv2.");
+                    actionable.UnblockAll();
+                    actionable.GoToFirst();
+                    actionable.StartCurrent();
+                });
+            }
+
+            public void Dispose()
+            {
+                lock (_lock)
+                {
+                    _disposed = true;
+                    CancelPendingRecovery();
+                }
+            }
+
+            // Must be called while holding _lock.
+            private void CancelPendingRecovery()
+            {
+                if (_canceller == null) return;
+                _canceller.Cancel();
+                _canceller.Dispose();
+                _canceller = null;
             }
         }
 

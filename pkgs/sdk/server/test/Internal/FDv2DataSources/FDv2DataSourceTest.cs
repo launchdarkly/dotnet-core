@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
@@ -1445,11 +1446,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 CallSequence.Add(nameof(GoToFirst));
             }
 
+            public SemaphoreSlim StartCurrentSignal { get; } = new SemaphoreSlim(0);
+
             public Task<bool> StartCurrent()
             {
                 StartCurrentCalled = true;
                 CallSequence.Add(nameof(StartCurrent));
+                StartCurrentSignal.Release();
                 return Task.FromResult(true);
+            }
+
+            public void UnblockAll()
+            {
+                CallSequence.Add(nameof(UnblockAll));
             }
 
             public void BlockCurrent()
@@ -1498,7 +1507,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public void FDv1FallbackActionApplierIgnoresStatusWithoutFDv1Fallback()
         {
             var mockActionable = new MockCompositeSourceActionable();
-            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, new FDv2DataSource.DirectedFallbackRecovery(true, TestLogger));
 
             // Status updates without an FDv1Fallback error must not advance the composite.
             applier.UpdateStatus(DataSourceState.Off, null);
@@ -1519,7 +1528,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // entry is the next stop), then advances to it. No skip-counting -- the entry list
             // mutation handles both initializer-phase and synchronizer-phase wirings uniformly.
             var mockActionable = new MockCompositeSourceActionable();
-            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, new FDv2DataSource.DirectedFallbackRecovery(true, TestLogger));
 
             applier.UpdateStatus(
                 DataSourceState.Off,
@@ -1539,7 +1548,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Successful FDv2 responses that also carry the directive ride the flag on the
             // ChangeSet rather than UpdateStatus. The applier must trigger from either path.
             var mockActionable = new MockCompositeSourceActionable();
-            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, new FDv2DataSource.DirectedFallbackRecovery(true, TestLogger));
 
             applier.Apply(new ChangeSet<ItemDescriptor>(
                 ChangeSetType.Full,
@@ -1560,7 +1569,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // UpdateStatus(Off, FDv1Fallback) during shutdown. The applier must trigger only
             // once; the second event is a no-op so we don't double-advance off the FDv1 entry.
             var mockActionable = new MockCompositeSourceActionable();
-            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable);
+            var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, new FDv2DataSource.DirectedFallbackRecovery(true, TestLogger));
 
             applier.Apply(new ChangeSet<ItemDescriptor>(
                 ChangeSetType.Full,
@@ -1574,6 +1583,61 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             Assert.Equal(1, mockActionable.BlockAllCallCount);
             Assert.Equal(1, mockActionable.GoToNextCallCount);
+        }
+
+        [Fact]
+        public void FDv1FallbackActionApplierRecoversToFDv2AfterTtl()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+
+            using (var recovery = new FDv2DataSource.DirectedFallbackRecovery(true, TestLogger))
+            {
+                var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, recovery);
+
+                applier.UpdateStatus(
+                    DataSourceState.Off,
+                    new DataSourceStatus.ErrorInfo
+                    {
+                        FDv1Fallback = true,
+                        FDv1FallbackTtl = TimeSpan.FromMilliseconds(10)
+                    });
+
+                // Once for the FDv1 fallback synchronizer, then once for the FDv2 recovery.
+                Assert.True(mockActionable.StartCurrentSignal.Wait(TimeSpan.FromSeconds(5)));
+                Assert.True(mockActionable.StartCurrentSignal.Wait(TimeSpan.FromSeconds(5)));
+                Assert.Equal(
+                    new List<string>
+                    {
+                        "BlockAll", "DisposeCurrent", "GoToNext", "StartCurrent",
+                        "UnblockAll", "GoToFirst", "StartCurrent"
+                    },
+                    mockActionable.CallSequence);
+            }
+        }
+
+        [Fact]
+        public void FDv1FallbackActionApplierWithoutFDv1SynchronizerRunsNothingThenRecoversToFDv2()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+
+            using (var recovery = new FDv2DataSource.DirectedFallbackRecovery(false, TestLogger))
+            {
+                var applier = new FDv2DataSource.FDv1FallbackActionApplier(mockActionable, recovery);
+
+                applier.UpdateStatus(
+                    DataSourceState.Off,
+                    new DataSourceStatus.ErrorInfo
+                    {
+                        FDv1Fallback = true,
+                        FDv1FallbackTtl = TimeSpan.FromMilliseconds(10)
+                    });
+
+                // The only start is the FDv2 recovery; nothing runs while the fallback is engaged.
+                Assert.True(mockActionable.StartCurrentSignal.Wait(TimeSpan.FromSeconds(5)));
+                Assert.Equal(
+                    new List<string> { "BlockAll", "DisposeCurrent", "UnblockAll", "GoToFirst", "StartCurrent" },
+                    mockActionable.CallSequence);
+            }
         }
 
         // End-to-end test: synchronizer reports Off+FDv1Fallback (mirrors the FDv2 streaming
@@ -1794,37 +1858,48 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        // End-to-end test: synchronizer reports the FDv1 fallback directive but no FDv1
-        // fallback is configured. The SDK must HALT (Requirement 1.6.3(4)) -- which in
-        // practice means the synchronizer's underlying data source must be disposed so it
-        // stops trying to reconnect. The data system reaches Off via outer composite
-        // exhaustion. Mirrors the harness suite "directive without FDv1 fallback configured
-        // halts the data system".
+        // End-to-end test: a synchronizer reports the FDv1 directive (500 + header) and no FDv1
+        // fallback synchronizer is configured. The data system must stop the synchronizer, report
+        // Interrupted rather than Off, and restart FDv2 once the Fallback TTL elapses.
         [Fact]
-        public void SynchronizerFDv1FallbackWithoutFallbackConfiguredHaltsDataSystem()
+        public void SynchronizerFDv1FallbackWithoutFallbackConfiguredRecoversToFDv2AfterTtl()
         {
             var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
 
-            var synchronizerDisposed = false;
+            var firstSynchronizerDisposed = false;
+            var synchronizerStartCount = 0;
+            var recovered = new TaskCompletionSource<bool>();
             SourceFactory synchronizerFactory = (updatesSink) =>
-                new HaltMockDataSource(
+            {
+                var startNumber = Interlocked.Increment(ref synchronizerStartCount);
+                return new HaltMockDataSource(
                     onStart: async () =>
                     {
-                        // 500 + directive: a recoverable status that would normally drive retries.
-                        // The directive must take precedence and halt those retries.
-                        updatesSink.UpdateStatus(
-                            DataSourceState.Interrupted,
-                            new DataSourceStatus.ErrorInfo
-                            {
-                                Kind = DataSourceStatus.ErrorKind.ErrorResponse,
-                                StatusCode = 500,
-                                FDv1Fallback = true,
-                                Recoverable = true,
-                                Time = DateTime.Now
-                            });
+                        if (startNumber == 1)
+                        {
+                            updatesSink.UpdateStatus(
+                                DataSourceState.Interrupted,
+                                new DataSourceStatus.ErrorInfo
+                                {
+                                    Kind = DataSourceStatus.ErrorKind.ErrorResponse,
+                                    StatusCode = 500,
+                                    FDv1Fallback = true,
+                                    FDv1FallbackTtl = TimeSpan.FromMilliseconds(10),
+                                    Recoverable = true,
+                                    Time = DateTime.Now
+                                });
+                        }
+                        else
+                        {
+                            recovered.TrySetResult(firstSynchronizerDisposed);
+                        }
                         await Task.Yield();
                     },
-                    onDispose: () => synchronizerDisposed = true);
+                    onDispose: () =>
+                    {
+                        if (startNumber == 1) firstSynchronizerDisposed = true;
+                    });
+            };
 
             // No FDv1 fallback configured (empty list).
             var dataSource = FDv2DataSource.CreateFDv2DataSource(
@@ -1838,24 +1913,95 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 var startTask = dataSource.Start();
 
-                // The data system must transition to Off via outer composite exhaustion. Wait a
-                // few status updates -- intermediate Interrupted statuses come first.
-                var statuses = capturingSink.WaitForStatusUpdates(2, TimeSpan.FromSeconds(5));
-                Assert.Contains(statuses, s => s.State == DataSourceState.Off);
-
-                // Start() must resolve (with false) rather than hang. Without the
-                // InitializationTracker's no-fallback shortcut, the tracker would stay in
-                // FallingBack forever because the outer composite's exhaustion-driven Off goes
-                // directly to the external sink, bypassing the tracker's observers.
+                // Start() resolves with false: no data arrived and there is no FDv1 synchronizer
+                // to take over.
                 Assert.True(startTask.Wait(TimeSpan.FromSeconds(5)),
                     "Start() must resolve when FDv1 directive arrives but no fallback is configured");
-                Assert.False(startTask.Result,
-                    "Start() should resolve with false when no FDv1 fallback is configured to take over");
+                Assert.False(startTask.Result);
 
-                // Critically, the synchronizer must have been disposed -- this is what stops the
-                // streaming source from reconnecting in the harness scenario.
-                Assert.True(synchronizerDisposed,
-                    "synchronizer source must be disposed so the streaming source stops reconnecting");
+                // FDv2 is restarted after the TTL, and only after the first synchronizer was disposed.
+                Assert.True(recovered.Task.Wait(TimeSpan.FromSeconds(5)), "FDv2 must recover after the TTL");
+                Assert.True(recovered.Task.Result,
+                    "the first synchronizer must be disposed before FDv2 recovers");
+
+                // The fallback is never terminal, so the data system must not report Off.
+                Assert.DoesNotContain(capturingSink.GetAllStatusUpdates(), s => s.State == DataSourceState.Off);
+            }
+            finally
+            {
+                dataSource.Dispose();
+            }
+        }
+
+        // End-to-end test: after the Fallback TTL, the FDv1 fallback synchronizer is stopped before
+        // FDv2 restarts, so the two never write to the store at the same time.
+        [Fact]
+        public void FDv1FallbackSynchronizerIsStoppedBeforeFDv2RecoversAfterTtl()
+        {
+            var capturingSink = new CapturingDataSourceUpdatesWithHeaders();
+
+            var events = new List<string>();
+            var recovered = new TaskCompletionSource<bool>();
+            var synchronizerStartCount = 0;
+            SourceFactory synchronizerFactory = (updatesSink) =>
+            {
+                var startNumber = Interlocked.Increment(ref synchronizerStartCount);
+                return new HaltMockDataSource(
+                    onStart: async () =>
+                    {
+                        lock (events) events.Add("fdv2 start " + startNumber);
+                        if (startNumber == 1)
+                        {
+                            updatesSink.UpdateStatus(
+                                DataSourceState.Off,
+                                new DataSourceStatus.ErrorInfo
+                                {
+                                    Kind = DataSourceStatus.ErrorKind.ErrorResponse,
+                                    StatusCode = 403,
+                                    FDv1Fallback = true,
+                                    FDv1FallbackTtl = TimeSpan.FromMilliseconds(10),
+                                    Time = DateTime.Now
+                                });
+                        }
+                        else
+                        {
+                            recovered.TrySetResult(true);
+                        }
+                        await Task.Yield();
+                    },
+                    onDispose: () => { });
+            };
+
+            SourceFactory fdv1Factory = (updatesSink) =>
+                new HaltMockDataSource(
+                    onStart: async () =>
+                    {
+                        lock (events) events.Add("fdv1 start");
+                        await Task.Yield();
+                    },
+                    onDispose: () =>
+                    {
+                        lock (events) events.Add("fdv1 dispose");
+                    });
+
+            var dataSource = FDv2DataSource.CreateFDv2DataSource(
+                capturingSink,
+                new List<SourceFactory>(),
+                new List<SourceFactory> { synchronizerFactory },
+                new List<SourceFactory> { fdv1Factory },
+                TestLogger);
+
+            try
+            {
+                _ = dataSource.Start();
+
+                Assert.True(recovered.Task.Wait(TimeSpan.FromSeconds(5)), "FDv2 must recover after the TTL");
+                lock (events)
+                {
+                    Assert.Equal(
+                        new List<string> { "fdv2 start 1", "fdv1 start", "fdv1 dispose", "fdv2 start 2" },
+                        events);
+                }
             }
             finally
             {

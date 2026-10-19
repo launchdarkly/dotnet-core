@@ -50,5 +50,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// </summary>
         /// <param name="kindMatches">predicate selecting which kinds to remove</param>
         void BlockAll(Predicate<CompositeEntryKind> kindMatches);
+
+        /// <summary>
+        /// Restores every entry removed by <see cref="BlockCurrent"/> or <see cref="BlockAll"/>, so
+        /// the source list matches its original configuration. The current data source is not
+        /// disposed -- callers should follow this with <see cref="GoToFirst"/>.
+        /// </summary>
+        void UnblockAll();
     }
 }

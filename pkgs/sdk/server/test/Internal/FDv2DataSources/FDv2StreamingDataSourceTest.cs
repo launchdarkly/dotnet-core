@@ -388,6 +388,86 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
+        public void GoodbyeWithoutProtocolFallbackTtlDoesNotSignalFDv1Fallback()
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                dataSource.Start();
+
+                _mockEventSource.TriggerOpen();
+                _mockEventSource.TriggerMessage(CreateMessageEvent("goodbye", CreateGoodbyeJson("bye")));
+
+                // Messages are handled synchronously, so the goodbye has been processed here.
+                Assert.False(_mockEventSource.IsClosed);
+            }
+        }
+
+        [Fact]
+        public void GoodbyeWithProtocolFallbackTtlSignalsFDv1Fallback()
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                dataSource.Start();
+
+                _mockEventSource.TriggerOpen();
+                _mockEventSource.TriggerMessage(CreateMessageEvent("goodbye",
+                    @"{""reason"":""fallback"",""protocolFallbackTTL"":90}"));
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.True(status.LastError.Value.FDv1Fallback);
+                Assert.Equal(TimeSpan.FromSeconds(90), status.LastError.Value.FDv1FallbackTtl);
+                Assert.True(_mockEventSource.IsClosed);
+            }
+        }
+
+        [Fact]
+        public void ErrorResponseWithFallbackTtlHeaderSignalsTtl()
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                dataSource.Start();
+
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+                {
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" }),
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback-ttl", new[] { "0" })
+                };
+                _mockEventSource.TriggerError(new EventSourceServiceUnsuccessfulResponseException(503, headers));
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.True(status.LastError.Value.FDv1Fallback);
+                Assert.InRange(status.LastError.Value.FDv1FallbackTtl.Value,
+                    TimeSpan.FromMinutes(30), TimeSpan.FromHours(1));
+            }
+        }
+
+        [Fact]
+        public void SuccessfulStreamWithFallbackTtlHeaderSignalsTtl()
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                dataSource.Start();
+
+                var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+                {
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback", new[] { "true" }),
+                    new KeyValuePair<string, IEnumerable<string>>("x-ld-fd-fallback-ttl", new[] { "300" })
+                };
+                _mockEventSource.TriggerOpen(headers);
+                _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
+                    CreateServerIntentJson("none", "p1", 1)));
+
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(TimeSpan.FromSeconds(300), changeSet.FDv1FallbackTtl);
+
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.Equal(TimeSpan.FromSeconds(300), status.LastError.Value.FDv1FallbackTtl);
+            }
+        }
+
+        [Fact]
         public void HeartbeatEventIsSilentlyIgnored()
         {
             using (var dataSource = MakeDataSource())

@@ -31,6 +31,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly IDataSourceUpdatesV2 _originalUpdateSink;
         private readonly IDataSourceUpdatesV2 _sanitizedUpdateSink;
         private readonly SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)> _sourcesList;
+        private readonly List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)> _originalEntries;
         private readonly DisableableDataSourceUpdatesTracker _disableableTracker;
 
         // Tracks the entry from the sources list that was used to create the current
@@ -76,6 +77,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // this tracker is used to disconnect the current source from the updates sink when it is no longer needed.
             _disableableTracker = new DisableableDataSourceUpdatesTracker();
 
+            _originalEntries = new List<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>(factoryTuples);
             _sourcesList = new SourcesList<(SourceFactory Factory, ActionApplierFactory ActionApplierFactory, CompositeEntryKind Kind)>(
                 circular: circular,
                 initialList: factoryTuples
@@ -483,6 +485,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     }
 
                     _log.Debug("{0} blocked {1} entries by kind predicate.", _compositeDescription, removed);
+                }
+            });
+        }
+
+        public void UnblockAll()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            EnqueueAction(() =>
+            {
+                lock (_lock)
+                {
+                    _sourcesList.Replace(_originalEntries);
+                    _log.Debug("{0} restored all of its entries.", _compositeDescription);
                 }
             });
         }

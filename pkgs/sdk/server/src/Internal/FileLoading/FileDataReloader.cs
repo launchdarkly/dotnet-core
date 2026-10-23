@@ -60,20 +60,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         /// <summary>
         /// Invoked with each successfully merged result. Calls are serialized. An exception from
-        /// Apply is a load failure: it is reported through OnError, the result is not remembered as
-        /// applied, and the reload is retried. Apply and OnError must not call back into Dispose.
+        /// Apply is a load failure: it is logged, the result is not remembered as applied, and the
+        /// reload is retried. Apply must not call back into Dispose.
         /// </summary>
         internal Action<FileDataMergeResult> Apply { get; set; }
-
-        /// <summary>
-        /// Invoked when a reload fails, once per distinct failure. With automatic retries, repeats
-        /// of an identical failure do not invoke it again. A success re-arms it. The exception is a
-        /// <see cref="FileDataReadException"/> when a file could not be read or parsed, or a
-        /// <see cref="FileDataException"/> when the documents could not be combined or Apply threw.
-        /// The reloader logs failures itself. An exception from OnError is logged and does not stop
-        /// the retry.
-        /// </summary>
-        internal Action<Exception> OnError { get; set; }
 
         /// <summary>
         /// How long to wait after a Trigger call for further calls to settle before reloading. This
@@ -251,9 +241,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <summary>
         /// Stops the reloader. It does not wait for a reload that is already in progress. A reload
         /// wedged in a blocking file read must not be able to wedge shutdown. Such a reload can
-        /// still deliver its result through Apply or OnError shortly after Dispose returns. A
-        /// reload that has not yet reached its callbacks when Dispose is called does not invoke
-        /// them.
+        /// still deliver its result through Apply shortly after Dispose returns. A reload that has
+        /// not yet reached Apply when Dispose is called does not invoke it.
         /// </summary>
         public void Dispose()
         {
@@ -509,8 +498,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 }
 
                 // A success right after a failure must apply even when the content is unchanged since
-                // the last success. The consumer heard about the failure through OnError and only
-                // Apply tells it things are good again.
+                // the last success. The failure was logged, and only an Apply, with whatever the
+                // consumer logs for it, shows that things are good again.
                 var recovering = _lastErrorMessage != null;
                 byte[] hash = null;
                 if (rawContents != null)
@@ -547,9 +536,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 return true;
             }
-            // With automatic retries, a persistent failure would repeat the same log entry and the
-            // same callback on every attempt. Repeats of an identical failure are demoted to debug
-            // level and do not invoke OnError again.
+            // With automatic retries, a persistent failure would repeat the same log entry on every
+            // attempt. Repeats of an identical failure are demoted to debug level. A failure with a
+            // different message, or any failure after a success, is logged at error level again.
             if (e.Message == _lastErrorMessage)
             {
                 _log.Debug("Unable to load flags: {0}", e.Message);
@@ -557,15 +546,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             _lastErrorMessage = e.Message;
             _log.Error("Unable to load flags: {0}", e.Message);
-            try
-            {
-                _config.OnError?.Invoke(e);
-            }
-            catch (Exception callbackError)
-            {
-                // A consumer that throws while it is told about a failure must not stop the retry.
-                LogHelpers.LogException(_log, "Error while reporting a file data load failure", callbackError);
-            }
             return false;
         }
 

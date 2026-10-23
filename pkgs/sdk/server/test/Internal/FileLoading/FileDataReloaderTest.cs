@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -23,7 +24,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private readonly TempDirectory _dir = TempDirectory.Create();
         private readonly string _path;
         private readonly EventSink<FileDataMergeResult> _applied = new EventSink<FileDataMergeResult>();
-        private readonly EventSink<Exception> _errored = new EventSink<Exception>();
+        private int _consumedErrorLogs;
         private int _applyCount;
         private FileDataReloader _reloader;
 
@@ -45,8 +46,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 DuplicateKeysHandling = FileDataDuplicateKeysHandling.Fail,
                 Logger = TestLogger,
                 FlagValueExpander = (key, value) => FileDataParser.MakeFallthroughFlagWithValue(key, value, 0),
-                Apply = RecordApply,
-                OnError = e => _errored.Enqueue(e)
+                Apply = RecordApply
             };
 
         private void RecordApply(FileDataMergeResult result)
@@ -69,23 +69,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private FileDataMergeResult RequireApplied() => _applied.ExpectValue(TestTimeout);
 
-        private Exception RequireErrored() => _errored.ExpectValue(TestTimeout);
+        // The reloader reports a failure by logging it at error level once; identical repeats are
+        // logged at debug level. These helpers observe the error-level entries in order.
+        private List<string> ErrorLogs() =>
+            LogCapture.GetMessages()
+                .Where(m => m.Level == LogLevel.Error && m.Text.StartsWith("Unable to load flags: "))
+                .Select(m => m.Text).ToList();
+
+        private string RequireErrorLogged()
+        {
+            AssertEventually(() => ErrorLogs().Count > _consumedErrorLogs);
+            return ErrorLogs()[_consumedErrorLogs++];
+        }
 
         private void RequireQuiet(TimeSpan duration)
         {
             _applied.ExpectNoValue(duration);
-            _errored.ExpectNoValue(TimeSpan.Zero);
+            Assert.Equal(_consumedErrorLogs, ErrorLogs().Count);
         }
 
         // The test's own writes are ordinary, not atomic. An automatic retry that runs while the
-        // file is being rewritten reads it empty or half written and reports that failure. Those
-        // reports are a correct response to what the retry saw, and tests that only check what
+        // file is being rewritten reads it empty or half written and logs that failure. Those
+        // entries are a correct response to what the retry saw, and tests that only check what
         // happens after the recovery discard them before they require silence.
         private void DrainErrors()
         {
-            while (_errored.TryTakeValue(out _))
-            {
-            }
+            _consumedErrorLogs = ErrorLogs().Count;
         }
 
         private static string[] FlagKeys(FileDataMergeResult result) => result.Flags.Select(kv => kv.Key).ToArray();
@@ -101,9 +110,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             reloader.ReloadNow();
 
-            var e = Assert.IsType<FileDataReadException>(RequireErrored());
-            Assert.Equal(missing, e.Path);
-            Assert.Contains("unable to read file", e.Message);
+            var message = RequireErrorLogged();
+            Assert.Contains("unable to read file", message);
+            Assert.Contains(missing, message);
             RequireQuiet(TimeSpan.FromMilliseconds(100));
         }
 
@@ -190,10 +199,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             reloader.ReloadNow();
 
-            var e = Assert.IsType<FileDataReadException>(RequireErrored());
-            Assert.Equal(_path, e.Path);
-            Assert.Contains("error parsing file", e.Message);
-            AssertLogMessageRegex(true, LogLevel.Error, "Unable to load flags: error parsing file");
+            var message = RequireErrorLogged();
+            Assert.StartsWith("Unable to load flags: error parsing file", message);
+            Assert.Contains(_path, message);
             RequireQuiet(TimeSpan.FromMilliseconds(50));
         }
 
@@ -207,14 +215,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             reloader.ReloadNow();
 
-            var e = RequireErrored();
-            Assert.IsType<FileDataException>(e);
-            Assert.Equal("flag \"flag1\" is specified by multiple files", e.Message);
+            Assert.Equal("Unable to load flags: flag \"flag1\" is specified by multiple files", RequireErrorLogged());
             _applied.ExpectNoValue(TimeSpan.FromMilliseconds(50));
         }
 
         [Fact]
-        public void ReadFailureIsReportedAsAReadException()
+        public void ReadFailureIsReported()
         {
             Write(Flag1True);
             var reader = new ThrowingFileReader();
@@ -222,10 +228,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             reloader.ReloadNow();
 
-            var e = Assert.IsType<FileDataReadException>(RequireErrored());
-            Assert.Equal(_path, e.Path);
-            Assert.Contains("unable to read file", e.Message);
-            Assert.IsType<IOException>(e.InnerException);
+            var message = RequireErrorLogged();
+            Assert.Contains("unable to read file: simulated read error", message);
+            Assert.Contains(_path, message);
         }
 
         [Fact]
@@ -335,24 +340,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(10));
 
             reloader.ReloadNow();
-            RequireErrored();
+            RequireErrorLogged();
 
-            // The automatic retries keep failing identically. The error is neither reported to
-            // OnError again nor logged at error level again.
+            // The automatic retries keep failing identically. The error is not logged at error
+            // level again.
             RequireQuiet(TimeSpan.FromMilliseconds(200));
             Assert.Equal(1, ErrorLogCount());
 
             // A different failure is a new report.
             Write(@"{""flagValues"": {bad}}");
-            var e = RequireErrored();
-            Assert.Contains("error parsing file", e.Message);
+            Assert.Contains("error parsing file", RequireErrorLogged());
 
             // Success re-arms reporting: the same failure recurring afterward is reported again.
             Write(Flag1True);
             RequireApplied();
             Write(Truncated);
             reloader.Trigger();
-            RequireErrored();
+            RequireErrorLogged();
         }
 
         [Fact]
@@ -365,7 +369,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             Write(Truncated);
             reloader.Trigger();
-            RequireErrored();
+            RequireErrorLogged();
 
             // Fix the file without triggering. Only the automatic retry can observe the fix.
             Write(Flag1False);
@@ -381,7 +385,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(20));
 
             reloader.ReloadNow();
-            RequireErrored();
+            RequireErrorLogged();
 
             Write(Flag1True);
             RequireApplied();
@@ -397,7 +401,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 c.SkipUnchanged = true;
             });
             reloader.ReloadNow();
-            RequireErrored();
+            RequireErrorLogged();
 
             Write(Flag1True);
             RequireApplied();
@@ -419,7 +423,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 c.SkipUnchanged = true;
             });
             reloader.ReloadNow();
-            RequireErrored();
+            RequireErrorLogged();
 
             // The file is fixed and loaded on demand. Whether the retry or this load applies the
             // recovery, the content is applied once.
@@ -440,7 +444,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Write(Truncated);
             var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.Zero);
             reloader.ReloadNow();
-            RequireErrored();
+            RequireErrorLogged();
 
             Write(Flag1True);
             RequireQuiet(TimeSpan.FromMilliseconds(200));
@@ -470,13 +474,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             reloader.ReloadNow();
             RequireApplied();
 
-            // A reload fails. Consumers hear OnError and may move to an interrupted state.
+            // A reload fails and is logged.
             File.Delete(_path);
             reloader.Trigger();
-            RequireErrored();
+            RequireErrorLogged();
 
             // The file comes back with identical content. The success must be applied despite
-            // SkipUnchanged, because only Apply tells the consumer the interruption is over.
+            // SkipUnchanged, because only Apply shows the consumer that the failure is over.
             Write(Flag1True);
             reloader.Trigger();
             RequireApplied();
@@ -541,7 +545,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Write(Truncated);
             var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(50));
             reloader.ReloadNow();
-            RequireErrored();
+            RequireErrorLogged();
 
             reloader.Dispose();
             Write(Flag1True);
@@ -652,32 +656,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             // The consumer rejects the result. That is a load failure like any other.
             reloader.Trigger();
-            var e = Assert.IsType<FileDataException>(RequireErrored());
-            Assert.Contains("consumer failed", e.Message);
-            Assert.IsType<InvalidOperationException>(e.InnerException);
-            AssertLogMessageRegex(true, LogLevel.Error, "Unable to load flags: error applying file data");
+            Assert.Contains("Unable to load flags: error applying file data: consumer failed", RequireErrorLogged());
 
             // The rejected result was not remembered as applied: the retry offers the unchanged content
             // again, and this time the consumer accepts it.
-            RequireApplied();
-        }
-
-        [Fact]
-        public void OnErrorExceptionIsLoggedAndTheRetryStillRuns()
-        {
-            Write(Truncated);
-            var reloader = MakeReloader(c =>
-            {
-                c.DebounceDelay = TimeSpan.Zero;
-                c.RetryDelay = TimeSpan.FromMilliseconds(20);
-                c.OnError = e => throw new InvalidOperationException("listener failed");
-            });
-
-            reloader.Trigger();
-            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "Error while reporting a file data load failure"));
-
-            // Fix the file without triggering. Only the automatic retry can observe the fix.
-            Write(Flag1True);
             RequireApplied();
         }
 
@@ -702,10 +684,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             reloader.ReloadNow();
 
-            var e = RequireErrored();
-            Assert.IsType<FileDataException>(e);
-            Assert.Contains("expander failed", e.Message);
-            Assert.IsType<InvalidOperationException>(e.InnerException);
+            Assert.Contains("expander failed", RequireErrorLogged());
             _applied.ExpectNoValue(TimeSpan.Zero);
 
             // The failure armed the retry like a read failure.

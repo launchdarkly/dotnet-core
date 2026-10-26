@@ -26,6 +26,11 @@ on:
         type: boolean
         required: true
         default: true
+      publish_docs:
+        description: 'Whether to publish the documentation to GitHub pages. A prerelease should not replace the documentation of the current release.'
+        type: boolean
+        required: true
+        default: true
   workflow_call:
     inputs:
       package_path:
@@ -38,6 +43,10 @@ on:
         required: true
       generate_provenance:
         description: 'Whether to generate provenance for this publish.'
+        type: boolean
+        default: true
+      publish_docs:
+        description: 'Whether to publish the documentation to GitHub pages.'
         type: boolean
         default: true
 
@@ -70,6 +79,7 @@ jobs:
           run_consul: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-consul' }}
           run_dynamodb: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-dynamodb' }}
           run_redis: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-redis' }}
+          publish_docs: ${{ inputs.publish_docs }}
 
       - name: Attest build provenance
         if: ${{ format('{0}', inputs.generate_provenance) == 'true' && format('{0}', inputs.dry_run) == 'false' }}

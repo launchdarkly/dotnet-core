@@ -1,0 +1,5 @@
+{
+  "pkgs/sdk/server": "9.0.0-alpha.0",
+  "pkgs/shared/common": "7.2.0",
+  "pkgs/shared/internal": "3.11.1"
+}

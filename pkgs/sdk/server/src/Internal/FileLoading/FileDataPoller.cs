@@ -79,12 +79,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             try
             {
                 var current = FileState.ObserveAll(_paths);
-                var changed = FileState.AnyChanged(_last, current);
-                _last = current;
-                if (changed && !_disposed)
+                if (FileState.AnyChanged(_last, current) && !_disposed)
                 {
-                    _onChange();
+                    try
+                    {
+                        _onChange();
+                    }
+                    catch (Exception e)
+                    {
+                        // The baseline stays where it was, so the next examination reports this
+                        // change again. Nothing is remembered until the callback has taken it.
+                        LogHelpers.LogException(_log, "Unexpected error from the file change callback", e);
+                        return;
+                    }
                 }
+                _last = current;
             }
             catch (Exception e)
             {

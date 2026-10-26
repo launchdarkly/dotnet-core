@@ -155,16 +155,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var flags = ImmutableList.CreateBuilder<KeyValuePair<string, ItemDescriptor>>();
             var segments = ImmutableList.CreateBuilder<KeyValuePair<string, ItemDescriptor>>();
             var summaries = ImmutableList.CreateBuilder<FileDataDocumentSummary>();
-            var seenFlagKeys = new HashSet<string>();
-            var seenSegmentKeys = new HashSet<string>();
-
-            foreach (var document in documents)
+            // Each seen key records the index of the document that supplied it, so that a repeat
+            // can say whether it came from the same file or from another one.
+            var seenFlagKeys = new Dictionary<string, int>();
+            var seenSegmentKeys = new Dictionary<string, int>();
+            for (var index = 0; index < documents.Count; index++)
             {
+                var document = documents[index];
                 var flagCount = 0;
                 var segmentCount = 0;
                 foreach (var kv in document.Flags)
                 {
-                    if (Insert(flags, seenFlagKeys, "flag", kv.Key, kv.Value.Version, kv.Value, duplicateKeysHandling))
+                    if (Insert(flags, seenFlagKeys, index, "flag", kv.Key, kv.Value.Version, kv.Value, duplicateKeysHandling))
                     {
                         flagCount++;
                     }
@@ -172,28 +174,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 foreach (var kv in document.FlagValues)
                 {
                     var flag = expandFlagValue(kv.Key, kv.Value);
-                    if (Insert(flags, seenFlagKeys, "flag", kv.Key, flag.Version, flag, duplicateKeysHandling))
+                    if (Insert(flags, seenFlagKeys, index, "flag", kv.Key, flag.Version, flag, duplicateKeysHandling))
                     {
                         flagCount++;
                     }
                 }
                 foreach (var kv in document.Segments)
                 {
-                    if (Insert(segments, seenSegmentKeys, "segment", kv.Key, kv.Value.Version, kv.Value, duplicateKeysHandling))
+                    if (Insert(segments, seenSegmentKeys, index, "segment", kv.Key, kv.Value.Version, kv.Value, duplicateKeysHandling))
                     {
                         segmentCount++;
                     }
                 }
                 summaries.Add(new FileDataDocumentSummary(flagCount, segmentCount));
             }
-
             return new FileDataMergeResult(flags.ToImmutable(), segments.ToImmutable(), summaries.ToImmutable(), null);
         }
 
         // Adds the entry unless the key was already seen. Returns true if it added the entry.
         private static bool Insert(
             ImmutableList<KeyValuePair<string, ItemDescriptor>>.Builder items,
-            ISet<string> seenKeys,
+            IDictionary<string, int> seenKeys,
+            int documentIndex,
             string category,
             string key,
             int version,
@@ -201,18 +203,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             FileDataDuplicateKeysHandling duplicateKeysHandling
             )
         {
-            if (seenKeys.Contains(key))
+            if (seenKeys.TryGetValue(key, out var firstDocumentIndex))
             {
                 switch (duplicateKeysHandling)
                 {
                     case FileDataDuplicateKeysHandling.Ignore:
                         return false;
                     default:
-                        throw new FileDataException(category + " \"" + key + "\" is specified by multiple files");
+                        var where = firstDocumentIndex == documentIndex ? "more than once in one file" : "by multiple files";
+                        throw new FileDataException(category + " \"" + key + "\" is specified " + where);
                 }
             }
             items.Add(new KeyValuePair<string, ItemDescriptor>(key, new ItemDescriptor(version, item)));
-            seenKeys.Add(key);
+            seenKeys[key] = documentIndex;
             return true;
         }
     }

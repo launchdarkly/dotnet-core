@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
@@ -20,7 +21,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// On a framework without link resolution, a path that is a link is observed by its content.
     /// Reading the file costs more than reading its metadata, so this applies to links only. A
     /// reparse point that is not a link, such as a file kept by a cloud storage provider, is
-    /// observed by its own metadata.
+    /// observed by its own metadata where the framework can tell the two apart; on a framework
+    /// that cannot, every reparse point is observed by its content.
     /// </para>
     /// <para>
     /// A file that cannot be examined counts as absent.
@@ -141,32 +143,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         public bool Equals(FileState other) =>
             Exists == other.Exists && LastWriteTimeUtc == other.LastWriteTimeUtc && Length == other.Length &&
-            HashesEqual(_contentHash, other._contentHash);
+            (_contentHash is null ? other._contentHash is null :
+                other._contentHash != null && _contentHash.SequenceEqual(other._contentHash));
 
         public override bool Equals(object obj) => obj is FileState other && Equals(other);
 
         public override int GetHashCode() =>
             Exists.GetHashCode() ^ LastWriteTimeUtc.GetHashCode() ^ Length.GetHashCode() ^
             (_contentHash == null ? 0 : _contentHash.Length);
-
-        private static bool HashesEqual(byte[] a, byte[] b)
-        {
-            if (a == null || b == null)
-            {
-                return a == b;
-            }
-            if (a.Length != b.Length)
-            {
-                return false;
-            }
-            for (var i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
     }
 }

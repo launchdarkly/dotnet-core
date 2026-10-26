@@ -91,7 +91,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 new[] { new KeyValuePair<string, FeatureFlag>("flag1", flag) },
                 new[] { new KeyValuePair<string, LdValue>("flag1", LdValue.Of(true)) },
                 null);
-            Assert.Throws<FileDataException>(() => Merge(FileDataDuplicateKeysHandling.Fail, doc));
+            var e = Assert.Throws<FileDataException>(() => Merge(FileDataDuplicateKeysHandling.Fail, doc));
+            Assert.Equal("flag \"flag1\" is specified more than once in one file", e.Message);
         }
 
         [Fact]

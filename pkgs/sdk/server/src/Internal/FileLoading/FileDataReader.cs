@@ -1,6 +1,5 @@
 using System.IO;
 using System.Text;
-using System.Threading;
 using LaunchDarkly.Sdk.Server.Integrations;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
@@ -19,15 +18,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// and is retried by the reloader.
     /// </para>
     /// <para>
-    /// A writer can still hold the file in a way that denies reading. As the file data source's
-    /// reader does, this reader then waits and tries again for about 30 seconds before it fails.
+    /// A writer can still hold the file in a way that denies reading. That read fails like any
+    /// other, and the reloader retries it after its delay and on the next change, so the reader
+    /// does not wait for the writer itself.
     /// </para>
     /// </remarks>
     internal sealed class FileDataReader : FileDataTypes.IFileReader
     {
-        private const int ReadFileRetryDelay = 200;
-        private const int ReadFileRetryAttempts = 30000 / ReadFileRetryDelay;
-
         private FileDataReader() { }
 
         internal static readonly FileDataTypes.IFileReader Instance = new FileDataReader();
@@ -42,43 +39,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         public string ReadAllText(string path)
         {
-            var delay = 0;
-            for (var i = 0; ; i++)
+            using (var stream = Open(path))
+            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
             {
-                try
-                {
-                    using (var stream = Open(path))
-                    using (var reader = new StreamReader(stream, Encoding.UTF8,
-                        detectEncodingFromByteOrderMarks: true))
-                    {
-                        return reader.ReadToEnd();
-                    }
-                }
-                catch (IOException e) when (IsFileLocked(e))
-                {
-                    if (i > ReadFileRetryAttempts)
-                    {
-                        throw;
-                    }
-                    Thread.Sleep(delay);
-                    // The first retry is immediate; the rest wait.
-                    delay = ReadFileRetryDelay;
-                }
-            }
-        }
-
-        private static bool IsFileLocked(IOException exception)
-        {
-            // These HRESULT values are specific to Windows, which is also the only platform
-            // where a writer can deny reading.
-            var errorCode = exception.HResult & 0xffff;
-            switch (errorCode)
-            {
-                case 0x20: // ERROR_SHARING_VIOLATION
-                case 0x21: // ERROR_LOCK_VIOLATION
-                    return true;
-                default:
-                    return false;
+                return reader.ReadToEnd();
             }
         }
     }

@@ -261,7 +261,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void CallbackExceptionIsLoggedAndPollingContinues()
+        public void CallbackExceptionIsLoggedAndTheChangeIsReportedAgain()
         {
             var path = _dir.PathOf("data.json");
             WriteWithNewModTime(path, "one");
@@ -276,20 +276,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }, TestLogger);
 
             WriteWithNewModTime(path, "two!");
-            // The poller logs the exception on its own thread after the callback throws, so the
-            // test waits for the log line rather than for the callback count.
-            var deadline = DateTime.UtcNow + TestTimeout;
-            while (!LogCapture.HasMessageWithRegex(Logging.LogLevel.Error, "Unexpected error while examining files")
-                && DateTime.UtcNow < deadline)
-            {
-                Thread.Sleep(5);
-            }
-            AssertLogMessageRegex(true, Logging.LogLevel.Error, "Unexpected error while examining files");
-            Assert.True(Volatile.Read(ref calls) >= 1, "the callback was not invoked");
-
-            // The exception did not stop the poller: a later change is still reported.
-            WriteWithNewModTime(path, "three");
+            // The first call throws and is logged. The baseline did not move, so the next
+            // examination reports the same change again, and that call takes it.
             RequireChange();
+            AssertLogMessageRegex(true, Logging.LogLevel.Error, "Unexpected error from the file change callback");
+            Assert.True(Volatile.Read(ref calls) >= 2, "the change was not reported again");
         }
+
     }
 }

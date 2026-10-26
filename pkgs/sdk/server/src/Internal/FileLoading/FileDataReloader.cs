@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Integrations;
@@ -67,33 +67,73 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal Action<FileDataMergeResult> Apply { get; set; }
 
         /// <summary>
-        /// How long to wait after a Trigger call for further calls to settle before reloading. This
-        /// coalesces bursts of change notifications into one reload. If zero or negative, each
-        /// Trigger reloads immediately on a worker thread.
+        /// If true, a failed reload is retried after <see cref="FileDataReloaderTiming.RetryDelay"/>,
+        /// so that a failure observed while a file was being rewritten recovers even if no further
+        /// change notification arrives. If false, a failed reload waits for the next trigger.
         /// </summary>
-        internal TimeSpan DebounceDelay { get; set; }
+        internal bool RetryOnFailure { get; set; } = true;
+
+        /// <summary>
+        /// If true, the Apply call is skipped when every file's presence and raw content are
+        /// identical to those of the last successfully applied load.
+        /// </summary>
+        internal bool SkipUnchanged { get; set; }
+    }
+
+    /// <summary>
+    /// The delays of the reload cycle. The SDK uses <see cref="Production"/>. Tests pass shorter
+    /// delays so that they do not wait for the production ones; nothing else sets them.
+    /// </summary>
+    internal sealed class FileDataReloaderTiming
+    {
+        /// <summary>
+        /// The production delays. The settle window is 100 milliseconds: long enough to coalesce
+        /// the burst of change notifications produced by a single file edit, and short enough to
+        /// stay responsive. Settling can postpone a reload by at most one second: a second of stale
+        /// data is acceptable, and postponing without end while a file is written continuously is
+        /// not. A failed reload is retried after one second, which bounds how long a failure can go
+        /// uncorrected when no further change notification arrives; reading a local file is cheap,
+        /// so this can be short.
+        /// </summary>
+        internal static readonly FileDataReloaderTiming Production = new FileDataReloaderTiming(
+            TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+
+        /// <summary>
+        /// How long to wait after a Trigger call for further calls to settle before reloading. This
+        /// coalesces bursts of change notifications into one reload.
+        /// </summary>
+        internal TimeSpan DebounceDelay { get; }
 
         /// <summary>
         /// The longest that a stream of Trigger calls which never settles can postpone a reload,
-        /// measured from the first call of the stream. A file that is written continuously, or a
-        /// directory with constant activity, still reloads at this interval. Defaults to
-        /// <see cref="FileDataReloader.DefaultMaxDebounceDelay"/>; zero or negative means no bound.
-        /// Ignored when DebounceDelay is zero or negative.
+        /// measured from the first call of the stream.
         /// </summary>
-        internal TimeSpan MaxDebounceDelay { get; set; } = FileDataReloader.DefaultMaxDebounceDelay;
+        internal TimeSpan MaxDebounceDelay { get; }
 
         /// <summary>
-        /// How long to wait after a failed reload before retrying, so that a failure observed while
-        /// a file was being rewritten recovers even if no further change notification arrives. If
-        /// zero or negative, there is no automatic retry.
+        /// How long to wait after a failed reload before retrying it.
         /// </summary>
-        internal TimeSpan RetryDelay { get; set; }
+        internal TimeSpan RetryDelay { get; }
 
         /// <summary>
-        /// If true, the Apply call is skipped when the files' raw contents are identical to the
-        /// last successfully applied contents.
+        /// Constructs a timing.
         /// </summary>
-        internal bool SkipUnchanged { get; set; }
+        /// <exception cref="ArgumentException">a delay is not positive, or the settle window is
+        /// longer than the bound on postponing</exception>
+        internal FileDataReloaderTiming(TimeSpan debounceDelay, TimeSpan maxDebounceDelay, TimeSpan retryDelay)
+        {
+            if (debounceDelay <= TimeSpan.Zero || maxDebounceDelay <= TimeSpan.Zero || retryDelay <= TimeSpan.Zero)
+            {
+                throw new ArgumentException("every delay of the reload cycle must be positive");
+            }
+            if (debounceDelay > maxDebounceDelay)
+            {
+                throw new ArgumentException("the settle window must not be longer than the bound on postponing a reload");
+            }
+            DebounceDelay = debounceDelay;
+            MaxDebounceDelay = maxDebounceDelay;
+            RetryDelay = retryDelay;
+        }
     }
 
     /// <summary>
@@ -103,26 +143,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// </summary>
     internal sealed class FileDataReloader : IDisposable
     {
-        /// <summary>
-        /// A settle window long enough to coalesce the burst of change notifications produced by a
-        /// single file edit, and short enough to stay responsive.
-        /// </summary>
-        internal static readonly TimeSpan DefaultDebounceDelay = TimeSpan.FromMilliseconds(100);
-
-        /// <summary>
-        /// The bound on how long settling can postpone a reload. A second of stale data is
-        /// acceptable; postponing without end while a file is written continuously is not.
-        /// </summary>
-        internal static readonly TimeSpan DefaultMaxDebounceDelay = TimeSpan.FromSeconds(1);
-
-        /// <summary>
-        /// Bounds how long a failed reload can go uncorrected when no further change notification
-        /// arrives, for example when the failure came from reading a file mid-write. Reading a
-        /// local file is cheap, so this can be short.
-        /// </summary>
-        internal static readonly TimeSpan DefaultRetryDelay = TimeSpan.FromSeconds(1);
-
         private readonly FileDataReloaderConfig _config;
+        private readonly FileDataReloaderTiming _timing;
         private readonly FileDataParser _parser;
         private readonly FileDataTypes.IFileReader _fileReader;
         private readonly Logger _log;
@@ -142,7 +164,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private const long NoBurst = -1;
         private Timer _retryTimer;
         private bool _retryArmed;
-        private int _immediateReloadPending;
 
         // Guards the state of triggered reloads. One thread at a time performs them; a request that
         // arrives while one runs is remembered and served by one follow-up reload.
@@ -152,9 +173,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private volatile bool _disposed;
 
-        internal FileDataReloader(FileDataReloaderConfig config)
+        /// <summary>
+        /// Constructs a reloader. Nothing is loaded until <see cref="ReloadNow"/> or
+        /// <see cref="Trigger"/> is called.
+        /// </summary>
+        /// <param name="config">what to load and what to do with it</param>
+        /// <param name="timing">the delays of the reload cycle; null for the production delays. Tests
+        /// pass shorter delays so that they do not wait for the production ones.</param>
+        internal FileDataReloader(FileDataReloaderConfig config, FileDataReloaderTiming timing = null)
         {
             _config = config;
+            _timing = timing ?? FileDataReloaderTiming.Production;
             _parser = new FileDataParser(config.ParsersByExtension);
             _fileReader = config.FileReader ?? FileDataReader.Instance;
             _log = config.Logger ?? Logs.None.Logger("");
@@ -195,18 +224,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 return;
             }
-            if (_config.DebounceDelay <= TimeSpan.Zero)
-            {
-                if (Interlocked.Exchange(ref _immediateReloadPending, 1) == 0)
-                {
-                    Task.Run(() => RunGuarded(() =>
-                    {
-                        Interlocked.Exchange(ref _immediateReloadPending, 0);
-                        RequestReload(isRetry: false);
-                    }));
-                }
-                return;
-            }
             lock (_timerLock)
             {
                 if (_disposed)
@@ -224,16 +241,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 {
                     _burstStartTimestamp = now;
                 }
-                var delay = _config.DebounceDelay;
-                if (_config.MaxDebounceDelay > TimeSpan.Zero)
+                var delay = _timing.DebounceDelay;
+                var elapsed = TimeSpan.FromTicks((now - _burstStartTimestamp) * TimeSpan.TicksPerSecond /
+                    Stopwatch.Frequency);
+                var remaining = _timing.MaxDebounceDelay - elapsed;
+                if (remaining < delay)
                 {
-                    var elapsed = TimeSpan.FromTicks((now - _burstStartTimestamp) * TimeSpan.TicksPerSecond /
-                        Stopwatch.Frequency);
-                    var remaining = _config.MaxDebounceDelay - elapsed;
-                    if (remaining < delay)
-                    {
-                        delay = remaining < TimeSpan.Zero ? TimeSpan.Zero : remaining;
-                    }
+                    delay = remaining < TimeSpan.Zero ? TimeSpan.Zero : remaining;
                 }
                 _debounceTimer.Change(delay, Timeout.InfiniteTimeSpan);
             }
@@ -369,7 +383,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private void ArmRetry(bool keepExistingDeadline)
         {
-            if (_config.RetryDelay <= TimeSpan.Zero)
+            if (!_config.RetryOnFailure)
             {
                 return;
             }
@@ -388,7 +402,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     _retryTimer = new Timer(OnRetryElapsed, null, Timeout.Infinite, Timeout.Infinite);
                 }
                 _retryArmed = true;
-                _retryTimer.Change(_config.RetryDelay, Timeout.InfiniteTimeSpan);
+                _retryTimer.Change(_timing.RetryDelay, Timeout.InfiniteTimeSpan);
             }
         }
 
@@ -417,115 +431,126 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
                 var documents = new List<FileDataDocument>(_config.Paths.Count);
                 var files = new List<FileDataFileSummary>(_config.Paths.Count);
-                var rawContents = _config.SkipUnchanged ? new StringBuilder() : null;
-                foreach (var path in _config.Paths)
+                using (var hasher = _config.SkipUnchanged ? SHA256.Create() : null)
                 {
-                    string content;
-                    try
-                    {
-                        content = _fileReader.ReadAllText(path);
-                    }
-                    catch (FileNotFoundException) when (_config.SkipMissingPaths)
-                    {
-                        _log.Debug("File {0} does not exist; it contributes no data", path);
-                        files.Add(new FileDataFileSummary(path, false, 0, 0));
-                        continue;
-                    }
-                    catch (DirectoryNotFoundException) when (_config.SkipMissingPaths)
-                    {
-                        _log.Debug("File {0} does not exist; it contributes no data", path);
-                        files.Add(new FileDataFileSummary(path, false, 0, 0));
-                        continue;
-                    }
-                    catch (Exception e)
-                    {
-                        return Fail(new FileDataReadException(path, "unable to read file: " + e.Message, e));
-                    }
-                    // One read feeds both the hash and the parse, so the skip-unchanged hash can never
-                    // disagree with the content that was actually applied.
-                    rawContents?.Append(content).Append('\0');
-                    FileDataDocument document;
-                    try
-                    {
-                        document = _parser.Parse(path, content);
-                    }
-                    catch (Exception e)
-                    {
-                        return Fail(new FileDataReadException(path, "error parsing file: " + e.Message, e));
-                    }
-                    documents.Add(document);
-                    files.Add(new FileDataFileSummary(path, true, 0, 0));
+                    return Reload(documents, files, hasher);
                 }
+            }
+        }
 
-                FileDataMergeResult merged;
+        // The body of Reload, inside _reloadLock. The hasher is null when unchanged content is not
+        // skipped.
+        private bool Reload(List<FileDataDocument> documents, List<FileDataFileSummary> files, SHA256 hasher)
+        {
+            foreach (var path in _config.Paths)
+            {
+                string content;
                 try
                 {
-                    merged = FileDataMerger.Merge(_config.DuplicateKeysHandling, documents, _config.FlagValueExpander);
+                    content = _fileReader.ReadAllText(path);
                 }
-                catch (FileDataException e)
+                catch (FileNotFoundException) when (_config.SkipMissingPaths)
                 {
-                    return Fail(e);
+                    _log.Debug("File {0} does not exist; it contributes no data", path);
+                    files.Add(new FileDataFileSummary(path, false, 0, 0));
+                    AppendToHash(hasher, path, null);
+                    continue;
+                }
+                catch (DirectoryNotFoundException) when (_config.SkipMissingPaths)
+                {
+                    _log.Debug("File {0} does not exist; it contributes no data", path);
+                    files.Add(new FileDataFileSummary(path, false, 0, 0));
+                    AppendToHash(hasher, path, null);
+                    continue;
                 }
                 catch (Exception e)
                 {
-                    // The flag value expander is supplied by the consumer. Its failure is a failure
-                    // to process the files, like a merge failure.
-                    return Fail(new FileDataException("error expanding flag values: " + e.Message, e));
+                    return Fail(new FileDataReadException(path, "unable to read file: " + e.Message, e));
                 }
-
-                // Documents are the present files in order. Copy their counts onto the file summaries.
-                var filesWithCounts = ImmutableList.CreateBuilder<FileDataFileSummary>();
-                var next = 0;
-                foreach (var file in files)
+                // One read feeds both the hash and the parse, so the skip-unchanged hash can never
+                // disagree with the content that was actually applied.
+                AppendToHash(hasher, path, content);
+                FileDataDocument document;
+                try
                 {
-                    if (file.Present)
-                    {
-                        var summary = merged.Documents[next++];
-                        filesWithCounts.Add(new FileDataFileSummary(file.Path, true, summary.Flags, summary.Segments));
-                    }
-                    else
-                    {
-                        filesWithCounts.Add(file);
-                    }
+                    document = _parser.Parse(path, content);
                 }
+                catch (Exception e)
+                {
+                    return Fail(new FileDataReadException(path, "error parsing file: " + e.Message, e));
+                }
+                documents.Add(document);
+                files.Add(new FileDataFileSummary(path, true, 0, 0));
+            }
 
-                // Dispose may have happened while the files were being read. Deliver nothing in that
-                // case. This check is deliberately not atomic with the delivery below. Dispose never
-                // blocks on a lock shared with callbacks, so a reload that passes this check can rarely
-                // deliver just after Dispose returns.
-                if (_disposed)
+            FileDataMergeResult merged;
+            try
+            {
+                merged = FileDataMerger.Merge(_config.DuplicateKeysHandling, documents, _config.FlagValueExpander);
+            }
+            catch (FileDataException e)
+            {
+                return Fail(e);
+            }
+            catch (Exception e)
+            {
+                // The flag value expander is supplied by the consumer. Its failure is a failure
+                // to process the files, like a merge failure.
+                return Fail(new FileDataException("error expanding flag values: " + e.Message, e));
+            }
+
+            // Documents are the present files in order. Copy their counts onto the file summaries.
+            var filesWithCounts = ImmutableList.CreateBuilder<FileDataFileSummary>();
+            var next = 0;
+            foreach (var file in files)
+            {
+                if (file.Present)
+                {
+                    var summary = merged.Documents[next++];
+                    filesWithCounts.Add(new FileDataFileSummary(file.Path, true, summary.Flags, summary.Segments));
+                }
+                else
+                {
+                    filesWithCounts.Add(file);
+                }
+            }
+
+            // Dispose may have happened while the files were being read. Deliver nothing in that
+            // case. This check is deliberately not atomic with the delivery below. Dispose never
+            // blocks on a lock shared with callbacks, so a reload that passes this check can rarely
+            // deliver just after Dispose returns.
+            if (_disposed)
+            {
+                return true;
+            }
+
+            // A success right after a failure must apply even when the content is unchanged since
+            // the last success. The failure was logged, and only an Apply, with whatever the
+            // consumer logs for it, shows that things are good again.
+            var recovering = _lastErrorMessage != null;
+            byte[] hash = null;
+            if (hasher != null)
+            {
+                hash = FinishHash(hasher);
+                if (!recovering && _lastGoodHash != null && hash.SequenceEqual(_lastGoodHash))
                 {
                     return true;
                 }
-
-                // A success right after a failure must apply even when the content is unchanged since
-                // the last success. The failure was logged, and only an Apply, with whatever the
-                // consumer logs for it, shows that things are good again.
-                var recovering = _lastErrorMessage != null;
-                byte[] hash = null;
-                if (rawContents != null)
-                {
-                    hash = ComputeHash(rawContents.ToString());
-                    if (!recovering && HashesEqual(hash, _lastGoodHash))
-                    {
-                        return true;
-                    }
-                }
-                // Nothing is remembered until the consumer has accepted the result. A result the
-                // consumer rejects must not become the baseline that skip-unchanged compares
-                // against, and must not count as a recovery. The rejection is a load failure.
-                try
-                {
-                    _config.Apply?.Invoke(merged.WithFiles(filesWithCounts.ToImmutable()));
-                }
-                catch (Exception e)
-                {
-                    return Fail(new FileDataException("error applying file data: " + e.Message, e));
-                }
-                _lastErrorMessage = null;
-                _lastGoodHash = hash;
-                return true;
             }
+            // Nothing is remembered until the consumer has accepted the result. A result the
+            // consumer rejects must not become the baseline that skip-unchanged compares
+            // against, and must not count as a recovery. The rejection is a load failure.
+            try
+            {
+                _config.Apply?.Invoke(merged.WithFiles(filesWithCounts.ToImmutable()));
+            }
+            catch (Exception e)
+            {
+                return Fail(new FileDataException("error applying file data: " + e.Message, e));
+            }
+            _lastErrorMessage = null;
+            _lastGoodHash = hash;
+            return true;
         }
 
         // Called inside _reloadLock.
@@ -550,28 +575,37 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             return false;
         }
 
-        private static byte[] ComputeHash(string contents)
+        // Adds one file to the skip-unchanged hash: its path, whether it is present, and the length
+        // and bytes of its content. The framing makes the same bytes in a different file, or a file
+        // that appears or disappears, a change. A null content means the file is absent.
+        private static void AppendToHash(SHA256 hasher, string path, string content)
         {
-            using (var sha = SHA256.Create())
+            if (hasher == null)
             {
-                return sha.ComputeHash(Encoding.UTF8.GetBytes(contents));
+                return;
+            }
+            AppendBytesToHash(hasher, Encoding.UTF8.GetBytes(path));
+            hasher.TransformBlock(new[] { content is null ? (byte)0 : (byte)1 }, 0, 1, null, 0);
+            if (content != null)
+            {
+                AppendBytesToHash(hasher, Encoding.UTF8.GetBytes(content));
             }
         }
 
-        private static bool HashesEqual(byte[] a, byte[] b)
+        private static void AppendBytesToHash(SHA256 hasher, byte[] bytes)
         {
-            if (a == null || b == null || a.Length != b.Length)
+            var length = BitConverter.GetBytes((long)bytes.Length);
+            hasher.TransformBlock(length, 0, length.Length, null, 0);
+            if (bytes.Length > 0)
             {
-                return false;
+                hasher.TransformBlock(bytes, 0, bytes.Length, null, 0);
             }
-            for (var i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i])
-                {
-                    return false;
-                }
-            }
-            return true;
+        }
+
+        private static byte[] FinishHash(SHA256 hasher)
+        {
+            hasher.TransformFinalBlock(new byte[0], 0, 0);
+            return hasher.Hash;
         }
     }
 }

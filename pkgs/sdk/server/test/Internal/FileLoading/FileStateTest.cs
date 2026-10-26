@@ -45,6 +45,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Assert.NotEqual(state, FileState.Observe(path));
         }
 
+        [Fact]
+        public void RegularFileIsObservedByMetadataWhenLinksAreNotResolved()
+        {
+            var path = _dir.PathOf("data.json");
+            var modTime = DateTime.UtcNow.AddHours(-1);
+            WriteWithModTime(path, "one", modTime);
+
+            var state = FileState.Observe(path, resolveLinkTarget: null);
+
+            Assert.Equal(modTime, state.LastWriteTimeUtc);
+            Assert.Equal(3, state.Length);
+        }
+
 #if NET6_0_OR_GREATER
         [Fact]
         public void LinkIsObservedByItsTargetMetadata()
@@ -102,19 +115,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Assert.Equal(state, FileState.Observe(link, resolveLinkTarget: null));
             WriteWithModTime(target, "two", DateTime.UtcNow.AddHours(-2));
             Assert.NotEqual(state, FileState.Observe(link, resolveLinkTarget: null));
-        }
-
-        [Fact]
-        public void RegularFileIsObservedByMetadataWhenLinksAreNotResolved()
-        {
-            var path = _dir.PathOf("data.json");
-            var modTime = DateTime.UtcNow.AddHours(-1);
-            WriteWithModTime(path, "one", modTime);
-
-            var state = FileState.Observe(path, resolveLinkTarget: null);
-
-            Assert.Equal(modTime, state.LastWriteTimeUtc);
-            Assert.Equal(3, state.Length);
         }
 
         [Fact]

@@ -16,6 +16,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     public class FileDataReloaderTest : BaseTest, IDisposable
     {
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
+        // Short delays so the tests do not wait for the production ones. The bound stays at its
+        // production value; the tests of the bound set their own.
+        private static readonly FileDataReloaderTiming TestTiming = new FileDataReloaderTiming(
+            TimeSpan.FromMilliseconds(10), TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(20));
 
         private const string Flag1True = @"{""flagValues"": {""flag1"": true}}";
         private const string Flag1False = @"{""flagValues"": {""flag1"": false}}";
@@ -57,13 +61,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private int ApplyCount => Volatile.Read(ref _applyCount);
 
-        private FileDataReloader MakeReloader(Action<FileDataReloaderConfig> configure = null)
+        private FileDataReloader MakeReloader(Action<FileDataReloaderConfig> configure = null,
+            FileDataReloaderTiming timing = null)
         {
             var config = BasicReloaderConfig();
             configure?.Invoke(config);
-            _reloader = new FileDataReloader(config);
+            _reloader = new FileDataReloader(config, timing ?? TestTiming);
             return _reloader;
         }
+
+        private static FileDataReloaderTiming Timing(int debounceMs, int maxDebounceMs, int retryMs) =>
+            new FileDataReloaderTiming(TimeSpan.FromMilliseconds(debounceMs), TimeSpan.FromMilliseconds(maxDebounceMs),
+                TimeSpan.FromMilliseconds(retryMs));
 
         private void Write(string content) => File.WriteAllText(_path, content);
 
@@ -240,7 +249,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // stall during the burst cannot let the debounce fire early and split the reloads.
             // SkipUnchanged stays off so that every reload is observable as an Apply.
             Write(Flag1True);
-            var reloader = MakeReloader(c => c.DebounceDelay = TimeSpan.FromMilliseconds(400));
+            var reloader = MakeReloader(timing: Timing(400, 1000, 20));
 
             Write(Flag1False);
             for (var i = 0; i < 20; i++)
@@ -265,15 +274,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // the stream continues, and exactly one reload after it stops.
             // The notifications are spaced far inside the window so that a scheduling stall on a
             // busy machine cannot let the window expire between two of them.
-            // The bound on postponing is switched off here, because this test is about the window
-            // alone; the bound has its own test below.
+            // The bound on postponing is set far beyond the stream here, because this test is about
+            // the window alone; the bound has its own test below.
             Write(Flag1True);
             var window = TimeSpan.FromMilliseconds(600);
-            var reloader = MakeReloader(c =>
-            {
-                c.DebounceDelay = window;
-                c.MaxDebounceDelay = TimeSpan.Zero;
-            });
+            var reloader = MakeReloader(timing: Timing(600, 60000, 20));
 
             var stop = DateTime.UtcNow + TimeSpan.FromTicks(window.Ticks * 3);
             while (DateTime.UtcNow < stop)
@@ -293,15 +298,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         {
             // A stream of notifications that never settles, for example a file that is written
             // continuously, must still reload, no later than the maximum after the first
-            // notification of the stream. The settle window is longer than the whole stream and
-            // the notifications are spaced far inside it, so only the bound can let a reload run
-            // while the stream continues.
+            // notification of the stream. The notifications are spaced far inside the settle
+            // window, so only the bound can let a reload run while the stream continues.
             Write(Flag1True);
-            var reloader = MakeReloader(c =>
-            {
-                c.DebounceDelay = TimeSpan.FromMilliseconds(600);
-                c.MaxDebounceDelay = TimeSpan.FromMilliseconds(400);
-            });
+            var reloader = MakeReloader(timing: Timing(200, 400, 20));
 
             var stop = DateTime.UtcNow + TimeSpan.FromMilliseconds(3000);
             while (DateTime.UtcNow < stop && ApplyCount == 0)
@@ -313,13 +313,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void TriggerWithoutDebounceReloadsOnAWorkerThread()
+        public void TriggerReloadsOnAWorkerThread()
         {
             Write(Flag1True);
             var applyThread = -1;
             var reloader = MakeReloader(c =>
             {
-                c.DebounceDelay = TimeSpan.Zero;
                 c.Apply = result =>
                 {
                     applyThread = Thread.CurrentThread.ManagedThreadId;
@@ -337,7 +336,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void ReportsIdenticalFailureOnlyOnce()
         {
             Write(Truncated);
-            var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(10));
+            var reloader = MakeReloader();
 
             reloader.ReloadNow();
             RequireErrorLogged();
@@ -363,7 +362,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void RetriesAfterFailureWithoutFurtherTriggers()
         {
             Write(Flag1True);
-            var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(20));
+            var reloader = MakeReloader();
             reloader.ReloadNow();
             RequireApplied();
 
@@ -382,7 +381,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void InitialLoadFailureArmsTheRetry()
         {
             Write(Truncated);
-            var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(20));
+            var reloader = MakeReloader();
 
             reloader.ReloadNow();
             RequireErrorLogged();
@@ -395,11 +394,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void StopsRetryingAfterSuccess()
         {
             Write(Truncated);
-            var reloader = MakeReloader(c =>
-            {
-                c.RetryDelay = TimeSpan.FromMilliseconds(10);
-                c.SkipUnchanged = true;
-            });
+            var reloader = MakeReloader(c => c.SkipUnchanged = true);
             reloader.ReloadNow();
             RequireErrorLogged();
 
@@ -417,11 +412,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void SuccessfulReloadNowDisarmsThePendingRetry()
         {
             Write(Truncated);
-            var reloader = MakeReloader(c =>
-            {
-                c.RetryDelay = TimeSpan.FromMilliseconds(50);
-                c.SkipUnchanged = true;
-            });
+            var reloader = MakeReloader(c => c.SkipUnchanged = true);
             reloader.ReloadNow();
             RequireErrorLogged();
 
@@ -439,10 +430,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void NoRetryWhenRetryDelayIsZero()
+        public void NoRetryWhenRetryIsOff()
         {
             Write(Truncated);
-            var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.Zero);
+            var reloader = MakeReloader(c => c.RetryOnFailure = false);
             reloader.ReloadNow();
             RequireErrorLogged();
 
@@ -491,6 +482,58 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
+        public void SkipUnchangedDistinguishesWhichFileHoldsTheContent()
+        {
+            // The same bytes moving from one configured file to another is a change: the merged
+            // data is the same, but the report of what each file supplied is not.
+            var second = _dir.PathOf("second.json");
+            Write(Flag1True);
+            var reloader = MakeReloader(c =>
+            {
+                c.Paths = new[] { _path, second };
+                c.SkipMissingPaths = true;
+                c.SkipUnchanged = true;
+            });
+            reloader.ReloadNow();
+            var result = RequireApplied();
+            Assert.True(result.Files[0].Present);
+            Assert.False(result.Files[1].Present);
+
+            File.Delete(_path);
+            File.WriteAllText(second, Flag1True);
+            reloader.ReloadNow();
+            result = RequireApplied();
+            Assert.False(result.Files[0].Present);
+            Assert.True(result.Files[1].Present);
+        }
+
+        [Fact]
+        public void ProductionTimingIsASettleWindowOfOneTenthOfASecondBoundedAtOneSecondAndARetryAfterOneSecond()
+        {
+            var timing = FileDataReloaderTiming.Production;
+            Assert.Equal(TimeSpan.FromMilliseconds(100), timing.DebounceDelay);
+            Assert.Equal(TimeSpan.FromSeconds(1), timing.MaxDebounceDelay);
+            Assert.Equal(TimeSpan.FromSeconds(1), timing.RetryDelay);
+        }
+
+        [Theory]
+        [InlineData(0, 1000, 20)]
+        [InlineData(10, 0, 20)]
+        [InlineData(10, 1000, 0)]
+        [InlineData(-10, 1000, 20)]
+        public void TimingRejectsADelayThatIsNotPositive(int debounceMs, int maxDebounceMs, int retryMs)
+        {
+            Assert.Throws<ArgumentException>(() => Timing(debounceMs, maxDebounceMs, retryMs));
+        }
+
+        [Fact]
+        public void TimingRejectsASettleWindowLongerThanItsBound()
+        {
+            Assert.Throws<ArgumentException>(() => Timing(600, 400, 20));
+            Timing(400, 400, 20);
+        }
+
+        [Fact]
         public void AppliesEveryReloadWhenSkipUnchangedIsOff()
         {
             Write(Flag1True);
@@ -528,7 +571,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void DoesNothingAfterDispose()
         {
             Write(Flag1True);
-            var reloader = MakeReloader(c => c.DebounceDelay = TimeSpan.FromMilliseconds(10));
+            var reloader = MakeReloader();
             reloader.ReloadNow();
             RequireApplied();
 
@@ -543,7 +586,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void PendingRetryIsCanceledByDispose()
         {
             Write(Truncated);
-            var reloader = MakeReloader(c => c.RetryDelay = TimeSpan.FromMilliseconds(50));
+            var reloader = MakeReloader();
             reloader.ReloadNow();
             RequireErrorLogged();
 
@@ -560,7 +603,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var applyRelease = new ManualResetEventSlim();
             var reloader = MakeReloader(c =>
             {
-                c.DebounceDelay = TimeSpan.Zero;
                 c.Apply = result =>
                 {
                     applyEntered.Set();
@@ -596,7 +638,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var maxConcurrent = 0;
             var reloader = MakeReloader(c =>
             {
-                c.DebounceDelay = TimeSpan.Zero;
                 c.Apply = result =>
                 {
                     var now = Interlocked.Increment(ref concurrent);
@@ -640,8 +681,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var failNext = true;
             var reloader = MakeReloader(c =>
             {
-                c.DebounceDelay = TimeSpan.FromMilliseconds(10);
-                c.RetryDelay = TimeSpan.FromMilliseconds(20);
                 c.SkipUnchanged = true;
                 c.Apply = result =>
                 {
@@ -670,7 +709,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var failNext = true;
             var reloader = MakeReloader(c =>
             {
-                c.RetryDelay = TimeSpan.FromMilliseconds(20);
                 c.FlagValueExpander = (key, value) =>
                 {
                     if (failNext)
@@ -695,11 +733,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         public void TriggersDuringARunningReloadCoalesceIntoOneFollowUpReload()
         {
             var reader = new BlockingFileReader();
-            var reloader = MakeReloader(c =>
-            {
-                c.FileReader = reader;
-                c.DebounceDelay = TimeSpan.FromMilliseconds(5);
-            });
+            var reloader = MakeReloader(c => c.FileReader = reader, Timing(5, 1000, 20));
             try
             {
                 reloader.Trigger();

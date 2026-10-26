@@ -49,9 +49,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal FileDataTypes.IFileReader FileReader { get; set; }
 
         /// <summary>
-        /// Parses non-JSON content, or null to accept JSON only.
+        /// Parsers for file formats other than JSON, by file extension. A file whose extension has
+        /// no entry is parsed as JSON. Null means JSON only.
         /// </summary>
-        internal Func<string, object> AlternateParser { get; set; }
+        internal IReadOnlyDictionary<string, Func<string, object>> ParsersByExtension { get; set; }
 
         /// <summary>
         /// Builds the full flag definition for a <c>flagValues</c> entry.
@@ -154,7 +155,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal FileDataReloader(FileDataReloaderConfig config)
         {
             _config = config;
-            _parser = new FileDataParser(config.AlternateParser);
+            _parser = new FileDataParser(config.ParsersByExtension);
             _fileReader = config.FileReader ?? FileDataReader.Instance;
             _log = config.Logger ?? Logs.None.Logger("");
         }
@@ -446,7 +447,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     FileDataDocument document;
                     try
                     {
-                        document = _parser.Parse(content);
+                        document = _parser.Parse(path, content);
                     }
                     catch (Exception e)
                     {

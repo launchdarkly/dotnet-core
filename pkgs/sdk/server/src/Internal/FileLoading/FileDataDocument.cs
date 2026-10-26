@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -37,61 +39,147 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     }
 
     /// <summary>
-    /// Parses the file data document format. A document is a JSON object with optional
-    /// <c>flags</c>, <c>flagValues</c>, and <c>segments</c> members. An alternate parser can
-    /// handle other formats, such as YAML.
+    /// Parses the file data document format: an object with optional <c>flags</c>, <c>flagValues</c>,
+    /// and <c>segments</c> members.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The parser for a file is chosen by the file's extension. An extension with a registered parser
+    /// uses that parser; every other file is parsed as JSON. The registered parsers are for formats
+    /// such as YAML, which the SDK does not parse itself.
+    /// </para>
+    /// <para>
+    /// A flag or segment is listed under its key. A <c>key</c> property in the definition is optional
+    /// and must be equal to the key it is listed under; a <c>version</c> property is optional. A
+    /// definition that is marked as deleted is rejected: a data file holds definitions only. A file
+    /// with no content is a document with no entries, and content after the end of the document is
+    /// an error.
+    /// </para>
+    /// </remarks>
     internal sealed class FileDataParser
     {
-        private readonly Func<string, object> _alternateParser;
+        /// <summary>
+        /// The extensions of YAML files. A path with one of these needs a registered parser, because
+        /// the SDK does not include a YAML parser. The check belongs to configuration time, so that a
+        /// file that can never load is reported when the client is created rather than on every load.
+        /// </summary>
+        internal static readonly IReadOnlyList<string> YamlExtensions = ImmutableList.Create(".yaml", ".yml");
+
+        private static readonly IReadOnlyDictionary<string, Func<string, object>> NoParsers =
+            ImmutableDictionary<string, Func<string, object>>.Empty;
+
+        private readonly IReadOnlyDictionary<string, Func<string, object>> _parsersByExtension;
 
         /// <summary>
         /// Constructs a parser.
         /// </summary>
-        /// <param name="alternateParser">a function that parses non-JSON content into basic .NET
-        /// collections, or null to accept JSON only</param>
-        internal FileDataParser(Func<string, object> alternateParser)
+        /// <param name="parsersByExtension">parsers for formats other than JSON, by file extension; the
+        /// extensions are normalized with <see cref="NormalizeExtension"/>; null means JSON only</param>
+        internal FileDataParser(IReadOnlyDictionary<string, Func<string, object>> parsersByExtension)
         {
-            _alternateParser = alternateParser;
+            if (parsersByExtension is null || parsersByExtension.Count == 0)
+            {
+                _parsersByExtension = NoParsers;
+                return;
+            }
+            var normalized = new Dictionary<string, Func<string, object>>();
+            foreach (var kv in parsersByExtension)
+            {
+                normalized[NormalizeExtension(kv.Key)] = kv.Value;
+            }
+            _parsersByExtension = normalized;
+        }
+
+        /// <summary>
+        /// Normalizes a file extension as given in configuration: a leading period is added when it is
+        /// missing, and letter case is ignored.
+        /// </summary>
+        /// <param name="extension">the extension, with or without a leading period</param>
+        /// <returns>the normalized extension</returns>
+        /// <exception cref="ArgumentException">the extension is null or has no characters other than a period</exception>
+        internal static string NormalizeExtension(string extension)
+        {
+            if (string.IsNullOrEmpty(extension) || extension == ".")
+            {
+                throw new ArgumentException("file extension must not be empty", nameof(extension));
+            }
+            var withPeriod = extension[0] == '.' ? extension : "." + extension;
+            return withPeriod.ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// The normalized extension of a path: the part of the file name from its last period, in
+        /// lower case, or the empty string when the file name has no period.
+        /// </summary>
+        internal static string ExtensionOf(string path) => Path.GetExtension(path).ToLowerInvariant();
+
+        /// <summary>
+        /// Finds a configured path that is a YAML file by its extension but has no registered parser.
+        /// Such a file can never load, so a configuration that lists one is an error.
+        /// </summary>
+        /// <param name="paths">the configured paths</param>
+        /// <param name="parsersByExtension">the registered parsers, by normalized extension</param>
+        /// <returns>the first such path, or null when there is none</returns>
+        internal static string FindYamlPathWithoutParser(IEnumerable<string> paths,
+            IReadOnlyDictionary<string, Func<string, object>> parsersByExtension)
+        {
+            foreach (var path in paths)
+            {
+                var extension = ExtensionOf(path);
+                if (YamlExtensions.Contains(extension) &&
+                    (parsersByExtension is null || !parsersByExtension.ContainsKey(extension)))
+                {
+                    return path;
+                }
+            }
+            return null;
         }
 
         /// <summary>
         /// Parses the content of one file. Throws an exception if the content cannot be parsed.
         /// </summary>
+        /// <param name="path">the file's path, which selects the parser by its extension</param>
         /// <param name="content">the file content</param>
         /// <returns>the parsed document</returns>
-        internal FileDataDocument Parse(string content)
+        internal FileDataDocument Parse(string path, string content)
         {
-            if (_alternateParser == null)
+            if (!_parsersByExtension.TryGetValue(ExtensionOf(path), out var parser))
             {
                 return ParseJson(content);
             }
-            if (content.Trim().StartsWith("{"))
-            {
-                try
-                {
-                    return ParseJson(content);
-                }
-                catch (Exception)
-                {
-                    // The content is not valid JSON. The alternate parser gets a chance to parse it.
-                }
-            }
-            // The alternate parser produces the most basic .NET data structure that can represent
+            // The registered parser produces the most basic .NET data structure that can represent
             // the file content, using types like Dictionary and String. We convert this into a JSON
             // tree so we can use the JSON deserializer. This is inefficient, but it lets us reuse the
             // data model deserialization logic.
-            var o = _alternateParser(content);
+            var o = parser(content);
+            if (o is null)
+            {
+                // A file with no content, or with comments only, parses to null in formats such as
+                // YAML. It is a document with no entries.
+                return FileDataDocument.Empty;
+            }
             var options = new JsonSerializerOptions();
             options.Converters.Add(new UntypedDictionaryJsonSerializer());
-            var asJson = JsonSerializer.Serialize(o, options);
-            return ParseJson(asJson);
+            return ParseJson(JsonSerializer.Serialize(o, options));
         }
 
         private static FileDataDocument ParseJson(string data)
         {
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                // A file with no content is a document with no entries.
+                return FileDataDocument.Empty;
+            }
             var r = new Utf8JsonReader(Encoding.UTF8.GetBytes(data));
-            return ParseJson(ref r);
+            var document = ParseJson(ref r);
+            // Content after the document means the file is not one complete document, for example
+            // a file that was rewritten in place to a shorter length. Reading past the end makes the
+            // reader check for that; it rejects anything other than white space.
+            if (r.Read())
+            {
+                throw new JsonException("unexpected content after the end of the document");
+            }
+            return document;
         }
 
         private static FileDataDocument ParseJson(ref Utf8JsonReader r)
@@ -107,7 +195,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         for (var subObj = RequireObjectOrNull(ref r); subObj.Next(ref r);)
                         {
                             var key = subObj.Name;
-                            var flag = FeatureFlagSerialization.Instance.Read(ref r, null, null);
+                            var flag = FeatureFlagSerialization.Instance.ReadFileEntry(ref r, key);
+                            RejectDeleted("flag", key, flag.Deleted);
                             flagsBuilder.Add(new KeyValuePair<string, FeatureFlag>(key, flag));
                         }
                         break;
@@ -125,7 +214,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         for (var subObj = RequireObjectOrNull(ref r); subObj.Next(ref r);)
                         {
                             var key = subObj.Name;
-                            var segment = SegmentSerialization.Instance.Read(ref r, null, null);
+                            var segment = SegmentSerialization.Instance.ReadFileEntry(ref r, key);
+                            RejectDeleted("segment", key, segment.Deleted);
                             segmentsBuilder.Add(new KeyValuePair<string, Segment>(key, segment));
                         }
                         break;
@@ -133,6 +223,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             return new FileDataDocument(flagsBuilder.ToImmutable(), flagValuesBuilder.ToImmutable(),
                 segmentsBuilder.ToImmutable());
+        }
+
+        // A deleted entry is a placeholder for data that was removed. A data file lists the data
+        // that exists, so a definition marked as deleted is a mistake, not a removal.
+        private static void RejectDeleted(string category, string key, bool deleted)
+        {
+            if (deleted)
+            {
+                throw new JsonException(category + " \"" + key + "\" is marked as deleted; remove the entry instead");
+            }
         }
 
         /// <summary>

@@ -44,9 +44,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// this with <c>configuration.EventProcessor(Components.NullEventProcessor)</c>.
         /// </para>
         /// <para>
-        /// Flag data files are JSON by default (although it is possible to specify a parser for another format,
-        /// such as YAML; see <see cref="FileDataSourceBuilder.Parser(System.Func{string, object})"/>). They
-        /// contain an object with three possible properties:
+        /// Flag data files are JSON. A file in another format, such as YAML, is read with a parser that is
+        /// registered for the file's extension; see
+        /// <see cref="FileDataSourceBuilder.Parser(string, System.Func{string, object})"/>. A data file
+        /// contains an object with three possible properties:
         /// </para>
         /// <list type="bullet">
         /// <item><description><c>flags</c>: Feature flag definitions.</description></item>
@@ -82,6 +83,11 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         ///     }
         /// }
         /// </code>
+        /// <para>
+        /// A flag or segment is listed under its key. The <c>key</c> property inside the definition is
+        /// optional and must be equal to the key the definition is listed under, and the <c>version</c>
+        /// property is optional: the data source assigns a version to every item of each load.
+        /// </para>
         /// <para>
         /// Data in this format allows the SDK to exactly duplicate all the kinds of flag behavior supported
         /// by LaunchDarkly. However, in many cases you will not need this complexity, but will just want to

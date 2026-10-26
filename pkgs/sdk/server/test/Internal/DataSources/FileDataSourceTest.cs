@@ -63,13 +63,29 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
             factory.FilePaths(ALL_DATA_YAML_FILE)
-                .Parser(s => yaml.Deserialize<object>(s));
+                .Parser(".yml", s => yaml.Deserialize<object>(s));
             using (var fp = MakeDataSource())
             {
                 fp.Start();
                 var initData = _updateSink.Inits.ExpectValue();
                 AssertJsonEqual(DataSetAsJson(ExpectedDataSetForFullDataFile(1)), DataSetAsJson(initData));
             }
+        }
+
+        [Fact]
+        public void BuildRejectsAYamlFileWithoutARegisteredParser()
+        {
+            factory.FilePaths(ALL_DATA_JSON_FILE, ALL_DATA_YAML_FILE);
+            var e = Assert.Throws<ArgumentException>(() => MakeDataSource());
+            Assert.Contains(ALL_DATA_YAML_FILE, e.Message);
+            Assert.Contains("Parser(\".yml\", ...)", e.Message);
+        }
+
+        [Fact]
+        public void BuildAcceptsFilesWithOtherExtensionsWithoutAParser()
+        {
+            factory.FilePaths(ALL_DATA_JSON_FILE, TestUtils.TestFilePath("bad-file.txt"), "no-extension");
+            using (MakeDataSource()) { }
         }
 
         [Fact]
@@ -309,6 +325,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         // Start() calls and the retries. The tests whose reader ignores the path use it instead of a
         // file in the shared temp directory, whose activity can reach the watcher on Windows and macOS.
         private const string NoNotificationsPath = "/nonexistent-ld-filedatasource-test-dir/data.json";
+        private const string NoNotificationsYamlPath = "/nonexistent-ld-filedatasource-test-dir/data.yaml";
 
         [Fact]
         public void ParseFailureFromPartialReadIsRetriedUntilContentIsComplete()
@@ -386,12 +403,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
-        public void ParseRetryAppliesWhenAlternateParserIsConfigured()
+        public void ParseRetryAppliesWhenARegisteredParserIsConfigured()
         {
-            var yaml = new DeserializerBuilder().Build();
+            // The content is read with the registered parser, because the path has its extension.
+            var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
             var reader = new ScriptedFileReader();
-            factory.FilePaths(NoNotificationsPath).AutoUpdate(true).FileReader(reader)
-                .Parser(s => yaml.Deserialize<object>(s));
+            factory.FilePaths(NoNotificationsYamlPath).AutoUpdate(true).FileReader(reader)
+                .Parser(".yaml", s => yaml.Deserialize<object>(s));
             using (var fp = MakeDataSource())
             {
                 fp.Start();

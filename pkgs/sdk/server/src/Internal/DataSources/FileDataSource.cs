@@ -66,13 +66,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// <param name="paths">the file paths to load, in order</param>
         /// <param name="autoUpdate">true to watch the files and reload on changes; also enables the
         /// bounded retry of loads that fail while a file is being written</param>
-        /// <param name="alternateParser">optional parser for non-JSON content (for example YAML);
-        /// null to parse JSON only</param>
+        /// <param name="parsersByExtension">parsers for formats other than JSON (for example YAML), by
+        /// file extension; null to parse JSON only</param>
         /// <param name="skipMissingPaths">true to skip missing files instead of failing the load</param>
         /// <param name="duplicateKeysHandling">how to handle a key that appears in more than one file</param>
         /// <param name="logger">the destination for log output</param>
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
-            List<string> paths, bool autoUpdate, Func<string, object> alternateParser, bool skipMissingPaths,
+            List<string> paths, bool autoUpdate, IReadOnlyDictionary<string, Func<string, object>> parsersByExtension,
+            bool skipMissingPaths,
             FileDataTypes.DuplicateKeysHandling duplicateKeysHandling,
             Logger logger)
         {
@@ -94,7 +95,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 FailOnMissingDirectory = true,
                 Logger = logger,
                 FileReader = fileReader,
-                AlternateParser = alternateParser,
+                ParsersByExtension = parsersByExtension,
                 // The version given here is replaced in Apply, like the version of every other item.
                 FlagValueExpander = (key, value) =>
                     FileDataParser.MakeFallthroughFlagWithValue(key, value, 0),

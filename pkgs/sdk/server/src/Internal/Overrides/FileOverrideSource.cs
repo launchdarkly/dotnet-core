@@ -80,8 +80,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                     sink.SetOverrides(ToDataSet(merged));
                     LogOverridesInEffect(merged);
                 },
-                DebounceDelay = FileDataReloader.DefaultDebounceDelay,
-                RetryDelay = FileDataReloader.DefaultRetryDelay,
                 SkipUnchanged = true
             });
 

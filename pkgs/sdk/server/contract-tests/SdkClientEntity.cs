@@ -683,9 +683,11 @@ namespace TestService
         private static FileOverrideSourceBuilder BuildOverrideSource(SdkConfigOverridesParams p)
         {
             var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
+            Func<string, object> parseYaml = s => yaml.Deserialize<object>(s);
             var source = FileOverrides.Source()
                 .FilePaths(p.FilePaths ?? new string[0])
-                .Parser(s => yaml.Deserialize<object>(s));
+                .Parser(".yaml", parseYaml)
+                .Parser(".yml", parseYaml);
             switch (p.DuplicateKeysHandling)
             {
                 case null:

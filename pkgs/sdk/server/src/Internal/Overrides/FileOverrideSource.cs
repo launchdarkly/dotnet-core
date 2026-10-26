@@ -23,7 +23,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         private readonly FileOverrideTypes.DuplicateKeysHandling _duplicateKeysHandling;
         private readonly FileOverrideTypes.ChangeDetection _changeDetection;
         private readonly TimeSpan _pollInterval;
-        private readonly Func<string, object> _parser;
+        private readonly IReadOnlyDictionary<string, Func<string, object>> _parsersByExtension;
         private readonly Logger _log;
 
         private FileDataReloader _reloader;
@@ -35,7 +35,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             FileOverrideTypes.DuplicateKeysHandling duplicateKeysHandling,
             FileOverrideTypes.ChangeDetection changeDetection,
             TimeSpan pollInterval,
-            Func<string, object> parser,
+            IReadOnlyDictionary<string, Func<string, object>> parsersByExtension,
             Logger log
             )
         {
@@ -43,7 +43,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             _duplicateKeysHandling = duplicateKeysHandling;
             _changeDetection = changeDetection;
             _pollInterval = pollInterval;
-            _parser = parser;
+            _parsersByExtension = parsersByExtension;
             _log = log;
         }
 
@@ -71,7 +71,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                     FileDataDuplicateKeysHandling.Ignore : FileDataDuplicateKeysHandling.Fail,
                 SkipMissingPaths = true,
                 Logger = _log,
-                AlternateParser = _parser,
+                ParsersByExtension = _parsersByExtension,
                 // A value-only entry behaves like a flag that is on and serves its single value by
                 // fallthrough.
                 FlagValueExpander = (key, value) => FileDataParser.MakeFallthroughFlagWithValue(key, value, 0),

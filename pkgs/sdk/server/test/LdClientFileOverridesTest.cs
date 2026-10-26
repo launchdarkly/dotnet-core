@@ -4,6 +4,7 @@ using System.Threading;
 using LaunchDarkly.Sdk.Server.Integrations;
 using Xunit;
 using Xunit.Abstractions;
+using YamlDotNet.Serialization;
 
 namespace LaunchDarkly.Sdk.Server
 {
@@ -74,6 +75,27 @@ namespace LaunchDarkly.Sdk.Server
                 AssertEventually(() =>
                     client.BoolVariationDetail("overridden-flag", context, false).Reason.ErrorKind == EvaluationErrorKind.ClientNotReady,
                     "the removed override to stop taking effect");
+            }
+        }
+
+        [Fact]
+        public void YamlOverrideFileIsReadWithTheRegisteredParser()
+        {
+            var path = _dir.PathOf("overrides.yaml");
+            File.WriteAllText(path, "flagValues:\n  overridden-flag: \"override-value\"\n");
+            var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
+
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
+                    .Overrides(FileOverrides.Source().FilePaths(path)
+                        .Parser("yaml", s => yaml.Deserialize<object>(s))))
+                .Build();
+            using (var client = new LdClient(config))
+            {
+                var detail = client.StringVariationDetail("overridden-flag", context, "default");
+                Assert.Equal("override-value", detail.Value);
+                Assert.True(detail.Reason.OverrideAffected);
             }
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal;
+using LaunchDarkly.Sdk.Server.Internal.FileLoading;
 using LaunchDarkly.Sdk.Server.Internal.Overrides;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -47,7 +48,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         internal FileOverrideTypes.DuplicateKeysHandling _duplicateKeysHandling = FileOverrideTypes.DuplicateKeysHandling.Fail;
         internal FileOverrideTypes.ChangeDetection _changeDetection = FileOverrideTypes.ChangeDetection.Polling;
         internal TimeSpan _pollInterval = DefaultPollInterval;
-        internal Func<string, object> _parser = null;
+        internal readonly Dictionary<string, Func<string, object>> _parsers = new Dictionary<string, Func<string, object>>();
 
         internal FileOverrideSourceBuilder() { }
 
@@ -117,28 +118,51 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         /// <summary>
-        /// Specifies an alternate parsing function to use for non-JSON override files, such as YAML.
+        /// Registers a parsing function for override files with the given extension, for a format
+        /// other than JSON such as YAML.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// By default, the source parses files as JSON objects. To avoid bringing in additional dependencies
-        /// that might conflict with application dependencies, the SDK does not import a YAML parser, but you
-        /// can use this method to supply one. The function takes the file content and returns an
-        /// <c>object</c> made of the basic types that can be represented in JSON: <c>string</c>, numbers,
-        /// booleans, <c>List</c>, and <c>Dictionary&lt;string, object&gt;</c>. It should throw an exception
-        /// if it cannot parse the content.
+        /// The parser for a file is chosen by the file's extension: a file whose extension is registered
+        /// here is parsed with its function, and every other file is parsed as JSON. The extension is the
+        /// part of the file name from its last period, compared without regard to letter case, and the
+        /// leading period is optional here. Registering an extension again replaces its function.
         /// </para>
         /// <para>
-        /// The source still parses a file as JSON if its first non-whitespace character is '{'. If that
-        /// fails, it uses the parsing function. See <see cref="FileDataSourceBuilder.Parser(Func{string, object})"/>
-        /// for an example using the <c>YamlDotNet</c> package.
+        /// To avoid bringing in additional dependencies that might conflict with application dependencies,
+        /// the SDK does not include a YAML parser, but you can register one with this method. A configured
+        /// file whose extension is <c>.yaml</c> or <c>.yml</c> and has no registered parser can never load,
+        /// so it is a configuration error that is reported when the client is created.
         /// </para>
+        /// <para>
+        /// The function takes the file content and returns an <c>object</c> made of the basic types that
+        /// can be represented in JSON: <c>string</c>, numbers, booleans, <c>List</c>, and
+        /// <c>Dictionary&lt;string, object&gt;</c>. It should throw an exception if it cannot parse the
+        /// content. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
+        /// configuration method tells the parser to read a property like <c>on: true</c> as a boolean
+        /// rather than a string; data types matter in flag definitions.
+        /// </para>
+        /// <code>
+        ///     var yaml = new DeserializerBuilder()
+        ///         .WithAttemptingUnquotedStringTypeDeserialization()
+        ///         .Build();
+        ///     var source = FileOverrides.Source()
+        ///         .FilePaths("/etc/launchdarkly/overrides.yaml")
+        ///         .Parser(".yaml", s => yaml.Deserialize&lt;object&gt;(s));
+        /// </code>
         /// </remarks>
+        /// <param name="extension">the file extension, with or without the leading period</param>
         /// <param name="parseFn">the parsing function</param>
         /// <returns>the same builder</returns>
-        public FileOverrideSourceBuilder Parser(Func<string, object> parseFn)
+        /// <exception cref="ArgumentException">the extension is null or empty</exception>
+        /// <exception cref="ArgumentNullException">the parsing function is null</exception>
+        public FileOverrideSourceBuilder Parser(string extension, Func<string, object> parseFn)
         {
-            _parser = parseFn;
+            if (parseFn is null)
+            {
+                throw new ArgumentNullException(nameof(parseFn));
+            }
+            _parsers[FileDataParser.NormalizeExtension(extension)] = parseFn;
             return this;
         }
 
@@ -151,7 +175,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </remarks>
         /// <param name="context">the client context</param>
         /// <returns>the override source</returns>
-        /// <exception cref="ArgumentException">no file paths were specified</exception>
+        /// <exception cref="ArgumentException">no file paths were specified, or a file with a YAML extension
+        /// has no registered parser</exception>
         /// <exception cref="ArgumentOutOfRangeException">an option has a value outside its enumeration, or
         /// the poll interval is longer than the timer supports</exception>
         public IOverrideSource Build(LdClientContext context)
@@ -169,6 +194,14 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             if (paths.Count != allPaths.Count)
             {
                 logger.Warn("File paths list the same file more than once; the repeats are ignored");
+            }
+            // The SDK does not include a YAML parser, so a YAML file without a registered parser can
+            // never load. That is a configuration error, reported now rather than on every reload.
+            var yamlPathWithoutParser = FileDataParser.FindYamlPathWithoutParser(paths, _parsers);
+            if (yamlPathWithoutParser != null)
+            {
+                throw new ArgumentException("no parser is registered for the YAML override file " + yamlPathWithoutParser +
+                    "; register one with Parser(\"" + FileDataParser.ExtensionOf(yamlPathWithoutParser) + "\", ...)");
             }
 
             switch (_duplicateKeysHandling)
@@ -205,7 +238,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                 }
             }
 
-            return new FileOverrideSource(paths, _duplicateKeysHandling, _changeDetection, pollInterval, _parser, logger);
+            return new FileOverrideSource(paths, _duplicateKeysHandling, _changeDetection, pollInterval,
+                new Dictionary<string, Func<string, object>>(_parsers), logger);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Internal.Overrides;
 using LaunchDarkly.TestHelpers;
@@ -59,10 +60,18 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         [Fact]
         public void Parser()
         {
-            var prop = _tester.Property(b => b._parser, (b, v) => b.Parser(v));
-            prop.AssertDefault(null);
+            Assert.Empty(FileOverrides.Source()._parsers);
+
             Func<string, object> p = s => s;
-            prop.AssertCanSet(p);
+            Func<string, object> q = s => null;
+            var b = FileOverrides.Source().Parser("YAML", p).Parser(".yml", p).Parser(".yaml", q);
+            Assert.Equal(new[] { ".yaml", ".yml" }, b._parsers.Keys.OrderBy(k => k));
+            Assert.Same(q, b._parsers[".yaml"]);
+            Assert.Same(p, b._parsers[".yml"]);
+
+            Assert.Throws<ArgumentException>(() => FileOverrides.Source().Parser("", p));
+            Assert.Throws<ArgumentException>(() => FileOverrides.Source().Parser(null, p));
+            Assert.Throws<ArgumentNullException>(() => FileOverrides.Source().Parser(".yaml", null));
         }
 
         [Fact]
@@ -70,6 +79,32 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         {
             var e = Assert.Throws<ArgumentException>(() => FileOverrides.Source().Build(BasicContext));
             Assert.Contains("no file paths", e.Message);
+        }
+
+        [Fact]
+        public void BuildRejectsAYamlFileWithoutARegisteredParser()
+        {
+            var e = Assert.Throws<ArgumentException>(() =>
+                FileOverrides.Source().FilePaths("/a.json", "/b.yml").Build(BasicContext));
+            Assert.Contains(Path.GetFullPath("/b.yml"), e.Message);
+            Assert.Contains("Parser(\".yml\", ...)", e.Message);
+
+            e = Assert.Throws<ArgumentException>(() =>
+                FileOverrides.Source().FilePaths("/c.YAML").Parser(".yml", s => null).Build(BasicContext));
+            Assert.Contains(Path.GetFullPath("/c.YAML"), e.Message);
+        }
+
+        [Fact]
+        public void BuildAcceptsAYamlFileWithARegisteredParser()
+        {
+            using (BuildSource(FileOverrides.Source().FilePaths("/b.yml", "/c.YAML")
+                .Parser("yml", s => null).Parser(".yaml", s => null))) { }
+        }
+
+        [Fact]
+        public void BuildAcceptsFilesWithOtherExtensionsWithoutAParser()
+        {
+            using (BuildSource(FileOverrides.Source().FilePaths("/a.json", "/b", "/c.txt"))) { }
         }
 
         [Fact]

@@ -51,11 +51,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             FileOverrideTypes.DuplicateKeysHandling duplicateKeysHandling = FileOverrideTypes.DuplicateKeysHandling.Fail,
             FileOverrideTypes.ChangeDetection changeDetection = FileOverrideTypes.ChangeDetection.Polling,
             TimeSpan? pollInterval = null,
-            Func<string, object> parser = null
+            Func<string, object> yamlParser = null
             )
         {
+            var parsers = yamlParser is null ? null :
+                new Dictionary<string, Func<string, object>> { [".yaml"] = yamlParser };
             _source = new FileOverrideSource(paths.ToList(), duplicateKeysHandling, changeDetection,
-                pollInterval ?? ShortPollInterval, parser, TestLogger);
+                pollInterval ?? ShortPollInterval, parsers, TestLogger);
             _source.Start(_sink);
             return _source;
         }
@@ -129,7 +131,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             Write(path, "flagValues:\n  flag1: true\n");
             var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
 
-            StartSource(new[] { path }, parser: s => yaml.Deserialize<object>(s));
+            StartSource(new[] { path }, yamlParser: s => yaml.Deserialize<object>(s));
 
             var flags = FlagsByKey(RequireInitialSnapshot());
             Assert.Single(flags);

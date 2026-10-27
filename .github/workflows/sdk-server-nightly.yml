@@ -1,0 +1,48 @@
+name: LaunchDarkly.ServerSdk Nightly Contract Tests
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # every day at 4am UTC
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run contract tests on'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-contract-tests:
+    runs-on: ubuntu-latest
+    # The long-running tests are almost entirely wall-clock waiting, so this job runs
+    # roughly an hour. A regression that stops retrying makes each scenario burn its
+    # full timeout instead of returning early, so leave headroom -- while staying well
+    # under the 6-hour default that would otherwise apply.
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+
+      - name: Setup Env from project's Env file
+        shell: bash
+        run: cat pkgs/sdk/server/github_actions.env >> "$GITHUB_ENV"
+
+      - uses: ./.github/actions/contract-tests
+        with:
+          service_project_file: ${{ env.CONTRACT_TEST_PROJECT_FILE }}
+          service_dll_file: ${{ env.CONTRACT_TEST_DLL_FILE }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          run_fdv2_tests: 'true'
+          enable_long_running_tests: 'true'
+
+      - name: Upload test service log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-test-service-log
+          path: test-service.log
+          if-no-files-found: warn

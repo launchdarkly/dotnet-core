@@ -15,6 +15,10 @@ inputs:
     description: 'Whether to run contract tests from the latest v3 release'
     required: false
     default: 'false'
+  enable_long_running_tests:
+    description: 'Whether to run harness tests that wait on real backoff timing. These add about an hour, so only the nightly enables them.'
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -54,7 +58,7 @@ runs:
         enable_persistence_tests: 'false'
         # Leave the service up for the FDv2 run that follows.
         stop_service: ${{ inputs.run_fdv2_tests == 'true' && 'false' || 'true' }}
-        extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}'
+        extra_params: "-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}${{ inputs.enable_long_running_tests == 'true' && ' -enable-long-running-tests' || '' }}"
         token: ${{ inputs.token }}
 
     - name: Run Contract Tests FDv2 Flavor
@@ -65,7 +69,7 @@ runs:
         version: 'v3'
         debug_logging: 'true'
         enable_persistence_tests: 'false'
-        extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE_FDV2 }}'
+        extra_params: "-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE_FDV2 }}${{ inputs.enable_long_running_tests == 'true' && ' -enable-long-running-tests' || '' }}"
         token: ${{ inputs.token }}
 
     - name: Upload test service log on failure

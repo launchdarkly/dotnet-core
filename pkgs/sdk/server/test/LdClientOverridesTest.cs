@@ -442,22 +442,28 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         [Fact]
-        public void OverrideSourceStartFailureDisposesTheClientComponentsAndPropagates()
+        public void OverrideSourceStartFailureIsLoggedAndTheClientRunsWithoutOverrides()
         {
+            // The SDK's own source never throws from Start. A custom source could, and that must not
+            // keep the client from starting: the failure is logged, the source is disposed, and the
+            // client behaves as it does without a source.
             var source = new TestOverrideSource { StartError = new InvalidOperationException("source failed") };
-            var events = new MockEventProcessor();
             var config = BasicConfig()
                 .DataSystem(Components.DataSystem().Custom()
                     .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
                     .Overrides(source))
-                .Events(events.AsSingletonFactory<IEventProcessor>())
                 .Build();
 
-            var e = Assert.Throws<InvalidOperationException>(() => new LdClient(config));
+            using (var client = new LdClient(config))
+            {
+                Assert.True(source.Disposed);
+                AssertLogMessageRegex(true, LogLevel.Error, "Unable to start the override source.*source failed");
 
-            Assert.Equal("source failed", e.Message);
-            Assert.True(source.Disposed);
-            Assert.True(events.Disposed);
+                var detail = client.BoolVariationDetail("any-flag", context, false);
+                Assert.False(detail.Value);
+                Assert.Equal(EvaluationErrorKind.ClientNotReady, detail.Reason.ErrorKind);
+                Assert.False(detail.Reason.OverrideAffected);
+            }
         }
 
         [Fact]

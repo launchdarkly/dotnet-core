@@ -42,6 +42,9 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// </para>
         /// <para>
         /// The SDK calls this method at most once, before any call to <see cref="IDisposable.Dispose"/>.
+        /// An exception thrown from it does not prevent the client from starting: the SDK logs the
+        /// exception, disposes the source, and the client runs without overrides. A source that cannot
+        /// load its data should log that and retry rather than throw, as the SDK's file-based source does.
         /// </para>
         /// </remarks>
         /// <param name="sink">receives the override snapshots</param>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Internal;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
@@ -18,9 +19,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         private readonly IDataSource _dataSource;
         private readonly DataSourceUpdatesImpl _dataSourceUpdates;
         // The override source, its layer, and its sink are null when no override source is configured.
-        private readonly IOverrideSource _overrideSource;
+        // The source is also null after it failed to start, so the client then behaves as it does
+        // without a source.
+        private IOverrideSource _overrideSource;
         private readonly OverrideLayer _overrideLayer;
         private readonly OverrideSink _overrideSink;
+        private readonly Logger _log;
         private bool _disposed;
 
         #region IDataSystem implementation
@@ -31,22 +35,43 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         {
             // The override source starts before the data sources, and its initial load completes
             // synchronously, so overrides present when the client starts are in effect before the
-            // client evaluates anything. The source has no effect on initialization. A source that
-            // fails to start fails the client constructor; the data system is disposed first, so
-            // nothing it created is left running.
-            try
+            // client evaluates anything. The source has no effect on initialization, and a source
+            // that fails to start does not prevent the client from operating: the failure is
+            // logged, the source is disposed, and the client runs without overrides. The SDK's own
+            // file-based source does not throw from Start; it logs a failed load and retries it. A
+            // custom source could throw, and an application in an incident is better served by a
+            // client that runs without its overrides than by one that does not start.
+            if (_overrideSource != null)
             {
-                _overrideSource?.Start(_overrideSink);
-            }
-            catch (Exception)
-            {
-                Dispose();
-                throw;
+                try
+                {
+                    _overrideSource.Start(_overrideSink);
+                }
+                catch (Exception e)
+                {
+                    LogHelpers.LogException(_log, "Unable to start the override source; the client runs without overrides", e);
+                    DisposeFailedOverrideSource();
+                }
             }
             return _dataSource.Start();
         }
 
         public bool Initialized => _dataSource.Initialized;
+
+        // A source that failed to start may fail to dispose too; that is logged and not thrown.
+        private void DisposeFailedOverrideSource()
+        {
+            var source = _overrideSource;
+            _overrideSource = null;
+            try
+            {
+                source.Dispose();
+            }
+            catch (Exception e)
+            {
+                LogHelpers.LogException(_log, "Unable to dispose the override source after it failed to start", e);
+            }
+        }
 
         public bool OverridesConfigured => _overrideSource != null;
 
@@ -70,7 +95,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             DataSourceUpdatesImpl dataStoreUpdates,
             IOverrideSource overrideSource,
             OverrideLayer overrideLayer,
-            OverrideSink overrideSink
+            OverrideSink overrideSink,
+            Logger log
         )
         {
             _store = store;
@@ -83,6 +109,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             _overrideSource = overrideSource;
             _overrideLayer = overrideLayer;
             _overrideSink = overrideSink;
+            _log = log;
         }
 
         public static FDv2DataSystem Create(Logger logger, Configuration configuration, LdClientContext clientContext,
@@ -169,7 +196,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             }
 
             return new FDv2DataSystem(writeThroughStore, readOnlyStore, compositeDataSource, dataSourceStatusProvider,
-                dataStoreStatusProvider, dataSourceUpdates, overrideSource, overrideLayer, overrideSink);
+                dataStoreStatusProvider, dataSourceUpdates, overrideSource, overrideLayer, overrideSink,
+                logger.SubLogger(LogNames.OverridesSubLog));
         }
 
         private static Func<IComponentConfigurer<IDataSource>, SourceFactory> FactoryWithContext(

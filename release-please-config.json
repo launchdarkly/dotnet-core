@@ -1,85 +1,36 @@
 {
-  "bootstrap-sha": "fedc48807cd2bb295f2e700352859779c0eea8c0",
+  "bootstrap-sha": "6de5aa179a5fb4e3ddb07fa09dee1b87a8ae1d55",
   "separate-pull-requests": true,
   "include-component-in-tag": true,
   "packages": {
-    "pkgs/dotnet-server-sdk-consul": {
-      "release-type": "simple",
-      "package-name": "LaunchDarkly.ServerSdk.Consul",
-      "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Consul.csproj",
-        "PROVENANCE.md"
-      ]
-    },
-    "pkgs/dotnet-server-sdk-dynamodb": {
-      "release-type": "simple",
-      "package-name": "LaunchDarkly.ServerSdk.DynamoDB",
-      "extra-files": [
-        "src/LaunchDarkly.ServerSdk.DynamoDB.csproj",
-        "PROVENANCE.md"
-      ]
-    },
-    "pkgs/dotnet-server-sdk-redis": {
-      "release-type": "simple",
-      "package-name": "LaunchDarkly.ServerSdk.Redis",
-      "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Redis.csproj",
-        "PROVENANCE.md"
-      ]
-    },
     "pkgs/sdk/server": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.ServerSdk",
+      "versioning": "prerelease",
+      "prerelease-type": "alpha",
+      "prerelease": true,
       "extra-files": [
         "src/LaunchDarkly.ServerSdk.csproj",
-        "PROVENANCE.md"
-      ]
-    },
-    "pkgs/sdk/server-ai": {
-      "release-type": "simple",
-      "package-name": "LaunchDarkly.ServerSdk.Ai",
-      "bump-minor-pre-major": true,
-      "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Ai.csproj",
-        "src/SdkInfo.cs",
-        "PROVENANCE.md"
-      ]
-    },
-    "pkgs/sdk/client": {
-      "release-type": "simple",
-      "package-name": "LaunchDarkly.ClientSdk",
-      "extra-files": [
-        "src/LaunchDarkly.ClientSdk.csproj",
-        "PROVENANCE.md"
-      ]
-    },
-    "pkgs/telemetry": {
-      "release-type": "simple",
-      "package-name": "LaunchDarkly.ServerSdk.Telemetry",
-      "extra-files": [
-        "src/LaunchDarkly.ServerSdk.Telemetry.csproj",
         "PROVENANCE.md"
       ]
     },
     "pkgs/shared/common": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.CommonSdk",
+      "versioning": "prerelease",
+      "prerelease-type": "alpha",
+      "prerelease": true,
       "extra-files": [
         "src/LaunchDarkly.CommonSdk.csproj",
-        "PROVENANCE.md"
-      ]
-    },
-    "pkgs/shared/common-json-net": {
-      "release-type": "simple",
-      "package-name": "LaunchDarkly.CommonSdk.JsonNet",
-      "extra-files": [
-        "src/LaunchDarkly.CommonSdk.JsonNet.csproj",
         "PROVENANCE.md"
       ]
     },
     "pkgs/shared/internal": {
       "release-type": "simple",
       "package-name": "LaunchDarkly.InternalSdk",
+      "versioning": "prerelease",
+      "prerelease-type": "alpha",
+      "prerelease": true,
       "extra-files": [
         "src/LaunchDarkly.InternalSdk.csproj",
         "PROVENANCE.md"

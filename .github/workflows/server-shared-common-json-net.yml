@@ -2,14 +2,14 @@ name: LaunchDarkly.CommonSdk.JsonNet CI
 
 on:
   push:
-    branches: [ main, 'feat/**' ]
+    branches: [ main, 'feat/**', dotnet-server-sdk-v9 ]
     paths:
       - '.github/**'
       - 'global.example.json'
       - 'pkgs/shared/common-json-net/**'
       - '!**.md'
   pull_request:
-    branches: [ main, 'feat/**' ]
+    branches: [ main, 'feat/**', dotnet-server-sdk-v9 ]
     paths:
       - '.github/**'
       - 'global.example.json'

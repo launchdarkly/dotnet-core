@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - dotnet-server-sdk-v9
 
 jobs:
   release-please:
@@ -13,6 +13,9 @@ jobs:
       pull-requests: write
 
     outputs:
+      # This branch prepares the next major version of the server SDK and releases prereleases
+      # only. Documentation is published from main, so the release jobs below do not publish it.
+      publish-docs: 'false'
       package-sdk-client-released: ${{ steps.release.outputs['pkgs/sdk/client--release_created'] }}
       package-sdk-server-ai-released: ${{ steps.release.outputs['pkgs/sdk/server-ai--release_created'] }}
       package-sdk-server-consul-released: ${{ steps.release.outputs['pkgs/dotnet-server-sdk-consul--release_created'] }}
@@ -55,6 +58,7 @@ jobs:
       package_path: pkgs/sdk/server
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-sdk-server-ai:
     needs: ['release-please']
@@ -68,6 +72,7 @@ jobs:
       package_path: pkgs/sdk/server-ai
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-telemetry:
     needs: ['release-please']
@@ -81,6 +86,7 @@ jobs:
       package_path: pkgs/telemetry
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-sdk-server-redis:
     needs: ['release-please']
@@ -94,6 +100,7 @@ jobs:
       package_path: pkgs/dotnet-server-sdk-redis
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-sdk-server-consul:
     needs: ['release-please']
@@ -107,6 +114,7 @@ jobs:
       package_path: pkgs/dotnet-server-sdk-consul
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-sdk-server-dynamodb:
     needs: ['release-please']
@@ -120,6 +128,7 @@ jobs:
       package_path: pkgs/dotnet-server-sdk-dynamodb
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-shared-common:
     needs: ['release-please']
@@ -133,6 +142,7 @@ jobs:
       package_path: pkgs/shared/common
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-shared-common-json-net:
     needs: ['release-please']
@@ -146,6 +156,7 @@ jobs:
       package_path: pkgs/shared/common-json-net
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}
 
   release-shared-internal:
     needs: ['release-please']
@@ -159,3 +170,4 @@ jobs:
       package_path: pkgs/shared/internal
       dry_run: false
       generate_provenance: true
+      publish_docs: ${{ needs.release-please.outputs.publish-docs == 'true' }}

@@ -40,6 +40,10 @@ inputs:
     description: 'Run an instance of Redis'
     required: false
     default: false
+  publish_docs:
+    description: 'Publish the documentation to GitHub pages. A prerelease should not replace the documentation of the current release.'
+    required: false
+    default: true
 runs:
   using: composite
   steps:
@@ -88,7 +92,7 @@ runs:
         workspace_path: ${{ inputs.workspace_path }}
 
     - name: Publish Documentation
-      if: ${{ inputs.dry_run == 'false' }}
+      if: ${{ inputs.dry_run == 'false' && inputs.publish_docs == 'true' }}
       uses: ./.github/actions/publish-docs
       with:
         workspace_path: ${{ inputs.workspace_path }}

@@ -98,7 +98,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             w.WriteEndObject();
         }
 
-        public override FeatureFlag Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override FeatureFlag Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            ReadFlag(ref reader, null);
+
+        /// <summary>
+        /// Reads a flag definition that a data file lists under <paramref name="entryKey"/>. The entry
+        /// is the flag's key: a <c>key</c> property in the definition is optional and must be equal to it,
+        /// and a <c>version</c> property is optional. Everything else is read as <see cref="Read"/> does.
+        /// </summary>
+        internal FeatureFlag ReadFileEntry(ref Utf8JsonReader reader, string entryKey) =>
+            ReadFlag(ref reader, entryKey);
+
+        private FeatureFlag ReadFlag(ref Utf8JsonReader reader, string entryKey)
         {
             string key = null;
             int version = 0;
@@ -119,8 +130,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             long? samplingRatio = null;
             Migration? migration = null;
 
-            for (var obj = RequireObject(ref reader).WithRequiredProperties(_requiredProperties);
-                 obj.Next(ref reader);)
+            var obj = entryKey is null ?
+                RequireObject(ref reader).WithRequiredProperties(_requiredProperties) :
+                RequireObject(ref reader);
+            while (obj.Next(ref reader))
             {
                 switch (obj.Name)
                 {
@@ -210,6 +223,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                 }
             }
 
+            key = SerializationHelpers.ResolveEntryKey("flag", entryKey, key);
             if (key is null && !deleted)
             {
                 throw new JsonException("missing flag key");
@@ -473,7 +487,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             w.WriteEndObject();
         }
 
-        public override Segment Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override Segment Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            ReadSegment(ref reader, null);
+
+        /// <summary>
+        /// Reads a segment definition that a data file lists under <paramref name="entryKey"/>. The entry
+        /// is the segment's key: a <c>key</c> property in the definition is optional and must be equal to
+        /// it, and a <c>version</c> property is optional. Everything else is read as <see cref="Read"/> does.
+        /// </summary>
+        internal Segment ReadFileEntry(ref Utf8JsonReader reader, string entryKey) =>
+            ReadSegment(ref reader, entryKey);
+
+        private Segment ReadSegment(ref Utf8JsonReader reader, string entryKey)
         {
             string key = null;
             int version = 0;
@@ -486,8 +511,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             ContextKind? unboundedContextKind = null;
             int? generation = null;
 
-            for (var obj = RequireObject(ref reader).WithRequiredProperties(_requiredProperties);
-                obj.Next(ref reader);)
+            var obj = entryKey is null ?
+                RequireObject(ref reader).WithRequiredProperties(_requiredProperties) :
+                RequireObject(ref reader);
+            while (obj.Next(ref reader))
             {
                 switch (obj.Name)
                 {
@@ -534,6 +561,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                         break;
                 }
             }
+            key = SerializationHelpers.ResolveEntryKey("segment", entryKey, key);
             if (key is null && !deleted)
             {
                 throw new JsonException("missing segment key");
@@ -735,6 +763,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             {
                 w.WriteString(propName, kind.Value.Value);
             }
+        }
+
+        /// <summary>
+        /// Resolves the key of a flag or segment definition that a data file lists under an entry key.
+        /// The entry key is the key. A <c>key</c> property in the definition is optional and must be
+        /// equal to it. When there is no entry key, the definition is not from a data file and the
+        /// key it read is returned as is.
+        /// </summary>
+        /// <param name="category">"flag" or "segment", for the error message</param>
+        /// <param name="entryKey">the key the data file lists the definition under, or null</param>
+        /// <param name="key">the key property read from the definition, or null</param>
+        /// <returns>the key to use</returns>
+        /// <exception cref="JsonException">the definition's key property differs from the entry key</exception>
+        internal static string ResolveEntryKey(string category, string entryKey, string key)
+        {
+            if (entryKey is null)
+            {
+                return key;
+            }
+            if (key is null || key == entryKey)
+            {
+                return entryKey;
+            }
+            throw new JsonException(category + " \"" + entryKey + "\" has a different key property \"" + key + "\"");
         }
 
         internal static ImmutableList<string> ReadStrings(ref Utf8JsonReader r)

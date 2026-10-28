@@ -335,8 +335,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         [Fact]
         public void ReportsIdenticalFailureOnlyOnce()
         {
-            Write(Truncated);
-            var reloader = MakeReloader();
+            // The content changes while retries run, so it comes from a scripted reader: see
+            // ScriptedContentReader.
+            var reader = new ScriptedContentReader(Truncated);
+            var reloader = MakeReloader(c => c.FileReader = reader);
 
             reloader.ReloadNow();
             RequireErrorLogged();
@@ -347,13 +349,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Assert.Equal(1, ErrorLogCount());
 
             // A different failure is a new report.
-            Write(@"{""flagValues"": {bad}}");
+            reader.Content = @"{""flagValues"": {bad}}";
             Assert.Contains("error parsing file", RequireErrorLogged());
 
             // Success re-arms reporting: the same failure recurring afterward is reported again.
-            Write(Flag1True);
+            reader.Content = Flag1True;
             RequireApplied();
-            Write(Truncated);
+            reader.Content = Truncated;
             reloader.Trigger();
             RequireErrorLogged();
         }
@@ -361,17 +363,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         [Fact]
         public void RetriesAfterFailureWithoutFurtherTriggers()
         {
-            Write(Flag1True);
-            var reloader = MakeReloader();
+            // The content changes while retries run, so it comes from a scripted reader: see
+            // ScriptedContentReader.
+            var reader = new ScriptedContentReader(Flag1True);
+            var reloader = MakeReloader(c => c.FileReader = reader);
             reloader.ReloadNow();
             RequireApplied();
 
-            Write(Truncated);
+            reader.Content = Truncated;
             reloader.Trigger();
             RequireErrorLogged();
 
             // Fix the file without triggering. Only the automatic retry can observe the fix.
-            Write(Flag1False);
+            reader.Content = Flag1False;
             var result = RequireApplied();
             var flag = Assert.IsType<FeatureFlag>(result.Flags[0].Value.Item);
             Assert.Equal(new[] { LdValue.Of(false) }, flag.Variations);
@@ -411,21 +415,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         [Fact]
         public void SuccessfulReloadNowDisarmsThePendingRetry()
         {
-            Write(Truncated);
-            var reloader = MakeReloader(c => c.SkipUnchanged = true);
+            // The content changes while retries run, so it comes from a scripted reader: see
+            // ScriptedContentReader.
+            var reader = new ScriptedContentReader(Truncated);
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.SkipUnchanged = true;
+            });
             reloader.ReloadNow();
             RequireErrorLogged();
 
             // The file is fixed and loaded on demand. Whether the retry or this load applies the
             // recovery, the content is applied once.
-            Write(Flag1True);
+            reader.Content = Flag1True;
             reloader.ReloadNow();
             RequireApplied();
-            DrainErrors();
 
             // The retry armed by the failure is redundant after the recovery and does not run. A
             // changed file with no trigger must not be picked up.
-            Write(Flag1False);
+            reader.Content = Flag1False;
             RequireQuiet(TimeSpan.FromMilliseconds(200));
         }
 
@@ -460,19 +469,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         [Fact]
         public void RecoveryAppliesEvenWhenContentIsUnchanged()
         {
-            Write(Flag1True);
-            var reloader = MakeReloader(c => c.SkipUnchanged = true);
+            // The file disappears and comes back while retries run, so its content comes from a
+            // scripted reader: see ScriptedContentReader.
+            var reader = new ScriptedContentReader(Flag1True);
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.SkipUnchanged = true;
+            });
             reloader.ReloadNow();
             RequireApplied();
 
             // A reload fails and is logged.
-            File.Delete(_path);
+            reader.Content = null;
             reloader.Trigger();
             RequireErrorLogged();
 
             // The file comes back with identical content. The success must be applied despite
             // SkipUnchanged, because only Apply shows the consumer that the failure is over.
-            Write(Flag1True);
+            reader.Content = Flag1True;
             reloader.Trigger();
             RequireApplied();
 
@@ -758,6 +773,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             RequireApplied();
             RequireQuiet(TimeSpan.FromMilliseconds(100));
             Assert.Equal(2, reader.Reads);
+        }
+
+        // Returns the content the test last set, or reports a missing file when it is null. A test
+        // that changes a real file while automatic retries run cannot control what a retry reads: a
+        // rewrite is not atomic, and a retry that reads the file after it is emptied and before it
+        // is written applies a document with no entries, which is correct, and then stops retrying.
+        // Tests of the reload logic whose content changes while retries run use this reader
+        // instead, so that every read sees one complete content.
+        private class ScriptedContentReader : FileDataTypes.IFileReader
+        {
+            private volatile string _content;
+
+            internal ScriptedContentReader(string content)
+            {
+                _content = content;
+            }
+
+            internal string Content
+            {
+                set => _content = value;
+            }
+
+            public string ReadAllText(string path) =>
+                _content ?? throw new FileNotFoundException("simulated missing file", path);
         }
 
         // Blocks the first read until released, so a reload can be held in progress.

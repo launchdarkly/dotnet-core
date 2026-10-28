@@ -65,6 +65,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         }
 
         [Fact]
+        public void CloseClearsTheLayerAndIgnoresLaterSnapshots()
+        {
+            var baseStore = new FakeReadOnlyStore();
+            var sink = MakeSink(baseStore, out var layer);
+            var data = OverrideLayerTest.FlagsOnly(new FeatureFlagBuilder("flag1").Version(1).Build());
+            sink.SetOverrides(data);
+            Assert.Equal(new[] { "flag1" }, TakeNotified());
+
+            // Closing removes what the source supplied, and the removal is a change.
+            sink.Close();
+            Assert.True(layer.IsEmpty);
+            Assert.Equal(new[] { "flag1" }, TakeNotified());
+
+            // A snapshot after closing changes nothing.
+            sink.SetOverrides(data);
+            Assert.True(layer.IsEmpty);
+            Assert.Empty(TakeNotified());
+        }
+
+        [Fact]
         public void SegmentOverrideFansOutToDependentFlags()
         {
             var baseStore = new FakeReadOnlyStore()

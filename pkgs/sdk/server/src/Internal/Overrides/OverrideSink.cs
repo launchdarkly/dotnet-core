@@ -21,6 +21,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         private readonly Action<IEnumerable<string>> _notify;
         private readonly Func<bool> _hasListeners;
         private readonly Logger _log;
+        private bool _closed; // guarded by _lock
 
         /// <summary>
         /// Creates a sink that writes to the given layer.
@@ -54,6 +55,33 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         public void SetOverrides(FullDataSet<ItemDescriptor> data)
         {
             lock (_lock)
+            {
+                if (_closed)
+                {
+                    _log.Warn("Ignoring an override snapshot from a source that was closed after it failed to start");
+                    return;
+                }
+                Apply(data);
+            }
+        }
+
+        /// <summary>
+        /// Stops accepting snapshots and clears the layer. Used when the source failed to start: a
+        /// snapshot the source supplied before failing is removed, so the client runs without
+        /// overrides, and a late snapshot from the disposed source is ignored.
+        /// </summary>
+        internal void Close()
+        {
+            lock (_lock)
+            {
+                _closed = true;
+                Apply(FullDataSet<ItemDescriptor>.Empty());
+            }
+        }
+
+        // Called inside _lock.
+        private void Apply(FullDataSet<ItemDescriptor> data)
+        {
             {
                 // Computing affected flags requires snapshots of the merged view before and after the
                 // replacement. Skip all of that work when nothing is listening.

@@ -59,6 +59,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         public bool Initialized => _dataSource.Initialized;
 
         // A source that failed to start may fail to dispose too; that is logged and not thrown.
+        // The source may have supplied a snapshot before it failed. Closing the sink removes it, so
+        // the client runs without overrides as logged, and a late snapshot from the disposed source
+        // is ignored.
         private void DisposeFailedOverrideSource()
         {
             var source = _overrideSource;
@@ -71,6 +74,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             {
                 LogHelpers.LogException(_log, "Unable to dispose the override source after it failed to start", e);
             }
+            _overrideSink.Close();
         }
 
         public bool OverridesConfigured => _overrideSource != null;

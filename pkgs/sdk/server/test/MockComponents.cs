@@ -320,6 +320,8 @@ namespace LaunchDarkly.Sdk.Server
         public volatile bool StartedBeforeBuildReturned;
         // When set, Start throws it instead of supplying data.
         public volatile Exception StartError;
+        // When set with StartError, Start supplies the data to the sink and then throws.
+        public volatile bool SupplyDataBeforeStartError;
 
         public TestOverrideSource() : this(FullDataSet<ItemDescriptor>.Empty()) { }
 
@@ -334,6 +336,10 @@ namespace LaunchDarkly.Sdk.Server
             {
                 if (StartError != null)
                 {
+                    if (SupplyDataBeforeStartError)
+                    {
+                        sink.SetOverrides(_data);
+                    }
                     throw StartError;
                 }
                 Started = true;

@@ -6,6 +6,7 @@ using LaunchDarkly.Sdk.Json;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.Evaluation;
 using LaunchDarkly.Sdk.Server.Internal.Model;
+using LaunchDarkly.Sdk.Server.Internal.Overrides;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers;
 using Xunit;
@@ -463,6 +464,37 @@ namespace LaunchDarkly.Sdk.Server
                 Assert.False(detail.Value);
                 Assert.Equal(EvaluationErrorKind.ClientNotReady, detail.Reason.ErrorKind);
                 Assert.False(detail.Reason.OverrideAffected);
+            }
+        }
+
+        [Fact]
+        public void OverrideSourceThatSuppliesASnapshotAndThenFailsToStartLeavesNoOverrides()
+        {
+            // The snapshot the source supplied before it failed is removed with the source, so the
+            // client runs without overrides, as the log says, and its all-flags state agrees.
+            var overridden = new FeatureFlagBuilder("overridden-flag").Version(1).On(true)
+                .Variations(LdValue.Of(true)).FallthroughVariation(0).Build();
+            var source = new TestOverrideSource(OverrideLayerTest.FlagsOnly(overridden))
+            {
+                StartError = new InvalidOperationException("source failed"),
+                SupplyDataBeforeStartError = true
+            };
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
+                    .Overrides(source))
+                .Build();
+
+            using (var client = new LdClient(config))
+            {
+                Assert.True(source.Disposed);
+                AssertLogMessageRegex(true, LogLevel.Error, "Unable to start the override source");
+
+                var detail = client.BoolVariationDetail("overridden-flag", context, false);
+                Assert.False(detail.Value);
+                Assert.Equal(EvaluationErrorKind.ClientNotReady, detail.Reason.ErrorKind);
+                Assert.False(detail.Reason.OverrideAffected);
+                Assert.False(client.AllFlagsState(context).Valid);
             }
         }
 

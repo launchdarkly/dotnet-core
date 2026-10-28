@@ -21,7 +21,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     {
         internal readonly List<string> _paths = new List<string>();
         internal bool _autoUpdate = false;
-        internal FileDataTypes.IFileReader _fileReader = FlagFileReader.Instance;
+        internal FileDataTypes.IFileReader _fileReader = FileDataReader.Instance;
         internal readonly Dictionary<string, Func<string, object>> _parsers = new Dictionary<string, Func<string, object>>();
         internal bool _skipMissingPaths = false;
         internal FileDataTypes.DuplicateKeysHandling _duplicateKeysHandling = FileDataTypes.DuplicateKeysHandling.Throw;
@@ -96,13 +96,19 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         /// <summary>
-        /// Specifies an alternate file reader which can support custom OS error handling and retry logic.
+        /// Specifies an alternate file reader, for custom error handling or retry logic.
         /// </summary>
-        /// <param name="fileReader">The flag file reader.</param>
+        /// <remarks>
+        /// By default the SDK reads a file while allowing other processes to write, rename, or delete
+        /// it, so that a load in progress never fails the editor or tool that is updating the file. A
+        /// read that another process denies fails that load; with auto-update, the load is retried.
+        /// Passing null selects that default reader.
+        /// </remarks>
+        /// <param name="fileReader">the file reader, or null for the default</param>
         /// <returns>the same factory object</returns>
         public FileDataSourceBuilder FileReader(FileDataTypes.IFileReader fileReader)
         {
-            _fileReader = fileReader;
+            _fileReader = fileReader ?? FileDataReader.Instance;
             return this;
         }
 

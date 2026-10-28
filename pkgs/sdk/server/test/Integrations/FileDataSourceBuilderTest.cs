@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
+using LaunchDarkly.Sdk.Server.Internal.FileLoading;
 using LaunchDarkly.TestHelpers;
 using Xunit;
 
@@ -43,8 +44,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public void FileReader()
         {
             var prop = _tester.Property(b => b._fileReader, (b, v) => b.FileReader(v));
-            prop.AssertDefault(FlagFileReader.Instance);
+            prop.AssertDefault(FileDataReader.Instance);
             prop.AssertCanSet(new TestFileReader());
+            Assert.Same(FileDataReader.Instance, FileData.DataSource().FileReader(new TestFileReader()).FileReader(null)._fileReader);
         }
 
         [Fact]

@@ -141,6 +141,25 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
+        public void BuildTreatsAPathRepeatedInDifferentCaseAsARepeatOnlyWhereFileNamesIgnoreCase()
+        {
+            // Windows file names do not distinguish case, so the two spellings name one file there.
+            // On the other platforms they can be two files, and both are kept.
+            var source = BuildSource(FileOverrides.Source().FilePaths("/a.json", "/A.json"));
+
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            {
+                Assert.Equal(new[] { Path.GetFullPath("/a.json") }, source.Paths);
+                AssertLogMessageRegex(true, LogLevel.Warn, "more than once");
+            }
+            else
+            {
+                Assert.Equal(new[] { Path.GetFullPath("/a.json"), Path.GetFullPath("/A.json") }, source.Paths);
+                AssertLogMessageRegex(false, LogLevel.Warn, "more than once");
+            }
+        }
+
+        [Fact]
         public void BuildDefaultsToPollingEverySecond()
         {
             var source = BuildSource(FileOverrides.Source().FilePaths("/a.json"));

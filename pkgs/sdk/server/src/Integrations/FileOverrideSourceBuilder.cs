@@ -44,6 +44,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </summary>
         internal static readonly TimeSpan MaximumPollInterval = TimeSpan.FromMilliseconds(4294967294);
 
+        private static readonly StringComparer PathComparer =
+            Environment.OSVersion.Platform == PlatformID.Win32NT ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
         internal readonly List<string> _paths = new List<string>();
         internal FileOverrideTypes.DuplicateKeysHandling _duplicateKeysHandling = FileOverrideTypes.DuplicateKeysHandling.Fail;
         internal FileOverrideTypes.ChangeDetection _changeDetection = FileOverrideTypes.ChangeDetection.Polling;
@@ -188,9 +191,11 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             var logger = context.Logger.SubLogger(LogNames.OverridesSubLog);
 
             // A path listed more than once would make every entry of that file a duplicate of itself, so
-            // the repeats are dropped and the first occurrence keeps its place in the order.
+            // the repeats are dropped and the first occurrence keeps its place in the order. Windows
+            // file names do not distinguish letter case, so a repeat in different case is a repeat
+            // there; elsewhere the two spellings can name different files.
             var allPaths = _paths.Select(Path.GetFullPath).ToList();
-            var paths = allPaths.Distinct().ToList();
+            var paths = allPaths.Distinct(PathComparer).ToList();
             if (paths.Count != allPaths.Count)
             {
                 logger.Warn("File paths list the same file more than once; the repeats are ignored");

@@ -352,8 +352,11 @@ namespace LaunchDarkly.Sdk.Server
             if (nullableStage == null)
             {
                 _log.Error($"Unrecognized MigrationStage for {key}; using default stage.");
+                // The unrecognized stage replaces the reason. The evaluation read the same
+                // definitions, so the new reason keeps the override-affected marking.
                 detail = new EvaluationDetail<string>(defaultStage.ToDataModelString(), null,
-                    EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType));
+                    EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType)
+                        .WithOverrideAffected(detail.Reason.OverrideAffected));
             }
 
             return new MigrationVariation(stage, new MigrationOpTracker(
@@ -377,7 +380,7 @@ namespace LaunchDarkly.Sdk.Server
                 return new FeatureFlagsState(false);
             }
 
-            var overridesOnly = false;
+            KeyedItems<ItemDescriptor>? overrideFlags = null;
             if (!Initialized)
             {
                 if (_dataSystem.Store.Initialized())
@@ -387,16 +390,18 @@ namespace LaunchDarkly.Sdk.Server
                         _evalLog.Warn("AllFlagsState() called before client initialized; using last known values from data store. This message is logged once.");
                     }
                 }
-                else if (_dataSystem.OverridesConfigured)
-                {
-                    // No data from LaunchDarkly is available. The store read below returns only the
-                    // entries that the override layer holds. The result decides the state.
-                    overridesOnly = true;
-                }
                 else
                 {
-                    _evalLog.Warn("AllFlagsState() called before client initialized; data store unavailable, returning empty state");
-                    return new FeatureFlagsState(false);
+                    // No data from LaunchDarkly is available. When the override layer holds flags, the
+                    // state contains only those, read from the layer itself: a store that is not
+                    // initialized can still hold LaunchDarkly data, which the state must not include.
+                    // Without override flags the state is invalid, as it is without an override source.
+                    overrideFlags = _dataSystem.GetOverrides(DataModel.Features);
+                    if (!overrideFlags.Value.Items.Any())
+                    {
+                        _evalLog.Warn("AllFlagsState() called before client initialized; data store unavailable, returning empty state");
+                        return new FeatureFlagsState(false);
+                    }
                 }
             }
             if (!context.Valid)
@@ -409,25 +414,24 @@ namespace LaunchDarkly.Sdk.Server
             var clientSideOnly = FlagsStateOption.HasOption(options, FlagsStateOption.ClientSideOnly);
 
             KeyedItems<ItemDescriptor> flags;
-            try
+            if (overrideFlags.HasValue)
             {
-                flags = _dataSystem.Store.GetAll(DataModel.Features);
-            }
-            catch (Exception e)
-            {
-                LogHelpers.LogException(_log, "Exception while retrieving flags for AllFlagsState", e);
-                return new FeatureFlagsState(false);
-            }
-            if (overridesOnly)
-            {
-                if (!flags.Items.Any())
-                {
-                    _evalLog.Warn("AllFlagsState() called before client initialized; data store unavailable, returning empty state");
-                    return new FeatureFlagsState(false);
-                }
                 if (Interlocked.Exchange(ref _allFlagsStateOverridesOnlyWarningLogged, 1) == 0)
                 {
                     _evalLog.Warn("AllFlagsState() called before client initialized; returning only flags from the override layer. This message is logged once.");
+                }
+                flags = overrideFlags.Value;
+            }
+            else
+            {
+                try
+                {
+                    flags = _dataSystem.Store.GetAll(DataModel.Features);
+                }
+                catch (Exception e)
+                {
+                    LogHelpers.LogException(_log, "Exception while retrieving flags for AllFlagsState", e);
+                    return new FeatureFlagsState(false);
                 }
             }
             foreach (var pair in flags.Items)

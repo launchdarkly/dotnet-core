@@ -58,10 +58,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             {
                 if (_closed)
                 {
-                    _log.Warn("Ignoring an override snapshot from a source that was closed after it failed to start");
+                    _log.Debug("Ignoring an override snapshot supplied after the override source was closed");
                     return;
                 }
                 Apply(data);
+            }
+        }
+
+        /// <summary>
+        /// Stops accepting snapshots. Used when the client is disposed: a snapshot that the source
+        /// supplies while it shuts down is ignored. The layer keeps its contents.
+        /// </summary>
+        internal void Close()
+        {
+            lock (_lock)
+            {
+                _closed = true;
             }
         }
 
@@ -70,7 +82,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         /// snapshot the source supplied before failing is removed, so the client runs without
         /// overrides, and a late snapshot from the disposed source is ignored.
         /// </summary>
-        internal void Close()
+        internal void CloseAndClear()
         {
             lock (_lock)
             {

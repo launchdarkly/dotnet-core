@@ -22,7 +22,9 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
     /// <para>
     /// The SDK constructs the source from the <see cref="IComponentConfigurer{T}"/> given to
     /// <see cref="Integrations.DataSystemBuilder.Overrides(IComponentConfigurer{IOverrideSource})"/>,
-    /// starts it when the client starts, and disposes it when the client is disposed.
+    /// starts it when the client starts, and disposes it when the client is disposed. An exception
+    /// thrown from <see cref="IDisposable.Dispose"/> is logged and does not stop the client from shutting
+    /// down. A snapshot that the source supplies after the client begins to dispose it is ignored.
     /// </para>
     /// <para>
     /// Flag overrides are currently experimental and subject to change.

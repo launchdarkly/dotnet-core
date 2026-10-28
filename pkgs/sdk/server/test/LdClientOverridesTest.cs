@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Json;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.Evaluation;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Internal.Overrides;
+using LaunchDarkly.Sdk.Server.Migrations;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers;
 using Xunit;
@@ -205,6 +207,22 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         [Fact]
+        public void MigrationVariationKeepsTheMarkingWhenAnOverrideHasAnUnrecognizedStage()
+        {
+            var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("migration-flag", LdValue.Of("potato"))));
+            using (var client = MakeUninitializedClient(source))
+            {
+                var migrationVariation = client.MigrationVariation("migration-flag", context, MigrationStage.Shadow);
+                Assert.Equal(MigrationStage.Shadow, migrationVariation.Stage);
+                migrationVariation.Tracker.Op(MigrationOperation.Read);
+                migrationVariation.Tracker.Invoked(MigrationOrigin.New);
+                var opEvent = migrationVariation.Tracker.CreateEvent();
+                Assert.Equal(EvaluationErrorKind.WrongType, opEvent?.Reason?.ErrorKind);
+                Assert.True(opEvent?.Reason?.OverrideAffected);
+            }
+        }
+
+        [Fact]
         public void AllFlagsStateContainsOnlyOverridesWhenClientIsNotInitialized()
         {
             var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of(true))));
@@ -242,6 +260,73 @@ namespace LaunchDarkly.Sdk.Server
                 var state = client.AllFlagsState(context);
                 Assert.False(state.Valid);
                 Assert.Empty(state.ToValuesJsonMap());
+            }
+        }
+
+        // A client that reads LaunchDarkly data from the given store and never initializes.
+        private LdClient MakeUninitializedClientWithStore(IDataStore store, TestOverrideSource source)
+        {
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
+                    .PersistentStore(store.AsSingletonFactory<IDataStore>(), DataSystemConfiguration.DataStoreMode.ReadOnly)
+                    .Overrides(source))
+                .Build();
+            var client = new LdClient(config);
+            Assert.False(client.Initialized);
+            return client;
+        }
+
+        [Fact]
+        public void AllFlagsStateIsInvalidWhenTheLayerIsEmptyAndTheStoreHoldsDataWithoutAnInitMarker()
+        {
+            // Configuring a source that holds nothing changes nothing: the state is invalid, as it is
+            // without a source, and does not report the LaunchDarkly data in the store.
+            var store = new FixedDataStore(FlagsOnly(SingleValueFlag("launchdarkly-flag", LdValue.Of(true))));
+            using (var client = MakeUninitializedClientWithStore(store, new TestOverrideSource()))
+            {
+                var state = client.AllFlagsState(context);
+                Assert.False(state.Valid);
+                Assert.Empty(state.ToValuesJsonMap());
+            }
+        }
+
+        [Fact]
+        public void AllFlagsStateBeforeInitializationExcludesLaunchDarklyDataFromAStoreWithoutAnInitMarker()
+        {
+            var store = new FixedDataStore(FlagsOnly(SingleValueFlag("launchdarkly-flag", LdValue.Of(true))));
+            var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of(true))));
+            using (var client = MakeUninitializedClientWithStore(store, source))
+            {
+                var state = client.AllFlagsState(context);
+                Assert.True(state.Valid);
+                var values = state.ToValuesJsonMap();
+                Assert.Single(values);
+                Assert.Equal(LdValue.Of(true), values["overridden-flag"]);
+            }
+        }
+
+        [Fact]
+        public void AllFlagsStateIsInvalidWhenTheStoreFailsEvenWithOverrides()
+        {
+            // A daemon-mode client whose store cannot list its flags reports an invalid state and
+            // logs the failure, as it does without a source, rather than a valid state that holds
+            // only the overrides.
+            var store = new FixedDataStore(FullDataSet<ItemDescriptor>.Empty(), initialized: true)
+            {
+                GetAllError = new InvalidOperationException("store failed")
+            };
+            var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of(true))));
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Daemon(store.AsSingletonFactory<IDataStore>()).Overrides(source))
+                .Build();
+            using (var client = new LdClient(config))
+            {
+                Assert.True(client.Initialized);
+                var state = client.AllFlagsState(context);
+                Assert.False(state.Valid);
+                Assert.Empty(state.ToValuesJsonMap());
+                AssertLogMessageRegex(true, LogLevel.Error, "Exception while retrieving flags for AllFlagsState.*store failed");
             }
         }
 
@@ -337,6 +422,38 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         [Fact]
+        public void OverrideSourceDisposeFailureDoesNotStopTheClientFromShuttingDown()
+        {
+            var store = new DisposalTrackingDataStore();
+            var source = new TestOverrideSource { DisposeError = new InvalidOperationException("dispose failed") };
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
+                    .PersistentStore(store.AsSingletonFactory<IDataStore>(), DataSystemConfiguration.DataStoreMode.ReadWrite)
+                    .Overrides(source))
+                .Build();
+            var client = new LdClient(config);
+
+            client.Dispose();
+
+            Assert.True(source.Disposed);
+            Assert.True(store.Disposed);
+            AssertLogMessageRegex(true, LogLevel.Error, "Unable to dispose the override source.*dispose failed");
+        }
+
+        [Fact]
+        public void SnapshotSuppliedAfterTheClientIsDisposedIsIgnored()
+        {
+            var source = new TestOverrideSource();
+            var client = MakeUninitializedClient(source);
+            client.Dispose();
+
+            source.SetOverrides(FlagsOnly(SingleValueFlag("late-flag", LdValue.Of(true))));
+
+            Assert.False(client._dataSystem.HasOverride(DataModel.Features, "late-flag"));
+        }
+
+        [Fact]
         public void OverrideSourceIsNotStartedWhenOffline()
         {
             var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of(true))));
@@ -369,7 +486,7 @@ namespace LaunchDarkly.Sdk.Server
                 .Build();
             using (var client = new LdClient(config))
             {
-                Assert.False(client._dataSystem.OverridesConfigured);
+                Assert.Empty(client._dataSystem.GetOverrides(DataModel.Features).Items);
                 var detail = client.BoolVariationDetail("flag", context, false);
                 Assert.Equal(EvaluationReason.ErrorReason(EvaluationErrorKind.ClientNotReady), detail.Reason);
                 Assert.False(client.AllFlagsState(context).Valid);
@@ -532,6 +649,40 @@ namespace LaunchDarkly.Sdk.Server
             public bool Initialized() => false;
 
             public bool Upsert(DataKind kind, string key, ItemDescriptor item) => true;
+        }
+
+        // A store with fixed contents. By default it reports not initialized, like a persistent store
+        // that holds LaunchDarkly data but no init marker. GetAll throws GetAllError when it is set.
+        private class FixedDataStore : IDataStore
+        {
+            private readonly FullDataSet<ItemDescriptor> _data;
+            private readonly bool _initialized;
+            public volatile Exception GetAllError;
+
+            internal FixedDataStore(FullDataSet<ItemDescriptor> data, bool initialized = false)
+            {
+                _data = data;
+                _initialized = initialized;
+            }
+
+            public bool StatusMonitoringEnabled => false;
+
+            public void Dispose() { }
+
+            public ItemDescriptor? Get(DataKind kind, string key) =>
+                Items(kind).Where(kv => kv.Key == key).Select(kv => (ItemDescriptor?)kv.Value).FirstOrDefault();
+
+            public KeyedItems<ItemDescriptor> GetAll(DataKind kind) =>
+                GetAllError != null ? throw GetAllError : new KeyedItems<ItemDescriptor>(Items(kind));
+
+            public void Init(FullDataSet<ItemDescriptor> allData) { }
+
+            public bool Initialized() => _initialized;
+
+            public bool Upsert(DataKind kind, string key, ItemDescriptor item) => true;
+
+            private IEnumerable<KeyValuePair<string, ItemDescriptor>> Items(DataKind kind) =>
+                _data.Data.Where(kv => kv.Key == kind).SelectMany(kv => kv.Value.Items);
         }
 
         private class FailingOverrideSourceConfigurer : IComponentConfigurer<IOverrideSource>

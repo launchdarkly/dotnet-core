@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 
@@ -41,24 +40,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         /// <summary>
         /// Returns the union of the base store's items and the layer's items. The override entry wins
         /// for any key present in both, including a key the base holds as a deleted-item placeholder.
+        /// A failure of the base store propagates, as it does without the overlay.
         /// </summary>
-        /// <remarks>
-        /// When the base store fails and the layer holds entries, the result is the layer's entries
-        /// alone. A per-key read serves those entries whatever the state of the base, so an all-flags
-        /// read does the same. When the layer is empty, the base failure propagates.
-        /// </remarks>
         public KeyedItems<ItemDescriptor> GetAll(DataKind kind)
         {
+            var baseItems = _base.GetAll(kind);
             var overrideItems = _layer.All(kind);
-            KeyedItems<ItemDescriptor> baseItems;
-            try
-            {
-                baseItems = _base.GetAll(kind);
-            }
-            catch (Exception) when (overrideItems.Count > 0)
-            {
-                return new KeyedItems<ItemDescriptor>(overrideItems);
-            }
             if (overrideItems.Count == 0)
             {
                 return baseItems;

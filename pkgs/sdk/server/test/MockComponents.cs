@@ -322,6 +322,8 @@ namespace LaunchDarkly.Sdk.Server
         public volatile Exception StartError;
         // When set with StartError, Start supplies the data to the sink and then throws.
         public volatile bool SupplyDataBeforeStartError;
+        // When set, Dispose throws it after recording the disposal.
+        public volatile Exception DisposeError;
 
         public TestOverrideSource() : this(FullDataSet<ItemDescriptor>.Empty()) { }
 
@@ -360,6 +362,10 @@ namespace LaunchDarkly.Sdk.Server
         public void Dispose()
         {
             Disposed = true;
+            if (DisposeError != null)
+            {
+                throw DisposeError;
+            }
         }
 
         public IOverrideSource Build(LdClientContext context) => this;

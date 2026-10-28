@@ -19,8 +19,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         private readonly IDataSource _dataSource;
         private readonly DataSourceUpdatesImpl _dataSourceUpdates;
         // The override source, its layer, and its sink are null when no override source is configured.
-        // The source is also null after it failed to start, so the client then behaves as it does
-        // without a source.
+        // The source is also null after it failed to start or was disposed.
         private IOverrideSource _overrideSource;
         private readonly OverrideLayer _overrideLayer;
         private readonly OverrideSink _overrideSink;
@@ -50,7 +49,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 catch (Exception e)
                 {
                     LogHelpers.LogException(_log, "Unable to start the override source; the client runs without overrides", e);
-                    DisposeFailedOverrideSource();
+                    DisposeOverrideSource("Unable to dispose the override source after it failed to start");
+                    // The source may have supplied a snapshot before it failed. Clearing the layer
+                    // removes it, so the client runs without overrides as logged, and a late snapshot
+                    // from the disposed source is ignored.
+                    _overrideSink.CloseAndClear();
                 }
             }
             return _dataSource.Start();
@@ -58,11 +61,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         public bool Initialized => _dataSource.Initialized;
 
-        // A source that failed to start may fail to dispose too; that is logged and not thrown.
-        // The source may have supplied a snapshot before it failed. Closing the sink removes it, so
-        // the client runs without overrides as logged, and a late snapshot from the disposed source
-        // is ignored.
-        private void DisposeFailedOverrideSource()
+        // A custom source can throw from Dispose. That is logged and not thrown, so the rest of the
+        // client still shuts down, or still starts after a failed Start.
+        private void DisposeOverrideSource(string failureMessage)
         {
             var source = _overrideSource;
             _overrideSource = null;
@@ -72,12 +73,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             }
             catch (Exception e)
             {
-                LogHelpers.LogException(_log, "Unable to dispose the override source after it failed to start", e);
+                LogHelpers.LogException(_log, failureMessage, e);
             }
-            _overrideSink.Close();
         }
 
-        public bool OverridesConfigured => _overrideSource != null;
+        public DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor> GetOverrides(DataStoreTypes.DataKind kind) =>
+            _overrideLayer == null
+                ? DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor>.Empty()
+                : new DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor>(_overrideLayer.All(kind));
 
         // No entry has a null key, so a null key is not held. The evaluation of a null key then
         // takes the same path as without an override source.
@@ -227,7 +230,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             if (_disposed) return;
             if (disposing)
             {
-                _overrideSource?.Dispose();
+                if (_overrideSource != null)
+                {
+                    // The sink stops accepting snapshots first, so a snapshot that the source supplies
+                    // while it shuts down cannot update the layer or notify listeners through
+                    // components that are being disposed.
+                    _overrideSink.Close();
+                    DisposeOverrideSource("Unable to dispose the override source");
+                }
                 _dataSource.Dispose();
                 _store.Dispose();
                 _dataSourceUpdates.Dispose();

@@ -97,21 +97,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         }
 
         [Fact]
-        public void GetAllServesOverridesWhenTheBaseFails()
+        public void GetAllPropagatesABaseFailureWhenTheLayerHoldsEntries()
         {
+            // A result of the layer's entries alone would look complete to a caller such as the
+            // all-flags state, so the failure propagates as it does without the overlay.
             var baseStore = new FakeReadOnlyStore { GetAllError = new InvalidOperationException("sinkhole") };
             var layer = new OverrideLayer();
-            layer.SetAll(OverrideLayerTest.FlagsOnly(
-                new FeatureFlagBuilder("override-1").Version(1).Build(),
-                new FeatureFlagBuilder("override-2").Version(2).Build()), out _, out _);
+            layer.SetAll(OverrideLayerTest.FlagsOnly(new FeatureFlagBuilder("override-1").Version(1).Build()),
+                out _, out _);
             var overlay = new OverrideOverlay(baseStore, layer);
 
-            var items = overlay.GetAll(DataModel.Features).Items.ToList();
-
-            Assert.Equal(2, items.Count);
-            Assert.All(items, kv => Assert.True(RequireFlag(kv.Value).IsOverride));
-            Assert.Contains(items, kv => kv.Key == "override-1");
-            Assert.Contains(items, kv => kv.Key == "override-2");
+            Assert.Throws<InvalidOperationException>(() => overlay.GetAll(DataModel.Features));
+            Assert.True(RequireFlag(overlay.Get(DataModel.Features, "override-1")).IsOverride);
         }
 
         [Fact]

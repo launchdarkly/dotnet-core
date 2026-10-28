@@ -65,7 +65,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         }
 
         [Fact]
-        public void CloseClearsTheLayerAndIgnoresLaterSnapshots()
+        public void CloseKeepsTheLayerAndIgnoresLaterSnapshots()
+        {
+            var baseStore = new FakeReadOnlyStore();
+            var sink = MakeSink(baseStore, out var layer);
+            sink.SetOverrides(OverrideLayerTest.FlagsOnly(new FeatureFlagBuilder("flag1").Version(1).Build()));
+            Assert.Equal(new[] { "flag1" }, TakeNotified());
+
+            sink.Close();
+            Assert.NotNull(layer.Get(DataModel.Features, "flag1"));
+            Assert.Empty(TakeNotified());
+
+            // A snapshot after closing changes nothing.
+            sink.SetOverrides(OverrideLayerTest.FlagsOnly(new FeatureFlagBuilder("flag2").Version(1).Build()));
+            Assert.NotNull(layer.Get(DataModel.Features, "flag1"));
+            Assert.Null(layer.Get(DataModel.Features, "flag2"));
+            Assert.Empty(TakeNotified());
+        }
+
+        [Fact]
+        public void CloseAndClearClearsTheLayerAndIgnoresLaterSnapshots()
         {
             var baseStore = new FakeReadOnlyStore();
             var sink = MakeSink(baseStore, out var layer);
@@ -74,7 +93,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             Assert.Equal(new[] { "flag1" }, TakeNotified());
 
             // Closing removes what the source supplied, and the removal is a change.
-            sink.Close();
+            sink.CloseAndClear();
             Assert.True(layer.IsEmpty);
             Assert.Equal(new[] { "flag1" }, TakeNotified());
 

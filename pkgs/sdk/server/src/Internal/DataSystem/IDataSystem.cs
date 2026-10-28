@@ -28,10 +28,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         bool Initialized { get; }
 
         /// <summary>
-        /// True if the data system was built with an override source. When true, the store applies the
-        /// override layer, and the client consults it before its not-initialized short-circuit.
+        /// The override layer's entries of the kind, without LaunchDarkly data. Empty when no override
+        /// source is configured or the layer holds none.
         /// </summary>
-        bool OverridesConfigured { get; }
+        DataStoreTypes.KeyedItems<DataStoreTypes.ItemDescriptor> GetOverrides(DataStoreTypes.DataKind kind);
 
         /// <summary>
         /// True if the override layer holds an entry of the kind with the key. Always false when no

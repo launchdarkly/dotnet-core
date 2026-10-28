@@ -44,9 +44,12 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// </para>
         /// <para>
         /// The SDK calls this method at most once, before any call to <see cref="IDisposable.Dispose"/>.
-        /// An exception thrown from it does not prevent the client from starting: the SDK logs the
-        /// exception, disposes the source, and the client runs without overrides. A source that cannot
-        /// load its data should log that and retry rather than throw, as the SDK's file-based source does.
+        /// This method is not intended to fail. A source that cannot load its data logs the failure and
+        /// keeps retrying, as the SDK's file-based source does. A configuration error belongs in the
+        /// <see cref="IComponentConfigurer{T}.Build(LdClientContext)"/> that builds the source, where it
+        /// is reported when the client is created. If this method does throw, the client still starts:
+        /// the SDK logs the exception, disposes the source, removes any snapshot the source supplied, and
+        /// the client runs without overrides.
         /// </para>
         /// </remarks>
         /// <param name="sink">receives the override snapshots</param>

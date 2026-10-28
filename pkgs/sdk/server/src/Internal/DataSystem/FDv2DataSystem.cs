@@ -176,7 +176,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             IOverrideSource overrideSource = null;
             OverrideLayer overrideLayer = null;
             OverrideSink overrideSink = null;
-            if (dataSystemConfiguration.OverrideSource != null && !configuration.Offline)
+            if (dataSystemConfiguration.OverrideSource != null && configuration.Offline)
+            {
+                // The source is not built or started offline, so its overrides are not served and a
+                // configuration error in it is not reported. The warning makes that visible.
+                logger.SubLogger(LogNames.OverridesSubLog).Warn(
+                    "Offline mode is enabled; the override source is not started and no overrides are served");
+            }
+            else if (dataSystemConfiguration.OverrideSource != null)
             {
                 // A configuration error in the source is reported like any other invalid component
                 // configuration: the exception propagates out of the client constructor. The

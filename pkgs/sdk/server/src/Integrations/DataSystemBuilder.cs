@@ -118,6 +118,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// or data source status. Configuring it changes nothing until the source actually supplies an
         /// override. At most one override source can be configured. A later call replaces the earlier one.
         /// </para>
+        /// <para>
+        /// When the client is offline, the source is not built or started: no overrides are served, and a
+        /// configuration error in the source is not reported. The SDK logs a warning instead.
+        /// </para>
         /// <example>
         /// <code>
         /// var config = Configuration.Builder("my-sdk-key")

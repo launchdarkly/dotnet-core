@@ -464,6 +464,18 @@ namespace LaunchDarkly.Sdk.Server
             {
                 Assert.False(source.Started);
                 Assert.False(client.BoolVariation("overridden-flag", context, false));
+                AssertLogMessageRegex(true, LogLevel.Warn,
+                    "Offline mode is enabled; the override source is not started and no overrides are served");
+            }
+        }
+
+        [Fact]
+        public void OfflineClientWithoutAnOverrideSourceLogsNoOverridesWarning()
+        {
+            var config = BasicConfig().Offline(true).DataSystem(Components.DataSystem().Custom()).Build();
+            using (var client = new LdClient(config))
+            {
+                AssertLogMessageRegex(false, LogLevel.Warn, "override source");
             }
         }
 

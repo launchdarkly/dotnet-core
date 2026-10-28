@@ -44,7 +44,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// files change. The files use the same document format as <see cref="FileData"/>: a JSON object with
         /// optional <c>flags</c>, <c>flagValues</c>, and <c>segments</c> properties. A <c>flagValues</c>
         /// entry is expanded into a full flag definition that is on and serves the given value as its
-        /// fallthrough for every context. A flag or segment is listed under its key: a <c>key</c> property
+        /// fallthrough for every context. Such a flag is not available to client-side SDKs, so
+        /// <see cref="LdClient.AllFlagsState"/> with <see cref="FlagsStateOption.ClientSideOnly"/> leaves it
+        /// out, even when the flag it overrides is available to them. To override such a flag, define it
+        /// in <c>flags</c> with <c>"clientSide": true</c>. A flag or segment is listed under its key: a <c>key</c> property
         /// inside the definition is optional and must be equal to it, and a <c>version</c> property is
         /// optional. The parser for a file is chosen by the file's extension. A file whose extension has a
         /// parser registered with <see cref="FileOverrideSourceBuilder.Parser(string, System.Func{string, object})"/>,

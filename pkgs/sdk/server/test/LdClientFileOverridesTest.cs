@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using LaunchDarkly.Sdk.Server.Integrations;
 using Xunit;
@@ -96,6 +97,32 @@ namespace LaunchDarkly.Sdk.Server
                 var detail = client.StringVariationDetail("overridden-flag", context, "default");
                 Assert.Equal("override-value", detail.Value);
                 Assert.True(detail.Reason.OverrideAffected);
+            }
+        }
+
+        [Fact]
+        public void ClientSideAllFlagsStateKeepsADefinitionWithClientSideButNotAFlagValuesEntry()
+        {
+            // A flagValues entry is not available to client-side SDKs. A full definition that sets
+            // clientSide is, so that is how an operator overrides a flag that client-side SDKs use.
+            var path = _dir.PathOf("overrides.json");
+            File.WriteAllText(path, @"{""flagValues"": {""value-flag"": true},
+                ""flags"": {""full-flag"": {""on"": true, ""variations"": [true],
+                ""fallthrough"": {""variation"": 0}, ""clientSide"": true}}}");
+
+            var config = BasicConfig()
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceThatNeverStarts())
+                    .Overrides(FileOverrides.Source().FilePaths(path)))
+                .Build();
+            using (var client = new LdClient(config))
+            {
+                var all = client.AllFlagsState(context).ToValuesJsonMap();
+                Assert.Equal(new[] { "full-flag", "value-flag" }, all.Keys.OrderBy(k => k));
+
+                var clientSide = client.AllFlagsState(context, FlagsStateOption.ClientSideOnly);
+                Assert.True(clientSide.Valid);
+                Assert.Equal(new[] { "full-flag" }, clientSide.ToValuesJsonMap().Keys);
             }
         }
 

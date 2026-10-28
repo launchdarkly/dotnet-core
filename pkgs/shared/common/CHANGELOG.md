@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.CommonSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [7.3.0-alpha](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.2.0...LaunchDarkly.CommonSdk-v7.3.0-alpha) (2026-10-28)
+
+
+### Features
+
+* Add the overrideAffected indicator to EvaluationReason ([#362](https://github.com/launchdarkly/dotnet-core/issues/362)) ([f5768a9](https://github.com/launchdarkly/dotnet-core/commit/f5768a9e4f07466d0471ce086a6e79c689c64bc4))
+
 ## [7.2.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.CommonSdk-v7.1.1...LaunchDarkly.CommonSdk-v7.2.0) (2026-04-08)
 
 

@@ -46,9 +46,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private readonly FileDataReloader _reloader;
 
         // Guards the watcher and the disposed flag, so that a Start that races Dispose cannot
-        // leave a watcher running.
+        // leave a watcher running. It is never held while the watcher is being set up.
         private readonly object _lock = new object();
-        private FileDataWatcher _watcher;
+        private IDisposable _watcher;
+        // Set while a Start is setting up the watcher, so that a concurrent Start does not set up
+        // a second one.
+        private bool _watcherStarting;
         // Set when the watcher could not be constructed, so that the failure is logged once and not
         // on every Start.
         private bool _watcherFailed;
@@ -129,9 +132,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
         public bool Initialized => _loadedValidData;
 
+        // Creates the change watcher. Tests replace it to control how long setting up the watcher
+        // takes.
+        internal Func<IDisposable> WatcherFactory { get; set; }
+
         public void Dispose()
         {
-            FileDataWatcher watcher;
+            IDisposable watcher;
             lock (_lock)
             {
                 if (_disposed)
@@ -159,23 +166,49 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         // change made during the load is not lost. A directory that cannot be watched yet is the
         // watcher's own business; only a failure to construct it lands here, and the data source
         // then runs without change detection, as it always has.
+        //
+        // Setting up the watcher examines the files and watches their directories, which can block
+        // on a hung path, so it runs outside the lock: Dispose must never wait for it. A watcher that
+        // finishes setting up after Dispose is disposed at once.
         private void EnsureWatcher()
         {
             lock (_lock)
             {
-                if (_disposed || _watcher != null || _watcherFailed)
+                if (_disposed || _watcher != null || _watcherFailed || _watcherStarting)
                 {
                     return;
                 }
-                try
-                {
-                    _watcher = new FileDataWatcher(_paths, OnChangeDetected, _logger);
-                }
-                catch (Exception e)
+                _watcherStarting = true;
+            }
+            IDisposable watcher = null;
+            try
+            {
+                watcher = WatcherFactory != null
+                    ? WatcherFactory()
+                    : new FileDataWatcher(_paths, OnChangeDetected, _logger);
+            }
+            catch (Exception e)
+            {
+                LogHelpers.LogException(_logger, "Unable to watch files for auto-updating", e);
+            }
+            bool disposedDuringSetup;
+            lock (_lock)
+            {
+                _watcherStarting = false;
+                if (watcher == null)
                 {
                     _watcherFailed = true;
-                    LogHelpers.LogException(_logger, "Unable to watch files for auto-updating", e);
+                    return;
                 }
+                disposedDuringSetup = _disposed;
+                if (!disposedDuringSetup)
+                {
+                    _watcher = watcher;
+                }
+            }
+            if (disposedDuringSetup)
+            {
+                watcher.Dispose();
             }
         }
 

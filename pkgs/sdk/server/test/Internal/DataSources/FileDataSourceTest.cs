@@ -156,6 +156,44 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         }
 
         [Fact]
+        public void DisposeDoesNotWaitForTheWatcherToBeSetUp()
+        {
+            // Setting up the watcher can block on a hung path. Dispose returns without waiting for
+            // it, and the watcher that finishes setting up afterward is disposed.
+            using (var file = TempFile.Create())
+            {
+                file.SetContent(@"{""flagValues"":{""flag1"":""a""}}");
+                factory.FilePaths(file.Path).AutoUpdate(true);
+                var source = (FileDataSource)MakeDataSource();
+                var setupEntered = new ManualResetEventSlim();
+                var releaseSetup = new ManualResetEventSlim();
+                var lateWatcher = new DisposalTracker();
+                source.WatcherFactory = () =>
+                {
+                    setupEntered.Set();
+                    releaseSetup.Wait();
+                    return lateWatcher;
+                };
+
+                var start = System.Threading.Tasks.Task.Run(() => source.Start());
+                Assert.True(setupEntered.Wait(TimeSpan.FromSeconds(5)), "the watcher setup did not start");
+                var dispose = System.Threading.Tasks.Task.Run(() => source.Dispose());
+                var disposedInTime = dispose.Wait(TimeSpan.FromSeconds(2));
+                releaseSetup.Set();
+
+                Assert.True(disposedInTime, "Dispose waited for the watcher to be set up");
+                Assert.True(start.Wait(TimeSpan.FromSeconds(5)));
+                Assert.True(lateWatcher.Disposed);
+            }
+        }
+
+        private sealed class DisposalTracker : IDisposable
+        {
+            public volatile bool Disposed;
+            public void Dispose() => Disposed = true;
+        }
+
+        [Fact]
         public void ModifiedFileIsReloadedIfAutoUpdateIsOn()
         {
             using (var file = TempFile.Create())

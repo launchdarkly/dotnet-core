@@ -431,7 +431,16 @@ namespace LaunchDarkly.Sdk.Server
                 catch (Exception e)
                 {
                     LogHelpers.LogException(_log, "Exception while retrieving flags for AllFlagsState", e);
-                    return new FeatureFlagsState(false);
+                    // Overrides only add to the state. Without them the state is invalid and empty
+                    // here, so it holds the override layer's flags and stays invalid. A client-side
+                    // SDK bootstrapped from the state uses its flags whatever its validity says, so
+                    // the overridden values still reach it.
+                    flags = _dataSystem.GetOverrides(DataModel.Features);
+                    if (!flags.Items.Any())
+                    {
+                        return new FeatureFlagsState(false);
+                    }
+                    builder.Valid(false);
                 }
             }
             foreach (var pair in flags.Items)

@@ -306,23 +306,47 @@ namespace LaunchDarkly.Sdk.Server
             }
         }
 
-        [Fact]
-        public void AllFlagsStateIsInvalidWhenTheStoreFailsEvenWithOverrides()
+        // A daemon-mode client, initialized, whose store fails to list its flags.
+        private LdClient MakeClientWithAFailingStore(TestOverrideSource source)
         {
-            // A daemon-mode client whose store cannot list its flags reports an invalid state and
-            // logs the failure, as it does without a source, rather than a valid state that holds
-            // only the overrides.
             var store = new FixedDataStore(FullDataSet<ItemDescriptor>.Empty(), initialized: true)
             {
                 GetAllError = new InvalidOperationException("store failed")
             };
-            var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of(true))));
             var config = BasicConfig()
                 .DataSystem(Components.DataSystem().Daemon(store.AsSingletonFactory<IDataStore>()).Overrides(source))
                 .Build();
-            using (var client = new LdClient(config))
+            var client = new LdClient(config);
+            Assert.True(client.Initialized);
+            return client;
+        }
+
+        [Fact]
+        public void AllFlagsStateHoldsTheOverridesAndIsInvalidWhenTheStoreFails()
+        {
+            // Without a source the state is invalid and empty. Overrides only add to it: the state
+            // holds the overridden flags, stays invalid, and the failure is logged.
+            var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of(true))));
+            using (var client = MakeClientWithAFailingStore(source))
             {
-                Assert.True(client.Initialized);
+                var state = client.AllFlagsState(context, FlagsStateOption.WithReasons);
+                Assert.False(state.Valid);
+                Assert.Equal(LdValue.Of(true), state.ToValuesJsonMap()["overridden-flag"]);
+                Assert.Single(state.ToValuesJsonMap());
+                Assert.True(state.GetFlagReason("overridden-flag").Value.OverrideAffected);
+                // The bootstrap payload a client-side SDK receives.
+                var json = LdValue.Parse(LdJsonSerialization.SerializeObject(state));
+                Assert.Equal(LdValue.Of(false), json.Get("$valid"));
+                Assert.Equal(LdValue.Of(true), json.Get("overridden-flag"));
+                AssertLogMessageRegex(true, LogLevel.Error, "Exception while retrieving flags for AllFlagsState.*store failed");
+            }
+        }
+
+        [Fact]
+        public void AllFlagsStateIsInvalidAndEmptyWhenTheStoreFailsAndTheLayerHoldsNoFlags()
+        {
+            using (var client = MakeClientWithAFailingStore(new TestOverrideSource()))
+            {
                 var state = client.AllFlagsState(context);
                 Assert.False(state.Valid);
                 Assert.Empty(state.ToValuesJsonMap());

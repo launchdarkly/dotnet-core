@@ -24,8 +24,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void EachContextGetsItsOwnSummaryWithTheContextAttached()
         {
             var summarizer = new PerContextEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA);
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB, false);
 
             var summaries = summarizer.GetSummariesAndReset();
 
@@ -42,8 +42,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
             var contextA2 = Context.New(ContextKind.Of("user"), "a");
 
             var summarizer = new PerContextEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, contextA1);
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, contextA2);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, contextA1, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, contextA2, false);
 
             var summaries = summarizer.GetSummariesAndReset();
 
@@ -60,8 +60,8 @@ namespace LaunchDarkly.Sdk.Internal.Events
             var withName = Context.Builder("a").Kind("user").Name("Pat").Build();
 
             var summarizer = new PerContextEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, plain);
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, withName);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, plain, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("v"), LdValue.Null, withName, false);
 
             var summaries = summarizer.GetSummariesAndReset();
 
@@ -72,9 +72,9 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void CountersAreAccumulatedPerContext()
         {
             var summarizer = new PerContextEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA);
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA);
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB, false);
 
             var summaries = summarizer.GetSummariesAndReset();
 
@@ -83,10 +83,31 @@ namespace LaunchDarkly.Sdk.Internal.Events
         }
 
         [Fact]
+        public void OverrideAffectedEvaluationsKeepTheirOwnCounterInEachContextSummary()
+        {
+            // The marker reaches each context's summary: within a context, marked evaluations are
+            // counted apart from unmarked ones for the same flag, variation, and version.
+            var summarizer = new PerContextEventSummarizer();
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, true);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, true);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB, true);
+
+            var summaries = summarizer.GetSummariesAndReset();
+            var countersA = SummaryFor(summaries, ContextA).Flags["flag"].Counters;
+            Assert.Equal(2, countersA.Count);
+            Assert.Equal(2, countersA[new EventsCounterKey(1, 0, true)].Count);
+            Assert.Equal(1, countersA[new EventsCounterKey(1, 0, false)].Count);
+            var countersB = SummaryFor(summaries, ContextB).Flags["flag"].Counters;
+            Assert.Single(countersB);
+            Assert.Equal(1, countersB[new EventsCounterKey(1, 0, true)].Count);
+        }
+
+        [Fact]
         public void GetSummariesAndResetClearsState()
         {
             var summarizer = new PerContextEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
 
             Assert.Single(summarizer.GetSummariesAndReset());
             Assert.Empty(summarizer.GetSummariesAndReset());
@@ -96,7 +117,7 @@ namespace LaunchDarkly.Sdk.Internal.Events
         public void ClearDiscardsAccumulatedData()
         {
             var summarizer = new PerContextEventSummarizer();
-            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
 
             summarizer.Clear();
 

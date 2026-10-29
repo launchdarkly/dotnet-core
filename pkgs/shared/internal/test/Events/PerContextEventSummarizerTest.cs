@@ -83,6 +83,27 @@ namespace LaunchDarkly.Sdk.Internal.Events
         }
 
         [Fact]
+        public void OverrideAffectedEvaluationsKeepTheirOwnCounterInEachContextSummary()
+        {
+            // The marker reaches each context's summary: within a context, marked evaluations are
+            // counted apart from unmarked ones for the same flag, variation, and version.
+            var summarizer = new PerContextEventSummarizer();
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, true);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, true);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("b"), LdValue.Null, ContextB, true);
+
+            var summaries = summarizer.GetSummariesAndReset();
+            var countersA = SummaryFor(summaries, ContextA).Flags["flag"].Counters;
+            Assert.Equal(2, countersA.Count);
+            Assert.Equal(2, countersA[new EventsCounterKey(1, 0, true)].Count);
+            Assert.Equal(1, countersA[new EventsCounterKey(1, 0, false)].Count);
+            var countersB = SummaryFor(summaries, ContextB).Flags["flag"].Counters;
+            Assert.Single(countersB);
+            Assert.Equal(1, countersB[new EventsCounterKey(1, 0, true)].Count);
+        }
+
+        [Fact]
         public void GetSummariesAndResetClearsState()
         {
             var summarizer = new PerContextEventSummarizer();

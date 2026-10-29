@@ -32,6 +32,22 @@ namespace LaunchDarkly.Sdk.Internal.Events
         }
 
         [Fact]
+        public void OverrideAffectedEvaluationsKeepTheirOwnCounter()
+        {
+            // The marker reaches the aggregated summary: marked evaluations are counted apart from
+            // unmarked ones for the same flag, variation, and version, across contexts.
+            var summarizer = new AggregatedEventSummarizer();
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, true);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextB, true);
+            summarizer.SummarizeEvent(Time, "flag", 1, 0, LdValue.Of("a"), LdValue.Null, ContextA, false);
+
+            var counters = Assert.Single(summarizer.GetSummariesAndReset()).Flags["flag"].Counters;
+            Assert.Equal(2, counters.Count);
+            Assert.Equal(2, counters[new EventsCounterKey(1, 0, true)].Count);
+            Assert.Equal(1, counters[new EventsCounterKey(1, 0, false)].Count);
+        }
+
+        [Fact]
         public void GetSummariesAndResetClearsState()
         {
             var summarizer = new AggregatedEventSummarizer();

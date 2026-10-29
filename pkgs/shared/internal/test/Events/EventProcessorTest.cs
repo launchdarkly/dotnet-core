@@ -227,9 +227,13 @@ namespace LaunchDarkly.Sdk.Internal.Events
                 RecordEval(ep, BasicFlagWithTracking, eval);
                 FlushAndWait(ep, captured);
 
+                // The prerequisite record produces no individual event, and its summary counter
+                // carries the marker.
                 Assert.Collection(captured.Events,
                     item => CheckIndexEvent(item, BasicEval.Timestamp, _contextJson),
-                    item => CheckSummaryEvent(item));
+                    item => CheckSummaryEventDetails(item, BasicEval.Timestamp, BasicEval.Timestamp,
+                        MustHaveFlagSummary(BasicFlag.Key, LdValue.Null,
+                            MustHaveFlagSummaryCounter(BasicEval.Value, BasicEval.Variation, BasicFlag.Version, 1, true))));
             }
         }
 
@@ -248,9 +252,13 @@ namespace LaunchDarkly.Sdk.Internal.Events
                 RecordEval(ep, flag, eval);
                 FlushAndWait(ep, captured);
 
+                // The flag requests debug events, but the evaluation produces none, and its summary
+                // counter carries the marker.
                 Assert.Collection(captured.Events,
                     item => CheckIndexEvent(item, BasicEval.Timestamp, _contextJson),
-                    item => CheckSummaryEvent(item));
+                    item => CheckSummaryEventDetails(item, BasicEval.Timestamp, BasicEval.Timestamp,
+                        MustHaveFlagSummary(BasicFlag.Key, LdValue.Null,
+                            MustHaveFlagSummaryCounter(BasicEval.Value, BasicEval.Variation, BasicFlag.Version, 1, true))));
             }
         }
 

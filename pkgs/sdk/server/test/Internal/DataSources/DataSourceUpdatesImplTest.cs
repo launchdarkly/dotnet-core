@@ -7,6 +7,7 @@ using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using LaunchDarkly.Sdk.Server.Internal.DataStores;
 using LaunchDarkly.Sdk.Server.Internal.Model;
+using LaunchDarkly.Sdk.Server.Internal.Overrides;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.TestHelpers;
 using Xunit;
@@ -879,6 +880,33 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
 
             statuses.ExpectNoValue();
             Assert.Equal(DataSourceState.Off, updates.LastStatus.State);
+        }
+    
+        [Fact]
+        public void SendsEventsToOverridesThatDependOnAnUpdatedItem()
+        {
+            // The override "overridden" matches the LaunchDarkly segment "segment1". The LaunchDarkly flag
+            // "parent" has "overridden" as a prerequisite, so a change to the segment reaches parent through
+            // the override entry: LaunchDarkly data -> override entry -> LaunchDarkly data.
+            var overridden = new FeatureFlagBuilder("overridden").Version(1).On(true)
+                .Rules(new RuleBuilder().Id("rule").Variation(0).Clauses(ClauseBuilder.ShouldMatchSegment("segment1")).Build())
+                .Build();
+            var layer = new OverrideLayer();
+            layer.SetAll(OverrideLayerTest.FlagsOnly(overridden), out _, out _);
+            var updates = MakeInstance();
+            updates.SetExternalDependencies(layer);
+            var parent = new FeatureFlagBuilder("parent").Version(1).Prerequisites(new Prerequisite("overridden", 0)).Build();
+            var segmentV1 = new SegmentBuilder("segment1").Version(1).Build();
+            updates.Init(new DataSetBuilder().Flags(parent).Segments(segmentV1).Build());
+
+            var eventSink = new EventSink<FlagChangeEvent>();
+            updates.FlagChanged += eventSink.Add;
+            updates.Upsert(DataModel.Segments, "segment1", DescriptorOf(new SegmentBuilder("segment1").Version(2).Build()));
+            ExpectFlagChangeEvents(eventSink, "overridden", "parent");
+
+            // An item nothing references notifies no flag.
+            updates.Upsert(DataModel.Segments, "other", DescriptorOf(new SegmentBuilder("other").Version(1).Build()));
+            eventSink.ExpectNoValue(TimeSpan.FromMilliseconds(100));
         }
     }
 }

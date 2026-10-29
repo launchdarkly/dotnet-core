@@ -305,6 +305,72 @@ namespace LaunchDarkly.Sdk.Server
         }
     }
 
+    /// <summary>
+    /// An override source for tests. It supplies its initial data when started and forwards any later
+    /// snapshot to the sink.
+    /// </summary>
+    public sealed class TestOverrideSource : IOverrideSource, IComponentConfigurer<IOverrideSource>
+    {
+        private readonly object _lock = new object();
+        private IOverrideSink _sink;
+        private FullDataSet<ItemDescriptor> _data;
+
+        public volatile bool Started;
+        public volatile bool Disposed;
+        public volatile bool StartedBeforeBuildReturned;
+        // When set, Start throws it instead of supplying data.
+        public volatile Exception StartError;
+        // When set with StartError, Start supplies the data to the sink and then throws.
+        public volatile bool SupplyDataBeforeStartError;
+        // When set, Dispose throws it after recording the disposal.
+        public volatile Exception DisposeError;
+
+        public TestOverrideSource() : this(FullDataSet<ItemDescriptor>.Empty()) { }
+
+        public TestOverrideSource(FullDataSet<ItemDescriptor> initialData)
+        {
+            _data = initialData;
+        }
+
+        public void Start(IOverrideSink sink)
+        {
+            lock (_lock)
+            {
+                if (StartError != null)
+                {
+                    if (SupplyDataBeforeStartError)
+                    {
+                        sink.SetOverrides(_data);
+                    }
+                    throw StartError;
+                }
+                Started = true;
+                _sink = sink;
+                sink.SetOverrides(_data);
+            }
+        }
+
+        public void SetOverrides(FullDataSet<ItemDescriptor> data)
+        {
+            lock (_lock)
+            {
+                _data = data;
+                _sink?.SetOverrides(data);
+            }
+        }
+
+        public void Dispose()
+        {
+            Disposed = true;
+            if (DisposeError != null)
+            {
+                throw DisposeError;
+            }
+        }
+
+        public IOverrideSource Build(LdClientContext context) => this;
+    }
+
     public sealed class MockBigSegmentStore : IBigSegmentStore
     {
         private static readonly object _lock = new object();
@@ -410,6 +476,7 @@ namespace LaunchDarkly.Sdk.Server
     public class MockEventProcessor : IEventProcessor
     {
         public List<object> Events = new List<object>();
+        public volatile bool Disposed;
 
         public void SetOffline(bool offline) { }
 
@@ -417,7 +484,7 @@ namespace LaunchDarkly.Sdk.Server
 
         public bool FlushAndWait(TimeSpan timeout) => true;
 
-        public void Dispose() { }
+        public void Dispose() => Disposed = true;
 
         public void RecordEvaluationEvent(EventProcessorTypes.EvaluationEvent e) =>
             Events.Add(e);

@@ -1,5 +1,18 @@
 # Changelog
 
+## [9.0.0-alpha.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v9.0.0-alpha.0...LaunchDarkly.ServerSdk-v9.0.0-alpha.1) (2026-10-29)
+
+
+### Features
+
+* Add a shared file data reloader, poller, and watcher ([#361](https://github.com/launchdarkly/dotnet-core/issues/361)) ([4eed241](https://github.com/launchdarkly/dotnet-core/commit/4eed241e65b9be9c1b2211f5e0ea80950683dfcc))
+* Add the file-based override source ([#367](https://github.com/launchdarkly/dotnet-core/issues/367)) ([b834131](https://github.com/launchdarkly/dotnet-core/commit/b83413173f3362a7d422948061135e87fbb035cb))
+* Add the override marker to the flag and segment models and mark evaluations ([#363](https://github.com/launchdarkly/dotnet-core/issues/363)) ([21f666a](https://github.com/launchdarkly/dotnet-core/commit/21f666a0610b3fcf55e3aee91a70e7a05ff146a0))
+* Add the override store, overlay, source interfaces, and data system wiring ([#364](https://github.com/launchdarkly/dotnet-core/issues/364)) ([e1748a1](https://github.com/launchdarkly/dotnet-core/commit/e1748a1b6fcaee7f27c9d2ffffebafa29d31a2c3))
+* Mark evaluation events as override-affected ([#366](https://github.com/launchdarkly/dotnet-core/issues/366)) ([7c873a0](https://github.com/launchdarkly/dotnet-core/commit/7c873a02b22ac98e5fc9701eb0117687dc9ae93b))
+* Split summary counters by overrideAffected and suppress individual events for marked evaluations ([#365](https://github.com/launchdarkly/dotnet-core/issues/365)) ([c9b327b](https://github.com/launchdarkly/dotnet-core/commit/c9b327b5ebcf973398e361deeb4118da0bd24dac))
+* Support the flag-overrides capability in the contract test service ([#368](https://github.com/launchdarkly/dotnet-core/issues/368)) ([b80d6aa](https://github.com/launchdarkly/dotnet-core/commit/b80d6aa1572768d5dccf2cb82043c59dd1caa5c9))
+
 ## [8.17.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.1...LaunchDarkly.ServerSdk-v8.17.2) (2026-10-05)
 
 

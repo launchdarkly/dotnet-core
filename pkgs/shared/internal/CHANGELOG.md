@@ -2,6 +2,13 @@
 
 All notable changes to `LaunchDarkly.InternalSdk` will be documented in this file. For full release notes for the projects that depend on this project, see their respective changelogs. This file describes changes only to the common code. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.12.0-alpha](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.11.1...LaunchDarkly.InternalSdk-v3.12.0-alpha) (2026-10-29)
+
+
+### Features
+
+* Split summary counters by overrideAffected and suppress individual events for marked evaluations ([#365](https://github.com/launchdarkly/dotnet-core/issues/365)) ([c9b327b](https://github.com/launchdarkly/dotnet-core/commit/c9b327b5ebcf973398e361deeb4118da0bd24dac))
+
 ## [3.11.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.InternalSdk-v3.11.0...LaunchDarkly.InternalSdk-v3.11.1) (2026-09-30)
 
 

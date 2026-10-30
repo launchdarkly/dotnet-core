@@ -686,13 +686,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         }
 
         [Fact]
-        public void ExportAllData_AfterPartialChangeSetToBePersistedOnDataNotToBe_IsNotToBePersisted()
+        public void ExportAllData_AfterPartialChangeSetToBePersistedOnDataNotToBe_IsToBePersisted()
         {
-            // The store still holds the data of the full change set, which must not be persisted.
+            // The store tracks the most recent indicator, as the transactional persistent store spec
+            // (requirement 1.4.3.2) describes, not one per item.
             TypedStore.Apply(MakeChangeSet(ChangeSetType.Full, "key1", 1, false));
             TypedStore.Apply(MakeChangeSet(ChangeSetType.Partial, "key2", 2, true));
 
-            Assert.False(TypedStore.ExportAll().ShouldPersist);
+            Assert.True(TypedStore.ExportAll().ShouldPersist);
         }
 
         #endregion

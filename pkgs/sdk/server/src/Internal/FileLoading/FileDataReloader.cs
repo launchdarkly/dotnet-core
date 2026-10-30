@@ -38,6 +38,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         internal bool SkipMissingPaths { get; set; }
 
         /// <summary>
+        /// When true, a configured path whose directory does not exist fails the reload even when
+        /// SkipMissingPaths is set, which then only skips a file that is missing from a directory
+        /// that exists. A directory that disappears keeps the last good data in place instead of
+        /// applying the files that remain. Ignored when SkipMissingPaths is false.
+        /// </summary>
+        internal bool FailOnMissingDirectory { get; set; }
+
+        /// <summary>
         /// Receives log output about reloads and failures.
         /// </summary>
         internal Logger Logger { get; set; }
@@ -72,6 +80,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// change notification arrives. If false, a failed reload waits for the next trigger.
         /// </summary>
         internal bool RetryOnFailure { get; set; } = true;
+
+        /// <summary>
+        /// The number of consecutive failed load attempts after which the reloader gives up
+        /// retrying until the next Trigger or ReloadNow call. A reload that is not a retry starts
+        /// a new run of attempts and is counted as the first; a success ends the run. When the
+        /// bound is reached, no retry is armed and one error is logged. Zero, the default, means
+        /// no bound: a failing load is retried until it succeeds. The bound has an effect only
+        /// when RetryOnFailure is true.
+        /// </summary>
+        internal int MaxLoadAttempts { get; set; }
 
         /// <summary>
         /// If true, the Apply call is skipped when every file's presence and raw content are
@@ -139,7 +157,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// <summary>
     /// Owns the reload cycle for a set of data files. It serializes reloads, debounces change
     /// signals, retains the last good result on failure by not calling Apply, retries after
-    /// failures, and skips no-op applications.
+    /// failures up to an optional bound, and skips no-op applications.
     /// </summary>
     internal sealed class FileDataReloader : IDisposable
     {
@@ -153,6 +171,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private readonly object _reloadLock = new object();
         private byte[] _lastGoodHash; // only touched inside _reloadLock
         private string _lastErrorMessage; // only touched inside _reloadLock
+        private int _failedAttempts; // only touched inside _reloadLock
 
         // Guards the timers. The timers are created on first use so that a reloader that is never
         // used holds no scheduled work.
@@ -192,7 +211,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <summary>
         /// Synchronously loads the files and applies the result, or reports the failure. Use it
         /// for the initial load. A failure here arms the same automatic retry as a failed
-        /// triggered reload, and a success disarms a pending retry.
+        /// triggered reload.
         /// </summary>
         internal void ReloadNow()
         {
@@ -200,12 +219,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 return;
             }
-            if (Reload())
-            {
-                // A retry armed by an earlier failure is redundant after this success.
-                DisarmRetry();
-            }
-            else
+            // A success does not disarm a pending retry. The reload lock is released when the load
+            // ends, so a disarm here could cancel a retry that a later failed load on another thread
+            // armed. A retry that is left over from an earlier failure does no work: Reload skips a
+            // retry when nothing has failed since the last success.
+            if (Reload(isRetry: false) == LoadOutcome.Failed)
             {
                 // An already armed retry keeps its earlier deadline.
                 ArmRetry(keepExistingDeadline: true);
@@ -375,7 +393,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // A pending retry is superseded by this reload. It either succeeds, or it fails and
             // arms a fresh retry.
             DisarmRetry();
-            if (!Reload())
+            if (Reload(isRetry) == LoadOutcome.Failed)
             {
                 ArmRetry(keepExistingDeadline: false);
             }
@@ -415,32 +433,55 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
         }
 
-        // Performs one full load of all configured files. Returns true if the load succeeded, which
-        // decides whether a retry gets armed. A skipped no-op application counts as success. The
-        // whole set is re-read on every reload: entries are combined across files in order, so a
-        // change to one file can alter which file wins for a key.
-        private bool Reload()
+        // What one load did, which decides what happens to the retry: a failure arms it, and a
+        // success or giving up arms nothing.
+        private enum LoadOutcome
+        {
+            Succeeded,
+            Failed,
+            GaveUp
+        }
+
+        // Performs one full load of all configured files. A skipped no-op application counts as
+        // success. The whole set is re-read on every reload: entries are combined across files in
+        // order, so a change to one file can alter which file wins for a key.
+        private LoadOutcome Reload(bool isRetry)
         {
             lock (_reloadLock)
             {
                 // A trigger already queued when Dispose was called can still reach here.
                 if (_disposed)
                 {
-                    return true;
+                    return LoadOutcome.Succeeded;
+                }
+                if (!isRetry)
+                {
+                    // A load that is not a retry starts a new run of attempts with a fresh budget.
+                    _failedAttempts = 0;
+                }
+                else if (_failedAttempts == 0)
+                {
+                    // The retry is stale: a load succeeded after the failure that armed it. Its
+                    // timer fired while that load was running, or the load was a ReloadNow, which
+                    // does not disarm the retry. Nothing has failed since, so there is nothing to
+                    // retry, and applying the same data again would be a spurious change for a
+                    // consumer that stamps each application with a version.
+                    return LoadOutcome.Succeeded;
                 }
 
                 var documents = new List<FileDataDocument>(_config.Paths.Count);
                 var files = new List<FileDataFileSummary>(_config.Paths.Count);
                 using (var hasher = _config.SkipUnchanged ? SHA256.Create() : null)
                 {
-                    return Reload(documents, files, hasher);
+                    return Reload(documents, files, hasher, isRetry);
                 }
             }
         }
 
         // The body of Reload, inside _reloadLock. The hasher is null when unchanged content is not
         // skipped.
-        private bool Reload(List<FileDataDocument> documents, List<FileDataFileSummary> files, SHA256 hasher)
+        private LoadOutcome Reload(List<FileDataDocument> documents, List<FileDataFileSummary> files, SHA256 hasher,
+            bool isRetry)
         {
             foreach (var path in _config.Paths)
             {
@@ -456,7 +497,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     AppendToHash(hasher, path, null);
                     continue;
                 }
-                catch (DirectoryNotFoundException) when (_config.SkipMissingPaths)
+                catch (DirectoryNotFoundException) when (_config.SkipMissingPaths &&
+                    !_config.FailOnMissingDirectory)
                 {
                     _log.Debug("File {0} does not exist; it contributes no data", path);
                     files.Add(new FileDataFileSummary(path, false, 0, 0));
@@ -465,7 +507,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 }
                 catch (Exception e)
                 {
-                    return Fail(new FileDataReadException(path, "unable to read file: " + e.Message, e));
+                    return Fail(new FileDataReadException(path, "unable to read file: " + e.Message, e), isRetry);
                 }
                 // One read feeds both the hash and the parse, so the skip-unchanged hash can never
                 // disagree with the content that was actually applied.
@@ -477,7 +519,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 }
                 catch (Exception e)
                 {
-                    return Fail(new FileDataReadException(path, "error parsing file: " + e.Message, e));
+                    return Fail(new FileDataReadException(path, "error parsing file: " + e.Message, e), isRetry);
                 }
                 documents.Add(document);
                 files.Add(new FileDataFileSummary(path, true, 0, 0));
@@ -490,13 +532,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             catch (FileDataException e)
             {
-                return Fail(e);
+                return Fail(e, isRetry);
             }
             catch (Exception e)
             {
                 // The flag value expander is supplied by the consumer. Its failure is a failure
                 // to process the files, like a merge failure.
-                return Fail(new FileDataException("error expanding flag values: " + e.Message, e));
+                return Fail(new FileDataException("error expanding flag values: " + e.Message, e), isRetry);
             }
 
             // Documents are the present files in order. Copy their counts onto the file summaries.
@@ -521,7 +563,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // deliver just after Dispose returns.
             if (_disposed)
             {
-                return true;
+                return LoadOutcome.Succeeded;
             }
 
             // A success right after a failure must apply even when the content is unchanged since
@@ -534,7 +576,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 hash = FinishHash(hasher);
                 if (!recovering && _lastGoodHash != null && hash.SequenceEqual(_lastGoodHash))
                 {
-                    return true;
+                    return LoadOutcome.Succeeded;
                 }
             }
             // Nothing is remembered until the consumer has accepted the result. A result the
@@ -546,33 +588,49 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             catch (Exception e)
             {
-                return Fail(new FileDataException("error applying file data: " + e.Message, e));
+                return Fail(new FileDataException("error applying file data: " + e.Message, e), isRetry);
             }
             _lastErrorMessage = null;
             _lastGoodHash = hash;
-            return true;
+            _failedAttempts = 0;
+            return LoadOutcome.Succeeded;
         }
 
         // Called inside _reloadLock.
-        private bool Fail(Exception e)
+        private LoadOutcome Fail(Exception e, bool isRetry)
         {
             // Dispose may have happened while the files were being read. Deliver nothing in that
             // case, and report success so no retry is armed.
             if (_disposed)
             {
-                return true;
+                return LoadOutcome.Succeeded;
             }
             // With automatic retries, a persistent failure would repeat the same log entry on every
-            // attempt. Repeats of an identical failure are demoted to debug level. A failure with a
-            // different message, or any failure after a success, is logged at error level again.
-            if (e.Message == _lastErrorMessage)
+            // attempt. A retry that fails the same way as the attempt before it is demoted to debug
+            // level. A load that a change signal or ReloadNow started is a new event and is always
+            // logged at error level.
+            if (isRetry && e.Message == _lastErrorMessage)
             {
                 _log.Debug("Unable to load flags: {0}", e.Message);
-                return false;
             }
-            _lastErrorMessage = e.Message;
-            _log.Error("Unable to load flags: {0}", e.Message);
-            return false;
+            else
+            {
+                _lastErrorMessage = e.Message;
+                _log.Error("Unable to load flags: {0}", e.Message);
+            }
+            _failedAttempts++;
+            // The bound only matters where a retry would otherwise be armed. The next load that is
+            // not a retry starts over with a fresh budget.
+            if (_config.MaxLoadAttempts > 0 && _config.RetryOnFailure &&
+                _failedAttempts >= _config.MaxLoadAttempts)
+            {
+                // The reason goes on this line too: the attempts before it may have repeated an
+                // earlier failure at debug level only.
+                _log.Error("Unable to load flags after {0} attempts; not retrying until the next detected change: {1}",
+                    _failedAttempts, e.Message);
+                return LoadOutcome.GaveUp;
+            }
+            return LoadOutcome.Failed;
         }
 
         // Adds one file to the skip-unchanged hash: its path, whether it is present, and the length

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
+using LaunchDarkly.Sdk.Server.Internal.FileLoading;
 using LaunchDarkly.TestHelpers;
 using Xunit;
 
@@ -42,17 +44,26 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public void FileReader()
         {
             var prop = _tester.Property(b => b._fileReader, (b, v) => b.FileReader(v));
-            prop.AssertDefault(FlagFileReader.Instance);
+            prop.AssertDefault(FileDataReader.Instance);
             prop.AssertCanSet(new TestFileReader());
+            Assert.Same(FileDataReader.Instance, FileData.DataSource().FileReader(new TestFileReader()).FileReader(null)._fileReader);
         }
 
         [Fact]
         public void Parser()
         {
-            var prop = _tester.Property(b => b._parser, (b, v) => b.Parser(v));
-            prop.AssertDefault(null);
+            Assert.Empty(FileData.DataSource()._parsers);
+
             Func<string, object> p = s => s;
-            prop.AssertCanSet(p);
+            Func<string, object> q = s => null;
+            var b = FileData.DataSource().Parser("YAML", p).Parser(".yml", p).Parser(".yaml", q);
+            Assert.Equal(new[] { ".yaml", ".yml" }, b._parsers.Keys.OrderBy(k => k));
+            Assert.Same(q, b._parsers[".yaml"]);
+            Assert.Same(p, b._parsers[".yml"]);
+
+            Assert.Throws<ArgumentException>(() => FileData.DataSource().Parser("", p));
+            Assert.Throws<ArgumentException>(() => FileData.DataSource().Parser(null, p));
+            Assert.Throws<ArgumentNullException>(() => FileData.DataSource().Parser(".yaml", null));
         }
 
         [Fact]

@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.0-alpha.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v9.0.0-alpha.1...LaunchDarkly.ServerSdk-v9.0.0-alpha.2) (2026-10-30)
+
+
+### Features
+
+* Move the file data source onto the shared file data engine ([#376](https://github.com/launchdarkly/dotnet-core/issues/376)) ([6898a1c](https://github.com/launchdarkly/dotnet-core/commit/6898a1c37aae85e5e343eac4a1e8a8aecf4ced2f))
+
 ## [9.0.0-alpha.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v9.0.0-alpha.0...LaunchDarkly.ServerSdk-v9.0.0-alpha.1) (2026-10-29)
 
 

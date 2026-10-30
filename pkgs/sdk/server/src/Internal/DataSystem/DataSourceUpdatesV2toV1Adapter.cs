@@ -10,13 +10,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
     /// <summary>
     /// Adapts an <see cref="IDataSourceUpdatesV2"/> to work with data sources expecting <see cref="IDataSourceUpdates"/>.
     /// </summary>
+    /// <remarks>
+    /// An FDv1 update carries no persistence flag, so the adapter is given the flag of the source it serves,
+    /// and applies it to the change sets it creates from full data sets and upserts alike. Change sets that
+    /// an FDv2 source applies directly pass through with their own flag.
+    /// </remarks>
     internal class DataSourceUpdatesV2ToV1Adapter : IDataSourceUpdates, IDataSourceUpdatesV2, IDataSourceUpdatesHeaders
     {
         private readonly IDataSourceUpdatesV2 _destination;
+        private readonly bool _shouldPersist;
 
-        public DataSourceUpdatesV2ToV1Adapter(IDataSourceUpdatesV2 sink)
+        public DataSourceUpdatesV2ToV1Adapter(IDataSourceUpdatesV2 sink, bool shouldPersist = true)
         {
             _destination = sink;
+            _shouldPersist = shouldPersist;
         }
 
         public IDataStoreStatusProvider DataStoreStatusProvider => _destination.DataStoreStatusProvider;
@@ -42,7 +49,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 DataStoreTypes.ChangeSetType.Partial,
                 Subsystems.Selector.Empty,
                 data,
-                null
+                null,
+                shouldPersist: _shouldPersist
             );
 
             return _destination.Apply(changeSet);
@@ -68,7 +76,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 DataStoreTypes.ChangeSetType.Full,
                 Subsystems.Selector.Empty,
                 allData.Data,
-                environmentId
+                environmentId,
+                shouldPersist: _shouldPersist
             );
 
             return _destination.Apply(changeSet);

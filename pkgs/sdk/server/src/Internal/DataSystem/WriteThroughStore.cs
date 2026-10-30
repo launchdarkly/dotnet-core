@@ -67,7 +67,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             _metadataMemoryStore.InitWithMetadata(allData, metadata);
             MaybeSwitchStore();
 
-            if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
+            // Data from a source that does not request persistence is served from memory only.
+            if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite && allData.ShouldPersist)
             {
                 _persistentStore?.Init(allData);
             }
@@ -113,7 +114,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             _txMemoryStore.Apply(changeSet);
             MaybeSwitchStore();
 
-            if (!_hasPersistence || _persistenceMode != DataSystemConfiguration.DataStoreMode.ReadWrite) return;
+            // Data from a source that does not request persistence is served from memory only.
+            if (!_hasPersistence || _persistenceMode != DataSystemConfiguration.DataStoreMode.ReadWrite ||
+                !changeSet.ShouldPersist) return;
 
             if (_persistentStore is ITransactionalDataStore txPersistentStore)
             {

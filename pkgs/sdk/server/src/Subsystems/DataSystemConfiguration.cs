@@ -24,6 +24,12 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// <summary>
             /// The data system can read from, and write to, the persistent store.
             /// </summary>
+            /// <remarks>
+            /// The data system writes the data of a source only if the source requests persistence. LaunchDarkly
+            /// data is always written. File data and test data are written only if
+            /// <see cref="Integrations.FileDataSourceBuilder.ShouldPersist"/> or
+            /// <see cref="Integrations.TestData.ShouldPersist"/> is set to <c>true</c>.
+            /// </remarks>
             ReadWrite,
         }
 

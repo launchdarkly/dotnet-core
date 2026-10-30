@@ -214,6 +214,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var changeSet = _updateSink.Applies.ExpectValue();
                 Assert.Equal(ChangeSetType.Full, changeSet.Type);
+                Assert.True(changeSet.ShouldPersist);
 
                 var allData = changeSet.Data.SelectMany(kv => kv.Value.Items).ToList();
                 Assert.Equal(3, allData.Count);

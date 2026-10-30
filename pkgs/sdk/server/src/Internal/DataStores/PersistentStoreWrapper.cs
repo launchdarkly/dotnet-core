@@ -431,6 +431,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                     try
                     {
                         var externalData = externalCache.ExportAll();
+                        if (!externalData.ShouldPersist)
+                        {
+                            // The memory store holds data from a source that does not request persistence,
+                            // such as the file data source. That data must not reach the store, so the
+                            // store is left as it is, and it has still recovered.
+                            _log.Debug("Not updating persistent store after outage, because the in-memory data is not to be persisted");
+                            return true;
+                        }
+
                         var serializedData = PersistentDataStoreConverter.ToSerializedFormat(externalData);
                         var e = InitCore(serializedData);
 

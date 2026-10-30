@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using LaunchDarkly.Sdk.Server.Internal;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.FileLoading;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -17,13 +18,14 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// object to <see cref="ConfigurationBuilder.DataSource"/>.
     /// </remarks>
     /// <seealso cref="FileData"/>
-    public sealed class FileDataSourceBuilder : IComponentConfigurer<IDataSource>
+    public sealed class FileDataSourceBuilder : IComponentConfigurer<IDataSource>, IDataSourcePersistence
     {
         internal readonly List<string> _paths = new List<string>();
         internal bool _autoUpdate = false;
         internal FileDataTypes.IFileReader _fileReader = FileDataReader.Instance;
         internal readonly Dictionary<string, Func<string, object>> _parsers = new Dictionary<string, Func<string, object>>();
         internal bool _skipMissingPaths = false;
+        internal bool _shouldPersist = false;
         internal FileDataTypes.DuplicateKeysHandling _duplicateKeysHandling = FileDataTypes.DuplicateKeysHandling.Throw;
 
         /// <summary>
@@ -168,6 +170,33 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             _skipMissingPaths = skipMissingPaths;
             return this;
         }
+
+        /// <summary>
+        /// Specifies whether the data system may write the file data to a persistent store.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This applies when the file data source is an initializer or synchronizer of a data system
+        /// configured with <see cref="ConfigurationBuilder.DataSystem"/>, and that data system has a
+        /// persistent store in <see cref="DataSystemConfiguration.DataStoreMode.ReadWrite"/> mode. This option
+        /// is off by default: file data is not LaunchDarkly data, and writing it to a shared store would replace
+        /// the LaunchDarkly data that other clients read from it. The client serves file data from memory.
+        /// Set this to <c>true</c> to write the file data, including reloads, to the store.
+        /// </para>
+        /// <para>
+        /// This does not apply to a data source configured with <see cref="ConfigurationBuilder.DataSource"/>.
+        /// The data store configured there receives all data.
+        /// </para>
+        /// </remarks>
+        /// <param name="shouldPersist">true if the file data may be written to a persistent store</param>
+        /// <returns>the same factory object</returns>
+        public FileDataSourceBuilder ShouldPersist(bool shouldPersist)
+        {
+            _shouldPersist = shouldPersist;
+            return this;
+        }
+
+        bool IDataSourcePersistence.ShouldPersist => _shouldPersist;
 
         /// <summary>
         /// Called internally by the SDK to create the data source.

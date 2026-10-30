@@ -412,7 +412,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void SuccessfulReloadNowDisarmsThePendingRetry()
+        public void RetryLeftOverAfterASuccessfulReloadNowDoesNotLoad()
         {
             Write(Truncated);
             var reloader = MakeReloader(c => c.SkipUnchanged = true);
@@ -426,8 +426,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             RequireApplied();
             DrainErrors();
 
-            // The retry armed by the failure is redundant after the recovery and does not run. A
-            // changed file with no trigger must not be picked up.
+            // The retry armed by the failure can still fire after the recovery, but nothing has
+            // failed since, so it does not load. A changed file with no trigger must not be picked
+            // up.
             Write(Flag1False);
             RequireQuiet(TimeSpan.FromMilliseconds(200));
         }

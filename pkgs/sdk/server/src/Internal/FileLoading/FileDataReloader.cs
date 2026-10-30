@@ -211,7 +211,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <summary>
         /// Synchronously loads the files and applies the result, or reports the failure. Use it
         /// for the initial load. A failure here arms the same automatic retry as a failed
-        /// triggered reload, and a success disarms a pending retry.
+        /// triggered reload.
         /// </summary>
         internal void ReloadNow()
         {
@@ -219,16 +219,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 return;
             }
+            // A success does not disarm a pending retry. The reload lock is released when the load
+            // ends, so a disarm here could cancel a retry that a later failed load on another thread
+            // armed. A retry that is left over from an earlier failure does no work: Reload skips a
+            // retry when nothing has failed since the last success.
             if (Reload(isRetry: false) == LoadOutcome.Failed)
             {
                 // An already armed retry keeps its earlier deadline.
                 ArmRetry(keepExistingDeadline: true);
-            }
-            else
-            {
-                // A retry armed by an earlier failure is redundant after this success, and after
-                // giving up nothing runs until the next change.
-                DisarmRetry();
             }
         }
 
@@ -436,7 +434,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         // What one load did, which decides what happens to the retry: a failure arms it, and a
-        // success or giving up leaves it disarmed.
+        // success or giving up arms nothing.
         private enum LoadOutcome
         {
             Succeeded,
@@ -463,10 +461,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 }
                 else if (_failedAttempts == 0)
                 {
-                    // The retry is stale: its timer fired while a reload that then succeeded was
-                    // running, and it waited for that reload. Nothing has failed since, so there is
-                    // nothing to retry, and applying the same data again would be a spurious change
-                    // for a consumer that stamps each application with a version.
+                    // The retry is stale: a load succeeded after the failure that armed it. Its
+                    // timer fired while that load was running, or the load was a ReloadNow, which
+                    // does not disarm the retry. Nothing has failed since, so there is nothing to
+                    // retry, and applying the same data again would be a spurious change for a
+                    // consumer that stamps each application with a version.
                     return LoadOutcome.Succeeded;
                 }
 

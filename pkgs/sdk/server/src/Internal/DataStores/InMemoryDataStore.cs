@@ -24,9 +24,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
         private volatile InitMetadata _metadata;
 
-        // Whether the data held may be written to a persistent store; exported with the data for recovery.
-        // A full payload sets it. A partial payload can only clear it: a store that holds data that must not
-        // be persisted keeps that data until the next full payload replaces it.
+        // The persistence indicator of the latest full or partial payload, exported with the data for store
+        // recovery. Like the data system spec, the store tracks a single, most recent indicator, not one per item.
         private volatile bool _shouldPersist = true;
 
         private readonly object _selectorLock = new object();
@@ -171,7 +170,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
                 Items = itemsBuilder.ToImmutable();
                 Selector = selector;
-                _shouldPersist = _shouldPersist && shouldPersist;
+                _shouldPersist = shouldPersist;
             }
         }
 

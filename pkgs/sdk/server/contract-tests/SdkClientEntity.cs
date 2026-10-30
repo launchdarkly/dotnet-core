@@ -23,6 +23,9 @@ namespace TestService
         private readonly Logger _log;
         private readonly Dictionary<string, EventHandler<FlagChangeEvent>> _flagListeners =
             new Dictionary<string, EventHandler<FlagChangeEvent>>();
+        // The test data source of this client, if the configuration has a testData data source. Every
+        // testData entry of the configuration uses this one instance.
+        private TestData _testData;
 
         public SdkClientEntity(
             SdkConfigParams sdkParams,
@@ -167,6 +170,17 @@ namespace TestService
                         _client.FlagTracker.FlagChanged -= handler;
                         _flagListeners.Remove(p.ListenerId);
                     }
+                    break;
+                }
+
+                case "updateTestData":
+                {
+                    if (_testData == null)
+                    {
+                        throw new InvalidOperationException("the client has no test data source");
+                    }
+                    var p = command.UpdateTestData;
+                    _testData.Update(_testData.Flag(p.FlagKey).ValueForAll(p.Value));
                     break;
                 }
 
@@ -376,7 +390,7 @@ namespace TestService
             }
         }
 
-        private static Configuration BuildSdkConfig(SdkConfigParams sdkParams, ILogAdapter logAdapter, string tag)
+        private Configuration BuildSdkConfig(SdkConfigParams sdkParams, ILogAdapter logAdapter, string tag)
         {
             var builder = Configuration.Builder(sdkParams.Credential);
 
@@ -617,6 +631,14 @@ namespace TestService
                             }
                             initializers.Add(pollingBuilder);
                         }
+                        else if (initializer.File != null)
+                        {
+                            initializers.Add(CreateFileDataSource(initializer.File, false));
+                        }
+                        else if (initializer.TestData != null)
+                        {
+                            initializers.Add(TestDataFor(initializer.TestData));
+                        }
                     }
                     if (initializers.Count > 0)
                     {
@@ -721,7 +743,37 @@ namespace TestService
             return source;
         }
 
-        private static IComponentConfigurer<IDataSource> CreateSynchronizer(
+        private static FileDataSourceBuilder CreateFileDataSource(SdkConfigFileDataParams p, bool autoUpdate)
+        {
+            var builder = FileData.DataSource().FilePaths(p.FilePaths ?? new string[0]).AutoUpdate(autoUpdate);
+            if (p.Persist.HasValue)
+            {
+                builder.ShouldPersist(p.Persist.Value);
+            }
+            return builder;
+        }
+
+        private TestData TestDataFor(SdkConfigTestDataParams p)
+        {
+            if (_testData == null)
+            {
+                _testData = TestData.DataSource();
+            }
+            if (p.Persist.HasValue)
+            {
+                _testData.ShouldPersist(p.Persist.Value);
+            }
+            if (p.Flags != null)
+            {
+                foreach (var flag in p.Flags)
+                {
+                    _testData.Update(_testData.Flag(flag.Key).ValueForAll(flag.Value));
+                }
+            }
+            return _testData;
+        }
+
+        private IComponentConfigurer<IDataSource> CreateSynchronizer(
             SdkConfigDataSynchronizerParams synchronizer,
             string payloadFilter)
         {
@@ -762,6 +814,15 @@ namespace TestService
                     // TODO: Add PayloadFilter support when available
                 }
                 return streamingBuilder;
+            }
+            else if (synchronizer.File != null)
+            {
+                // A file synchronizer reloads the files when they change.
+                return CreateFileDataSource(synchronizer.File, true);
+            }
+            else if (synchronizer.TestData != null)
+            {
+                return TestDataFor(synchronizer.TestData);
             }
             return null;
         }

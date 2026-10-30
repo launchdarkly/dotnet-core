@@ -208,12 +208,28 @@ namespace TestService
     public class SdkConfigDataInitializerParams
     {
         public SdkConfigPollingParams Polling { get; set; }
+        public SdkConfigFileDataParams File { get; set; }
+        public SdkConfigTestDataParams TestData { get; set; }
     }
 
     public class SdkConfigDataSynchronizerParams
     {
         public SdkConfigStreamingParams Streaming { get; set; }
         public SdkConfigPollingParams Polling { get; set; }
+        public SdkConfigFileDataParams File { get; set; }
+        public SdkConfigTestDataParams TestData { get; set; }
+    }
+
+    public class SdkConfigFileDataParams
+    {
+        public string[] FilePaths { get; set; }
+        public bool? Persist { get; set; }
+    }
+
+    public class SdkConfigTestDataParams
+    {
+        public Dictionary<string, LdValue> Flags { get; set; }
+        public bool? Persist { get; set; }
     }
 
     public class SdkConfigPollingParams
@@ -244,6 +260,7 @@ namespace TestService
         public RegisterFlagChangeListenerParams RegisterFlagChangeListener { get; set; }
         public RegisterFlagValueChangeListenerParams RegisterFlagValueChangeListener { get; set; }
         public UnregisterListenerParams UnregisterListener { get; set; }
+        public UpdateTestDataParams UpdateTestData { get; set; }
     }
 
     public class ContextComparisonPairParams
@@ -302,6 +319,12 @@ namespace TestService
     public class UnregisterListenerParams
     {
         public string ListenerId { get; set; }
+    }
+
+    public class UpdateTestDataParams
+    {
+        public string FlagKey { get; set; }
+        public LdValue Value { get; set; }
     }
 
     public class ListenerNotification

@@ -427,6 +427,86 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             }
         }
 
+        private static ChangeSet<ItemDescriptor> FullChangeSet(FullDataSet<ItemDescriptor> data, bool shouldPersist) =>
+            new ChangeSet<ItemDescriptor>(ChangeSetType.Full, Selector.Empty, data.Data, null,
+                shouldPersist: shouldPersist);
+
+        // Causes an outage with an upsert that fails, then ends it, and waits until the wrapper reports
+        // that the store has recovered.
+        private void CauseOutageAndRecover(PersistentStoreWrapper wrapper, EventSink<DataStoreStatus> statuses)
+        {
+            _core.Available = false;
+            _core.Error = FakeError;
+            Assert.Equal(FakeError, Assert.Throws(FakeError.GetType(),
+                () => wrapper.Upsert(TestDataKind, "key1", new TestItem("item1").WithVersion(2))));
+            Assert.False(statuses.ExpectValue().Available);
+
+            _core.Error = null;
+            _core.Available = true;
+            Assert.True(statuses.ExpectValue(TimeoutForRecovery).Available);
+        }
+
+        [Fact]
+        public void ExternalDataSourceSync_WhenExternalDataIsNotToBePersisted_RecoversWithoutWritingIt()
+        {
+            // The memory store holds file data, for example, and the persistent store holds earlier
+            // LaunchDarkly data.
+            var memoryStore = new InMemoryDataStore();
+            memoryStore.Apply(FullChangeSet(new TestDataBuilder()
+                .Add(TestDataKind, "file-key", 1, new TestItem("file-item"))
+                .Build(), false));
+
+            using (var wrapper = MakeWrapperWithExternalSource(memoryStore))
+            {
+                var dataStoreStatusProvider = new DataStoreStatusProviderImpl(wrapper, _dataStoreUpdates);
+                var statuses = new EventSink<DataStoreStatus>();
+                dataStoreStatusProvider.StatusChanged += statuses.Add;
+
+                var ldItem = new TestItem("ld-item");
+                wrapper.Init(new TestDataBuilder().Add(TestDataKind, "key1", 1, ldItem).Build());
+                var initCountBeforeOutage = _core.InitCalledCount;
+
+                CauseOutageAndRecover(wrapper, statuses);
+
+                Assert.Equal(initCountBeforeOutage, _core.InitCalledCount);
+                Assert.Equal(ldItem.SerializedWithVersion(1), _core.Data[TestDataKind]["key1"]);
+                Assert.False(_core.Data[TestDataKind].ContainsKey("file-key"));
+                AssertLogMessageRegex(true, LogLevel.Debug,
+                    "Not updating persistent store after outage, because the in-memory data is not to be persisted");
+                AssertLogMessageRegex(false, LogLevel.Warn, "Successfully updated persistent store");
+            }
+        }
+
+        [Fact]
+        public void ExternalDataSourceSync_WhenPersistedDataReplacedDataNotToBePersisted_WritesIt()
+        {
+            // For example, a file data initializer followed by the first payload of a LaunchDarkly synchronizer.
+            var memoryStore = new InMemoryDataStore();
+            memoryStore.Apply(FullChangeSet(new TestDataBuilder()
+                .Add(TestDataKind, "file-key", 1, new TestItem("file-item"))
+                .Build(), false));
+            var ldItem = new TestItem("ld-item");
+            memoryStore.Apply(FullChangeSet(new TestDataBuilder()
+                .Add(TestDataKind, "ld-key", 3, ldItem)
+                .Build(), true));
+
+            using (var wrapper = MakeWrapperWithExternalSource(memoryStore))
+            {
+                var dataStoreStatusProvider = new DataStoreStatusProviderImpl(wrapper, _dataStoreUpdates);
+                var statuses = new EventSink<DataStoreStatus>();
+                dataStoreStatusProvider.StatusChanged += statuses.Add;
+
+                wrapper.Init(new TestDataBuilder().Add(TestDataKind, "key1", 1, new TestItem("item1")).Build());
+
+                CauseOutageAndRecover(wrapper, statuses);
+
+                Assert.Equal(ldItem.SerializedWithVersion(3), _core.Data[TestDataKind]["ld-key"]);
+                Assert.False(_core.Data[TestDataKind].ContainsKey("file-key"));
+                Assert.False(_core.Data[TestDataKind].ContainsKey("key1"));
+                AssertLogMessageRegex(true, LogLevel.Warn, "Successfully updated persistent store from external data source");
+            }
+        }
+
         /// <summary>
         /// Mock implementation of IDataStoreExporter for testing.
         /// </summary>

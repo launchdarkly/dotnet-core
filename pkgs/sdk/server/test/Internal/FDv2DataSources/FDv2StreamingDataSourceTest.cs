@@ -153,6 +153,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var changeSet = _updateSink.Applies.ExpectValue();
                 Assert.Equal(ChangeSetType.Full, changeSet.Type);
+                Assert.True(changeSet.ShouldPersist);
                 var allData = changeSet.Data.SelectMany(kv => kv.Value.Items).ToList();
 
                 Assert.Equal(3, allData.Count);
@@ -233,6 +234,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 var changeSet = _updateSink.Applies.ExpectValue();
                 Assert.Equal(ChangeSetType.Partial, changeSet.Type);
+                Assert.True(changeSet.ShouldPersist);
                 var flags = changeSet.Data.FirstOrDefault(kv => kv.Key == DataModel.Features).Value.Items;
                 Assert.Single(flags);
                 Assert.Contains(flags, kv => kv.Key == "new-flag" && kv.Value.Item != null && kv.Value.Version == 10);

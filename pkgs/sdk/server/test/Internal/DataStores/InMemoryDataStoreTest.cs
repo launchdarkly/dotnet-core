@@ -625,5 +625,76 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
         }
 
         #endregion
+
+        #region Persistence flag tests
+
+        private static ChangeSet<ItemDescriptor> MakeChangeSet(ChangeSetType type, string key, int version,
+            bool shouldPersist) =>
+            new ChangeSet<ItemDescriptor>(
+                type,
+                Selector.Make(version, "state" + version),
+                ImmutableList.Create(new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    TestDataKind,
+                    new KeyedItems<ItemDescriptor>(ImmutableDictionary<string, ItemDescriptor>.Empty
+                        .Add(key, new ItemDescriptor(version, new TestItem(key)))))),
+                null,
+                shouldPersist: shouldPersist);
+
+        [Fact]
+        public void ExportAllData_AfterDataSetWithDefaultFlag_IsToBePersisted()
+        {
+            store.Init(new TestDataBuilder().Add(TestDataKind, "key1", 1, new TestItem("item1")).Build());
+
+            Assert.True(TypedStore.ExportAll().ShouldPersist);
+        }
+
+        [Fact]
+        public void ExportAllData_AfterDataSetNotToBePersisted_IsNotToBePersisted()
+        {
+            store.Init(new FullDataSet<ItemDescriptor>(
+                new TestDataBuilder().Add(TestDataKind, "key1", 1, new TestItem("item1")).Build().Data, false));
+
+            Assert.False(TypedStore.ExportAll().ShouldPersist);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ExportAllData_AfterFullChangeSet_HasItsFlag(bool shouldPersist)
+        {
+            TypedStore.Apply(MakeChangeSet(ChangeSetType.Full, "key1", 1, shouldPersist));
+
+            Assert.Equal(shouldPersist, TypedStore.ExportAll().ShouldPersist);
+        }
+
+        [Fact]
+        public void ExportAllData_AfterFullChangeSetToBePersistedReplacesOneNotToBe_IsToBePersisted()
+        {
+            TypedStore.Apply(MakeChangeSet(ChangeSetType.Full, "key1", 1, false));
+            TypedStore.Apply(MakeChangeSet(ChangeSetType.Full, "key2", 2, true));
+
+            Assert.True(TypedStore.ExportAll().ShouldPersist);
+        }
+
+        [Fact]
+        public void ExportAllData_AfterPartialChangeSetNotToBePersisted_IsNotToBePersisted()
+        {
+            TypedStore.Apply(MakeChangeSet(ChangeSetType.Full, "key1", 1, true));
+            TypedStore.Apply(MakeChangeSet(ChangeSetType.Partial, "key2", 2, false));
+
+            Assert.False(TypedStore.ExportAll().ShouldPersist);
+        }
+
+        [Fact]
+        public void ExportAllData_AfterPartialChangeSetToBePersistedOnDataNotToBe_IsNotToBePersisted()
+        {
+            // The store still holds the data of the full change set, which must not be persisted.
+            TypedStore.Apply(MakeChangeSet(ChangeSetType.Full, "key1", 1, false));
+            TypedStore.Apply(MakeChangeSet(ChangeSetType.Partial, "key2", 2, true));
+
+            Assert.False(TypedStore.ExportAll().ShouldPersist);
+        }
+
+        #endregion
     }
 }

@@ -105,7 +105,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 changeset.Selector,
                 dataBuilder.ToImmutable(),
                 environmentId,
-                fdv1Fallback);
+                fdv1Fallback,
+                // LaunchDarkly data is always persisted.
+                shouldPersist: true);
         }
 
         /// <summary>

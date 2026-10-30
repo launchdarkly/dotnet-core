@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -50,7 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// </code>
     /// </example>
     /// <seealso cref="FileData"/>
-    public sealed class TestData : IComponentConfigurer<IDataSource>
+    public sealed class TestData : IComponentConfigurer<IDataSource>, IDataSourcePersistence
     {
         #region Private fields
 
@@ -62,6 +63,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         private readonly Dictionary<string, FlagBuilder> _currentBuilders =
             new Dictionary<string, FlagBuilder>();
         private readonly List<DataSourceImpl> _instances = new List<DataSourceImpl>();
+        private volatile bool _shouldPersist = false;
 
         #endregion
 
@@ -232,6 +234,36 @@ namespace LaunchDarkly.Sdk.Server.Integrations
 
             return this;
         }
+
+        /// <summary>
+        /// Specifies whether the data system may write the test data to a persistent store.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This applies when the test data source is an initializer or synchronizer of a data system
+        /// configured with <see cref="ConfigurationBuilder.DataSystem"/>, and that data system has a
+        /// persistent store in <see cref="DataSystemConfiguration.DataStoreMode.ReadWrite"/> mode. This option
+        /// is off by default: the client serves the test data from memory, and does not replace the data in
+        /// the store with it. Set this to <c>true</c> to write the test data, including later updates, to the
+        /// store, for example to test an application's use of a persistent store.
+        /// </para>
+        /// <para>
+        /// This does not apply to a data source configured with <see cref="ConfigurationBuilder.DataSource"/>.
+        /// The data store configured there receives all data.
+        /// </para>
+        /// <para>
+        /// The setting takes effect for clients created after it is set.
+        /// </para>
+        /// </remarks>
+        /// <param name="shouldPersist">true if the test data may be written to a persistent store</param>
+        /// <returns>the same <see cref="TestData"/> instance</returns>
+        public TestData ShouldPersist(bool shouldPersist)
+        {
+            _shouldPersist = shouldPersist;
+            return this;
+        }
+
+        bool IDataSourcePersistence.ShouldPersist => _shouldPersist;
 
         /// <summary>
         /// Simulates a change in the data source status.

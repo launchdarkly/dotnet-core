@@ -295,21 +295,67 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         private static void WaitForReads(ScriptedFileReader reader, int count) =>
             WaitUntil(() => reader.Reads >= count, count + " file reads");
 
+        // Waits until the reader has seen no read for longer than two retry delays, so that any retry
+        // chain has ended, and returns the number of reads.
+        private static int WaitForReadsToStop(ScriptedFileReader reader)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            var reads = reader.Reads;
+            var quietSince = DateTime.UtcNow;
+            while (DateTime.UtcNow - quietSince < TimeSpan.FromMilliseconds(1500))
+            {
+                Assert.True(DateTime.UtcNow < deadline, "timed out waiting for the file reads to stop");
+                Thread.Sleep(20);
+                if (reader.Reads != reads)
+                {
+                    reads = reader.Reads;
+                    quietSince = DateTime.UtcNow;
+                }
+            }
+            return reads;
+        }
+
+        private int FileChangeNotifications() =>
+            LogCapture.GetMessages().Count(m => m.Text.Contains("detected file modification, reloading"));
+
+        // Waits until no file-change notification has arrived for a while. A rewrite in place can
+        // produce more than one notification, and each one starts a load.
+        private void WaitForFileChangeNotificationsToStop()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(15);
+            var notifications = FileChangeNotifications();
+            var quietSince = DateTime.UtcNow;
+            while (DateTime.UtcNow - quietSince < TimeSpan.FromMilliseconds(300))
+            {
+                Assert.True(DateTime.UtcNow < deadline, "timed out waiting for the file-change notifications to stop");
+                Thread.Sleep(20);
+                if (FileChangeNotifications() != notifications)
+                {
+                    notifications = FileChangeNotifications();
+                    quietSince = DateTime.UtcNow;
+                }
+            }
+        }
+
+        // A path in a directory that does not exist, for tests that read through a ScriptedFileReader
+        // and count its reads. The file watcher fails to construct for it (logged and swallowed), so the
+        // only loads are the ones the test starts and the retries they schedule. A watched real file can
+        // get a change notification the test did not cause: macOS has delivered one for a test's own
+        // newly created temporary file, which added a read or started a new failure episode.
+        private const string UnwatchedPath = "/nonexistent-ld-filedatasource-test-dir/flags.json";
+
         [Fact]
         public void ParseFailureFromPartialReadIsRetriedUntilContentIsComplete()
         {
             var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
             {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start();
-                    WaitForReads(reader, 2);
-                    reader.Bad = false; // as if the write completed, with no further notification
-                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-                    Assert.True(fp.Initialized);
-                }
+                fp.Start();
+                WaitForReads(reader, 2);
+                reader.Bad = false; // as if the write completed, with no further notification
+                _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
+                Assert.True(fp.Initialized);
             }
         }
 
@@ -317,18 +363,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public void ParseRetryStopsAfterMaxAttemptsAndDoesNotInit()
         {
             var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
             {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start();
-                    WaitForReads(reader, 5); // initial attempt + 4 retries
-                    Thread.Sleep(1500); // longer than two retry delays
-                    Assert.Equal(5, reader.Reads); // budget exhausted, no further attempts
-                    _updateSink.Inits.ExpectNoValue();
-                    Assert.False(fp.Initialized);
-                }
+                fp.Start();
+                WaitForReads(reader, 5); // initial attempt + 4 retries
+                Thread.Sleep(1500); // longer than two retry delays
+                Assert.Equal(5, reader.Reads); // budget exhausted, no further attempts
+                _updateSink.Inits.ExpectNoValue();
+                Assert.False(fp.Initialized);
             }
         }
 
@@ -343,13 +386,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 {
                     fp.Start();
                     WaitForReads(reader, 5); // episode 1: all attempts fail
-                    Thread.Sleep(1500);
-                    Assert.Equal(5, reader.Reads); // episode 1 exhausted, nothing pending
+                    // Episode 1 is exhausted and nothing is pending. The count is not asserted: the
+                    // watched file can get a notification the test did not cause, which starts another
+                    // episode of its own.
+                    var readsBeforeChange = WaitForReadsToStop(reader);
 
                     // A new file-change notification starts a new episode with a fresh retry
                     // budget, even though its first read still sees partial content.
                     file.SetContent("trigger-new-episode");
-                    WaitForReads(reader, 6);
+                    WaitForReads(reader, readsBeforeChange + 1);
+                    // Let every notification of the rewrite arrive first, so that only the new
+                    // episode's retry can load the data once it is complete.
+                    WaitForFileChangeNotificationsToStop();
 
                     reader.Bad = false; // write completed; no further notification arrives
                     _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
@@ -362,16 +410,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         {
             var yaml = new DeserializerBuilder().Build();
             var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader)
+                .Parser(s => yaml.Deserialize<object>(s));
+            using (var fp = MakeDataSource())
             {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader)
-                    .Parser(s => yaml.Deserialize<object>(s));
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start();
-                    reader.Bad = false;
-                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-                }
+                fp.Start();
+                reader.Bad = false;
+                _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
             }
         }
 
@@ -399,23 +444,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public void TransientReadErrorDuringRetryDoesNotEndTheEpisode()
         {
             var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
             {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start(); // parse fails, schedules a retry
-                    // The retry's read fails transiently (e.g. a writer is replacing the file);
-                    // the content itself is complete from here on.
-                    reader.Bad = false;
-                    reader.Throw = true;
-                    WaitForReads(reader, 2);
-                    reader.Throw = false;
+                fp.Start(); // parse fails, schedules a retry
+                // The retry's read fails transiently (e.g. a writer is replacing the file);
+                // the content itself is complete from here on.
+                reader.Bad = false;
+                reader.Throw = true;
+                WaitForReads(reader, 2);
+                reader.Throw = false;
 
-                    // The episode still has budget, so the chain must continue and load the data
-                    // instead of dying on the non-parse failure.
-                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-                }
+                // The episode still has budget, so the chain must continue and load the data
+                // instead of dying on the non-parse failure.
+                _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
             }
         }
 
@@ -423,20 +465,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public void PendingParseRetryIsCanceledByDispose()
         {
             var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
             {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start(); // schedules a retry
-                    fp.Dispose();
-                    // No new load may start after Dispose; any retry scheduled before it must
-                    // observe the disposal and do nothing. (Reads are captured after Dispose so
-                    // the test stays valid even if a retry fired before Dispose ran.)
-                    var readsAtDispose = reader.Reads;
-                    Thread.Sleep(1500);
-                    Assert.Equal(readsAtDispose, reader.Reads);
-                }
+                fp.Start(); // schedules a retry
+                fp.Dispose();
+                // No new load may start after Dispose; any retry scheduled before it must
+                // observe the disposal and do nothing. (Reads are captured after Dispose so
+                // the test stays valid even if a retry fired before Dispose ran.)
+                var readsAtDispose = reader.Reads;
+                Thread.Sleep(1500);
+                Assert.Equal(readsAtDispose, reader.Reads);
             }
         }
 
@@ -474,26 +513,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         public void PendingParseRetryIsSkippedIfAnExternalReloadAlreadySucceeded()
         {
             var reader = new ScriptedFileReader();
-            using (var file = TempFile.Create())
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
             {
-                factory.FilePaths(file.Path).AutoUpdate(true).FileReader(reader);
-                using (var fp = MakeDataSource())
-                {
-                    fp.Start(); // fails, schedules a retry
+                fp.Start(); // fails, schedules a retry
 
-                    // An externally triggered load (same code path as a file-change notification)
-                    // succeeds before the pending retry fires.
-                    reader.Bad = false;
-                    fp.Start();
-                    _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
-                    var readsAfterSuccess = reader.Reads;
+                // An externally triggered load (same code path as a file-change notification)
+                // succeeds before the pending retry fires.
+                reader.Bad = false;
+                fp.Start();
+                _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(1));
+                var readsAfterSuccess = reader.Reads;
 
-                    Thread.Sleep(1500); // past the retry delay
-                    // The pending retry saw that the load already succeeded and did not reload,
-                    // so no redundant Init (which would fire spurious change events) occurred.
-                    Assert.Equal(readsAfterSuccess, reader.Reads);
-                    _updateSink.Inits.ExpectNoValue();
-                }
+                Thread.Sleep(1500); // past the retry delay
+                // The pending retry saw that the load already succeeded and did not reload,
+                // so no redundant Init (which would fire spurious change events) occurred.
+                Assert.Equal(readsAfterSuccess, reader.Reads);
+                _updateSink.Inits.ExpectNoValue();
             }
         }
 

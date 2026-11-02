@@ -37,6 +37,9 @@ jobs:
           service_dll_file: ${{ env.CONTRACT_TEST_DLL_FILE}}
           token: ${{ secrets.GITHUB_TOKEN }}
           run_fdv2_tests: 'true'
+          # The persistence tests run on the Linux runner only, where the stores start quickly in Docker. Their
+          # behavior does not depend on the platform.
+          enable_persistence_tests: ${{ runner.os == 'Linux' && 'true' || 'false' }}
 
       - uses: ./.github/actions/build-docs
         with:

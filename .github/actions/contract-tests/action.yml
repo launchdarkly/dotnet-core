@@ -15,6 +15,14 @@ inputs:
     description: 'Whether to run contract tests from the latest v3 release'
     required: false
     default: 'false'
+  enable_persistence_tests:
+    description: 'Whether to start Redis, DynamoDB and Consul on their default ports and run the persistent store tests.'
+    required: false
+    default: 'false'
+  test_service_port:
+    description: 'The port of the contract test service. The default is not 8000, the port that the harness expects DynamoDB on.'
+    required: false
+    default: '9000'
 
 runs:
   using: composite
@@ -36,10 +44,18 @@ runs:
       shell: bash
       run: dotnet build -p:Configuration=debug ${{ inputs.service_project_file }}
 
+    - name: Start Persistent Stores
+      if: inputs.enable_persistence_tests == 'true'
+      uses: launchdarkly/gh-actions/actions/persistent-stores@persistent-stores-v0
+      with:
+        redis: true
+        dynamodb: true
+        consul: true
+
     - name: Launch Contract Tests
       id: launch-contract-tests
       shell: bash
-      run: dotnet ${{ inputs.service_dll_file }} > test-service.log 2>&1 & disown
+      run: dotnet ${{ inputs.service_dll_file }} ${{ inputs.test_service_port }} > test-service.log 2>&1 & disown
 
     - name: Suppression Path
       shell: bash
@@ -50,8 +66,8 @@ runs:
     - name: Run Contract Tests
       uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1
       with:
-        test_service_port: 8000
-        enable_persistence_tests: 'false'
+        test_service_port: ${{ inputs.test_service_port }}
+        enable_persistence_tests: ${{ inputs.enable_persistence_tests }}
         # Leave the service up for the FDv2 run that follows.
         stop_service: ${{ inputs.run_fdv2_tests == 'true' && 'false' || 'true' }}
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE }}'
@@ -61,10 +77,10 @@ runs:
       if: inputs.run_fdv2_tests == 'true'
       uses: launchdarkly/gh-actions/actions/contract-tests@contract-tests-v1
       with:
-        test_service_port: 8000
+        test_service_port: ${{ inputs.test_service_port }}
         version: 'v3'
         debug_logging: 'true'
-        enable_persistence_tests: 'false'
+        enable_persistence_tests: ${{ inputs.enable_persistence_tests }}
         extra_params: '-status-timeout=360 -skip-from=${{ env.SUPPRESSION_FILE_FDV2 }}'
         token: ${{ inputs.token }}
 

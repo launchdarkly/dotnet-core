@@ -471,7 +471,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 Assert.Equal(initCountBeforeOutage, _core.InitCalledCount);
                 Assert.Equal(ldItem.SerializedWithVersion(1), _core.Data[TestDataKind]["key1"]);
                 Assert.False(_core.Data[TestDataKind].ContainsKey("file-key"));
-                AssertLogMessageRegex(true, LogLevel.Debug,
+                AssertLogMessageRegex(true, LogLevel.Info,
                     "Not updating persistent store after outage, because the in-memory data is not to be persisted");
                 AssertLogMessageRegex(false, LogLevel.Warn, "Successfully updated persistent store");
             }

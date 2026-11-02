@@ -251,7 +251,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// The data store configured there receives all data.
         /// </para>
         /// <para>
-        /// The setting takes effect for clients created after it is set.
+        /// Set this before creating the client. The data system reads the setting each time it starts the
+        /// test data source, which can also happen in a running client, for example after the source reports
+        /// that it is off.
         /// </para>
         /// </remarks>
         /// <param name="shouldPersist">true if the test data may be written to a persistent store</param>
@@ -315,7 +317,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                     DataModel.Segments,
                     new KeyedItems<ItemDescriptor>(_currentSegments.ToImmutableDictionary())
                     ));
-                return new FullDataSet<ItemDescriptor>(b.ToImmutable());
+                // The data set carries the persistence flag as well as the configurer; see
+                // DataSourceUpdatesV2ToV1Adapter.
+                return new FullDataSet<ItemDescriptor>(b.ToImmutable(), _shouldPersist);
             }
         }
 

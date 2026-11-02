@@ -187,7 +187,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         public IDataSource Build(LdClientContext context)
         {
             return new FileDataSource(context.DataSourceUpdates, _fileReader, _paths, _autoUpdate,
-                _parser, _skipMissingPaths, _duplicateKeysHandling,
+                _parser, _skipMissingPaths, _duplicateKeysHandling, _shouldPersist,
                 context.Logger.SubLogger(LogNames.DataSourceSubLog));
         }
     }

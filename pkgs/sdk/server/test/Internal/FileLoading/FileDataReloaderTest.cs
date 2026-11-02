@@ -103,6 +103,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             return ErrorLogs()[_consumedErrorLogs++];
         }
 
+        // An automatic retry can read the file while the test rewrites it in place (see Write), and
+        // report that the file was empty. This skips such reports and returns the next other one.
+        private string RequireErrorLoggedForContent()
+        {
+            AssertEventually(() => ErrorLogs().Skip(_consumedErrorLogs).Any(m => !m.Contains("no content")));
+            var logs = ErrorLogs();
+            var index = logs.FindIndex(_consumedErrorLogs, m => !m.Contains("no content"));
+            _consumedErrorLogs = index + 1;
+            return logs[index];
+        }
+
         private void RequireQuiet(TimeSpan duration)
         {
             _applied.ExpectNoValue(duration);
@@ -125,21 +136,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private int GiveUpLogCount() =>
             LogCapture.GetMessages().Count(m => m.Level == LogLevel.Error && m.Text.Contains("attempts"));
 
-        // The delays for the tests of a file that is empty after a change. The retry comes long enough
-        // after the change signal for a test to finish rewriting the file before it.
-        private static readonly FileDataReloaderTiming EmptyFileTiming = Timing(10, 1000, 500);
+        // The delays for the tests of a file that is found empty. The retry comes long enough after the
+        // change signal for a test to finish rewriting the file before it, even on a slow machine.
+        private static readonly FileDataReloaderTiming EmptyFileTiming = Timing(10, 1000, 1500);
+
+        // Shorter than the retry delay of EmptyFileTiming, so a load that happens within it after a
+        // change signal is not the retry.
+        private static readonly TimeSpan BeforeTheRetry = TimeSpan.FromMilliseconds(1000);
+
+        private const string ReadAgainLog = "reading it again";
 
         private const string YamlFlag1 = "flagValues:\n  flag1: true\n";
         private const string YamlFlag2 = "flagValues:\n  flag2: true\n";
 
-        // Configures the reloader for one YAML file, with a YAML parser that returns null for a file
+        // Configures the reloader for the given files, with a YAML parser that returns null for a file
         // with no content.
-        private FileDataReloader MakeYamlReloader(string yamlPath, FileDataReloaderTiming timing)
+        private FileDataReloader MakeYamlReloader(FileDataReloaderTiming timing, params string[] paths) =>
+            MakeYamlReloader(timing, null, paths);
+
+        private FileDataReloader MakeYamlReloader(FileDataReloaderTiming timing,
+            Action<FileDataReloaderConfig> configure, params string[] paths)
         {
             var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
             return MakeReloader(c =>
             {
-                c.Paths = new[] { yamlPath };
+                configure?.Invoke(c);
+                c.Paths = paths;
                 c.ParsersByExtension = new Dictionary<string, Func<string, object>>
                 {
                     [".yaml"] = content => yaml.Deserialize<object>(content)
@@ -148,20 +170,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void EmptyFileAfterAChangeIsReadAgainBeforeItIsApplied()
+        public void FileThatIsEmptiedIsReadAgainBeforeItIsApplied()
         {
             // A writer that rewrites the file in place truncates it and then writes the new content. A
-            // load that the change signal starts finds the file empty and keeps the data. In YAML an
-            // empty file is valid, so applying it would briefly remove every entry.
+            // load that finds the file empty after it had content keeps the data. In YAML an empty file
+            // is valid, so applying it would briefly remove every entry.
             var yamlPath = _dir.PathOf("data.yaml");
             File.WriteAllText(yamlPath, YamlFlag1);
-            var reloader = MakeYamlReloader(yamlPath, EmptyFileTiming);
+            var reloader = MakeYamlReloader(EmptyFileTiming, yamlPath);
             reloader.ReloadNow();
             Assert.Equal(new[] { "flag1" }, FlagKeys(RequireApplied()));
 
             File.WriteAllText(yamlPath, "");
             reloader.Trigger();
             RequireQuiet(TimeSpan.FromMilliseconds(200));
+            AssertLogMessageRegex(true, LogLevel.Debug, ReadAgainLog);
 
             // The retry reads the rewritten file.
             File.WriteAllText(yamlPath, YamlFlag2);
@@ -174,7 +197,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         {
             var yamlPath = _dir.PathOf("data.yaml");
             File.WriteAllText(yamlPath, YamlFlag1);
-            var reloader = MakeYamlReloader(yamlPath, EmptyFileTiming);
+            var reloader = MakeYamlReloader(EmptyFileTiming, yamlPath);
             reloader.ReloadNow();
             RequireApplied();
 
@@ -187,7 +210,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void EmptyJsonFileAfterAChangeFailsAndKeepsTheData()
+        public void EmptyJsonFileFailsWhenItIsReadAgainAndKeepsTheData()
         {
             Write(Flag1True);
             var reloader = MakeReloader(timing: EmptyFileTiming);
@@ -197,9 +220,148 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Write("");
             reloader.Trigger();
 
-            // The retry reads the file again: still empty, it is not a JSON document.
+            // The load that the change signal starts reads the file again later instead of reporting
+            // it. The retry finds it still empty, which is not a JSON document.
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
             Assert.Contains("no content", RequireErrorLogged());
             Assert.Equal(1, ApplyCount);
+        }
+
+        [Fact]
+        public void FileThatStaysEmptyIsReadAgainOnlyOnce()
+        {
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeYamlReloader(EmptyFileTiming, yamlPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(yamlPath, "");
+            reloader.Trigger();
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+
+            // A further change signal does not postpone the empty file again: it was empty when it
+            // was last read, so this load applies it, before the retry would have.
+            reloader.Trigger();
+            Assert.Empty(_applied.ExpectValue(BeforeTheRetry).Flags);
+        }
+
+        [Fact]
+        public void FileThatIsEmptyFromTheStartIsNotReadAgain()
+        {
+            // An empty YAML file next to the data, such as a placeholder for later entries, has never
+            // had content. It does not hold back the changes of the other file.
+            var placeholderPath = _dir.PathOf("placeholder.yaml");
+            File.WriteAllText(_path, Flag1True);
+            File.WriteAllText(placeholderPath, "");
+            var reloader = MakeYamlReloader(EmptyFileTiming, _path, placeholderPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(_path, Flag1False);
+            reloader.Trigger();
+            var flag = Assert.IsType<FeatureFlag>(_applied.ExpectValue(BeforeTheRetry).Flags[0].Value.Item);
+            Assert.Equal(new[] { LdValue.Of(false) }, flag.Variations);
+            AssertLogMessageRegex(false, LogLevel.Debug, ReadAgainLog);
+        }
+
+        [Fact]
+        public void RetryThatFindsAFileEmptiedReadsItAgain()
+        {
+            // A retry left over from a failure can run while the file is being rewritten in place. It
+            // reads the file again too, rather than applying it empty.
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeYamlReloader(EmptyFileTiming, yamlPath);
+            reloader.ReloadNow();
+            RequireApplied();
+            File.WriteAllText(yamlPath, "flagValues: [");
+            reloader.Trigger();
+            RequireErrorLogged();
+
+            // No change signal: only the retry reads the file.
+            File.WriteAllText(yamlPath, "");
+            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Debug, ReadAgainLog));
+            File.WriteAllText(yamlPath, YamlFlag2);
+            Assert.Equal(new[] { "flag2" }, FlagKeys(RequireApplied()));
+        }
+
+        [Fact]
+        public void FileThatIsDeletedAndCreatedEmptyIsNotReadAgain()
+        {
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeYamlReloader(EmptyFileTiming, c => c.SkipMissingPaths = true, yamlPath);
+            reloader.ReloadNow();
+            RequireApplied();
+            File.Delete(yamlPath);
+            reloader.Trigger();
+            Assert.Empty(RequireApplied().Flags);
+
+            // A missing file had no content, so the empty file that replaces it is applied right away.
+            File.WriteAllText(yamlPath, "");
+            reloader.Trigger();
+            Assert.Empty(_applied.ExpectValue(BeforeTheRetry).Flags);
+        }
+
+        [Fact]
+        public void RetryLeftOverFromAReadAgainDoesNotLoadAfterASuccessfulReloadNow()
+        {
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeYamlReloader(EmptyFileTiming, yamlPath);
+            reloader.ReloadNow();
+            RequireApplied();
+            File.WriteAllText(yamlPath, "");
+            reloader.Trigger();
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+
+            // A load on demand reads the rewritten file before the retry does.
+            File.WriteAllText(yamlPath, YamlFlag2);
+            reloader.ReloadNow();
+            Assert.Equal(new[] { "flag2" }, FlagKeys(RequireApplied()));
+
+            // The retry can still fire, but nothing needs to be read again, so it does not load. A
+            // changed file with no trigger must not be picked up.
+            File.WriteAllText(yamlPath, YamlFlag1);
+            RequireQuiet(EmptyFileTiming.RetryDelay + TimeSpan.FromMilliseconds(500));
+        }
+
+        [Fact]
+        public void EmptyFileIsNotReadAgainWhenRetryIsOff()
+        {
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeYamlReloader(EmptyFileTiming, c => c.RetryOnFailure = false, yamlPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            // Without a retry, nothing would read the file again, so the load applies it as it is.
+            File.WriteAllText(yamlPath, "");
+            reloader.ReloadNow();
+            Assert.Empty(_applied.ExpectValue(TimeSpan.Zero).Flags);
+        }
+
+        [Fact]
+        public void ReadingAFileAgainDoesNotUseUpALoadAttempt()
+        {
+            Write(Flag1True);
+            var reader = new CountingFileReader();
+            var reloader = MakeReloader(c =>
+            {
+                c.FileReader = reader;
+                c.MaxLoadAttempts = 2;
+            });
+            reloader.ReloadNow();
+            RequireApplied();
+
+            Write("");
+            reloader.Trigger();
+
+            // After the initial load: the read again, then the two attempts of the budget.
+            AssertEventually(() => LogCapture.HasMessageWithRegex(LogLevel.Error, "after 2 attempts"));
+            _applied.ExpectNoValue(TimeSpan.FromMilliseconds(100));
+            Assert.Equal(4, reader.Reads);
         }
 
         [Fact]
@@ -207,7 +369,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         {
             var yamlPath = _dir.PathOf("data.yaml");
             File.WriteAllText(yamlPath, "");
-            var reloader = MakeYamlReloader(yamlPath, EmptyFileTiming);
+            var reloader = MakeYamlReloader(EmptyFileTiming, yamlPath);
 
             reloader.ReloadNow();
 
@@ -456,7 +618,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var reloader = MakeReloader();
 
             reloader.ReloadNow();
-            RequireErrorLogged();
+            var first = RequireErrorLogged();
 
             // The automatic retries keep failing identically. The error is not logged at error
             // level again.
@@ -465,14 +627,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
             // A different failure is a new report.
             Write(@"{""flagValues"": {bad}}");
-            Assert.Contains("error parsing file", RequireErrorLogged());
+            var second = RequireErrorLoggedForContent();
+            Assert.Contains("error parsing file", second);
+            Assert.NotEqual(first, second);
 
             // Success re-arms reporting: the same failure recurring afterward is reported again.
             Write(Flag1True);
             RequireApplied();
+            DrainErrors();
             Write(Truncated);
             reloader.Trigger();
-            RequireErrorLogged();
+            Assert.Equal(first, RequireErrorLogged());
         }
 
         [Fact]

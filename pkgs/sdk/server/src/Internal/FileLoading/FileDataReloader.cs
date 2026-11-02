@@ -77,7 +77,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         /// <summary>
         /// If true, a failed reload is retried after <see cref="FileDataReloaderTiming.RetryDelay"/>,
         /// so that a failure observed while a file was being rewritten recovers even if no further
-        /// change notification arrives. If false, a failed reload waits for the next trigger.
+        /// change notification arrives, and a file that had content and is found empty is read again
+        /// after the same delay before it is applied. If false, a failed reload waits for the next
+        /// trigger, and an empty file is parsed as it is.
         /// </summary>
         internal bool RetryOnFailure { get; set; } = true;
 
@@ -172,6 +174,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private byte[] _lastGoodHash; // only touched inside _reloadLock
         private string _lastErrorMessage; // only touched inside _reloadLock
         private int _failedAttempts; // only touched inside _reloadLock
+        // Whether the last read of each configured path found content; only touched inside
+        // _reloadLock. A missing file counts as no content.
+        private readonly Dictionary<string, bool> _lastReadHadContent = new Dictionary<string, bool>();
+        // True from the read again of an empty file (see ReadAgainLater) until the next load starts;
+        // only touched inside _reloadLock. The retry it arms is not stale although nothing failed.
+        private bool _readAgainPending;
 
         // Guards the timers. The timers are created on first use so that a reloader that is never
         // used holds no scheduled work.
@@ -223,7 +231,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // ends, so a disarm here could cancel a retry that a later failed load on another thread
             // armed. A retry that is left over from an earlier failure does no work: Reload skips a
             // retry when nothing has failed since the last success.
-            if (Reload(isRetry: false, afterChange: false) == LoadOutcome.Failed)
+            if (Reload(isRetry: false) == LoadOutcome.Failed)
             {
                 // An already armed retry keeps its earlier deadline.
                 ArmRetry(keepExistingDeadline: true);
@@ -393,7 +401,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // A pending retry is superseded by this reload. It either succeeds, or it fails and
             // arms a fresh retry.
             DisarmRetry();
-            if (Reload(isRetry, afterChange: !isRetry) == LoadOutcome.Failed)
+            if (Reload(isRetry) == LoadOutcome.Failed)
             {
                 ArmRetry(keepExistingDeadline: false);
             }
@@ -445,9 +453,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // Performs one full load of all configured files. A skipped no-op application counts as
         // success. The whole set is re-read on every reload: entries are combined across files in
         // order, so a change to one file can alter which file wins for a key.
-        // A load after a change is one that a change signal started; the initial load and a retry are
-        // not.
-        private LoadOutcome Reload(bool isRetry, bool afterChange)
+        private LoadOutcome Reload(bool isRetry)
         {
             lock (_reloadLock)
             {
@@ -461,7 +467,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     // A load that is not a retry starts a new run of attempts with a fresh budget.
                     _failedAttempts = 0;
                 }
-                else if (_failedAttempts == 0)
+                else if (_failedAttempts == 0 && !_readAgainPending)
                 {
                     // The retry is stale: a load succeeded after the failure that armed it. Its
                     // timer fired while that load was running, or the load was a ReloadNow, which
@@ -471,11 +477,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     return LoadOutcome.Succeeded;
                 }
 
+                _readAgainPending = false;
+
                 var documents = new List<FileDataDocument>(_config.Paths.Count);
                 var files = new List<FileDataFileSummary>(_config.Paths.Count);
                 using (var hasher = _config.SkipUnchanged ? SHA256.Create() : null)
                 {
-                    return Reload(documents, files, hasher, isRetry, afterChange);
+                    return Reload(documents, files, hasher, isRetry);
                 }
             }
         }
@@ -483,7 +491,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // The body of Reload, inside _reloadLock. The hasher is null when unchanged content is not
         // skipped.
         private LoadOutcome Reload(List<FileDataDocument> documents, List<FileDataFileSummary> files, SHA256 hasher,
-            bool isRetry, bool afterChange)
+            bool isRetry)
         {
             foreach (var path in _config.Paths)
             {
@@ -495,6 +503,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 catch (FileNotFoundException) when (_config.SkipMissingPaths)
                 {
                     _log.Debug("File {0} does not exist; it contributes no data", path);
+                    _lastReadHadContent[path] = false;
                     files.Add(new FileDataFileSummary(path, false, 0, 0));
                     AppendToHash(hasher, path, null);
                     continue;
@@ -503,6 +512,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     !_config.FailOnMissingDirectory)
                 {
                     _log.Debug("File {0} does not exist; it contributes no data", path);
+                    _lastReadHadContent[path] = false;
                     files.Add(new FileDataFileSummary(path, false, 0, 0));
                     AppendToHash(hasher, path, null);
                     continue;
@@ -511,9 +521,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 {
                     return Fail(new FileDataReadException(path, "unable to read file: " + e.Message, e), isRetry);
                 }
-                if (afterChange && _config.RetryOnFailure && string.IsNullOrWhiteSpace(content))
+                var hasContent = !string.IsNullOrWhiteSpace(content);
+                var hadContent = _lastReadHadContent.TryGetValue(path, out var had) && had;
+                _lastReadHadContent[path] = hasContent;
+                if (!hasContent && hadContent && _config.RetryOnFailure)
                 {
-                    return DeferEmptyFile(path);
+                    return ReadAgainLater(path);
                 }
                 // One read feeds both the hash and the parse, so the skip-unchanged hash can never
                 // disagree with the content that was actually applied.
@@ -603,20 +616,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         // Called inside _reloadLock.
-        // A file that a load after a change finds empty may be in the middle of an in-place rewrite: a
-        // writer that truncates the file and then writes the new content. Whatever the file's format, the
-        // load keeps the current data and counts as a failed attempt without logging an error, so the
-        // retry reads the file again after the retry delay; the change signal for the write starts a new
-        // load sooner. The retry parses what the file holds then: a file that is still empty is invalid
-        // JSON, or a document with no entries in a format such as YAML.
-        private LoadOutcome DeferEmptyFile(string path)
+        // A file that had content when it was last read and is empty now may be in the middle of an
+        // in-place rewrite: a writer that truncates the file and then writes the new content. Whatever
+        // the file's format, the load keeps the current data and arms the retry without logging an error
+        // or using up an attempt, so the file is read again after the retry delay; the change signal for
+        // the write starts a new load sooner. That next load parses what the file holds then, because the
+        // file was empty when it was last read: a file that is still empty is invalid JSON, or a document
+        // with no entries in a format such as YAML. So the current data is kept for at most one more load,
+        // and a file that is empty from the start, such as a placeholder, is never read again.
+        private LoadOutcome ReadAgainLater(string path)
         {
             if (_disposed)
             {
                 return LoadOutcome.Succeeded;
             }
             _log.Debug("File {0} is empty, possibly while it is being rewritten; reading it again before applying it", path);
-            _failedAttempts++;
+            _readAgainPending = true;
             return LoadOutcome.Failed;
         }
 

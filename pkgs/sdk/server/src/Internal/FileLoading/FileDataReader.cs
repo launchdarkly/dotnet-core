@@ -14,8 +14,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// the default sharing mode cannot be opened for writing, replaced by a rename, or deleted
     /// until the read ends, so an editor that saves again, or a tool that replaces the file,
     /// fails while a reload is in progress. This reader opens the file so that all of those are
-    /// allowed. A read that overlaps a write can see incomplete content, which fails to parse
-    /// and is retried by the reloader.
+    /// allowed. A read that overlaps a write can see incomplete content. Incomplete JSON fails to
+    /// parse and is retried by the reloader, and a file that is found empty after it had content is
+    /// read again before it is applied. YAML that is cut off between two lines can still parse, as a
+    /// part of the file's entries.
     /// </para>
     /// <para>
     /// A writer can still hold the file in a way that denies reading. That read fails like any

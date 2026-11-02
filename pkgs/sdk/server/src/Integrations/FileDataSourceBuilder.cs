@@ -123,11 +123,12 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// This option is off by default: unless you set this option to <c>true</c>, files will only be loaded once.
         /// </para>
         /// <para>
-        /// Whenever possible, you should update a file's entire contents in one atomic operation; in Unix-like OSes,
-        /// that can be done by creating a temporary file, writing to it, and then renaming it to replace the original
-        /// file. In Windows, that is not always possible, so FileDataSource might detect an update before the file has
-        /// been fully written; in that case it will retry several times until the file can be parsed, giving up after
-        /// repeated failures until another change to the file is detected.
+        /// A file can be rewritten in place, so the data source can read it before it has been fully written. A file
+        /// that had content and is found empty is read again after a short delay before it is applied. Content that
+        /// cannot be parsed is retried several times until the file can be parsed, giving up after repeated failures
+        /// until another change to the file is detected. YAML that is cut off between two entries can still parse,
+        /// so for a YAML file, replacing its entire contents in one operation, such as renaming a fully written
+        /// temporary file over it, avoids briefly applying only a part of it.
         /// </para>
         /// <para>
         /// The data source watches the directory of each file, so a file that is created, replaced, or deleted

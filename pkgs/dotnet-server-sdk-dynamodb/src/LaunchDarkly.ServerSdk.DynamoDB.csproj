@@ -34,13 +34,15 @@
   </ItemGroup>
 
   <!-- Use PackageReference in Debug/Release -->
-  <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences'">
+  <ItemGroup Condition="'$(Configuration)' != 'DebugLocalReferences' and '$(UseLocalServerSdk)' != 'true'">
     <PackageReference Include="LaunchDarkly.ServerSdk" Version="[8.0.0,9.0.0)" />
   </ItemGroup>
 
-  <!-- Use ProjectReference in DebugLocalReferences -->
-  <ItemGroup Condition="'$(Configuration)' == 'DebugLocalReferences'">
-    <ProjectReference Include="../../sdk/server/src/LaunchDarkly.ServerSdk.csproj" />
+  <!-- Use ProjectReference in DebugLocalReferences, or when a project in this repository that runs against
+       the local SDK, such as the server SDK contract test service, sets UseLocalServerSdk. The property is
+       not passed on, so the SDK project builds the same way as for its other references. -->
+  <ItemGroup Condition="'$(Configuration)' == 'DebugLocalReferences' or '$(UseLocalServerSdk)' == 'true'">
+    <ProjectReference Include="../../sdk/server/src/LaunchDarkly.ServerSdk.csproj" GlobalPropertiesToRemove="UseLocalServerSdk" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\CHANGELOG.md">

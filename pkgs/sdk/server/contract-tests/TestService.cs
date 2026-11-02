@@ -12,9 +12,12 @@ namespace TestService
     {
         public static void Main(string[] args)
         {
+            // An optional first argument selects the port. In CI, port 8000 belongs to the local DynamoDB
+            // instance that the persistent store tests use.
+            var port = args.Length > 0 ? int.Parse(args[0]) : 8000;
             var quitSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
             var app = new Webapp(quitSignal);
-            var server = HttpServer.Start(8000, app.Handler);
+            var server = HttpServer.Start(port, app.Handler);
             server.Recorder.Enabled = false;
             quitSignal.WaitOne();
             server.Dispose();
@@ -49,7 +52,11 @@ namespace TestService
             "fdv1-fallback",
             "instance-id",
             "retry-conformance-fdv1-streaming",
-            "retry-conformance-fdv1-polling"
+            "retry-conformance-fdv1-polling",
+            "persistent-data-store-redis",
+            "persistent-data-store-dynamodb",
+            "persistent-data-store-consul",
+            "persistent-data-store-recovery"
         };
 
         public readonly Handler Handler;

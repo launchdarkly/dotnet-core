@@ -38,6 +38,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           run_fdv2_tests: 'true'
           enable_long_running_tests: 'true'
+          enable_persistence_tests: 'true'
 
       - name: Upload test service log
         if: always()

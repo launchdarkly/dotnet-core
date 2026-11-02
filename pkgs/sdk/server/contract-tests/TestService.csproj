@@ -13,6 +13,7 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\LaunchDarkly.ServerSdk.csproj" />
+  </ItemGroup>
+
+  <!-- The persistent store integrations, built against the SDK project above rather than the published SDK
+       package that they reference by default. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\dotnet-server-sdk-redis\src\LaunchDarkly.ServerSdk.Redis.csproj" AdditionalProperties="UseLocalServerSdk=true" />
+    <ProjectReference Include="..\..\..\dotnet-server-sdk-dynamodb\src\LaunchDarkly.ServerSdk.DynamoDB.csproj" AdditionalProperties="UseLocalServerSdk=true" />
+    <ProjectReference Include="..\..\..\dotnet-server-sdk-consul\src\LaunchDarkly.ServerSdk.Consul.csproj" AdditionalProperties="UseLocalServerSdk=true" />
   </ItemGroup>
 
 </Project>

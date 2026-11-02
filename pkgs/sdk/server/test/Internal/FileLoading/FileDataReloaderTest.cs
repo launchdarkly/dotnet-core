@@ -10,6 +10,7 @@ using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.TestHelpers;
 using Xunit;
 using Xunit.Abstractions;
+using YamlDotNet.Serialization;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 {
@@ -74,7 +75,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             new FileDataReloaderTiming(TimeSpan.FromMilliseconds(debounceMs), TimeSpan.FromMilliseconds(maxDebounceMs),
                 TimeSpan.FromMilliseconds(retryMs));
 
-        private void Write(string content) => File.WriteAllText(_path, content);
+        // Applications rewrite data files in place, which is not atomic. The tests do too, deliberately
+        // slowly: a file that exists is truncated, and written 30 ms later, so a load can find it
+        // empty, as it would with an application's writes, instead of only by chance.
+        private void Write(string content)
+        {
+            if (!File.Exists(_path))
+            {
+                File.WriteAllText(_path, content);
+                return;
+            }
+            InPlaceWrites.Rewrite(_path, content, TimeSpan.FromMilliseconds(30));
+        }
 
         private FileDataMergeResult RequireApplied() => _applied.ExpectValue(TestTimeout);
 
@@ -97,7 +109,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Assert.Equal(_consumedErrorLogs, ErrorLogs().Count);
         }
 
-        // The test's own writes are ordinary, not atomic. An automatic retry that runs while the
+        // The test's own writes are not atomic (see Write). An automatic retry that runs while the
         // file is being rewritten reads it empty or half written and logs that failure. Those
         // entries are a correct response to what the retry saw, and tests that only check what
         // happens after the recovery discard them before they require silence.
@@ -112,6 +124,108 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         private int GiveUpLogCount() =>
             LogCapture.GetMessages().Count(m => m.Level == LogLevel.Error && m.Text.Contains("attempts"));
+
+        // The delays for the tests of a file that is empty after a change. The retry comes long enough
+        // after the change signal for a test to finish rewriting the file before it.
+        private static readonly FileDataReloaderTiming EmptyFileTiming = Timing(10, 1000, 500);
+
+        private const string YamlFlag1 = "flagValues:\n  flag1: true\n";
+        private const string YamlFlag2 = "flagValues:\n  flag2: true\n";
+
+        // Configures the reloader for one YAML file, with a YAML parser that returns null for a file
+        // with no content.
+        private FileDataReloader MakeYamlReloader(string yamlPath, FileDataReloaderTiming timing)
+        {
+            var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
+            return MakeReloader(c =>
+            {
+                c.Paths = new[] { yamlPath };
+                c.ParsersByExtension = new Dictionary<string, Func<string, object>>
+                {
+                    [".yaml"] = content => yaml.Deserialize<object>(content)
+                };
+            }, timing);
+        }
+
+        [Fact]
+        public void EmptyFileAfterAChangeIsReadAgainBeforeItIsApplied()
+        {
+            // A writer that rewrites the file in place truncates it and then writes the new content. A
+            // load that the change signal starts finds the file empty and keeps the data. In YAML an
+            // empty file is valid, so applying it would briefly remove every entry.
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeYamlReloader(yamlPath, EmptyFileTiming);
+            reloader.ReloadNow();
+            Assert.Equal(new[] { "flag1" }, FlagKeys(RequireApplied()));
+
+            File.WriteAllText(yamlPath, "");
+            reloader.Trigger();
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+
+            // The retry reads the rewritten file.
+            File.WriteAllText(yamlPath, YamlFlag2);
+            Assert.Equal(new[] { "flag2" }, FlagKeys(RequireApplied()));
+            RequireQuiet(TimeSpan.FromMilliseconds(100));
+        }
+
+        [Fact]
+        public void EmptyYamlFileThatStaysEmptyIsAppliedByTheRetry()
+        {
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeYamlReloader(yamlPath, EmptyFileTiming);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(yamlPath, "");
+            reloader.Trigger();
+            RequireQuiet(TimeSpan.FromMilliseconds(200));
+
+            // The file is still empty when the retry reads it, so it is a document with no entries.
+            Assert.Empty(RequireApplied().Flags);
+        }
+
+        [Fact]
+        public void EmptyJsonFileAfterAChangeFailsAndKeepsTheData()
+        {
+            Write(Flag1True);
+            var reloader = MakeReloader(timing: EmptyFileTiming);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            Write("");
+            reloader.Trigger();
+
+            // The retry reads the file again: still empty, it is not a JSON document.
+            Assert.Contains("no content", RequireErrorLogged());
+            Assert.Equal(1, ApplyCount);
+        }
+
+        [Fact]
+        public void EmptyYamlFileAtTheInitialLoadIsADocumentWithNoEntries()
+        {
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, "");
+            var reloader = MakeYamlReloader(yamlPath, EmptyFileTiming);
+
+            reloader.ReloadNow();
+
+            // The initial load applies what it reads, without waiting for a retry.
+            Assert.Empty(_applied.ExpectValue(TimeSpan.Zero).Flags);
+        }
+
+        [Fact]
+        public void EmptyJsonFileAtTheInitialLoadFailsToParse()
+        {
+            Write("");
+            var reloader = MakeReloader(timing: EmptyFileTiming);
+
+            reloader.ReloadNow();
+
+            Assert.Contains("no content", RequireErrorLogged());
+            Assert.Equal(0, ApplyCount);
+        }
 
         [Fact]
         public void FailsOnMissingPathByDefault()

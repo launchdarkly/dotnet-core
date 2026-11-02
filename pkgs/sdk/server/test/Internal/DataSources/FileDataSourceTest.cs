@@ -321,6 +321,61 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        [Theory]
+        [InlineData(".json")]
+        [InlineData(".yaml")]
+        public void InPlaceRewriteNeverServesAnEmptyFile(string extension)
+        {
+            // The file is empty for 300 ms, longer than the settle window after a change, so a reload
+            // reads it empty. The client must keep serving the old value until the new one is written.
+            using (var dir = TempDirectory.Create())
+            {
+                var path = dir.PathOf("flags" + extension);
+                File.WriteAllText(path, @"{""flagValues"":{""flag1"":""a""}}"); // JSON is also YAML
+                var source = FileData.DataSource().FilePaths(path).AutoUpdate(true);
+                if (extension == ".yaml")
+                {
+                    var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
+                    source.Parser(".yaml", content => yaml.Deserialize<object>(content));
+                }
+                var config = BasicConfig().DataSource(source).StartWaitTime(TimeSpan.FromSeconds(5)).Build();
+                using (var client = new LdClient(config))
+                {
+                    Assert.Equal("a", client.StringVariation("flag1", user, "default"));
+                    var served = new ConcurrentQueue<string>();
+                    var stop = 0;
+                    var sampler = new Thread(() =>
+                    {
+                        string last = null;
+                        while (Volatile.Read(ref stop) == 0)
+                        {
+                            var value = client.StringVariation("flag1", user, "default");
+                            if (value != last)
+                            {
+                                served.Enqueue(value);
+                                last = value;
+                            }
+                            Thread.Sleep(2);
+                        }
+                    });
+                    sampler.Start();
+                    try
+                    {
+                        InPlaceWrites.Rewrite(path, @"{""flagValues"":{""flag1"":""b""}}", TimeSpan.FromMilliseconds(300));
+                        // Waits for the sampler itself to see the new value, so it has recorded everything
+                        // that the client served before it.
+                        WaitUntil(() => served.Contains("b"), "the client to serve the rewritten file");
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref stop, 1);
+                        sampler.Join();
+                    }
+                    Assert.Equal(new[] { "a", "b" }, served.ToArray());
+                }
+            }
+        }
+
         private const string ValidFlagJson = @"{""flagValues"":{""flag1"":""a""}}";
         private const string TruncatedFlagJson = @"{""flagValues"": {"; // invalid as JSON and as YAML
 

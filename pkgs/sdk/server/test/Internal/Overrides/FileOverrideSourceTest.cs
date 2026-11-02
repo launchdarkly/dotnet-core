@@ -289,6 +289,41 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             Assert.Single(FlagsByKey(RequireSnapshot()));
         }
 
+        [Theory]
+        [InlineData(".json", FileOverrideTypes.ChangeDetection.Watching)]
+        [InlineData(".json", FileOverrideTypes.ChangeDetection.Polling)]
+        [InlineData(".yaml", FileOverrideTypes.ChangeDetection.Watching)]
+        [InlineData(".yaml", FileOverrideTypes.ChangeDetection.Polling)]
+        public void InPlaceRewriteNeverEmptiesTheOverrides(string extension,
+            FileOverrideTypes.ChangeDetection changeDetection)
+        {
+            // The file is empty for 300 ms while it is rewritten in place. An empty snapshot would
+            // remove every override for that time.
+            var path = _dir.PathOf("overrides" + extension);
+            Write(path, @"{""flagValues"": {""flag1"": ""a""}}"); // JSON is also YAML
+            Func<string, object> yamlParser = null;
+            if (extension == ".yaml")
+            {
+                var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
+                yamlParser = content => yaml.Deserialize<object>(content);
+            }
+            StartSource(new[] { path }, changeDetection: changeDetection, yamlParser: yamlParser);
+            RequireInitialSnapshot();
+
+            InPlaceWrites.Rewrite(path, @"{""flagValues"": {""flag1"": ""b""}}", TimeSpan.FromMilliseconds(300));
+
+            // Every snapshot until the rewritten one still has the override.
+            while (true)
+            {
+                var flags = FlagsByKey(RequireSnapshot());
+                Assert.True(flags.ContainsKey("flag1"), "a snapshot without the override was applied");
+                if (flags["flag1"].Variations.Contains(LdValue.Of("b")))
+                {
+                    break;
+                }
+            }
+        }
+
         [Fact]
         public void WatchingModeReloadsOnChange()
         {

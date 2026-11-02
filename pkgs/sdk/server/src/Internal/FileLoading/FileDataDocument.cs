@@ -51,9 +51,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// <para>
     /// A flag or segment is listed under its key. A <c>key</c> property in the definition is optional
     /// and must be equal to the key it is listed under; a <c>version</c> property is optional. A
-    /// definition that is marked as deleted is rejected: a data file holds definitions only. A file
-    /// with no content is a document with no entries, and content after the end of the document is
-    /// an error.
+    /// definition that is marked as deleted is rejected: a data file holds definitions only. Content
+    /// after the end of the document is an error.
+    /// </para>
+    /// <para>
+    /// Whether a file with no content is valid depends on its format, like the rest of its content. A
+    /// JSON file with no content is not a JSON document, so it fails to parse. A registered parser that
+    /// returns null for it, as YAML parsers do, makes it a document with no entries.
     /// </para>
     /// </remarks>
     internal sealed class FileDataParser
@@ -167,8 +171,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         {
             if (string.IsNullOrWhiteSpace(data))
             {
-                // A file with no content is a document with no entries.
-                return FileDataDocument.Empty;
+                // Not a JSON document. A file that is being rewritten in place can be empty for a
+                // moment, and the failure keeps its last good data until it is complete.
+                throw new JsonException("the file has no content, which is not a JSON document");
             }
             var r = new Utf8JsonReader(Encoding.UTF8.GetBytes(data));
             var document = ParseJson(ref r);

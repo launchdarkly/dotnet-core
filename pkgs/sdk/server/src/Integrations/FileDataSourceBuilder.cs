@@ -66,7 +66,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// The function takes the file content and returns an <c>object</c> made of the basic types that
         /// can be represented in JSON: <c>string</c>, numbers, booleans, <c>List</c>, and
         /// <c>Dictionary&lt;string, object&gt;</c>. It should throw an exception if it cannot parse the
-        /// content. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
+        /// content. A result of <c>null</c>, which YAML parsers return for a file with no content, means
+        /// the file has no entries. A JSON file with no content is not valid, and fails to load like any
+        /// other content that cannot be parsed. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
         /// configuration method tells the parser to read a property like <c>on: true</c> or
         /// <c>variation: 3</c> as a boolean or integer rather than a string; YAML syntax is flexible, and
         /// data types matter in flag definitions.

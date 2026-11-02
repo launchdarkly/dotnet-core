@@ -99,6 +99,26 @@ namespace LaunchDarkly.Sdk.Server
         }
     }
 
+    public static class InPlaceWrites
+    {
+        /// <summary>
+        /// Rewrites a file in place the slow way: it truncates the file, waits, and then writes the new
+        /// content, so a reader can find the file empty in between. Applications and editors rewrite data
+        /// files in place, and the SDK must tolerate reading one while it is being written.
+        /// </summary>
+        public static void Rewrite(string path, string content, TimeSpan pauseAfterTruncating)
+        {
+            using (var stream = new FileStream(path, FileMode.Truncate, FileAccess.Write,
+                       FileShare.ReadWrite | FileShare.Delete))
+            {
+                stream.Flush(true);
+                System.Threading.Thread.Sleep(pauseAfterTruncating);
+                var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+                stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+    }
+
 #if NET6_0_OR_GREATER
     /// <summary>
     /// Creates symbolic links for tests. Creating a link needs a privilege on Windows that the test

@@ -191,8 +191,46 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                            .Synchronizers(td)))
                 {
                     WaitUntil(() => StoreHasFlag("td-flag"), "the synchronizer data in the persistent store");
+                    // The mock store's Init replaces all of its data, so only the count shows that the file data
+                    // was never written before the synchronizer's basis.
+                    Assert.Equal(1, _store.InitCalledCount);
                     Assert.False(StoreHasFlag("file-flag"));
                 }
+            }
+        }
+
+        [Fact]
+        public void WrappedFileDataSourceIsNotWrittenToPersistentStore()
+        {
+            using (var file = TempFile.Create())
+            {
+                file.SetContent(@"{""flagValues"":{""flag1"":""a""}}");
+
+                using (var client = MakeClient(DataSystemWithPersistentStore()
+                           .Synchronizers(new WrappingConfigurer(FileData.DataSource().FilePaths(file.Path)))))
+                {
+                    Assert.Equal("a", client.StringVariation("flag1", _context, ""));
+                    Assert.Equal(0, _store.InitCalledCount);
+                    Assert.Empty(_store.Data);
+                }
+            }
+        }
+
+        [Fact]
+        public void WrappedTestDataNotToBePersistedIsNotWrittenToPersistentStore()
+        {
+            var td = TestData.DataSource().ShouldPersist(false);
+            td.Update(td.Flag("flag1").On(true));
+
+            using (var client = MakeClient(DataSystemWithPersistentStore().Synchronizers(new WrappingConfigurer(td))))
+            {
+                Assert.True(client.BoolVariation("flag1", _context, false));
+
+                td.Update(td.Flag("flag2").On(true));
+
+                Assert.True(client.BoolVariation("flag2", _context, false));
+                Assert.Equal(0, _store.InitCalledCount);
+                Assert.Empty(_store.Data);
             }
         }
 
@@ -214,6 +252,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                     Assert.True(StoreHasFlag("flag1"));
                 }
             }
+        }
+
+        // A configurer of an application's own that delegates to another, so the data system cannot see the
+        // persistence setting of the configurer it wraps.
+        private sealed class WrappingConfigurer : IComponentConfigurer<IDataSource>
+        {
+            private readonly IComponentConfigurer<IDataSource> _inner;
+
+            public WrappingConfigurer(IComponentConfigurer<IDataSource> inner)
+            {
+                _inner = inner;
+            }
+
+            public IDataSource Build(LdClientContext context) => _inner.Build(context);
         }
 
         // An FDv1-style data source that is not one of the SDK's own.

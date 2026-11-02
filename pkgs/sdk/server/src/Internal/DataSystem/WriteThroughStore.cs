@@ -92,6 +92,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         public bool Upsert(DataStoreTypes.DataKind kind, string key, DataStoreTypes.ItemDescriptor item)
         {
+            // An upsert carries no persistence flag, so it is always written through. The FDv2 data system does
+            // not call this: every data source update reaches this store through Apply, which has the flag.
             var result = _memoryStore.Upsert(kind, key, item);
             if (_hasPersistence && _persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
             {

@@ -56,6 +56,45 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             Assert.Equal(shouldPersist, changeSet.ShouldPersist);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void InitWithDataSetNotToBePersistedCreatesChangeSetNotToBePersisted(bool sourceShouldPersist)
+        {
+            // For example, a file data source whose configurer is wrapped by another configurer.
+            var adapter = new DataSourceUpdatesV2ToV1Adapter(_sink, sourceShouldPersist);
+
+            adapter.Init(new FullDataSet<ItemDescriptor>(MakeDataSet().Data, false));
+
+            Assert.False(_sink.Applies.ExpectValue().ShouldPersist);
+        }
+
+        [Fact]
+        public void UpsertAfterDataSetNotToBePersistedIsNotToBePersisted()
+        {
+            var adapter = new DataSourceUpdatesV2ToV1Adapter(_sink, true);
+
+            adapter.Init(new FullDataSet<ItemDescriptor>(MakeDataSet().Data, false));
+            adapter.Upsert(TestDataKind, "key1", new ItemDescriptor(2, new TestItem("item1")));
+
+            Assert.False(_sink.Applies.ExpectValue().ShouldPersist);
+            Assert.False(_sink.Applies.ExpectValue().ShouldPersist);
+        }
+
+        [Fact]
+        public void UpsertAfterDataSetToBePersistedAgainIsToBePersisted()
+        {
+            var adapter = new DataSourceUpdatesV2ToV1Adapter(_sink, true);
+
+            adapter.Init(new FullDataSet<ItemDescriptor>(MakeDataSet().Data, false));
+            adapter.Init(MakeDataSet());
+            adapter.Upsert(TestDataKind, "key1", new ItemDescriptor(2, new TestItem("item1")));
+
+            Assert.False(_sink.Applies.ExpectValue().ShouldPersist);
+            Assert.True(_sink.Applies.ExpectValue().ShouldPersist);
+            Assert.True(_sink.Applies.ExpectValue().ShouldPersist);
+        }
+
         [Fact]
         public void FlagDefaultsToPersist()
         {

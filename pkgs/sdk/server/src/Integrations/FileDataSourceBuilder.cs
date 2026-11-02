@@ -216,7 +216,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             }
             return new FileDataSource(context.DataSourceUpdates, _fileReader, _paths, _autoUpdate,
                 new Dictionary<string, Func<string, object>>(_parsers), _skipMissingPaths, _duplicateKeysHandling,
-                context.Logger.SubLogger(LogNames.DataSourceSubLog));
+                _shouldPersist, context.Logger.SubLogger(LogNames.DataSourceSubLog));
         }
     }
 }

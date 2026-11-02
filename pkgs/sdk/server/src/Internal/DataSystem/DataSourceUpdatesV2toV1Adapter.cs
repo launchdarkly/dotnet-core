@@ -11,14 +11,23 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
     /// Adapts an <see cref="IDataSourceUpdatesV2"/> to work with data sources expecting <see cref="IDataSourceUpdates"/>.
     /// </summary>
     /// <remarks>
-    /// An FDv1 update carries no persistence flag, so the adapter is given the flag of the source it serves,
-    /// and applies it to the change sets it creates from full data sets and upserts alike. Change sets that
-    /// an FDv2 source applies directly pass through with their own flag.
+    /// <para>
+    /// The adapter is given the persistence flag of the source it serves, from the source's configurer, and
+    /// applies it to the change sets it creates from full data sets and upserts alike. A full data set can also
+    /// carry a flag of its own, which the SDK's file and test data sources set, so that their data stays out of
+    /// a persistent store even when another configurer wraps theirs. A change set is persisted only if both
+    /// flags allow it. An FDv1 upsert carries no flag, so it takes the flag of the last full data set, the data
+    /// it changes.
+    /// </para>
+    /// <para>
+    /// Change sets that an FDv2 source applies directly pass through with their own flag.
+    /// </para>
     /// </remarks>
     internal class DataSourceUpdatesV2ToV1Adapter : IDataSourceUpdates, IDataSourceUpdatesV2, IDataSourceUpdatesHeaders
     {
         private readonly IDataSourceUpdatesV2 _destination;
         private readonly bool _shouldPersist;
+        private volatile bool _dataSetShouldPersist = true;
 
         public DataSourceUpdatesV2ToV1Adapter(IDataSourceUpdatesV2 sink, bool shouldPersist = true)
         {
@@ -50,7 +59,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 Subsystems.Selector.Empty,
                 data,
                 null,
-                shouldPersist: _shouldPersist
+                shouldPersist: _shouldPersist && _dataSetShouldPersist
             );
 
             return _destination.Apply(changeSet);
@@ -71,13 +80,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                     ?.FirstOrDefault();
             }
 
+            _dataSetShouldPersist = allData.ShouldPersist;
+
             // Convert FullDataSet to ChangeSet and call Apply
             var changeSet = new DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor>(
                 DataStoreTypes.ChangeSetType.Full,
                 Subsystems.Selector.Empty,
                 allData.Data,
                 environmentId,
-                shouldPersist: _shouldPersist
+                shouldPersist: _shouldPersist && allData.ShouldPersist
             );
 
             return _destination.Apply(changeSet);

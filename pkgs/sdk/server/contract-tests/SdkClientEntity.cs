@@ -443,7 +443,8 @@ namespace TestService
                 builder.DataStore(CreatePersistentDataStore(sdkParams.PersistentDataStore));
                 // With a persistent store and no data source, the SDK runs in daemon mode: it reads the data
                 // that another process, such as the Relay Proxy, writes to the store.
-                if (streamingParams == null && pollingParams == null)
+                if (streamingParams == null && pollingParams == null &&
+                    serviceEndpointsParams?.Streaming == null && serviceEndpointsParams?.Polling == null)
                 {
                     builder.DataSource(Components.ExternalUpdatesOnly);
                 }
@@ -678,6 +679,10 @@ namespace TestService
         private static PersistentDataStoreBuilder CreatePersistentDataStore(SdkConfigPersistentDataStoreParams storeParams)
         {
             var store = storeParams.Store;
+            if (string.IsNullOrEmpty(store.DSN))
+            {
+                throw new ArgumentException("The persistent store configuration has no DSN");
+            }
             PersistentDataStoreBuilder builder;
             switch (store.Type)
             {
@@ -686,7 +691,7 @@ namespace TestService
                         .Uri(store.DSN)
                         .ConnectTimeout(StoreOperationTimeout)
                         .OperationTimeout(StoreOperationTimeout);
-                    if (store.Prefix != null)
+                    if (!string.IsNullOrEmpty(store.Prefix))
                     {
                         redis.Prefix(store.Prefix);
                     }
@@ -704,7 +709,7 @@ namespace TestService
                             Timeout = StoreOperationTimeout
                         })
                         .Credentials(new BasicAWSCredentials("dummy", "dummy"));
-                    if (store.Prefix != null)
+                    if (!string.IsNullOrEmpty(store.Prefix))
                     {
                         dynamoDB.Prefix(store.Prefix);
                     }
@@ -716,7 +721,7 @@ namespace TestService
                     // named Consul, so the SDK's class is named in full.
                     var consul = LaunchDarkly.Sdk.Server.Integrations.Consul.DataStore()
                         .Address(store.DSN.Contains("://") ? store.DSN : "http://" + store.DSN);
-                    if (store.Prefix != null)
+                    if (!string.IsNullOrEmpty(store.Prefix))
                     {
                         consul.Prefix(store.Prefix);
                     }

@@ -209,7 +209,6 @@ namespace TestService
     {
         public SdkConfigPollingParams Polling { get; set; }
         public SdkConfigFileDataParams File { get; set; }
-        public SdkConfigTestDataParams TestData { get; set; }
     }
 
     public class SdkConfigDataSynchronizerParams

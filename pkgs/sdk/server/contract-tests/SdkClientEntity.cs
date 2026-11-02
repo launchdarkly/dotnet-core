@@ -23,8 +23,8 @@ namespace TestService
         private readonly Logger _log;
         private readonly Dictionary<string, EventHandler<FlagChangeEvent>> _flagListeners =
             new Dictionary<string, EventHandler<FlagChangeEvent>>();
-        // The test data source of this client, if the configuration has a testData data source. Every
-        // testData entry of the configuration uses this one instance.
+        // The test data source of this client, if the configuration has a testData synchronizer. The
+        // harness sends at most one.
         private TestData _testData;
 
         public SdkClientEntity(
@@ -180,6 +180,10 @@ namespace TestService
                         throw new InvalidOperationException("the client has no test data source");
                     }
                     var p = command.UpdateTestData;
+                    if (p?.FlagKey == null)
+                    {
+                        throw new ArgumentException("updateTestData requires a flag key");
+                    }
                     _testData.Update(_testData.Flag(p.FlagKey).ValueForAll(p.Value));
                     break;
                 }
@@ -635,10 +639,6 @@ namespace TestService
                         {
                             initializers.Add(CreateFileDataSource(initializer.File, false));
                         }
-                        else if (initializer.TestData != null)
-                        {
-                            initializers.Add(TestDataFor(initializer.TestData));
-                        }
                     }
                     if (initializers.Count > 0)
                     {
@@ -745,7 +745,13 @@ namespace TestService
 
         private static FileDataSourceBuilder CreateFileDataSource(SdkConfigFileDataParams p, bool autoUpdate)
         {
-            var builder = FileData.DataSource().FilePaths(p.FilePaths ?? new string[0]).AutoUpdate(autoUpdate);
+            // A file data source with no files would load an empty data set, which hides LaunchDarkly data
+            // in memory or, when persisted, empties the store.
+            if (p.FilePaths == null || p.FilePaths.Length == 0 || p.FilePaths.Any(string.IsNullOrEmpty))
+            {
+                throw new ArgumentException("a file data source requires at least one file path");
+            }
+            var builder = FileData.DataSource().FilePaths(p.FilePaths).AutoUpdate(autoUpdate);
             if (p.Persist.HasValue)
             {
                 builder.ShouldPersist(p.Persist.Value);
@@ -755,10 +761,12 @@ namespace TestService
 
         private TestData TestDataFor(SdkConfigTestDataParams p)
         {
-            if (_testData == null)
+            // The updateTestData command addresses the client's test data source, so there is only one.
+            if (_testData != null)
             {
-                _testData = TestData.DataSource();
+                throw new ArgumentException("the configuration has more than one testData synchronizer");
             }
+            _testData = TestData.DataSource();
             if (p.Persist.HasValue)
             {
                 _testData.ShouldPersist(p.Persist.Value);

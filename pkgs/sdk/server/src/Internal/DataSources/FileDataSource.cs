@@ -174,20 +174,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     }
                     catch (Exception e)
                     {
-                        if (isRetry)
-                        {
-                            // A transient read error (for example, a writer replacing the file)
-                            // must not end a retry episode early: paths that were promised
-                            // retries would keep stale data with budget remaining, and another
-                            // file-change notification is not guaranteed. Charge the failure to
-                            // the same per-path budget and continue the chain; it logs a Warn
-                            // while retrying and an Error only on give-up.
-                            HandleRetryLoadFailure(path, e);
-                        }
-                        else
-                        {
-                            LogHelpers.LogException(_logger, "Failed to load " + path, e);
-                        }
+                        HandleReadFailure(path, e);
                         return;
                     }
                 }
@@ -234,18 +221,29 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
-        // Called under _updateLock when a retry attempt fails before parsing (for example, a
-        // transient read error). Charges the failure to the path's per-episode budget and
-        // continues or ends the retry chain.
-        private void HandleRetryLoadFailure(string path, Exception e)
+        // Called under _updateLock when reading a path fails. A read error can be transient (for
+        // example, a writer replacing the file), and another file-change notification is not
+        // guaranteed, whether the load was a retry or was started by Start or a file-change
+        // notification. So, like a parse failure, it is charged to the path's per-episode budget,
+        // and the retry chain continues or ends; it logs a Warn while retrying and an Error only on
+        // give-up. A load started from outside must not end the chain either: it starts a new
+        // episode, so without a retry of its own, nothing would read the files again.
+        private void HandleReadFailure(string path, Exception e)
         {
+            if (!_autoUpdate)
+            {
+                // With auto-update off, files are documented to be loaded only once.
+                LogHelpers.LogException(_logger, "Failed to load " + path, e);
+                return;
+            }
+
             _loadFailureCounts.TryGetValue(path, out var previousAttempts);
             var attempts = previousAttempts + 1;
             _loadFailureCounts[path] = attempts;
 
             if (attempts < MaxLoadAttempts)
             {
-                _logger.Warn("{0}: Failed to read file on a retry ({1}); will retry again in {2} ms",
+                _logger.Warn("{0}: Failed to read file ({1}); will retry in {2} ms",
                     path, LogValues.ExceptionSummary(e), RetryDelay.TotalMilliseconds);
                 _logger.Debug("{0}", LogValues.ExceptionTrace(e));
                 ScheduleRetry();

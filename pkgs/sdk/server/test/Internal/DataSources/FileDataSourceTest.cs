@@ -282,6 +282,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        private static string[] FlagKeys(FullDataSet<ItemDescriptor> data) =>
+            data.Data.Where(kv => kv.Key == DataModel.Features)
+                .SelectMany(kv => kv.Value.Items.Select(item => item.Key)).ToArray();
+
         private static void WaitUntil(Func<bool> condition, string description)
         {
             var deadline = DateTime.UtcNow.AddSeconds(15);
@@ -456,7 +460,97 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 reader.Throw = false;
 
                 // The episode still has budget, so the chain must continue and load the data
-                // instead of dying on the non-parse failure.
+                // instead of dying on the non-parse failure. It loads the whole file, not what it
+                // had merged before the read failed.
+                Assert.Equal(new[] { "flag1" }, FlagKeys(_updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5))));
+            }
+        }
+
+        [Fact]
+        public void ReadErrorOnALoadThatIsNotARetryIsRetried()
+        {
+            var reader = new ScriptedFileReader { Bad = false, Throw = true };
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
+            {
+                // Start, like a file-change notification, is a load that is not a retry. Its read
+                // fails, and the file is readable from then on, with no further notification.
+                fp.Start();
+                WaitForReads(reader, 1);
+                reader.Throw = false;
+
+                Assert.Equal(new[] { "flag1" }, FlagKeys(_updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5))));
+                Assert.True(fp.Initialized);
+            }
+        }
+
+        [Fact]
+        public void ReadErrorOnALoadThatIsNotARetryDoesNotEndThePendingRetries()
+        {
+            var reader = new ScriptedFileReader();
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
+            {
+                fp.Start(); // parse fails, schedules a retry
+
+                // A load from outside the chain (the same code path as a file-change
+                // notification) starts a new episode, and its read fails.
+                reader.Throw = true;
+                fp.Start();
+                reader.Throw = false;
+                reader.Bad = false;
+
+                Assert.Equal(new[] { "flag1" }, FlagKeys(_updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5))));
+            }
+        }
+
+        [Fact]
+        public void ReadErrorIsNotRetriedIfAutoUpdateIsOff()
+        {
+            var reader = new ScriptedFileReader { Bad = false, Throw = true };
+            factory.FilePaths(UnwatchedPath).AutoUpdate(false).FileReader(reader);
+            using (var fp = MakeDataSource())
+            {
+                fp.Start();
+                reader.Throw = false;
+                _updateSink.Inits.ExpectNoValue(TimeSpan.FromSeconds(2));
+                Assert.False(fp.Initialized);
+                Assert.Equal(1, reader.Reads);
+            }
+        }
+
+        [Fact]
+        public void ReadErrorRetryStopsAfterMaxAttemptsAndDoesNotInit()
+        {
+            var reader = new ScriptedFileReader { Bad = false, Throw = true };
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
+            {
+                fp.Start();
+                WaitForReads(reader, 5); // initial attempt + 4 retries
+                Assert.Equal(5, WaitForReadsToStop(reader)); // budget exhausted, no further attempts
+                _updateSink.Inits.ExpectNoValue();
+                Assert.False(fp.Initialized);
+            }
+        }
+
+        [Fact]
+        public void LoadThatIsNotARetryGivesAFailingEpisodeAFreshBudget()
+        {
+            var reader = new ScriptedFileReader();
+            factory.FilePaths(UnwatchedPath).AutoUpdate(true).FileReader(reader);
+            using (var fp = MakeDataSource())
+            {
+                fp.Start();
+                WaitForReads(reader, 4); // four of the five attempts have failed
+
+                // A load from outside the chain, before the budget runs out, starts a new episode
+                // with five attempts of its own. Without the reset, it would be the fifth attempt
+                // and end the chain.
+                fp.Start();
+                WaitForReads(reader, 7);
+                reader.Bad = false;
+
                 _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
             }
         }

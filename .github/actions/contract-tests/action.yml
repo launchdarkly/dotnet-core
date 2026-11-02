@@ -24,9 +24,9 @@ inputs:
     required: false
     default: 'false'
   test_service_port:
-    description: 'The port of the contract test service. The default is not 8000, the port that the harness expects DynamoDB on.'
+    description: 'The port of the contract test service. A caller that enables the persistence tests must pass another port than 8000, the port that the harness expects DynamoDB on.'
     required: false
-    default: '9000'
+    default: '8000'
 
 runs:
   using: composite
@@ -55,6 +55,19 @@ runs:
         redis: true
         dynamodb: true
         consul: true
+
+    # The stores start in the background. The harness's DynamoDB setup fails the whole DynamoDB suite if the store
+    # does not answer yet, and Consul rejects writes until it has elected a leader.
+    - name: Wait for Persistent Stores
+      if: inputs.enable_persistence_tests == 'true'
+      shell: bash
+      run: |
+        for port in 6379 8000 8500; do
+          timeout 120 bash -c "until (echo > /dev/tcp/127.0.0.1/$port) 2>/dev/null; do sleep 1; done" \
+            || { echo "The store on port $port did not start"; exit 1; }
+        done
+        timeout 120 bash -c 'until curl -sf http://127.0.0.1:8500/v1/status/leader | grep -q ":"; do sleep 1; done' \
+          || { echo "Consul did not elect a leader"; exit 1; }
 
     - name: Launch Contract Tests
       id: launch-contract-tests

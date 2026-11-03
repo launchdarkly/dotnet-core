@@ -584,6 +584,92 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
+        public void FilesEmptiedInStaggeredTurnsAreAppliedAfterTheBound()
+        {
+            // Two files stay empty and are truncated again in turn, so that whenever one of them has
+            // stayed empty for the whole delay, the other is still within its delay and holds the load
+            // back. A file that settles so does not get a fresh bound while the other is held back.
+            var aPath = _dir.PathOf("a.yaml");
+            var bPath = _dir.PathOf("b.yaml");
+            File.WriteAllText(aPath, YamlFlag1);
+            File.WriteAllText(bPath, YamlFlag2);
+            var reloader = MakeHoldReloader(aPath, bPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(aPath, "");
+            RequireHeld(reloader);
+            var step = TimeSpan.FromMinutes(54);
+            var applied = false;
+            for (var i = 1; i <= 14 && !applied; i++)
+            {
+                Advance(step);
+                MarkWritten(i % 2 == 1 ? bPath : aPath, 1);
+                if (i == 1)
+                {
+                    File.WriteAllText(bPath, "");
+                }
+                reloader.ReloadNow();
+                // The retry that the hold arms, a little after the other file's delay is over.
+                Advance(TimeSpan.FromMinutes(12));
+                reloader.ReloadNow();
+                Advance(-TimeSpan.FromMinutes(12));
+                applied = ApplyCount > 1;
+            }
+            Assert.True(applied, "the files were held back without end");
+        }
+
+        [Fact]
+        public void BoundOfAFileHeldBackDuringAFailureStartsOverOnceItIsReadAgain()
+        {
+            // While b.json fails to load, a.yaml is rewritten once and its gap is held back. Later, b.json
+            // is fixed while a.yaml is in the middle of another rewrite, which is held back with a bound
+            // of its own.
+            var aPath = _dir.PathOf("a.yaml");
+            var bPath = _dir.PathOf("b.json");
+            File.WriteAllText(aPath, YamlFlag1);
+            File.WriteAllText(bPath, Flag1False.Replace("flag1", "flag3"));
+            var reloader = MakeHoldReloader(aPath, bPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(bPath, "{bad");
+            File.WriteAllText(aPath, "");
+            reloader.ReloadNow();
+            File.WriteAllText(aPath, YamlFlag2);
+            reloader.ReloadNow();
+            Advance(TimeSpan.FromHours(6));
+            reloader.ReloadNow();
+
+            File.WriteAllText(bPath, Flag1False.Replace("flag1", "flag3"));
+            File.WriteAllText(aPath, "");
+            RequireHeld(reloader);
+        }
+
+        [Fact]
+        public void HoldAsksForTheRetryFromTheEndOfTheLoad()
+        {
+            // The read of the file after the held one takes longer than what is left of the held
+            // file's delay, so the retry is due right away, after the margin.
+            var tenth = TimeSpan.FromTicks(HoldRetryDelay.Ticks / 10);
+            var aPath = _dir.PathOf("a.yaml");
+            var bPath = _dir.PathOf("b.yaml");
+            File.WriteAllText(aPath, YamlFlag1);
+            File.WriteAllText(bPath, YamlFlag2);
+            var reader = new ClockAdvancingReader(this);
+            var reloader = MakeHoldReloader(c => c.FileReader = reader, aPath, bPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(aPath, "");
+            RequireHeld(reloader);
+            Advance(TimeSpan.FromMinutes(57));
+            reader.AdvanceOnNextRead(bPath, TimeSpan.FromMinutes(6));
+            RequireHeld(reloader);
+            Assert.Equal(tenth, reloader.LastRequestedRetryDelay);
+        }
+
+        [Fact]
         public void HoldAsksForTheRetryWhenTheDelayIsOver()
         {
             var tenth = TimeSpan.FromTicks(HoldRetryDelay.Ticks / 10);

@@ -178,13 +178,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // load that was applied; only touched inside _reloadLock. A missing or empty file contributed
         // none.
         private readonly Dictionary<string, bool> _appliedHadContent = new Dictionary<string, bool>();
-        // The files whose content is in effect and that loads have found with no entries since the
-        // data in effect was applied; only touched inside _reloadLock. Applying data clears it. See
-        // ShouldHoldBack.
+        // The files whose content is in effect and that loads have found with no entries; only touched
+        // inside _reloadLock. See ShouldHoldBack.
         private readonly Dictionary<string, EmptyFile> _emptyFiles = new Dictionary<string, EmptyFile>();
         // True from a hold (see HoldBack) until the next load starts; only touched inside
         // _reloadLock. The retry it arms is not stale although nothing failed.
         private bool _readAgainPending;
+        // Whether the current load has held a file back; only touched inside _reloadLock.
+        private bool _holdingThisLoad;
 
         private sealed class EmptyFile
         {
@@ -192,8 +193,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // when the last load that read the file found content in it.
             internal TimeSpan? Since;
             internal FileState State;
-            // When a load first held the file back since the data in effect was applied, or since the
-            // file last stayed empty for the whole delay; null when no load has.
+            // When a load first held the file back since a load that held nothing back read the file;
+            // null when no load has.
             internal TimeSpan? FirstHeld;
         }
 
@@ -519,14 +520,30 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         : "Retrying file data load after earlier failure");
                 }
                 _readAgainPending = false;
+                _holdingThisLoad = false;
 
                 var documents = new List<FileDataDocument>(_config.Paths.Count);
                 var files = new List<FileDataFileSummary>(_config.Paths.Count);
                 var hadContent = new Dictionary<string, bool>(_config.Paths.Count);
+                LoadOutcome outcome;
                 using (var hasher = _config.SkipUnchanged ? SHA256.Create() : null)
                 {
-                    return Reload(documents, files, hadContent, hasher, isRetry, ref retryDelay);
+                    outcome = Reload(documents, files, hadContent, hasher, isRetry, ref retryDelay);
                 }
+                if (!_holdingThisLoad)
+                {
+                    // A load that holds nothing back, whether it applies, skips or fails, starts the
+                    // bound over for every file that it read: such a file is no longer held, so its next
+                    // rewrite is a new one. A file that the load did not get to keeps its bound.
+                    foreach (var path in hadContent.Keys)
+                    {
+                        if (_emptyFiles.TryGetValue(path, out var empty))
+                        {
+                            empty.FirstHeld = null;
+                        }
+                    }
+                }
+                return outcome;
             }
         }
 
@@ -596,6 +613,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 else if (ShouldHoldBack(path, _now()))
                 {
                     (heldBack = heldBack ?? new List<string>()).Add(path);
+                    _holdingThisLoad = true;
                     continue;
                 }
                 hadContent[path] = hasContent;
@@ -673,8 +691,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 if (!recovering && _lastGoodHash != null && hash.SequenceEqual(_lastGoodHash))
                 {
                     // The content is the same as that of the data in effect, so the files are in effect
-                    // as they are now, as after an application. A file that was held back and has been
-                    // rewritten with the same content gets a fresh bound for its next rewrite.
+                    // as they are now, as after an application.
                     RememberAppliedContent(hadContent);
                     return LoadOutcome.Succeeded;
                 }
@@ -704,7 +721,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 _appliedHadContent[entry.Key] = entry.Value;
             }
-            _emptyFiles.Clear();
         }
 
         // Called inside _reloadLock when a load finds a file with no entries. A file whose content is
@@ -716,12 +732,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // is read through a symbolic link where the framework can resolve links; elsewhere a link is
         // observed by its content, which is the same for every empty state.
         //
-        // A file that keeps being written while every load finds it empty, or files that are rewritten
-        // in turn so that every load finds one of them empty, would be held back without end. So a
-        // file stops being held back once loads have held it back for MaxHoldRetryDelays retry delays.
-        // That bound is the file's own: another file's hold or a failed load does not shorten or reset
-        // it. It starts over when data is applied, or when the file has stayed empty for the whole
-        // delay, so that a later rewrite is held back again.
+        // A file that keeps being written while every load finds it empty, or files that are emptied in
+        // turn so that every load holds one of them back, would be held back without end. So a file
+        // stops being held back once loads have held it back for MaxHoldRetryDelays retry delays. That
+        // bound is the file's own: another file's hold does not shorten it. It starts over only at a
+        // load that holds nothing back and reads the file, whether that load applies, is skipped as
+        // unchanged or fails, so that a later rewrite is held back again; while some file is held back
+        // in every load, no file's bound starts over.
         //
         // A file whose content is not in effect, such as a placeholder that has always been empty, is
         // parsed right away, and so is any file when retries are off, since nothing would read it
@@ -745,7 +762,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             if (now - empty.Since.Value >= _timing.RetryDelay)
             {
-                empty.FirstHeld = null;
                 return false;
             }
             if (empty.FirstHeld != null && now - empty.FirstHeld.Value >= MaxHoldDuration)

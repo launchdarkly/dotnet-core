@@ -125,8 +125,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </para>
         /// <para>
         /// A file can be rewritten in place, so the data source can read it before it has been fully written. A file
-        /// whose flags are in effect and that is found empty is not applied until it has stayed empty, without being
-        /// written, for about a second. Content that
+        /// whose content is in effect and that is found empty, or that its parser reads as having no entries, is not
+        /// loaded until it has stayed so, without being written, for about a second. Content that
         /// cannot be parsed is retried several times until the file can be parsed, giving up after repeated failures
         /// until another change to the file is detected. YAML that is cut off between two entries can still parse,
         /// so for a YAML file, replacing its entire contents in one operation, such as renaming a fully written

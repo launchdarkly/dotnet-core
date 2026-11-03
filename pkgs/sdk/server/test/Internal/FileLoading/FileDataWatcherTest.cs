@@ -32,6 +32,29 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             return _watcher;
         }
 
+        // Starts a watcher that reaches the file system through the given functions.
+        private void StartControlledWatcher(string path, Func<string, bool> directoryExists = null,
+            Func<string, FileSystemWatcher> newWatcher = null)
+        {
+            _watcher = new FileDataWatcher(new[] { path }, () => _changes.Add(true), TestLogger, CheckInterval,
+                directoryExists, newWatcher);
+        }
+
+        // A watch whose errors a test raises.
+        private sealed class ErrorRaisingWatcher : FileSystemWatcher
+        {
+            internal ErrorRaisingWatcher(string path) : base(path) { }
+
+            internal void RaiseError(Exception e) => OnError(new ErrorEventArgs(e));
+        }
+
+        // Changes the modification time of the file in one step.
+        private static void TouchFile(string path) =>
+            File.SetLastWriteTimeUtc(path, File.GetLastWriteTimeUtc(path).AddMinutes(-5));
+
+        private void RequireNoSetupFailureLogged() =>
+            AssertLogMessageRegex(false, Logging.LogLevel.Error, "Unable to watch directory");
+
         private void RequireChange() =>
             Assert.True(_changes.TryTake(out _, TestTimeout), "expected a change notification");
 
@@ -280,8 +303,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 }
                 return exists;
             };
-            _watcher = new FileDataWatcher(new[] { path }, () => _changes.Add(true), TestLogger, CheckInterval,
-                directoryExists);
+            StartControlledWatcher(path, directoryExists: directoryExists);
             DiscardStaleNotifications();
             Interlocked.Exchange(ref armed, 1);
 
@@ -289,6 +311,125 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // missing directory, and nothing more is reported while the directory stays missing.
             RequireChange();
             RequireLogMessage(Logging.LogLevel.Warn, "no longer exists");
+            RequireNoChange();
+            RequireNoSetupFailureLogged();
+
+            // The directory comes back with the file in it, which is a change.
+            Directory.Move(_dir.PathOf("removed-elsewhere"), directory);
+            RequireChange();
+        }
+
+        [Fact]
+        public void DirectoryMovedAfterAWatchErrorIsReportedOnce()
+        {
+            var directory = _dir.PathOf("removed");
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, "data.json");
+            File.WriteAllText(path, "one");
+
+            // The first watch is one whose errors the test raises. The setup after the error moves
+            // the directory away before the watch is created, so that setup fails.
+            ErrorRaisingWatcher first = null;
+            var setups = 0;
+            StartControlledWatcher(path, newWatcher: candidate =>
+            {
+                var setup = Interlocked.Increment(ref setups);
+                if (setup == 1)
+                {
+                    return first = new ErrorRaisingWatcher(candidate);
+                }
+                if (setup == 2)
+                {
+                    Directory.Move(directory, _dir.PathOf("removed-elsewhere"));
+                }
+                return new FileSystemWatcher(candidate);
+            });
+            DiscardStaleNotifications();
+
+            first.RaiseError(new InternalBufferOverflowException());
+
+            // The absence of the file is a change, the directory is logged as missing, and nothing
+            // more is reported while it stays missing.
+            RequireChange();
+            RequireLogMessage(Logging.LogLevel.Warn, "no longer exists");
+            RequireNoChange();
+            RequireNoSetupFailureLogged();
+        }
+
+        [Fact]
+        public void DirectoryMovedAfterAChangeWithoutANotificationIsReportedOnce()
+        {
+            var directory = _dir.PathOf("removed");
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, "data.json");
+            File.WriteAllText(path, "one");
+            var quiet = _dir.PathOf("quiet");
+            Directory.CreateDirectory(quiet);
+
+            // The first watch is on another directory, where nothing happens, so a change to the
+            // file comes with no notification. The setup after the check drops that watch moves the
+            // directory away before the watch is created, so that setup fails.
+            var setups = 0;
+            StartControlledWatcher(path, newWatcher: candidate =>
+            {
+                var setup = Interlocked.Increment(ref setups);
+                if (setup == 1)
+                {
+                    return new FileSystemWatcher(quiet);
+                }
+                if (setup == 2)
+                {
+                    Directory.Move(directory, _dir.PathOf("removed-elsewhere"));
+                }
+                return new FileSystemWatcher(candidate);
+            });
+            DiscardStaleNotifications();
+
+            // The change is reported, and then the absence of the file. The directory is logged as
+            // missing, and nothing more is reported while it stays missing. The change is one step,
+            // so that no check can find it half made.
+            TouchFile(path);
+            RequireChange();
+            RequireChange();
+            RequireLogMessage(Logging.LogLevel.Warn, "no longer exists");
+            RequireNoChange();
+            RequireNoSetupFailureLogged();
+        }
+
+        [Fact]
+        public void FilesInADirectoryThatCannotBeWatchedAreChecked()
+        {
+            var path = _dir.PathOf("data.json");
+            File.WriteAllText(path, "one");
+
+            // Every setup fails, as it does when the platform's limit on watches has been reached.
+            StartControlledWatcher(path, newWatcher: candidate =>
+                throw new IOException("The limit on the number of watches has been reached"));
+            AssertLogMessageRegex(true, Logging.LogLevel.Error, "Unable to watch directory");
+
+            TouchFile(path);
+            RequireChange();
+            File.Delete(path);
+            RequireChange();
+        }
+
+        [Fact]
+        public void ChangeWithoutANotificationIsReportedOnce()
+        {
+            var path = _dir.PathOf("data.json");
+            File.WriteAllText(path, "one");
+            var quiet = _dir.PathOf("quiet");
+            Directory.CreateDirectory(quiet);
+
+            // Every watch is on another directory, where nothing happens, so a change to the file
+            // comes with no notification. The check that finds it drops the watch and sets up a new
+            // one, and the change is reported once. The change is one step, so that no check can
+            // find it half made.
+            StartControlledWatcher(path, newWatcher: candidate => new FileSystemWatcher(quiet));
+            DiscardStaleNotifications();
+
+            TouchFile(path);
+            RequireChange();
             RequireNoChange();
         }
 

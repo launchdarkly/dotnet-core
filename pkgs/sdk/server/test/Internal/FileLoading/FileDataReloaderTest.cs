@@ -562,6 +562,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
+        public void FileRewrittenWithTheSameContentIsHeldBackAgainLater()
+        {
+            // A tool rewrites the file in place now and then with the same content, so the load after
+            // the rewrite is skipped as unchanged. Each rewrite is held back with a bound of its own.
+            var yamlPath = _dir.PathOf("data.yaml");
+            File.WriteAllText(yamlPath, YamlFlag1);
+            var reloader = MakeHoldReloader(c => c.SkipUnchanged = true, yamlPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(yamlPath, "");
+            RequireHeld(reloader);
+            File.WriteAllText(yamlPath, YamlFlag1);
+            reloader.ReloadNow();
+            Assert.Equal(1, ApplyCount);
+
+            Advance(TimeSpan.FromHours(6));
+            File.WriteAllText(yamlPath, "");
+            RequireHeld(reloader);
+        }
+
+        [Fact]
         public void HoldAsksForTheRetryWhenTheDelayIsOver()
         {
             var tenth = TimeSpan.FromTicks(HoldRetryDelay.Ticks / 10);

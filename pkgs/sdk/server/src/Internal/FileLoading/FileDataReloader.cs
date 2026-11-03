@@ -672,8 +672,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 hash = FinishHash(hasher);
                 if (!recovering && _lastGoodHash != null && hash.SequenceEqual(_lastGoodHash))
                 {
-                    // The content is the same as that of the data in effect, and so is what each
-                    // file contributed.
+                    // The content is the same as that of the data in effect, so the files are in effect
+                    // as they are now, as after an application. A file that was held back and has been
+                    // rewritten with the same content gets a fresh bound for its next rewrite.
+                    RememberAppliedContent(hadContent);
                     return LoadOutcome.Succeeded;
                 }
             }

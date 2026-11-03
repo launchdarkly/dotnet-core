@@ -534,9 +534,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 if (!_holdingThisLoad)
                 {
                     // A load that holds nothing back, whether it applies, skips or fails, starts the
-                    // bound over for every file that it got to, including one that failed to load: such a
-                    // file is not held back, so its next rewrite is a new one. A file that the load did
-                    // not get to keeps its bound.
+                    // bound over for every file that it read, including one that failed to load: such a
+                    // file is not held back, so its next rewrite is a new one. A load reads every file even
+                    // after a failure, so that a file after the failing one does not keep a bound left over
+                    // from before the failure.
                     foreach (var path in reached)
                     {
                         if (_emptyFiles.TryGetValue(path, out var empty))
@@ -551,14 +552,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         // The body of Reload, inside _reloadLock. The hasher is null when unchanged content is not
         // skipped.
-        // reached receives the files that the load got to and did not hold back.
+        // reached receives the files that the load read and did not hold back.
         private LoadOutcome Reload(List<FileDataDocument> documents, List<FileDataFileSummary> files,
             Dictionary<string, bool> hadContent, List<string> reached, SHA256 hasher, bool isRetry,
             ref TimeSpan retryDelay)
         {
             // The files that ShouldHoldBack holds back. The other files are still read, so that every
-            // file that is found empty starts its delay in this load.
+            // file that is found empty starts its delay in this load. A file that fails to read or parse
+            // does not stop the reads either: the load fails with the first such failure, but every file
+            // is classified, so that no file's bound is left over from before the failure.
             List<string> heldBack = null;
+            FileDataException failure = null;
             foreach (var path in _config.Paths)
             {
                 string content;
@@ -588,7 +592,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 catch (Exception e)
                 {
                     reached.Add(path);
-                    return Fail(new FileDataReadException(path, "unable to read file: " + e.Message, e), isRetry);
+                    failure = failure ?? new FileDataReadException(path, "unable to read file: " + e.Message, e);
+                    continue;
                 }
                 // A file with no content, or with content that a registered parser reads as nothing,
                 // such as YAML with only a comment, has no entries. A read can see that much of a
@@ -605,7 +610,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     catch (Exception e)
                     {
                         NoteNotEmpty(path, reached);
-                        return Fail(new FileDataReadException(path, "error parsing file: " + e.Message, e), isRetry);
+                        failure = failure ?? new FileDataReadException(path, "error parsing file: " + e.Message, e);
+                        continue;
                     }
                     hasContent = !ReferenceEquals(document, FileDataDocument.Empty);
                 }
@@ -637,11 +643,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     }
                     catch (Exception e)
                     {
-                        return Fail(new FileDataReadException(path, "error parsing file: " + e.Message, e), isRetry);
+                        failure = failure ?? new FileDataReadException(path, "error parsing file: " + e.Message, e);
+                        continue;
                     }
                 }
                 documents.Add(document);
                 files.Add(new FileDataFileSummary(path, true, 0, 0));
+            }
+            if (failure != null)
+            {
+                return Fail(failure, isRetry);
             }
             if (heldBack != null)
             {

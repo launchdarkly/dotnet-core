@@ -705,10 +705,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         }
 
         [Fact]
-        public void FileThatAFailingLoadDidNotReachKeepsItsBound()
+        public void FileKeptWrittenWhileEmptyIsAppliedAfterItsBoundWhileAnEarlierFileFails()
         {
-            // c.json comes first and fails now and then, so those loads never read a.yaml, which keeps
-            // being written while empty. They do not give a.yaml a fresh bound.
+            // c.json comes first and fails now and then, while a.yaml keeps being written while empty.
+            // The failing loads hold a.yaml back too, so they do not give it a fresh bound.
             var cPath = _dir.PathOf("c.json");
             var aPath = _dir.PathOf("a.yaml");
             var cGood = Flag1False.Replace("flag1", "flag3");
@@ -732,6 +732,80 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             MarkWritten(aPath, 1);
             File.WriteAllText(cPath, cGood);
             Assert.Equal(new[] { "flag3" }, FlagKeys(RequireLoadApplied(reloader)));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void BoundOfAFileAfterAFailingFileStartsOverOnceItIsReadAgain(bool readFails)
+        {
+            // c.json comes before a.yaml. While c.json fails to load, by failing to parse or to be read,
+            // a.yaml is rewritten once and its gap is held back. Later, c.json is fixed while a.yaml is in
+            // the middle of another rewrite, which is held back with a bound of its own: the failing loads
+            // still read a.yaml.
+            var cPath = _dir.PathOf("c.json");
+            var aPath = _dir.PathOf("a.yaml");
+            var cGood = Flag1False.Replace("flag1", "flag3");
+            File.WriteAllText(cPath, cGood);
+            File.WriteAllText(aPath, YamlFlag1);
+            var reader = new FailingForPathReader(cPath);
+            var reloader = MakeHoldReloader(c => c.FileReader = reader, cPath, aPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(aPath, "");
+            RequireHeld(reloader);
+            if (readFails)
+            {
+                reader.Failing = true;
+            }
+            else
+            {
+                File.WriteAllText(cPath, "{bad");
+            }
+            File.WriteAllText(aPath, YamlFlag2);
+            reloader.ReloadNow();
+            Advance(TimeSpan.FromHours(6));
+            reloader.ReloadNow();
+
+            reader.Failing = false;
+            File.WriteAllText(cPath, cGood);
+            File.WriteAllText(aPath, "");
+            RequireHeld(reloader);
+        }
+
+        // Reads files as the default reader does, but fails to read one of them while Failing is set.
+        private sealed class FailingForPathReader : FileDataTypes.IFileReader
+        {
+            private readonly string _path;
+            internal volatile bool Failing;
+
+            internal FailingForPathReader(string path) => _path = path;
+
+            public string ReadAllText(string path)
+            {
+                if (Failing && path == _path)
+                {
+                    throw new IOException("simulated read error");
+                }
+                return FileDataReader.Instance.ReadAllText(path);
+            }
+        }
+
+        [Fact]
+        public void FailingLoadReportsTheFirstFailure()
+        {
+            // Every file is read, but the failure reported is the first one, as before.
+            var aPath = _dir.PathOf("a.json");
+            var bPath = _dir.PathOf("b.json");
+            File.WriteAllText(aPath, "{bad");
+            File.WriteAllText(bPath, "{worse");
+            var reloader = MakeHoldReloader(aPath, bPath);
+
+            reloader.ReloadNow();
+            var error = RequireErrorLogged();
+            Assert.Contains("a.json", error);
+            Assert.DoesNotContain("b.json", error);
         }
 
         [Fact]

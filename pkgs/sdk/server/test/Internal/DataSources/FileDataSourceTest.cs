@@ -672,21 +672,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 fp.Start(); // A parses, B fails
                 WaitUntil(() => reader.Reads(MultiPathB) >= 3, "3 reads of path B");
-                reader.SetBad(MultiPathA, true); // now every attempt stops at A
+                reader.SetBad(MultiPathA, true); // now every attempt fails at A first
 
                 // The run has five attempts in total, however the failing path changes, and its end
-                // is logged once.
+                // is logged once. Every attempt reads both paths.
                 WaitUntil(() => reader.Reads(MultiPathA) >= 5, "A to be read on the fifth attempt");
                 _updateSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(1500)); // longer than two retry delays
                 Assert.Equal(5, reader.Reads(MultiPathA));
-                Assert.Equal(3, reader.Reads(MultiPathB));
+                Assert.Equal(5, reader.Reads(MultiPathB));
                 AssertLogMessageRegex(true, LogLevel.Error, "after 5 attempts");
 
                 // A new externally triggered load is a new run with a fresh budget: it fails at B,
                 // and the retry loads the data once B recovers.
                 reader.SetBad(MultiPathA, false);
                 fp.Start();
-                WaitUntil(() => reader.Reads(MultiPathB) >= 5, "the retry to reach path B");
+                WaitUntil(() => reader.Reads(MultiPathB) >= 7, "the retry to read path B");
                 reader.SetBad(MultiPathB, false);
                 _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
             }

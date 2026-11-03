@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using LaunchDarkly.Sdk;
 
 // Note, in order for System.Text.Json serialization/deserialization to work correctly, the members of
@@ -32,6 +33,51 @@ namespace TestService
         public SdkConfigServiceEndpointsParams ServiceEndpoints { get; set; }
         public SdkClientSideParams ClientSide { get; set; }
         public SdkConfigTagsParams Tags { get; set; }
+        public SdkConfigWrapperParams Wrapper { get; set; }
+        public SdkConfigProxyParams Proxy { get; set; }
+        public SdkConfigTlsParams Tls { get; set; }
+        public SdkHookParams Hooks { get; set; }
+    }
+
+    public class SdkConfigWrapperParams
+    {
+        public string Name { get; set; }
+        public string Version { get; set; }
+    }
+
+    public class SdkConfigProxyParams
+    {
+        public string HttpProxy { get; set; }
+    }
+
+    public class SdkConfigTlsParams
+    {
+        public bool SkipVerifyPeer { get; set; }
+    }
+
+    public class HookData
+    {
+        public Dictionary<string, LdValue> BeforeEvaluation { get; set; }
+        public Dictionary<string, LdValue> AfterEvaluation { get; set; }
+    }
+
+    public class HookErrors
+    {
+        public string BeforeEvaluation { get; set; }
+        public string AfterEvaluation { get; set; }
+    }
+
+    public class HookConfig
+    {
+        public string Name { get; set; }
+        public Uri CallbackUri { get; set; }
+        public HookData Data { get; set; }
+        public HookErrors Errors { get; set; }
+    }
+
+    public class SdkHookParams
+    {
+        public List<HookConfig> Hooks { get; set; }
     }
 
     public class SdkConfigStreamParams
@@ -89,6 +135,7 @@ namespace TestService
         public CustomEventParams CustomEvent { get; set; }
         public ContextBuildParams ContextBuild { get; set; }
         public ContextConvertParams ContextConvert { get; set; }
+        public ContextComparisonPairParams ContextComparison { get; set; }
     }
 
     public class EvaluateFlagParams
@@ -155,5 +202,43 @@ namespace TestService
     public class ContextConvertParams
     {
         public string Input { get; set; }
+    }
+
+    public class ContextComparisonPairParams
+    {
+        public ContextComparisonParams Context1 { get; set; }
+        public ContextComparisonParams Context2 { get; set; }
+    }
+
+    public class ContextComparisonParams
+    {
+        public ContextComparisonSingleParams Single { get; set; }
+        public ContextComparisonSingleParams[] Multi { get; set; }
+    }
+
+    public class ContextComparisonSingleParams
+    {
+        public string Kind { get; set; }
+        public string Key { get; set; }
+        public AttributeDefinition[] Attributes { get; set; }
+        public PrivateAttribute[] PrivateAttributes { get; set; }
+    }
+
+    public class AttributeDefinition
+    {
+        public string Name { get; set; }
+        public LdValue Value { get; set; }
+    }
+
+    public class PrivateAttribute
+    {
+        public string Value { get; set; }
+        public bool Literal { get; set; }
+    }
+
+    public class ContextComparisonResponse
+    {
+        [JsonPropertyName("equals")]
+        public bool AreEqual { get; set; }
     }
 }

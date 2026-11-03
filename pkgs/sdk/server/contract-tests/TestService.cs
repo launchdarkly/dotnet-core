@@ -49,7 +49,10 @@ namespace TestService
             "fdv1-fallback",
             "instance-id",
             "retry-conformance-fdv1-streaming",
-            "retry-conformance-fdv1-polling"
+            "retry-conformance-fdv1-polling",
+            "wrapper",
+            "http-proxy",
+            "tls:skip-verify-peer"
         };
 
         public readonly Handler Handler;

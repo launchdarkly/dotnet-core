@@ -35,6 +35,25 @@ namespace TestService
         public SdkTagParams Tags { get; set; }
         public SdkHookParams Hooks { get; set; }
         public SdkConfigDataSystemParams DataSystem { get; set; }
+        public SdkConfigWrapperParams Wrapper { get; set; }
+        public SdkConfigProxyParams Proxy { get; set; }
+        public SdkConfigTlsParams Tls { get; set; }
+    }
+
+    public class SdkConfigWrapperParams
+    {
+        public string Name { get; set; }
+        public string Version { get; set; }
+    }
+
+    public class SdkConfigProxyParams
+    {
+        public string HttpProxy { get; set; }
+    }
+
+    public class SdkConfigTlsParams
+    {
+        public bool SkipVerifyPeer { get; set; }
     }
 
     public class SdkTagParams

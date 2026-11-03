@@ -64,18 +64,11 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// retries after a short delay, and recovers on its own once the file is readable again.
         /// </para>
         /// <para>
-        /// A file can be rewritten in place. To remove a file's overrides, delete it or write a document with
-        /// no entries, such as <c>{}</c>. A JSON file with no content is not a valid document: it fails to
-        /// load, and the overrides in effect stay. A file whose content is in effect and that is found
-        /// empty, or that its parser reads as having no entries, such as YAML with only a comment, may be
-        /// in the middle of a rewrite. The source does not apply it until it has stayed so, without being
-        /// written, for about a second, and changes to the other files wait for it, since a reload applies
-        /// all the files or none. An emptied YAML file therefore removes its overrides about a second
-        /// later, or at most about five seconds later while files keep being rewritten. A writer that leaves
-        /// a YAML file empty for longer than a second while it rewrites it briefly removes the file's
-        /// overrides. YAML that is cut off between two entries can still parse, so for a YAML file,
-        /// replacing its entire contents in one operation, such as renaming a fully written temporary file
-        /// over it, avoids briefly applying only a part of it.
+        /// Files can be rewritten in place: if the source finds a file empty while it is being rewritten, it
+        /// keeps the overrides in effect until the new content is written. To remove a file's overrides,
+        /// delete the file or write a document with no entries, such as <c>{}</c>. An empty JSON file is not
+        /// a valid document. For a YAML file, replacing its contents in one operation, such as by renaming
+        /// a fully written temporary file over it, avoids briefly applying a partly written file.
         /// </para>
         /// <para>
         /// Whenever the set of overrides in effect changes, including at startup, the source logs the

@@ -669,6 +669,133 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             Assert.Equal(tenth, reloader.LastRequestedRetryDelay);
         }
 
+        [Theory]
+        [InlineData(".yaml")]
+        [InlineData(".json")]
+        public void FixOfAFileSavedInPlaceWithAnErrorIsHeldBack(string extension)
+        {
+            // An operator saves the file in place with a mistake, and saves the fix in place long after.
+            // The loads in between fail on the file, and the fix's own gap is held back.
+            var path = _dir.PathOf("data" + extension);
+            var good = extension == ".yaml" ? YamlFlag1 : Flag1True;
+            var fixedContent = extension == ".yaml" ? YamlFlag2 : Flag1False;
+            var broken = extension == ".yaml" ? "flagValues: [\n" : @"{""flagValues"": ";
+            File.WriteAllText(path, good);
+            var reloader = MakeHoldReloader(path);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(path, "");
+            RequireHeld(reloader);
+            File.WriteAllText(path, broken);
+            reloader.ReloadNow();
+            RequireErrorLogged();
+            for (var i = 0; i < 6; i++)
+            {
+                Advance(HoldRetryDelay);
+                reloader.ReloadNow();
+            }
+            DrainErrors();
+
+            File.WriteAllText(path, "");
+            RequireHeld(reloader);
+            Assert.Equal(_consumedErrorLogs, ErrorLogs().Count);
+            File.WriteAllText(path, fixedContent);
+            RequireLoadApplied(reloader);
+        }
+
+        [Fact]
+        public void FileThatAFailingLoadDidNotReachKeepsItsBound()
+        {
+            // c.json comes first and fails now and then, so those loads never read a.yaml, which keeps
+            // being written while empty. They do not give a.yaml a fresh bound.
+            var cPath = _dir.PathOf("c.json");
+            var aPath = _dir.PathOf("a.yaml");
+            var cGood = Flag1False.Replace("flag1", "flag3");
+            File.WriteAllText(cPath, cGood);
+            File.WriteAllText(aPath, YamlFlag1);
+            var reloader = MakeHoldReloader(cPath, aPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(aPath, "");
+            RequireHeld(reloader);
+            for (var i = 1; i < 10; i++)
+            {
+                Advance(TimeSpan.FromMinutes(30));
+                MarkWritten(aPath, 1);
+                File.WriteAllText(cPath, i % 2 == 1 ? "{bad" : cGood);
+                reloader.ReloadNow();
+            }
+
+            Advance(TimeSpan.FromMinutes(30));
+            MarkWritten(aPath, 1);
+            File.WriteAllText(cPath, cGood);
+            Assert.Equal(new[] { "flag3" }, FlagKeys(RequireLoadApplied(reloader)));
+        }
+
+        [Fact]
+        public void LoadThatHoldsAFileBackAndThenFailsDoesNotStartBoundsOver()
+        {
+            // a.yaml and b.yaml are rewritten in turn, so that every load holds one of them back, and
+            // c.json fails at every other load. Those loads hold a file back, so they start no bound over.
+            var aPath = _dir.PathOf("a.yaml");
+            var bPath = _dir.PathOf("b.yaml");
+            var cPath = _dir.PathOf("c.json");
+            var cGood = Flag1False.Replace("flag1", "flag3");
+            File.WriteAllText(aPath, YamlFlag1);
+            File.WriteAllText(bPath, YamlFlag2);
+            File.WriteAllText(cPath, cGood);
+            var reloader = MakeHoldReloader(aPath, bPath, cPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(aPath, "");
+            RequireHeld(reloader);
+            var applied = false;
+            for (var i = 1; i <= 12 && !applied; i++)
+            {
+                Advance(TimeSpan.FromMinutes(30));
+                File.WriteAllText(i % 2 == 1 ? aPath : bPath, i % 2 == 1 ? YamlFlag1 : YamlFlag2);
+                File.WriteAllText(i % 2 == 1 ? bPath : aPath, "");
+                File.WriteAllText(cPath, i % 2 == 1 ? "{bad" : cGood);
+                reloader.ReloadNow();
+                applied = ApplyCount > 1;
+            }
+            Assert.True(applied, "the files were held back without end");
+        }
+
+        [Fact]
+        public void FileFoundMissingStartsANewDelayWhenItIsCreatedEmptyAgain()
+        {
+            // While b.json fails, a.yaml is emptied, deleted, and created empty again with the state it had
+            // when it was first found empty, as within one tick of a coarse clock. Being missing ended its
+            // empty state, so it is held back with a new delay.
+            var aPath = _dir.PathOf("a.yaml");
+            var bPath = _dir.PathOf("b.json");
+            var bGood = Flag1False.Replace("flag1", "flag3");
+            File.WriteAllText(aPath, YamlFlag1);
+            File.WriteAllText(bPath, bGood);
+            var reloader = MakeHoldReloader(c => c.SkipMissingPaths = true, aPath, bPath);
+            reloader.ReloadNow();
+            RequireApplied();
+
+            File.WriteAllText(bPath, "{bad");
+            File.WriteAllText(aPath, "");
+            var firstEmptyWriteTime = File.GetLastWriteTimeUtc(aPath);
+            reloader.ReloadNow();
+            Advance(TimeSpan.FromMinutes(30));
+            File.Delete(aPath);
+            reloader.ReloadNow();
+            Advance(TimeSpan.FromMinutes(40));
+            File.WriteAllText(aPath, "");
+            File.SetLastWriteTimeUtc(aPath, firstEmptyWriteTime);
+            reloader.ReloadNow();
+
+            File.WriteAllText(bPath, bGood);
+            RequireHeld(reloader);
+        }
+
         [Fact]
         public void HoldAsksForTheRetryWhenTheDelayIsOver()
         {

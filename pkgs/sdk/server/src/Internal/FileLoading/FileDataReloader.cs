@@ -525,17 +525,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 var documents = new List<FileDataDocument>(_config.Paths.Count);
                 var files = new List<FileDataFileSummary>(_config.Paths.Count);
                 var hadContent = new Dictionary<string, bool>(_config.Paths.Count);
+                var reached = new List<string>(_config.Paths.Count);
                 LoadOutcome outcome;
                 using (var hasher = _config.SkipUnchanged ? SHA256.Create() : null)
                 {
-                    outcome = Reload(documents, files, hadContent, hasher, isRetry, ref retryDelay);
+                    outcome = Reload(documents, files, hadContent, reached, hasher, isRetry, ref retryDelay);
                 }
                 if (!_holdingThisLoad)
                 {
                     // A load that holds nothing back, whether it applies, skips or fails, starts the
-                    // bound over for every file that it read: such a file is no longer held, so its next
-                    // rewrite is a new one. A file that the load did not get to keeps its bound.
-                    foreach (var path in hadContent.Keys)
+                    // bound over for every file that it got to, including one that failed to load: such a
+                    // file is not held back, so its next rewrite is a new one. A file that the load did
+                    // not get to keeps its bound.
+                    foreach (var path in reached)
                     {
                         if (_emptyFiles.TryGetValue(path, out var empty))
                         {
@@ -549,8 +551,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
 
         // The body of Reload, inside _reloadLock. The hasher is null when unchanged content is not
         // skipped.
+        // reached receives the files that the load got to and did not hold back.
         private LoadOutcome Reload(List<FileDataDocument> documents, List<FileDataFileSummary> files,
-            Dictionary<string, bool> hadContent, SHA256 hasher, bool isRetry, ref TimeSpan retryDelay)
+            Dictionary<string, bool> hadContent, List<string> reached, SHA256 hasher, bool isRetry,
+            ref TimeSpan retryDelay)
         {
             // The files that ShouldHoldBack holds back. The other files are still read, so that every
             // file that is found empty starts its delay in this load.
@@ -565,6 +569,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 catch (FileNotFoundException) when (_config.SkipMissingPaths)
                 {
                     _log.Debug("File {0} does not exist; it contributes no data", path);
+                    NoteNotEmpty(path, reached);
                     hadContent[path] = false;
                     files.Add(new FileDataFileSummary(path, false, 0, 0));
                     AppendToHash(hasher, path, null);
@@ -574,6 +579,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     !_config.FailOnMissingDirectory)
                 {
                     _log.Debug("File {0} does not exist; it contributes no data", path);
+                    NoteNotEmpty(path, reached);
                     hadContent[path] = false;
                     files.Add(new FileDataFileSummary(path, false, 0, 0));
                     AppendToHash(hasher, path, null);
@@ -581,6 +587,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 }
                 catch (Exception e)
                 {
+                    reached.Add(path);
                     return Fail(new FileDataReadException(path, "unable to read file: " + e.Message, e), isRetry);
                 }
                 // A file with no content, or with content that a registered parser reads as nothing,
@@ -597,16 +604,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     }
                     catch (Exception e)
                     {
+                        NoteNotEmpty(path, reached);
                         return Fail(new FileDataReadException(path, "error parsing file: " + e.Message, e), isRetry);
                     }
                     hasContent = !ReferenceEquals(document, FileDataDocument.Empty);
                 }
                 if (hasContent)
                 {
-                    if (_emptyFiles.TryGetValue(path, out var empty))
-                    {
-                        empty.Since = null;
-                    }
+                    NoteNotEmpty(path, reached);
                 }
                 // The clock is read after this file's own read, so a slow read of another file does not
                 // shorten its delay.
@@ -615,6 +620,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     (heldBack = heldBack ?? new List<string>()).Add(path);
                     _holdingThisLoad = true;
                     continue;
+                }
+                else
+                {
+                    reached.Add(path);
                 }
                 hadContent[path] = hasContent;
                 // One read feeds both the hash and the parse, so the skip-unchanged hash can never
@@ -712,6 +721,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             _failedAttempts = 0;
             RememberAppliedContent(hadContent);
             return LoadOutcome.Succeeded;
+        }
+
+        // Called inside _reloadLock for a file that a load found with content, or missing: if it was
+        // empty before, its empty state has ended, so its next emptying starts a new delay even where a
+        // coarse modification time makes it look the same.
+        private void NoteNotEmpty(string path, List<string> reached)
+        {
+            reached.Add(path);
+            if (_emptyFiles.TryGetValue(path, out var empty))
+            {
+                empty.Since = null;
+            }
         }
 
         // Called inside _reloadLock when the data of a load is in effect.

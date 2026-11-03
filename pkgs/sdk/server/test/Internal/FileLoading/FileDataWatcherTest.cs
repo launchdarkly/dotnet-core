@@ -252,6 +252,46 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             RequireNoChange();
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DirectoryRemovedDuringACheckIsReportedOnce(bool beforeTheAnswer)
+        {
+            var directory = _dir.PathOf("removed");
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, "data.json");
+            File.WriteAllText(path, "one");
+
+            // Once armed, the next question whether the directory exists moves the directory away,
+            // just before or just after it is answered. The move lands inside a check, and the
+            // platform reports nothing for it.
+            var armed = 0;
+            Func<string, bool> directoryExists = candidate =>
+            {
+                var fire = Interlocked.Exchange(ref armed, 0) == 1;
+                if (fire && beforeTheAnswer)
+                {
+                    Directory.Move(directory, _dir.PathOf("removed-elsewhere"));
+                }
+                var exists = Directory.Exists(candidate);
+                if (fire && !beforeTheAnswer)
+                {
+                    Directory.Move(directory, _dir.PathOf("removed-elsewhere"));
+                }
+                return exists;
+            };
+            _watcher = new FileDataWatcher(new[] { path }, () => _changes.Add(true), TestLogger, CheckInterval,
+                directoryExists);
+            DiscardStaleNotifications();
+            Interlocked.Exchange(ref armed, 1);
+
+            // Either way, the absence of the file is a change, the watch is dropped as that of a
+            // missing directory, and nothing more is reported while the directory stays missing.
+            RequireChange();
+            RequireLogMessage(Logging.LogLevel.Warn, "no longer exists");
+            RequireNoChange();
+        }
+
         [Fact]
         public void DirectoryReplacedBetweenChecksIsWatchedAgain()
         {

@@ -76,6 +76,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         private readonly List<WatchedDirectory> _directories = new List<WatchedDirectory>();
         private readonly Action _onChange;
         private readonly Logger _log;
+        private readonly Func<string, bool> _directoryExists;
         private readonly Timer _timer;
         private int _checking;
         private volatile bool _disposed;
@@ -92,10 +93,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         {
         }
 
-        internal FileDataWatcher(IEnumerable<string> paths, Action onChange, Logger log, TimeSpan checkInterval)
+        internal FileDataWatcher(IEnumerable<string> paths, Action onChange, Logger log, TimeSpan checkInterval) :
+            this(paths, onChange, log, checkInterval, Directory.Exists)
+        {
+        }
+
+        // The directoryExists parameter tells whether a directory exists. A test supplies its own to
+        // change the file system at a chosen point of a check.
+        internal FileDataWatcher(IEnumerable<string> paths, Action onChange, Logger log, TimeSpan checkInterval,
+            Func<string, bool> directoryExists)
         {
             _onChange = onChange;
             _log = log ?? Logs.None.Logger("");
+            _directoryExists = directoryExists;
 
             // The full path of each file is computed once. Notifications carry the entry name, which
             // is compared to the configured names of the directory.
@@ -220,7 +230,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // attempt. Repeats of an identical failure are demoted to debug level.
         private void LogSetupFailure(WatchedDirectory directory, Exception e)
         {
-            var key = Directory.Exists(directory.Path) ? e.Message : MissingDirectoryKey;
+            var key = _directoryExists(directory.Path) ? e.Message : MissingDirectoryKey;
             if (key == directory.LastFailureKey)
             {
                 _log.Debug("Unable to watch directory {0}: {1}", directory.Path, LogValues.ExceptionSummary(e));
@@ -294,7 +304,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         return;
                     }
                     directory.Watcher = null;
-                    if (Directory.Exists(directory.Path))
+                    if (_directoryExists(directory.Path))
                     {
                         LogHelpers.LogException(_log, "Error from file system watcher for directory " + directory.Path, error);
                     }
@@ -371,13 +381,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                         var notified = directory.NotifiedSinceCheck;
                         directory.NotifiedSinceCheck = false;
                         var current = FileState.ObserveAll(directory.Files);
+                        var directoryExists = _directoryExists(directory.Path);
+                        if (!directoryExists)
+                        {
+                            // The directory can have gone after its files were observed. They are
+                            // observed again, or a dropped watch would leave their absence
+                            // unreported until the directory came back.
+                            current = FileState.ObserveAll(directory.Files);
+                        }
                         var stateChanged = FileState.AnyChanged(directory.LastStates, current);
                         if (stateChanged)
                         {
                             directory.LastStates = current;
                             changed = true;
                         }
-                        if (!Directory.Exists(directory.Path))
+                        if (!directoryExists)
                         {
                             toDispose.Add(directory.Watcher);
                             directory.Watcher = null;

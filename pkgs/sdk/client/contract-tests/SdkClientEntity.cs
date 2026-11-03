@@ -1,9 +1,14 @@
 using System;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Security;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk;
 using LaunchDarkly.Sdk.Client;
+using LaunchDarkly.Sdk.Client.Hooks;
+using LaunchDarkly.Sdk.Client.Integrations;
 using LaunchDarkly.Sdk.Json;
 
 namespace TestService
@@ -106,6 +111,9 @@ namespace TestService
 
                 case "contextConvert":
                     return (true, DoContextConvert(command.ContextConvert));
+
+                case "contextComparison":
+                    return (true, DoContextComparison(command.ContextComparison));
 
                 default:
                     return (false, null);
@@ -264,6 +272,61 @@ namespace TestService
             }
         }
 
+        private ContextComparisonResponse DoContextComparison(ContextComparisonPairParams p) =>
+            new ContextComparisonResponse
+            {
+                AreEqual = BuildComparisonContext(p.Context1).Equals(BuildComparisonContext(p.Context2))
+            };
+
+        private Context BuildComparisonContext(ContextComparisonParams p)
+        {
+            if (p.Single != null)
+            {
+                return BuildComparisonSingle(p.Single);
+            }
+            var b = Context.MultiBuilder();
+            foreach (var s in p.Multi)
+            {
+                b.Add(BuildComparisonSingle(s));
+            }
+            return b.Build();
+        }
+
+        private Context BuildComparisonSingle(ContextComparisonSingleParams s)
+        {
+            var b = Context.Builder(s.Key).Kind(s.Kind);
+            if (s.Attributes != null)
+            {
+                foreach (var a in s.Attributes)
+                {
+                    b.Set(a.Name, a.Value);
+                }
+            }
+            if (s.PrivateAttributes != null)
+            {
+                foreach (var pa in s.PrivateAttributes)
+                {
+                    b.Private(pa.Literal ? AttributeRef.FromLiteral(pa.Value) : AttributeRef.FromPath(pa.Value));
+                }
+            }
+            return b.Build();
+        }
+
+        // The SDK can only skip certificate verification through a custom message handler. That
+        // handler replaces the SDK's default one, so it repeats the default's gzip decompression,
+        // connect timeout and proxy.
+        private static HttpMessageHandler MakeSkipVerifyPeerHandler(IWebProxy proxy) =>
+            new SocketsHttpHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip,
+                ConnectTimeout = HttpConfigurationBuilder.DefaultConnectTimeout,
+                Proxy = proxy,
+                SslOptions = new SslClientAuthenticationOptions
+                {
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true
+                }
+            };
+
         private static Configuration BuildSdkConfig(SdkConfigParams sdkParams, ILogAdapter logAdapter, string tag)
         {
             var autoEnvAttributes = (sdkParams.ClientSide.IncludeEnvironmentAttributes ?? false)
@@ -364,7 +427,33 @@ namespace TestService
             {
                 http.UseReport(sdkParams.ClientSide.UseReport.Value);
             }
+            // The harness sends an empty name or version when it wants that part left unset.
+            if (!string.IsNullOrEmpty(sdkParams.Wrapper?.Name))
+            {
+                http.Wrapper(sdkParams.Wrapper.Name,
+                    string.IsNullOrEmpty(sdkParams.Wrapper.Version) ? null : sdkParams.Wrapper.Version);
+            }
+            var proxyUri = sdkParams.Proxy?.HttpProxy;
+            var proxy = string.IsNullOrEmpty(proxyUri) ? null : new WebProxy(proxyUri);
+            if (proxy != null)
+            {
+                http.Proxy(proxy);
+            }
+            if (sdkParams.Tls?.SkipVerifyPeer ?? false)
+            {
+                http.MessageHandler(MakeSkipVerifyPeerHandler(proxy));
+            }
             builder.Http(http);
+
+            if (sdkParams.Hooks?.Hooks != null)
+            {
+                var evaluationReasons = sdkParams.ClientSide.EvaluationReasons ?? false;
+                var hooks = sdkParams.Hooks.Hooks.Select(hook =>
+                    new TestHook(hook.Name, new CallbackService(hook.CallbackUri), hook.Data?.BeforeEvaluation, hook.Data?.AfterEvaluation, hook.Errors?.BeforeEvaluation, hook.Errors?.AfterEvaluation, evaluationReasons)
+                ).ToList<Hook>();
+
+                builder.Plugins(Components.Plugins().Add(new TestHookPlugin(hooks)));
+            }
 
             if (sdkParams.ClientSide.EvaluationReasons.HasValue)
             {

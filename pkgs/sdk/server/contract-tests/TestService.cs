@@ -56,7 +56,10 @@ namespace TestService
             "persistent-data-store-redis",
             "persistent-data-store-dynamodb",
             "persistent-data-store-consul",
-            "persistent-data-store-recovery"
+            "persistent-data-store-recovery",
+            "wrapper",
+            "http-proxy",
+            "tls:skip-verify-peer"
         };
 
         public readonly Handler Handler;

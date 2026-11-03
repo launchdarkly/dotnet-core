@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Security;
 using Amazon.DynamoDBv2;
 using Amazon.Runtime;
 using LaunchDarkly.Logging;
@@ -377,6 +379,21 @@ namespace TestService
             }
         }
 
+        // The SDK can only skip certificate verification through a custom message handler. That
+        // handler replaces the SDK's default one, so it repeats the default's gzip decompression,
+        // connect timeout and proxy.
+        private static HttpMessageHandler MakeSkipVerifyPeerHandler(IWebProxy proxy) =>
+            new SocketsHttpHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip,
+                ConnectTimeout = HttpConfigurationBuilder.DefaultConnectTimeout,
+                Proxy = proxy,
+                SslOptions = new SslClientAuthenticationOptions
+                {
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true
+                }
+            };
+
         private static Configuration BuildSdkConfig(SdkConfigParams sdkParams, ILogAdapter logAdapter, string tag)
         {
             var builder = Configuration.Builder(sdkParams.Credential);
@@ -514,6 +531,34 @@ namespace TestService
                 }
 
                 builder.ApplicationInfo(infoBuilder);
+            }
+
+            // The harness sends an empty name or version when it wants that part left unset.
+            if (!string.IsNullOrEmpty(sdkParams.Wrapper?.Name))
+            {
+                var wrapperInfo = Components.WrapperInfo().Name(sdkParams.Wrapper.Name);
+                if (!string.IsNullOrEmpty(sdkParams.Wrapper.Version))
+                {
+                    wrapperInfo.Version(sdkParams.Wrapper.Version);
+                }
+                builder.WrapperInfo(wrapperInfo);
+            }
+
+            var proxyUri = sdkParams.Proxy?.HttpProxy;
+            var skipVerifyPeer = sdkParams.Tls?.SkipVerifyPeer ?? false;
+            if (!string.IsNullOrEmpty(proxyUri) || skipVerifyPeer)
+            {
+                var http = Components.HttpConfiguration();
+                var proxy = string.IsNullOrEmpty(proxyUri) ? null : new WebProxy(proxyUri);
+                if (proxy != null)
+                {
+                    http.Proxy(proxy);
+                }
+                if (skipVerifyPeer)
+                {
+                    http.MessageHandler(MakeSkipVerifyPeerHandler(proxy));
+                }
+                builder.Http(http);
             }
 
             if (sdkParams.Hooks != null)

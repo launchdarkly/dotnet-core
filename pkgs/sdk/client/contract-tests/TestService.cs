@@ -43,7 +43,14 @@ namespace TestService
             "anonymous-redaction",
             "client-prereq-events",
             "client-prereq-cycle-detection",
-            "client-per-context-summaries"
+            "client-per-context-summaries",
+            "client-event-source-http-errors",
+            "context-comparison",
+            "evaluation-hooks",
+            "http-proxy",
+            "polling-gzip",
+            "tls:skip-verify-peer",
+            "wrapper"
         };
 
         public readonly Handler Handler;

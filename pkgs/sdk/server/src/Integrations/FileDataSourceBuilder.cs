@@ -67,8 +67,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// can be represented in JSON: <c>string</c>, numbers, booleans, <c>List</c>, and
         /// <c>Dictionary&lt;string, object&gt;</c>. It should throw an exception if it cannot parse the
         /// content. A result of <c>null</c>, which YAML parsers return for a file with no content, means
-        /// the file has no entries. A JSON file with no content is not valid, and fails to load like any
-        /// other content that cannot be parsed. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
+        /// the file has no entries. A file with no content that is parsed as JSON, because no parser is
+        /// registered for its extension, is not valid, and fails to load like any other content that
+        /// cannot be parsed. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
         /// configuration method tells the parser to read a property like <c>on: true</c> or
         /// <c>variation: 3</c> as a boolean or integer rather than a string; YAML syntax is flexible, and
         /// data types matter in flag definitions.
@@ -124,7 +125,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// </para>
         /// <para>
         /// A file can be rewritten in place, so the data source can read it before it has been fully written. A file
-        /// that had content and is found empty is read again after a short delay before it is applied. Content that
+        /// whose flags are in effect and that is found empty is not applied until it has stayed empty, without being
+        /// written, for about a second. Content that
         /// cannot be parsed is retried several times until the file can be parsed, giving up after repeated failures
         /// until another change to the file is detected. YAML that is cut off between two entries can still parse,
         /// so for a YAML file, replacing its entire contents in one operation, such as renaming a fully written

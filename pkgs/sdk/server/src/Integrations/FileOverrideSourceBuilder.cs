@@ -142,8 +142,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// can be represented in JSON: <c>string</c>, numbers, booleans, <c>List</c>, and
         /// <c>Dictionary&lt;string, object&gt;</c>. It should throw an exception if it cannot parse the
         /// content. A result of <c>null</c>, which YAML parsers return for a file with no content, means
-        /// the file has no entries. A JSON file with no content is not valid, and fails to load like any
-        /// other content that cannot be parsed. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
+        /// the file has no entries. A file with no content that is parsed as JSON, because no parser is
+        /// registered for its extension, is not valid, and fails to load like any other content that
+        /// cannot be parsed. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
         /// configuration method tells the parser to read a property like <c>on: true</c> as a boolean
         /// rather than a string; data types matter in flag definitions.
         /// </para>

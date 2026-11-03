@@ -431,7 +431,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 WaitForReads(reader, 2);
                 reader.Bad = false; // as if the write completed, with no further notification
                 _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-                Assert.True(fp.Initialized);
+                // The source counts as initialized just after it delivers the data, on the retry's thread.
+                WaitUntil(() => fp.Initialized, "the source to be initialized");
             }
         }
 

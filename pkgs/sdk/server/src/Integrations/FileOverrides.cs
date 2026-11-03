@@ -66,9 +66,11 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// <para>
         /// A file can be rewritten in place. To remove a file's overrides, delete it or write a document with
         /// no entries, such as <c>{}</c>. A JSON file with no content is not a valid document: it fails to
-        /// load, and the overrides in effect stay. A file that had content and is found empty may be in the
-        /// middle of a rewrite, so the source reads it again after the retry delay before applying it; an
-        /// emptied YAML file removes its overrides about a second later. YAML that is cut off between two
+        /// load, and the overrides in effect stay. A file whose overrides are in effect and that is found
+        /// empty may be in the middle of a rewrite, so the source does not apply it until it has stayed
+        /// empty, without being written, for about a second; an emptied YAML file removes its overrides
+        /// about a second later. A writer that leaves the file empty for longer than that while it
+        /// rewrites it briefly removes the file's overrides. YAML that is cut off between two
         /// entries can still parse, so for a YAML file, replacing its entire contents in one operation, such
         /// as renaming a fully written temporary file over it, avoids briefly applying only a part of it.
         /// </para>

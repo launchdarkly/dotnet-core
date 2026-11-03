@@ -15,8 +15,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
     /// until the read ends, so an editor that saves again, or a tool that replaces the file,
     /// fails while a reload is in progress. This reader opens the file so that all of those are
     /// allowed. A read that overlaps a write can see incomplete content. Incomplete JSON fails to
-    /// parse and is retried by the reloader, and a file that is found empty after it had content is
-    /// read again before it is applied. YAML that is cut off between two lines can still parse, as a
+    /// parse and is retried by the reloader, and a file whose content is in effect and that is found
+    /// empty is not applied until it has stayed empty for the retry delay. YAML that is cut off between two lines can still parse, as a
     /// part of the file's entries.
     /// </para>
     /// <para>

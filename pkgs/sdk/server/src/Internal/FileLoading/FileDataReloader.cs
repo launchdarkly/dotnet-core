@@ -178,28 +178,26 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // load that was applied; only touched inside _reloadLock. A missing or empty file contributed
         // none.
         private readonly Dictionary<string, bool> _appliedHadContent = new Dictionary<string, bool>();
-        // The paths whose content is in effect and that loads have found empty since; only touched
-        // inside _reloadLock. An entry is removed when a load reads the file with content. See
+        // The files whose content is in effect and that loads have found with no entries since the
+        // data in effect was applied; only touched inside _reloadLock. Applying data clears it. See
         // ShouldHoldBack.
         private readonly Dictionary<string, EmptyFile> _emptyFiles = new Dictionary<string, EmptyFile>();
-        // When the current run of loads that hold files back began; null when the last load did not
-        // hold any back. Only touched inside _reloadLock.
-        private TimeSpan? _holdingSince;
         // True from a hold (see HoldBack) until the next load starts; only touched inside
         // _reloadLock. The retry it arms is not stale although nothing failed.
         private bool _readAgainPending;
-        // Set by HoldBack during a load; only touched inside _reloadLock.
-        private bool _heldBack;
 
-        // Since when a file has been empty without being written, and its state then.
         private sealed class EmptyFile
         {
-            internal TimeSpan Since;
+            // Since when the file has had no entries without being written, and its state then. Null
+            // when the last load that read the file found content in it.
+            internal TimeSpan? Since;
             internal FileState State;
+            // When a load first held the file back since the data in effect was applied, or since the
+            // file last stayed empty for the whole delay; null when no load has.
+            internal TimeSpan? FirstHeld;
         }
 
-        // Loads stop holding files back once they have held some back for this many retry delays in
-        // a row.
+        // A file stops being held back once loads have held it back for this many retry delays.
         private const int MaxHoldRetryDelays = 5;
 
         // Guards the timers. The timers are created on first use so that a reloader that is never
@@ -416,11 +414,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 return;
             }
-            if (isRetry)
-            {
-                _log.Debug("Retrying file data load after earlier failure");
-            }
-            else
+            if (!isRetry)
             {
                 _log.Info("Reloading file data after detecting a change");
             }
@@ -433,6 +427,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
         }
 
+        // The delay of the last retry that a load asked for, armed or not. Only tests read it.
+        internal TimeSpan? LastRequestedRetryDelay
+        {
+            get
+            {
+                lock (_timerLock)
+                {
+                    return _lastRequestedRetryDelay;
+                }
+            }
+        }
+        private TimeSpan? _lastRequestedRetryDelay; // guarded by _timerLock
+
         private void ArmRetry(bool keepExistingDeadline, TimeSpan delay)
         {
             if (!_config.RetryOnFailure)
@@ -441,6 +448,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             lock (_timerLock)
             {
+                _lastRequestedRetryDelay = delay;
                 if (_disposed)
                 {
                     return;
@@ -505,23 +513,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                     return LoadOutcome.Succeeded;
                 }
 
+                if (isRetry)
+                {
+                    _log.Debug(_readAgainPending ? "Reading file data again after a file was found empty"
+                        : "Retrying file data load after earlier failure");
+                }
                 _readAgainPending = false;
-                _heldBack = false;
 
                 var documents = new List<FileDataDocument>(_config.Paths.Count);
                 var files = new List<FileDataFileSummary>(_config.Paths.Count);
                 var hadContent = new Dictionary<string, bool>(_config.Paths.Count);
-                LoadOutcome outcome;
                 using (var hasher = _config.SkipUnchanged ? SHA256.Create() : null)
                 {
-                    outcome = Reload(documents, files, hadContent, hasher, isRetry, ref retryDelay);
+                    return Reload(documents, files, hadContent, hasher, isRetry, ref retryDelay);
                 }
-                if (!_heldBack)
-                {
-                    // A run of loads that hold files back ends with any load that does not.
-                    _holdingSince = null;
-                }
-                return outcome;
             }
         }
 
@@ -533,7 +538,6 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             // The files that ShouldHoldBack holds back. The other files are still read, so that every
             // file that is found empty starts its delay in this load.
             List<string> heldBack = null;
-            var now = _now();
             foreach (var path in _config.Paths)
             {
                 string content;
@@ -582,9 +586,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
                 }
                 if (hasContent)
                 {
-                    _emptyFiles.Remove(path);
+                    if (_emptyFiles.TryGetValue(path, out var empty))
+                    {
+                        empty.Since = null;
+                    }
                 }
-                else if (ShouldHoldBack(path, now))
+                // The clock is read after this file's own read, so a slow read of another file does not
+                // shorten its delay.
+                else if (ShouldHoldBack(path, _now()))
                 {
                     (heldBack = heldBack ?? new List<string>()).Add(path);
                     continue;
@@ -609,7 +618,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             }
             if (heldBack != null)
             {
-                return HoldBack(heldBack, now, out retryDelay);
+                return HoldBack(heldBack, _now(), out retryDelay);
             }
 
             FileDataMergeResult merged;
@@ -693,20 +702,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 _appliedHadContent[entry.Key] = entry.Value;
             }
+            _emptyFiles.Clear();
         }
 
         // Called inside _reloadLock when a load finds a file with no entries. A file whose content is
         // in effect and that has none now may be in the middle of an in-place rewrite: a writer that
         // truncates the file and then writes the new content. Such a file is held back until it has
         // stayed so, without being written, for the retry delay. A change of its state, its
-        // modification time and size, read through any symbolic link, means that it was written since
-        // a load last found it so, for example rewritten and truncated again between two loads, so
-        // the delay starts over. A file that keeps being written while every load finds it empty, or
-        // files that are rewritten in turn so that every load finds one of them empty, would be held
-        // back without end; loads stop holding files back once they have held some back for
-        // MaxHoldRetryDelays retry delays in a row. A file whose content is not in effect, such as a
-        // placeholder that has always been empty, is parsed right away, and so is any file when
-        // retries are off, since nothing would read it again.
+        // modification time and size, means that it was written since a load last found it so, for
+        // example rewritten and truncated again between two loads, so the delay starts over. The state
+        // is read through a symbolic link where the framework can resolve links; elsewhere a link is
+        // observed by its content, which is the same for every empty state.
+        //
+        // A file that keeps being written while every load finds it empty, or files that are rewritten
+        // in turn so that every load finds one of them empty, would be held back without end. So a
+        // file stops being held back once loads have held it back for MaxHoldRetryDelays retry delays.
+        // That bound is the file's own: another file's hold or a failed load does not shorten or reset
+        // it. It starts over when data is applied, or when the file has stayed empty for the whole
+        // delay, so that a later rewrite is held back again.
+        //
+        // A file whose content is not in effect, such as a placeholder that has always been empty, is
+        // parsed right away, and so is any file when retries are off, since nothing would read it
+        // again.
         private bool ShouldHoldBack(string path, TimeSpan now)
         {
             if (!_config.RetryOnFailure || !(_appliedHadContent.TryGetValue(path, out var applied) && applied))
@@ -716,15 +733,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             var state = FileState.Observe(path);
             if (!_emptyFiles.TryGetValue(path, out var empty))
             {
-                empty = new EmptyFile { Since = now, State = state };
+                empty = new EmptyFile();
                 _emptyFiles[path] = empty;
             }
-            else if (!empty.State.Equals(state))
+            if (empty.Since == null || !empty.State.Equals(state))
             {
                 empty.Since = now;
                 empty.State = state;
             }
-            return now - empty.Since < _timing.RetryDelay && now - (_holdingSince ?? now) < MaxHoldDuration;
+            if (now - empty.Since.Value >= _timing.RetryDelay)
+            {
+                empty.FirstHeld = null;
+                return false;
+            }
+            if (empty.FirstHeld != null && now - empty.FirstHeld.Value >= MaxHoldDuration)
+            {
+                return false;
+            }
+            empty.FirstHeld = empty.FirstHeld ?? now;
+            return true;
         }
 
         private TimeSpan MaxHoldDuration => TimeSpan.FromTicks(_timing.RetryDelay.Ticks * MaxHoldRetryDelays);
@@ -732,9 +759,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         // Called inside _reloadLock, for the files that ShouldHoldBack holds back. Whatever the files'
         // format, the load keeps the current data and arms the retry without logging an error or using
         // up an attempt. The retry comes when the first of the files has stayed empty for the retry
-        // delay, or when the loads have held files back for as long as they may, plus a tenth of the
-        // retry delay, so that a timer that fires a little early still finds the delay over; the
-        // change signal for a write starts a load sooner. Once a file has stayed empty for the retry
+        // delay, or has been held back for as long as it may be, plus a tenth of the retry delay, so
+        // that a timer that fires a little early still finds the time over; the change signal for a
+        // write starts a load sooner. Once a file has stayed empty for the retry
         // delay, a load parses it: a file that is still empty is invalid JSON, or a document with no
         // entries in a format such as YAML.
         private LoadOutcome HoldBack(List<string> paths, TimeSpan now, out TimeSpan retryDelay)
@@ -744,20 +771,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
             {
                 return LoadOutcome.Succeeded;
             }
-            _holdingSince = _holdingSince ?? now;
-            var until = _holdingSince.Value + MaxHoldDuration;
+            var until = TimeSpan.MaxValue;
             foreach (var path in paths)
             {
                 _log.Debug("File {0} is empty, possibly while it is being rewritten; reading it again before applying it", path);
-                var delayOver = _emptyFiles[path].Since + _timing.RetryDelay;
-                if (delayOver < until)
+                var empty = _emptyFiles[path];
+                var delayOver = empty.Since.Value + _timing.RetryDelay;
+                var boundOver = empty.FirstHeld.Value + MaxHoldDuration;
+                var over = delayOver < boundOver ? delayOver : boundOver;
+                if (over < until)
                 {
-                    until = delayOver;
+                    until = over;
                 }
             }
             var margin = TimeSpan.FromTicks(_timing.RetryDelay.Ticks / 10);
             retryDelay = (until > now ? until - now : TimeSpan.Zero) + margin;
-            _heldBack = true;
             _readAgainPending = true;
             return LoadOutcome.Failed;
         }

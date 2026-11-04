@@ -100,6 +100,33 @@ namespace LaunchDarkly.Sdk.Client
         }
 
         [Fact]
+        public async Task InitWithAutoEnvAttributesAndNoPersistenceDoesNotThrow()
+        {
+            // SDK-3438: NoPersistence makes the persistent store null; the auto-env decorator
+            // must null-guard it rather than throwing a NullReferenceException from Init.
+            var config = BasicConfig(ConfigurationBuilder.AutoEnvAttributes.Enabled)
+                .Persistence(Components.NoPersistence).Build();
+
+            using (var client = await TestUtil.CreateClientAsync(config, BasicUser))
+            {
+                Assert.True(client.Initialized);
+            }
+        }
+
+        [Fact]
+        public async Task InitWithAutoEnvAttributesAndMaxCachedContextsZeroDoesNotThrow()
+        {
+            // SDK-3438: MaxCachedContexts(0) nulls the store via the same path as NoPersistence.
+            var config = BasicConfig(ConfigurationBuilder.AutoEnvAttributes.Enabled)
+                .Persistence(Components.Persistence().MaxCachedContexts(0)).Build();
+
+            using (var client = await TestUtil.CreateClientAsync(config, BasicUser))
+            {
+                Assert.True(client.Initialized);
+            }
+        }
+
+        [Fact]
         public async Task InitWithAnonUserCanReusePreviousRandomizedKey()
         {
             // Note, we don't care about polling mode vs. streaming mode for this functionality.

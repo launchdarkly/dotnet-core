@@ -128,6 +128,40 @@ namespace LaunchDarkly.Sdk.Client.Internal
             Assert.Equal(key1, key2);
         }
 
+        [Fact]
+        public void DoesNotThrowWhenPersistentStoreIsNull()
+        {
+            // SDK-3438: with persistence disabled the store is null; the decorator must
+            // null-guard it instead of throwing from the generated-key lookup.
+            var decoratorUnderTest = new AutoEnvContextDecorator(null, MakeReporterWithDeviceInfo(), testLogger);
+
+            var input = Context.Builder(ContextKind.Of("aKind"), "aKey").Build();
+            var output = decoratorUnderTest.DecorateContext(input);
+
+            Assert.True(output.TryGetContextByKind(ContextKind.Of(AutoEnvContextDecorator.LdDeviceKind), out var device));
+            Assert.False(string.IsNullOrEmpty(device.Key));
+        }
+
+        [Fact]
+        public void GeneratesConsistentDeviceKeyAcrossCallsWhenStoreIsNull()
+        {
+            // Without a store to persist to, the in-memory cache must keep the ld_device key
+            // stable across identify() calls for the lifetime of the decorator.
+            var decoratorUnderTest = new AutoEnvContextDecorator(null, MakeReporterWithDeviceInfo(), testLogger);
+            var input = Context.Builder(ContextKind.Of("aKind"), "aKey").Build();
+
+            decoratorUnderTest.DecorateContext(input)
+                .TryGetContextByKind(ContextKind.Of(AutoEnvContextDecorator.LdDeviceKind), out var device1);
+            decoratorUnderTest.DecorateContext(input)
+                .TryGetContextByKind(ContextKind.Of(AutoEnvContextDecorator.LdDeviceKind), out var device2);
+
+            Assert.Equal(device1.Key, device2.Key);
+        }
+
+        private static IEnvironmentReporter MakeReporterWithDeviceInfo() =>
+            new EnvironmentReporterBuilder().SetSdkLayer(SdkAttributes.Layer)
+                .SetPlatformLayer(new Layer(null, new OsInfo("family", "name", "version"), null, null)).Build();
+
         private PersistentDataStoreWrapper MakeMockDataStoreWrapper()
         {
             return new PersistentDataStoreWrapper(new MockPersistentDataStore(), BasicMobileKey, testLogger);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
@@ -348,6 +349,37 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             Assert.IsType<FDv2ActionGoodbye>(action);
             var goodbyeAction = (FDv2ActionGoodbye)action;
             Assert.Equal("Server is shutting down", goodbyeAction.Reason);
+            Assert.Null(goodbyeAction.FDv1FallbackTtl);
+        }
+
+        [Fact]
+        public void Goodbye_WithValidProtocolFallbackTtl_ReturnsTtlAsIs()
+        {
+            var handler = new FDv2ProtocolHandler();
+            var goodbyeEvt = new FDv2Event(FDv2EventTypes.Goodbye,
+                JsonDocument.Parse(@"{""reason"":""fallback"",""protocolFallbackTTL"":120}").RootElement);
+
+            var action = Assert.IsType<FDv2ActionGoodbye>(handler.HandleEvent(goodbyeEvt));
+
+            Assert.Equal(TimeSpan.FromSeconds(120), action.FDv1FallbackTtl);
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("-1")]
+        [InlineData("3601")]
+        [InlineData("\"soon\"")]
+        [InlineData("null")]
+        public void Goodbye_WithInvalidProtocolFallbackTtl_ReturnsJitteredDefault(string ttl)
+        {
+            var handler = new FDv2ProtocolHandler();
+            var goodbyeEvt = new FDv2Event(FDv2EventTypes.Goodbye,
+                JsonDocument.Parse(@"{""reason"":""fallback"",""protocolFallbackTTL"":" + ttl + "}").RootElement);
+
+            var action = Assert.IsType<FDv2ActionGoodbye>(handler.HandleEvent(goodbyeEvt));
+
+            Assert.NotNull(action.FDv1FallbackTtl);
+            Assert.InRange(action.FDv1FallbackTtl.Value, TimeSpan.FromMinutes(30), TimeSpan.FromHours(1));
         }
 
         #endregion

@@ -19,13 +19,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// <param name="log">Logger for diagnostic messages.</param>
         /// <param name="environmentId">The environment ID to include in the changeset.</param>
         /// <param name="fdv1Fallback">Whether to mark the changeset as carrying the FDv1 fallback directive.</param>
+        /// <param name="fdv1FallbackTtl">The directive's Fallback TTL, if any.</param>
         /// <returns>A DataStoreTypes.ChangeSet containing the converted data.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when the changeset type is unknown.</exception>
         public static DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> ToChangeSet(
             FDv2ChangeSet changeset,
             Logger log,
             string environmentId = null,
-            bool fdv1Fallback = false)
+            bool fdv1Fallback = false,
+            TimeSpan? fdv1FallbackTtl = null)
         {
             DataStoreTypes.ChangeSetType changeSetType;
             switch (changeset.Type)
@@ -105,7 +107,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 changeset.Selector,
                 dataBuilder.ToImmutable(),
                 environmentId,
-                fdv1Fallback);
+                fdv1Fallback,
+                fdv1FallbackTtl);
         }
 
         /// <summary>

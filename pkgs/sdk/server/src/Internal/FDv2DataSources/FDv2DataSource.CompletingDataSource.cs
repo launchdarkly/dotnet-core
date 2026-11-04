@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -12,15 +13,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         {
             private readonly IDataSource _inner;
             private readonly InitializationTracker _tracker;
+            private readonly IDisposable _recovery;
 
-            public CompletingDataSource(IDataSource inner, InitializationTracker tracker)
+            public CompletingDataSource(IDataSource inner, InitializationTracker tracker, IDisposable recovery)
             {
                 _inner = inner;
                 _tracker = tracker;
+                _recovery = recovery;
             }
 
             public void Dispose()
             {
+                _recovery.Dispose();
                 _inner.Dispose();
                 _tracker.Dispose();
             }

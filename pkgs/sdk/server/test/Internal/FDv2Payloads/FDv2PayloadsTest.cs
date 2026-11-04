@@ -322,6 +322,40 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2Payloads
             var reserialized = JsonSerializer.Serialize(goodbye, GetJsonOptions());
             var deserialized2 = JsonSerializer.Deserialize<Goodbye>(reserialized, GetJsonOptions());
             Assert.Equal("Server is shutting down", deserialized2.Reason);
+            Assert.False(deserialized2.HasProtocolFallbackTtl);
+        }
+
+        [Fact]
+        public void Goodbye_CanDeserializeAndReserializeProtocolFallbackTtl()
+        {
+            const string json = @"{
+                ""reason"": ""fallback"",
+                ""protocolFallbackTTL"": 60
+            }";
+
+            var goodbye = JsonSerializer.Deserialize<Goodbye>(json, GetJsonOptions());
+
+            Assert.True(goodbye.HasProtocolFallbackTtl);
+            Assert.Equal(60, goodbye.ProtocolFallbackTtl);
+
+            var reserialized = JsonSerializer.Serialize(goodbye, GetJsonOptions());
+            var deserialized2 = JsonSerializer.Deserialize<Goodbye>(reserialized, GetJsonOptions());
+            Assert.True(deserialized2.HasProtocolFallbackTtl);
+            Assert.Equal(60, deserialized2.ProtocolFallbackTtl);
+        }
+
+        [Fact]
+        public void Goodbye_NonNumericProtocolFallbackTtlIsPresentWithoutValue()
+        {
+            const string json = @"{
+                ""reason"": ""fallback"",
+                ""protocolFallbackTTL"": ""soon""
+            }";
+
+            var goodbye = JsonSerializer.Deserialize<Goodbye>(json, GetJsonOptions());
+
+            Assert.True(goodbye.HasProtocolFallbackTtl);
+            Assert.Null(goodbye.ProtocolFallbackTtl);
         }
 
         [Fact]

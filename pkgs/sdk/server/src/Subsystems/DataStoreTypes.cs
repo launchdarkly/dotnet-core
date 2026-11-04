@@ -436,15 +436,22 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// </summary>
             public bool FDv1Fallback { get; }
 
+            /// <summary>
+            /// When <see cref="FDv1Fallback"/> is true, how long to stay on FDv1 before attempting to
+            /// recover to FDv2. Null means the directive carried no TTL, so the default applies.
+            /// </summary>
+            internal TimeSpan? FDv1FallbackTtl { get; }
+
             internal ChangeSet(ChangeSetType type, Selector selector,
                 IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> data, string environmentId,
-                bool fdv1Fallback = false)
+                bool fdv1Fallback = false, TimeSpan? fdv1FallbackTtl = null)
             {
                 Type = type;
                 Selector = selector;
                 Data = data;
                 EnvironmentId = environmentId;
                 FDv1Fallback = fdv1Fallback;
+                FDv1FallbackTtl = fdv1FallbackTtl;
             }
         }
     }

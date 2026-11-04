@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -101,9 +102,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
         public string Reason { get; }
 
-        public FDv2ActionGoodbye(string reason)
+        /// <summary>
+        /// The Fallback TTL if the goodbye carried an FDv1 Fallback Directive (protocolFallbackTTL),
+        /// or null if it did not.
+        /// </summary>
+        public TimeSpan? FDv1FallbackTtl { get; }
+
+        public FDv2ActionGoodbye(string reason, TimeSpan? fdv1FallbackTtl = null)
         {
             Reason = reason;
+            FDv1FallbackTtl = fdv1FallbackTtl;
         }
     }
 
@@ -315,7 +323,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// </remarks>
         private IFDv2ProtocolAction Goodbye(Goodbye intent)
         {
-            return new FDv2ActionGoodbye(intent.Reason);
+            return new FDv2ActionGoodbye(intent.Reason,
+                intent.HasProtocolFallbackTtl
+                    ? FDv1FallbackTtl.FromServiceTtl(intent.ProtocolFallbackTtl)
+                    : (TimeSpan?)null);
         }
 
         /// <summary>

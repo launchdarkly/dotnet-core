@@ -102,30 +102,20 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataStores
                 var keyName = KeyForGeneratedContextKey(contextKind);
                 var value = _persistentStore.GetValue(_globalNamespace, keyName);
 
-                // A stored generated key is always a non-empty GUID, so treat an empty value
-                // the same as null and never return it as a key. Besides the normal
-                // "nothing stored yet" (null), an empty value can be read back from a
-                // zero-length entry left behind by a legacy ':' key format handled below.
+                // Treat an empty value as missing. A legacy ':' key can leave a zero-length entry.
                 if (!string.IsNullOrEmpty(value))
                 {
                     return value;
                 }
 
-                // Legacy read: ClientSdk 3.0.0 through 5.10.2 stored non-default-kind keys under a
-                // name containing ':' (e.g. "anonUser:ld_device"), which violates the key
-                // contract and fails outright on some stores (.NET Framework IsolatedStorage);
-                // on Windows under modern .NET it instead lands as an NTFS alternate data stream
-                // on a zero-length "anonUser" base file. Copy any legacy value forward to the
-                // new, contract-safe name so the generated key stays stable across the upgrade.
-                // We copy rather than move so that an install upgraded from a legacy entry stays
-                // downgrade-safe (an older SDK still reads the ':' key); a fresh install on the 
-                // new format writes no legacy entry, so a later downgrade there regenerates the key.
+                // Legacy read (ClientSdk 3.0.0 through 5.10.2): older SDKs stored non-default kinds
+                // under a ':' name. Copy that value to the new name so the key stays stable, and
+                // keep the old entry so a downgrade still finds it.
                 var legacyValue = GetLegacyGeneratedContextKey(contextKind);
                 if (!string.IsNullOrEmpty(legacyValue))
                 {
                     try
                     {
-                        // copy legacy value forward
                         _persistentStore.SetValue(_globalNamespace, keyName, legacyValue);
                     }
                     catch (Exception e)
@@ -149,10 +139,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataStores
 
         private static string KeyForContextId(string contextId) => EnvironmentContextDataKeyPrefix + contextId;
 
-        // The default kind keeps the bare "anonUser" name (unchanged, contract-safe). For any
-        // other kind the kind value is base64url-encoded (no padding) so the key contains only
-        // contract-legal characters - unlike the old "anonUser:<kind>" form, whose ':' broke
-        // the key contract and .NET Framework IsolatedStorage paths.
+        // Encode non-default kinds as base64url so the key uses only contract-legal characters.
         private static string KeyForGeneratedContextKey(ContextKind contextKind) =>
             contextKind.IsDefault
                 ? GlobalAnonContextKey
@@ -163,12 +150,8 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataStores
         private static string LegacyKeyForGeneratedContextKey(ContextKind contextKind) =>
             GlobalAnonContextKey + ":" + contextKind.Value;
 
-        // Reads a value stored under the legacy ':'-containing key name. The caller must hold
-        // the store lock (this is invoked from within GetGeneratedContextKey's locked action).
-        // A failure here is expected on stores that reject ':' (notably .NET Framework
-        // IsolatedStorage) and is swallowed quietly: it deliberately does NOT go through
-        // MaybeLogStoreError, so this one-time migration probe can't consume the single
-        // storage-error log slot and mask a genuine, later persistence failure.
+        // The caller must hold the store lock. Stores that reject ':' throw here. Do not use
+        // MaybeLogStoreError, so that this probe does not use the one-shot error log.
         private string GetLegacyGeneratedContextKey(ContextKind contextKind)
         {
             try

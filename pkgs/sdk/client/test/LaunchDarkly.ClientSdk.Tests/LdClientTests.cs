@@ -102,7 +102,7 @@ namespace LaunchDarkly.Sdk.Client
         [Fact]
         public async Task InitWithAutoEnvAttributesAndNoPersistenceDoesNotThrow()
         {
-            // SDK-3438: NoPersistence makes the persistent store null; the auto-env decorator
+            // NoPersistence makes the persistent store null; the auto-env decorator
             // must null-guard it rather than throwing a NullReferenceException from Init.
             var config = BasicConfig(ConfigurationBuilder.AutoEnvAttributes.Enabled)
                 .Persistence(Components.NoPersistence).Build();
@@ -116,7 +116,7 @@ namespace LaunchDarkly.Sdk.Client
         [Fact]
         public async Task InitWithAutoEnvAttributesAndMaxCachedContextsZeroDoesNotThrow()
         {
-            // SDK-3438: MaxCachedContexts(0) nulls the store via the same path as NoPersistence.
+            // MaxCachedContexts(0) nulls the store via the same path as NoPersistence.
             var config = BasicConfig(ConfigurationBuilder.AutoEnvAttributes.Enabled)
                 .Persistence(Components.Persistence().MaxCachedContexts(0)).Build();
 

@@ -131,7 +131,7 @@ namespace LaunchDarkly.Sdk.Client.Internal
         [Fact]
         public void DoesNotThrowWhenPersistentStoreIsNull()
         {
-            // SDK-3438: with persistence disabled the store is null; the decorator must
+            // With persistence disabled the store is null; the decorator must
             // null-guard it instead of throwing from the generated-key lookup.
             var decoratorUnderTest = new AutoEnvContextDecorator(null, MakeReporterWithDeviceInfo(), testLogger);
 

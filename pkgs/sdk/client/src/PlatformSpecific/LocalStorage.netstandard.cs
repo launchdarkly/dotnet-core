@@ -54,8 +54,14 @@ namespace LaunchDarkly.Sdk.Client.PlatformSpecific
                 else
                 {
                     store.CreateDirectory(storageNamespace); // has no effect if directory already exists
-                    using (var stream = store.OpenFile(filePath, FileMode.Create, FileAccess.Write))
+                    // Don't use FileMode.Create here: it replaces the file and drops NTFS alternate
+                    // data streams, which due to previous oversight is where a legacy generated key can
+                    // live on modern .NET on Windows. OpenOrCreate keeps the existing file and its
+                    // data streams.
+                    using (var stream = store.OpenFile(filePath, FileMode.OpenOrCreate, FileAccess.Write))
                     {
+                        // SetLength(0) clears the old contents of the primary data stream before we write the new value.
+                        stream.SetLength(0);
                         using (var sw = new StreamWriter(stream))
                         {
                             sw.Write(value);

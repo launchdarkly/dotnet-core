@@ -120,6 +120,19 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
+        public void ValueForAllSetsOffVariationToTheValue()
+        {
+            VerifyFlag(
+                f => f.ValueForAll(LdValue.Of("x")),
+                fb => fb.On(true).Variations("x").OffVariation(0).FallthroughVariation(0)
+                );
+            VerifyFlag(
+                f => f.ValueForAll(LdValue.Of("x")).On(false),
+                fb => fb.On(false).Variations("x").OffVariation(0).FallthroughVariation(0)
+                );
+        }
+
+        [Fact]
         public void UsingBooleanConfigMethodsForcesFlagToBeBoolean()
         {
             Func<FeatureFlagBuilder, FeatureFlagBuilder> expectedBooleanFlag = fb =>

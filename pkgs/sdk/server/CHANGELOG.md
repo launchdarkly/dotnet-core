@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.2...LaunchDarkly.ServerSdk-v8.17.3) (2026-11-06)
+
+
+### Bug Fixes
+
+* Make TestData ValueForAll return its value when targeting is off ([#400](https://github.com/launchdarkly/dotnet-core/issues/400)) ([c8fef92](https://github.com/launchdarkly/dotnet-core/commit/c8fef92a40c9cb307a94704dfb36024e4e6da787))
+
 ## [8.17.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.1...LaunchDarkly.ServerSdk-v8.17.2) (2026-10-05)
 
 

@@ -35,6 +35,7 @@ namespace TestService
         public SdkTagParams Tags { get; set; }
         public SdkHookParams Hooks { get; set; }
         public SdkConfigDataSystemParams DataSystem { get; set; }
+        public SdkConfigPersistentDataStoreParams PersistentDataStore { get; set; }
         public SdkConfigWrapperParams Wrapper { get; set; }
         public SdkConfigProxyParams Proxy { get; set; }
         public SdkConfigTlsParams Tls { get; set; }

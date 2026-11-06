@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The DynamoDB integration of this repository, built from its sources against the local SDK for the contract test
+       service. The integration's own project references the published SDK package. -->
+  <PropertyGroup>
+    <TestFramework Condition="'$(TESTFRAMEWORK)' == ''">net8.0</TestFramework>
+    <TargetFrameworks>$(TESTFRAMEWORK)</TargetFrameworks>
+    <AssemblyName>ContractTestService.DynamoDB</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\..\dotnet-server-sdk-dynamodb\src\**\*.cs" Exclude="..\..\..\..\..\dotnet-server-sdk-dynamodb\src\AssemblyInfo.cs;..\..\..\..\..\dotnet-server-sdk-dynamodb\src\bin\**;..\..\..\..\..\dotnet-server-sdk-dynamodb\src\obj\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\LaunchDarkly.ServerSdk.csproj" />
+    <!-- The same version range as the integration's project. -->
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="[4.0.0.0,5.0.0.0)" />
+  </ItemGroup>
+
+</Project>

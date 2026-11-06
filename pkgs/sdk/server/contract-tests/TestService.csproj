@@ -23,4 +23,13 @@
     <ProjectReference Include="..\src\LaunchDarkly.ServerSdk.csproj" />
   </ItemGroup>
 
+  <!-- The persistent store integrations of this repository. Their projects reference the published SDK package,
+       so each one is built from its sources, against the SDK project above, by a project under Stores. -->
+  <ItemGroup>
+    <Compile Remove="Stores\**" />
+    <ProjectReference Include="Stores\Redis\ContractTestService.Redis.csproj" />
+    <ProjectReference Include="Stores\DynamoDB\ContractTestService.DynamoDB.csproj" />
+    <ProjectReference Include="Stores\Consul\ContractTestService.Consul.csproj" />
+  </ItemGroup>
+
 </Project>

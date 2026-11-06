@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Security;
+using Amazon.DynamoDBv2;
+using Amazon.Runtime;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk;
 using LaunchDarkly.Sdk.Json;
@@ -452,6 +454,18 @@ namespace TestService
                 builder.DataSource(dataSource);
             }
 
+            if (sdkParams.PersistentDataStore != null)
+            {
+                builder.DataStore(CreatePersistentDataStore(sdkParams.PersistentDataStore));
+                // With a persistent store and no data source, the SDK runs in daemon mode: it reads the data
+                // that another process, such as the Relay Proxy, writes to the store.
+                if (streamingParams == null && pollingParams == null &&
+                    serviceEndpointsParams?.Streaming == null && serviceEndpointsParams?.Polling == null)
+                {
+                    builder.DataSource(Components.ExternalUpdatesOnly);
+                }
+            }
+
             var eventParams = sdkParams.Events;
             if (eventParams == null)
             {
@@ -560,81 +574,14 @@ namespace TestService
             {
                 var dataSystemBuilder = Components.DataSystem().Custom();
 
-                // TODO: re-enable this code in the future and determine which dependencies on persistent stores need to be added to contract test build process
-                // Configure persistent store if provided
-                // if (sdkParams.DataSystem.Store?.PersistentDataStore != null)
-                // {
-                //     var storeConfig = sdkParams.DataSystem.Store.PersistentDataStore;
-                //     var storeType = storeConfig.Store.Type.ToLower();
-                //     IComponentConfigurer<IDataStore> persistentStore = null;
-
-                //     PersistentDataStoreBuilder persistentStoreBuilder = null;
-
-                //     switch (storeType)
-                //     {
-                //         case "redis":
-                //             var redisBuilder = Redis.DataStore();
-                //             if (!string.IsNullOrEmpty(storeConfig.Store.DSN))
-                //             {
-                //                 redisBuilder.Uri(storeConfig.Store.DSN);
-                //             }
-                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
-                //             {
-                //                 redisBuilder.Prefix(storeConfig.Store.Prefix);
-                //             }
-                //             persistentStoreBuilder = Components.PersistentDataStore(redisBuilder);
-                //             break;
-
-                //         case "dynamodb":
-                //             // For DynamoDB, DSN is the table name
-                //             var dynamoBuilder = DynamoDB.DataStore(storeConfig.Store.DSN ?? "sdk-contract-tests");
-                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
-                //             {
-                //                 dynamoBuilder.Prefix(storeConfig.Store.Prefix);
-                //             }
-                //             // DynamoDB uses IPersistentDataStoreAsync, so use the async overload
-                //             persistentStoreBuilder = Components.PersistentDataStore(dynamoBuilder);
-                //             break;
-
-                //         case "consul":
-                //             var consulBuilder = Consul.DataStore();
-                //             if (!string.IsNullOrEmpty(storeConfig.Store.DSN))
-                //             {
-                //                 consulBuilder.Address(storeConfig.Store.DSN);
-                //             }
-                //             if (!string.IsNullOrEmpty(storeConfig.Store.Prefix))
-                //             {
-                //                 consulBuilder.Prefix(storeConfig.Store.Prefix);
-                //             }
-                //             persistentStoreBuilder = Components.PersistentDataStore(consulBuilder);
-                //             break;
-                //     }
-
-                //     if (persistentStoreBuilder != null)
-                //     {
-                //         // Configure cache
-                //         var cacheMode = storeConfig.Cache?.Mode?.ToLower();
-                //         if (cacheMode == "off")
-                //         {
-                //             persistentStoreBuilder.NoCaching();
-                //         }
-                //         else if (cacheMode == "ttl" && storeConfig.Cache.TTL.HasValue)
-                //         {
-                //             persistentStoreBuilder.CacheTime(TimeSpan.FromSeconds(storeConfig.Cache.TTL.Value));
-                //         }
-                //         else if (cacheMode == "infinite")
-                //         {
-                //             persistentStoreBuilder.CacheForever();
-                //         }
-
-                //         // Determine store mode
-                //         var storeMode = sdkParams.DataSystem.StoreMode == 0
-                //             ? DataSystemConfiguration.DataStoreMode.ReadOnly 
-                //             : DataSystemConfiguration.DataStoreMode.ReadWrite;
-
-                //         dataSystemBuilder.PersistentStore(persistentStoreBuilder, storeMode);
-                //     }
-                // }
+                var storeParams = sdkParams.DataSystem.Store?.PersistentDataStore;
+                if (storeParams != null)
+                {
+                    var storeMode = sdkParams.DataSystem.StoreMode == StoreMode.ReadWrite
+                        ? DataSystemConfiguration.DataStoreMode.ReadWrite
+                        : DataSystemConfiguration.DataStoreMode.ReadOnly;
+                    dataSystemBuilder.PersistentStore(CreatePersistentDataStore(storeParams), storeMode);
+                }
 
                 // Configure initializers
                 if (sdkParams.DataSystem.Initializers != null && sdkParams.DataSystem.Initializers.Length > 0)
@@ -712,6 +659,89 @@ namespace TestService
             }
 
             return builder.Build();
+        }
+
+        // The Redis and DynamoDB clients are configured so that a failed operation surfaces well within a
+        // second, as the harness's store recovery tests require: no retries, and short timeouts. The Consul
+        // client does not retry.
+        private static readonly TimeSpan StoreOperationTimeout = TimeSpan.FromMilliseconds(500);
+
+        // The table that the test harness creates in DynamoDB.
+        private const string DynamoDBTableName = "sdk-contract-tests";
+
+        private static PersistentDataStoreBuilder CreatePersistentDataStore(SdkConfigPersistentDataStoreParams storeParams)
+        {
+            var store = storeParams.Store;
+            if (string.IsNullOrEmpty(store.DSN))
+            {
+                throw new ArgumentException("The persistent store configuration has no DSN");
+            }
+            PersistentDataStoreBuilder builder;
+            switch (store.Type)
+            {
+                case PersistentStoreType.Redis:
+                    var redis = Redis.DataStore()
+                        .Uri(store.DSN)
+                        .ConnectTimeout(StoreOperationTimeout)
+                        .OperationTimeout(StoreOperationTimeout);
+                    if (!string.IsNullOrEmpty(store.Prefix))
+                    {
+                        redis.Prefix(store.Prefix);
+                    }
+                    builder = Components.PersistentDataStore(redis);
+                    break;
+
+                case PersistentStoreType.DynamoDB:
+                    // The DSN is the endpoint of the local DynamoDB instance.
+                    var dynamoDB = DynamoDB.DataStore(DynamoDBTableName)
+                        .Configuration(new AmazonDynamoDBConfig
+                        {
+                            ServiceURL = store.DSN,
+                            AuthenticationRegion = "us-east-1",
+                            MaxErrorRetry = 0,
+                            Timeout = StoreOperationTimeout
+                        })
+                        .Credentials(new BasicAWSCredentials("dummy", "dummy"));
+                    if (!string.IsNullOrEmpty(store.Prefix))
+                    {
+                        dynamoDB.Prefix(store.Prefix);
+                    }
+                    builder = Components.PersistentDataStore(dynamoDB);
+                    break;
+
+                case PersistentStoreType.Consul:
+                    // The DSN is a host and port, without a scheme. The Consul package's namespace is also
+                    // named Consul, so the SDK's class is named in full.
+                    var consul = LaunchDarkly.Sdk.Server.Integrations.Consul.DataStore()
+                        .Address(store.DSN.Contains("://") ? store.DSN : "http://" + store.DSN);
+                    if (!string.IsNullOrEmpty(store.Prefix))
+                    {
+                        consul.Prefix(store.Prefix);
+                    }
+                    builder = Components.PersistentDataStore(consul);
+                    break;
+
+                default:
+                    throw new ArgumentException("Unsupported persistent store type: " + store.Type);
+            }
+
+            switch (storeParams.Cache?.Mode)
+            {
+                case PersistentCacheMode.Off:
+                    builder.NoCaching();
+                    break;
+                case PersistentCacheMode.TTL:
+                    if (storeParams.Cache.TTL.HasValue)
+                    {
+                        builder.CacheTime(TimeSpan.FromSeconds(storeParams.Cache.TTL.Value));
+                    }
+                    break;
+                case PersistentCacheMode.Infinite:
+                    builder.CacheForever();
+                    break;
+            }
+
+            return builder;
         }
 
         private static IComponentConfigurer<IDataSource> CreateSynchronizer(

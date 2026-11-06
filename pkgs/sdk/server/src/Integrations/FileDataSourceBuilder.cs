@@ -111,7 +111,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// Whenever possible, you should update a file's entire contents in one atomic operation; in Unix-like OSes,
         /// that can be done by creating a temporary file, writing to it, and then renaming it to replace the original
         /// file. In Windows, that is not always possible, so FileDataSource might detect an update before the file has
-        /// been fully written; in that case it will retry several times until the file can be parsed, giving up after
+        /// been fully written; in that case it will retry several times until the file can be read and parsed, giving up after
         /// repeated failures until another change to the file is detected.
         /// </para>
         /// <para>

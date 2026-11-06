@@ -64,6 +64,13 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// retries after a short delay, and recovers on its own once the file is readable again.
         /// </para>
         /// <para>
+        /// Files can be rewritten in place: if the source finds a file empty while it is being rewritten, it
+        /// keeps the overrides in effect until the new content is written. To remove a file's overrides,
+        /// delete the file or write a document with no entries, such as <c>{}</c>. An empty JSON file is not
+        /// a valid document. For a YAML file, replacing its contents in one operation, such as by renaming
+        /// a fully written temporary file over it, avoids briefly applying a partly written file.
+        /// </para>
+        /// <para>
         /// Whenever the set of overrides in effect changes, including at startup, the source logs the
         /// overrides in effect and what each configured file supplied, at Info level.
         /// </para>

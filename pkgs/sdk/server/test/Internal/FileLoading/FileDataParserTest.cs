@@ -117,12 +117,17 @@ namespace LaunchDarkly.Sdk.Server.Internal.FileLoading
         [Theory]
         [InlineData("")]
         [InlineData(" \n\t")]
-        public void ContentWithNoDocumentIsAnEmptyDocument(string content)
+        public void JsonContentWithNoDocumentIsInvalid(string content)
         {
-            var doc = JsonOnly.Parse(JsonPath, content);
-            Assert.Empty(doc.Flags);
-            Assert.Empty(doc.FlagValues);
-            Assert.Empty(doc.Segments);
+            var e = Assert.Throws<JsonException>(() => JsonOnly.Parse(JsonPath, content));
+            Assert.Contains("no content", e.Message);
+        }
+
+        [Fact]
+        public void ContentWithNoDocumentIsInvalidInAFileThatIsParsedAsJsonByDefault()
+        {
+            // A file whose extension has no registered parser is parsed as JSON, whatever its content.
+            Assert.Throws<JsonException>(() => WithParser(".yaml", YamlParser()).Parse("/data/flags.txt", ""));
         }
 
         [Fact]

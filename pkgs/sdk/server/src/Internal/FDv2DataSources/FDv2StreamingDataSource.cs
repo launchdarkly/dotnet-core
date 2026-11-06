@@ -227,8 +227,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 {
                     var changeset = changeAction.Changeset;
                     var fdv1Fallback = _fdv1FallbackRequested;
+                    // This source delivers LaunchDarkly data, which it declares may be persisted. A synchronizer
+                    // declares that for every basis and delta it returns (DATASYSTEM 1.2.8).
                     var storeError = !_transactionalDataSourceUpdates.Apply(
-                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, _environmentId, fdv1Fallback));
+                        FDv2ChangeSetTranslator.ToChangeSet(changeAction.Changeset, _log, true,
+                            environmentId: _environmentId, fdv1Fallback: fdv1Fallback));
 
                     if (!storeError)
                     {

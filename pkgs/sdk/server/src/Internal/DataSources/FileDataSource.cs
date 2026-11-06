@@ -16,6 +16,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
     internal sealed class FileDataSource : IDataSource
     {
         private readonly IDataSourceUpdates _dataSourceUpdates;
+        private readonly bool _shouldPersist;
         private readonly List<string> _paths;
         private readonly IDisposable _reloader;
         private readonly FlagFileParser _parser;
@@ -53,14 +54,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// null to parse JSON only</param>
         /// <param name="skipMissingPaths">true to skip missing files instead of failing the load</param>
         /// <param name="duplicateKeysHandling">how to handle a key that appears in more than one file</param>
+        /// <param name="shouldPersist">whether the FDv2 data system may write the file data to a persistent
+        /// store</param>
         /// <param name="logger">the destination for log output</param>
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
             List<string> paths, bool autoUpdate, Func<string, object> alternateParser, bool skipMissingPaths,
             FileDataTypes.DuplicateKeysHandling duplicateKeysHandling,
+            bool shouldPersist,
             Logger logger)
         {
             _logger = logger;
             _dataSourceUpdates = dataSourceUpdates;
+            _shouldPersist = shouldPersist;
             _paths = new List<string>(paths);
             _parser = new FlagFileParser(alternateParser);
             _dataMerger = new FlagFileDataMerger(duplicateKeysHandling);
@@ -192,10 +197,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     }
                 }
 
+                // The data set carries the persistence flag as well as the configurer, so that a configurer
+                // that wraps this data source's builder still keeps file data out of a persistent store.
                 var allData = new FullDataSet<ItemDescriptor>(
                     ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()
                         .SetItem(DataModel.Features, new KeyedItems<ItemDescriptor>(flags))
-                        .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments))
+                        .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments)),
+                    _shouldPersist
                 );
                 _dataSourceUpdates.Init(allData);
                 _loadedValidData = true;

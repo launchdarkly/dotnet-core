@@ -111,8 +111,15 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
         private static SourceFactory ToSourceFactory(IComponentConfigurer<IDataSource> dataSourceFactory,
             LdClientContext clientContext)
         {
+            // The data of a source whose configurer does not state otherwise is persisted. That includes the FDv1
+            // fallback synchronizer, whose data comes from LaunchDarkly, and a custom data source.
             return (sink) =>
-                dataSourceFactory.Build(clientContext.WithDataSourceUpdates(new DataSourceUpdatesV2ToV1Adapter(sink)));
+            {
+                var shouldPersist = !(dataSourceFactory is IDataSourcePersistence persistence) ||
+                                    persistence.ShouldPersist;
+                return dataSourceFactory.Build(
+                    clientContext.WithDataSourceUpdates(new DataSourceUpdatesV2ToV1Adapter(sink, shouldPersist)));
+            };
         }
 
         public void Dispose()

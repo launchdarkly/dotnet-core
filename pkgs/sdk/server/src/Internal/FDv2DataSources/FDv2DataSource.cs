@@ -44,6 +44,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             ActionApplierFactory timedFallbackAndRecoveryApplierFactory =
                 (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable, sublogger);
 
+            // Before any data has been applied, a synchronizer that stays silent is abandoned after a short
+            // startup timeout, as long as there is another synchronizer to fall back to.
+            var dataAppliedObserver = new DataAppliedObserver();
+            ActionApplierFactory synchronizerApplierFactory = synchronizers != null && synchronizers.Count > 1
+                ? (actionable) => new ActionApplierTimedFallbackAndRecovery(actionable, sublogger,
+                    () => dataAppliedObserver.DataApplied)
+                : timedFallbackAndRecoveryApplierFactory;
+
             // The FDv1 fallback applier is phase-agnostic: when the directive is observed it
             // calls BlockAll(FDv2) to remove every FDv2 entry from the outer list, then GoToNext
             // lands on the FDv1 fallback entry (or on exhaustion when none was configured).
@@ -80,6 +88,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         return new CompositeSource("Initializers", sink, initializerFactory, sublogger, circular: false);
                     },
                     (actionable) => new CompositeObserver(
+                        dataAppliedObserver,
                         initializationObserver,
                         fdv1FallbackApplierFactory(actionable),
                         blacklistWhenSuccessOrOff(actionable)),
@@ -99,13 +108,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                         for (int i = 0; i < synchronizers.Count; i++)
                         {
                             synchronizersFactoryTuples.Add((synchronizers[i],
-                                timedFallbackAndRecoveryApplierFactory,
+                                synchronizerApplierFactory,
                                 CompositeEntryKind.FDv2));
                         }
 
                         return new CompositeSource("Synchronizers", sink, synchronizersFactoryTuples, sublogger);
                     },
-                    (actionable) => new CompositeObserver(synchronizationObserver, fdv1FallbackApplierFactory(actionable)),
+                    (actionable) => new CompositeObserver(dataAppliedObserver, synchronizationObserver,
+                        fdv1FallbackApplierFactory(actionable)),
                     CompositeEntryKind.FDv2
                 ));
             }
@@ -197,22 +207,94 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             private CancellationTokenSource _fallbackCanceller;
             private Task _recoveryTask;
             private CancellationTokenSource _recoveryCanceller;
+            private CancellationTokenSource _startupFallbackCanceller;
             private readonly TimeSpan _interruptedFallbackTimeout;
             private readonly TimeSpan _validRecoveryTimeout;
+            private readonly TimeSpan _startupFallbackTimeout;
+            private readonly Func<bool> _hasDataBeenApplied;
             private static readonly TimeSpan DefaultInterruptedFallbackTimeout = TimeSpan.FromMinutes(2);
             private static readonly TimeSpan DefaultValidRecoveryTimeout = TimeSpan.FromMinutes(5);
+            private static readonly TimeSpan DefaultStartupFallbackTimeout = TimeSpan.FromSeconds(10);
 
             public ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, Logger logger)
                 : this(actionable, logger, DefaultInterruptedFallbackTimeout, DefaultValidRecoveryTimeout)
             {
             }
 
+            // hasDataBeenApplied reports whether the data system has applied any data. While it has not, the
+            // current source is abandoned if it provides no data within the startup timeout.
+            public ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, Logger logger,
+                Func<bool> hasDataBeenApplied)
+                : this(actionable, logger, DefaultInterruptedFallbackTimeout, DefaultValidRecoveryTimeout,
+                    hasDataBeenApplied, DefaultStartupFallbackTimeout)
+            {
+            }
+
             internal ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, Logger logger, TimeSpan interruptedFallbackTimeout, TimeSpan validRecoveryTimeout)
+                : this(actionable, logger, interruptedFallbackTimeout, validRecoveryTimeout, null, TimeSpan.Zero)
+            {
+            }
+
+            internal ActionApplierTimedFallbackAndRecovery(ICompositeSourceActionable actionable, Logger logger,
+                TimeSpan interruptedFallbackTimeout, TimeSpan validRecoveryTimeout,
+                Func<bool> hasDataBeenApplied, TimeSpan startupFallbackTimeout)
             {
                 _actionable = actionable ?? throw new ArgumentNullException(nameof(actionable));
                 _log = logger ?? throw new ArgumentNullException(nameof(logger));
                 _interruptedFallbackTimeout = interruptedFallbackTimeout;
                 _validRecoveryTimeout = validRecoveryTimeout;
+                _hasDataBeenApplied = hasDataBeenApplied;
+                _startupFallbackTimeout = startupFallbackTimeout;
+
+                // An applier is created each time its source becomes the current source, so this times
+                // the source from when it is started.
+                if (_hasDataBeenApplied != null && !_hasDataBeenApplied())
+                {
+                    ScheduleStartupFallback();
+                }
+            }
+
+            private void ScheduleStartupFallback()
+            {
+                _startupFallbackCanceller = new CancellationTokenSource();
+                var cancellationToken = _startupFallbackCanceller.Token;
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(_startupFallbackTimeout, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
+                    lock (_lock)
+                    {
+                        if (_startupFallbackCanceller == null || cancellationToken.IsCancellationRequested)
+                        {
+                            return;
+                        }
+
+                        _startupFallbackCanceller.Dispose();
+                        _startupFallbackCanceller = null;
+
+                        if (_hasDataBeenApplied())
+                        {
+                            return;
+                        }
+
+                        CancelPendingFallbackTask();
+                        CancelPendingRecoveryTask();
+
+                        _log.Warn("Current data source has not provided data within {0} seconds of starting, falling back to next source.", _startupFallbackTimeout.TotalSeconds);
+
+                        _actionable.DisposeCurrent();
+                        _actionable.GoToNext();
+                        _actionable.StartCurrent();
+                    }
+                }, cancellationToken);
             }
 
             public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
@@ -228,6 +310,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 lock (_lock)
                 {
+                    // A source that is valid no longer needs the startup fallback, and one that is off falls
+                    // back below.
+                    if (newState == DataSourceState.Valid || newState == DataSourceState.Off)
+                    {
+                        CancelPendingStartupFallback();
+                    }
+
                     // If there's a pending fallback task and status is not Interrupted, cancel it
                     if (_fallbackTask != null && newState != DataSourceState.Interrupted)
                     {
@@ -281,6 +370,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                                     _fallbackCanceller?.Dispose();
                                     _fallbackCanceller = null;
                                     _fallbackTask = null;
+                                    CancelPendingStartupFallback();
 
                                     _log.Warn("Current data source has been interrupted for more than {0} minutes, falling back to next source.", _interruptedFallbackTimeout.TotalMinutes);
 
@@ -367,6 +457,16 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 _fallbackTask = null;
             }
 
+            private void CancelPendingStartupFallback()
+            {
+                if (_startupFallbackCanceller != null)
+                {
+                    _startupFallbackCanceller.Cancel();
+                    _startupFallbackCanceller.Dispose();
+                    _startupFallbackCanceller = null;
+                }
+            }
+
             private void CancelPendingRecoveryTask()
             {
                 if (_recoveryCanceller != null)
@@ -381,7 +481,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
             public void Apply(ChangeSet<ItemDescriptor> changeSet)
             {
-                // apply does nothing wrt fallback and recovery, only status matters
+                // Data from the source ends its startup timeout; otherwise only status matters
+                lock (_lock)
+                {
+                    CancelPendingStartupFallback();
+                }
             }
         }
 
@@ -485,6 +589,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
         }
 
+
+        /// <summary>
+        /// Records whether any data has been applied, from any source.
+        /// </summary>
+        private class DataAppliedObserver : IDataSourceObserver
+        {
+            private volatile bool _dataApplied;
+
+            public bool DataApplied => _dataApplied;
+
+            public void Apply(ChangeSet<ItemDescriptor> changeSet)
+            {
+                _dataApplied = true;
+            }
+
+            public void UpdateStatus(DataSourceState newState, DataSourceStatus.ErrorInfo? newError)
+            {
+            }
+        }
 
         public enum DataSourceCategory
         {

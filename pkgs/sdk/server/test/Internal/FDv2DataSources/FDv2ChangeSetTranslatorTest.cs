@@ -43,7 +43,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Equal(DataStoreTypes.ChangeSetType.Full, result.Type);
         }
@@ -56,7 +56,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Partial, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Equal(DataStoreTypes.ChangeSetType.Partial, result.Type);
         }
@@ -67,7 +67,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var changes = ImmutableList<FDv2Change>.Empty;
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.None, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Equal(DataStoreTypes.ChangeSetType.None, result.Type);
         }
@@ -79,7 +79,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var fdv2ChangeSet = new FDv2ChangeSet((FDv2ChangeSetType)999, changes, Selector.Make(1, "state1"));
 
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
-                FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger));
+                FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true));
 
             Assert.Contains("Unknown FDv2ChangeSetType", exception.Message);
             Assert.Contains("implementation error", exception.Message);
@@ -92,10 +92,25 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var selector = Selector.Make(42, "test-state");
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, selector);
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Equal(selector.Version, result.Selector.Version);
             Assert.Equal(selector.State, result.Selector.State);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ToChangeSet_CarriesTheSourcePersistenceDeclaration(bool shouldPersist)
+        {
+            var changes = ImmutableList.Create(
+                new FDv2Change(FDv2ChangeType.Put, "flag", "flag1", 1, CreateFlagJsonElement("flag1", 1))
+            );
+            var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
+
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, shouldPersist);
+
+            Assert.Equal(shouldPersist, result.ShouldPersist);
         }
 
         [Fact]
@@ -104,7 +119,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var changes = ImmutableList<FDv2Change>.Empty;
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, "test-env-id");
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true, "test-env-id");
 
             Assert.Equal("test-env-id", result.EnvironmentId);
         }
@@ -115,7 +130,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var changes = ImmutableList<FDv2Change>.Empty;
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Null(result.EnvironmentId);
         }
@@ -128,7 +143,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             var flagData = result.Data.First(kvp => kvp.Key.Name == "features");
             var item = flagData.Value.Items.First();
@@ -145,7 +160,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Partial, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             var flagData = result.Data.First(kvp => kvp.Key.Name == "features");
             var item = flagData.Value.Items.First();
@@ -163,7 +178,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
-                FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger));
+                FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true));
 
             Assert.Contains("Unknown FDv2ChangeType", exception.Message);
             Assert.Contains("implementation error", exception.Message);
@@ -178,7 +193,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             var flagData = result.Data.First(kvp => kvp.Key.Name == "features");
             Assert.Equal(2, flagData.Value.Items.Count());
@@ -193,7 +208,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Equal(2, result.Data.Count());
             Assert.Contains(result.Data, kvp => kvp.Key.Name == "features");
@@ -209,7 +224,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Single(result.Data);
             Assert.Contains(result.Data, kvp => kvp.Key.Name == "features");
@@ -226,7 +241,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             var flagData = result.Data.First(kvp => kvp.Key.Name == "features");
             Assert.Single(flagData.Value.Items);
@@ -241,7 +256,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             var changes = ImmutableList<FDv2Change>.Empty;
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Empty(result.Data);
         }
@@ -256,7 +271,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Partial, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             Assert.Equal(2, result.Data.Count());
 
@@ -285,7 +300,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             );
             var fdv2ChangeSet = new FDv2ChangeSet(FDv2ChangeSetType.Full, changes, Selector.Make(1, "state1"));
 
-            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger);
+            var result = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, TestLogger, true);
 
             var flagData = result.Data.First(kvp => kvp.Key.Name == "features");
             var items = flagData.Value.Items.ToList();

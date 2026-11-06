@@ -28,7 +28,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 .Build();
         }
 
-        private ChangeSet<ItemDescriptor> CreateFullChangeSet()
+        private ChangeSet<ItemDescriptor> CreateFullChangeSet(bool shouldPersist = true)
         {
             var changeSetData = ImmutableList.Create(
                 new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
@@ -43,7 +43,28 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 ChangeSetType.Full,
                 Selector.Make(1, "state1"),
                 changeSetData,
-                null
+                null,
+                shouldPersist: shouldPersist
+            );
+        }
+
+        private static ChangeSet<ItemDescriptor> CreatePartialChangeSet(string key, int version, TestItem item,
+            bool shouldPersist = true)
+        {
+            var changeSetData = ImmutableList.Create(
+                new KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>(
+                    TestDataKind,
+                    new KeyedItems<ItemDescriptor>(ImmutableDictionary<string, ItemDescriptor>.Empty
+                        .Add(key, new ItemDescriptor(version, item)))
+                )
+            );
+
+            return new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Partial,
+                Selector.Make(2, "state2"),
+                changeSetData,
+                null,
+                shouldPersist: shouldPersist
             );
         }
 
@@ -420,6 +441,134 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
                 persistentStore.ResetCallTracking();
                 store.Get(TestDataKind, Item1Key);
                 Assert.False(persistentStore.WasGetCalled);
+            }
+        }
+
+        #endregion
+
+        #region Persistence Flag Tests
+
+        [Fact]
+        public void Apply_FullChangeSetNotToBePersisted_DoesNotWriteToTransactionalPersistentStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockTransactionalPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet(shouldPersist: false));
+
+                Assert.False(persistentStore.WasApplyCalled);
+                Assert.False(persistentStore.WasInitCalled);
+                Assert.True(memoryStore.Initialized());
+            }
+        }
+
+        [Fact]
+        public void Apply_FullChangeSetNotToBePersisted_DoesNotWriteToLegacyPersistentStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet(shouldPersist: false));
+
+                Assert.False(persistentStore.WasInitCalled);
+                Assert.True(memoryStore.Initialized());
+            }
+        }
+
+        [Fact]
+        public void Apply_PartialChangeSetNotToBePersisted_DoesNotWriteToTransactionalPersistentStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockTransactionalPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet(shouldPersist: false));
+                var item3 = new TestItem("item3");
+                store.Apply(CreatePartialChangeSet("key3", 30, item3, shouldPersist: false));
+
+                Assert.False(persistentStore.WasApplyCalled);
+                Assert.Equal(item3, memoryStore.Get(TestDataKind, "key3")?.Item);
+            }
+        }
+
+        [Fact]
+        public void Apply_PartialChangeSetNotToBePersisted_DoesNotWriteToLegacyPersistentStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet(shouldPersist: false));
+                var item3 = new TestItem("item3");
+                store.Apply(CreatePartialChangeSet("key3", 30, item3, shouldPersist: false));
+
+                Assert.False(persistentStore.WasUpsertCalled);
+                Assert.Equal(item3, memoryStore.Get(TestDataKind, "key3")?.Item);
+            }
+        }
+
+        [Fact]
+        public void Apply_ChangeSetNotToBePersisted_SwitchesReadsToMemoryStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockTransactionalPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                persistentStore.SetData(TestDataKind, Item1Key, new ItemDescriptor(5, new TestItem("old")));
+
+                store.Apply(CreateFullChangeSet(shouldPersist: false));
+
+                persistentStore.ResetCallTracking();
+                var result = store.Get(TestDataKind, Item1Key);
+                Assert.Equal(_item1, result?.Item);
+                Assert.False(persistentStore.WasGetCalled);
+            }
+        }
+
+        [Fact]
+        public void Init_DataSetNotToBePersisted_DoesNotWriteToPersistentStore()
+        {
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Init(new FullDataSet<ItemDescriptor>(CreateTestDataSet().Data, false));
+
+                Assert.False(persistentStore.WasInitCalled);
+                Assert.True(memoryStore.Initialized());
+            }
+        }
+
+        [Fact]
+        public void Apply_PersistedBasisAfterBasisNotToBePersisted_WritesToPersistentStore()
+        {
+            // For example, a file data initializer followed by the first payload of a LaunchDarkly synchronizer.
+            var memoryStore = new InMemoryDataStore();
+            var persistentStore = new MockTransactionalPersistentStore();
+
+            using (var store = new WriteThroughStore(memoryStore, persistentStore,
+                       DataSystemConfiguration.DataStoreMode.ReadWrite))
+            {
+                store.Apply(CreateFullChangeSet(shouldPersist: false));
+                Assert.False(persistentStore.WasApplyCalled);
+
+                store.Apply(CreateFullChangeSet());
+
+                Assert.True(persistentStore.WasApplyCalled);
             }
         }
 

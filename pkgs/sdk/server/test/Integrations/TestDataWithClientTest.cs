@@ -52,6 +52,17 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         [Fact]
+        public void ValueForAllReturnsValueWhenTargetingIsOff()
+        {
+            _td.Update(_td.Flag("flag").ValueForAll(LdValue.Of("x")).On(false));
+
+            using (var client = new LdClient(_config))
+            {
+                Assert.Equal("x", client.StringVariation("flag", _user, "default"));
+            }
+        }
+
+        [Fact]
         public void UsesTargets()
         {
             _td.Update(_td.Flag("flag").FallthroughVariation(false).VariationForUser("user1", true));

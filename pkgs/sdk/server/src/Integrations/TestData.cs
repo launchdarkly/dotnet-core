@@ -499,7 +499,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             {
                 _variations.Clear();
                 _variations.Add(value);
-                return VariationForAll(0);
+                return VariationForAll(0).OffVariation(0);
             }
 
             /// <summary>

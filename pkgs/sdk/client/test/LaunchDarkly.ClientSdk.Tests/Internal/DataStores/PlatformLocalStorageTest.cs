@@ -110,9 +110,12 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataStores
             {
                 _storage.SetValue(ns, "anonUser:ld_device", "device-key");
             }
-            catch (System.Exception)
+            catch (System.NotSupportedException)
             {
-                return; // this platform rejects ':' keys; no sibling stream can exist
+                // .NET Framework IsolatedStorage rejects a ':' path with NotSupportedException.
+                // There is no sibling stream to preserve there, so skip. A narrow catch keeps any
+                // other unexpected failure of this write visible as a test failure.
+                return;
             }
 
             _storage.SetValue(ns, "anonUser", "user-key");

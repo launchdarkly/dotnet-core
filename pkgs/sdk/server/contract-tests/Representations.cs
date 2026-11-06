@@ -36,6 +36,7 @@ namespace TestService
         public SdkHookParams Hooks { get; set; }
         public SdkConfigDataSystemParams DataSystem { get; set; }
         public SdkConfigOverridesParams Overrides { get; set; }
+        public SdkConfigPersistentDataStoreParams PersistentDataStore { get; set; }
     }
 
     public class SdkConfigOverridesParams

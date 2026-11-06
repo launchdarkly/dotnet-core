@@ -1,1 +1,10 @@
 tags/disallowed characters
+# The harness reads the lines below as test IDs; a line that starts with "#" matches no test.
+# Pre-existing store format defects that the persistence tests found:
+# - A deleted flag is written as {"version":N,"deleted":true}, with no "key" property (Redis, Consul), or
+#   as the placeholder "null" (DynamoDB). The harness expects a JSON tombstone with a "key" property.
+persistent data store/redis/read-write/data source deletions respect versioning
+persistent data store/consul/read-write/data source deletions respect versioning
+persistent data store/dynamodb/read-write/data source deletions respect versioning
+# - The Consul store fails to read a collection that has no items.
+persistent data store/consul/daemon mode/collection cardinality/collection holds no flags

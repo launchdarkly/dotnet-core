@@ -251,6 +251,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                             Shutdown(fallbackError);
                             return;
                         }
+
+                        _dataSourceUpdates.UpdateStatus(DataSourceState.Valid, null);
                     }
                     else
                     {

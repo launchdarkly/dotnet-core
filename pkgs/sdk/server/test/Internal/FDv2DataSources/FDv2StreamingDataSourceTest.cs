@@ -776,6 +776,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 var result = await startTask;
                 Assert.True(result);
 
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Valid, status.State);
+                Assert.Null(status.LastError);
+
                 _updateSink.StatusUpdates.ExpectNoValue(TimeSpan.FromMilliseconds(50));
                 Assert.False(_mockEventSource.IsClosed);
             }
@@ -840,6 +844,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
 
                 await startTask;
                 Assert.True(dataSource.Initialized);
+                Assert.Equal(DataSourceState.Valid, _updateSink.StatusUpdates.ExpectValue().State);
 
                 // Now trigger an unrecoverable error after initialization
                 var exception = new EventSourceServiceUnsuccessfulResponseException(403);

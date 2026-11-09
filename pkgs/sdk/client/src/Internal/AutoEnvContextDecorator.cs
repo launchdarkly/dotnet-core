@@ -31,6 +31,9 @@ namespace LaunchDarkly.Sdk.Client.Internal
         private readonly IEnvironmentReporter _environmentReporter;
         private readonly Logger _logger;
 
+        private readonly Dictionary<ContextKind, string> _cachedGeneratedKey = new Dictionary<ContextKind, string>();
+        private readonly object _generatedKeyLock = new object();
+
         /// <summary>
         /// Creates a <see cref="AutoEnvContextDecorator"/>.
         /// </summary>
@@ -141,21 +144,29 @@ namespace LaunchDarkly.Sdk.Client.Internal
                 ),
                 new ContextRecipe(
                     ldDeviceKind,
-                    () => GetOrCreateAutoContextKey(_persistentData, ldDeviceKind),
+                    () => GetOrCreateAutoContextKey(ldDeviceKind),
                     deviceNodes
                 )
             };
         }
 
-        private string GetOrCreateAutoContextKey(PersistentDataStoreWrapper store, ContextKind contextKind)
+        private string GetOrCreateAutoContextKey(ContextKind contextKind)
         {
-            var uniqueId = store.GetGeneratedContextKey(contextKind);
-            if (uniqueId is null)
+            lock (_generatedKeyLock)
             {
-                uniqueId = Guid.NewGuid().ToString();
-                store.SetGeneratedContextKey(contextKind, uniqueId);
+                if (_cachedGeneratedKey.TryGetValue(contextKind, out var key))
+                {
+                    return key;
+                }
+                var uniqueId = _persistentData?.GetGeneratedContextKey(contextKind);
+                if (uniqueId is null)
+                {
+                    uniqueId = Guid.NewGuid().ToString();
+                    _persistentData?.SetGeneratedContextKey(contextKind, uniqueId);
+                }
+                _cachedGeneratedKey[contextKind] = uniqueId;
+                return uniqueId;
             }
-            return uniqueId;
         }
 
         private interface ISettableMap

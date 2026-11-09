@@ -96,5 +96,32 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataStores
                 }
             }
         }
+
+        [Fact]
+        public void OverwritingBaseKeyPreservesSiblingColonKey()
+        {
+            // On modern .NET on Windows a ':' key is stored as an NTFS alternate data stream on
+            // the base file, so overwriting the base key must not destroy the sibling stream (the
+            // migration in PersistentDataStoreWrapper relies on the legacy key surviving). On
+            // platforms that reject ':' keys (.NET Framework) the write throws and there is nothing
+            // to preserve, so the scenario does not apply there.
+            var ns = TestNamespacePrefix + nameof(OverwritingBaseKeyPreservesSiblingColonKey);
+            try
+            {
+                _storage.SetValue(ns, "anonUser:ld_device", "device-key");
+            }
+            catch (System.NotSupportedException)
+            {
+                // .NET Framework IsolatedStorage rejects a ':' path with NotSupportedException.
+                // There is no sibling stream to preserve there, so skip. A narrow catch keeps any
+                // other unexpected failure of this write visible as a test failure.
+                return;
+            }
+
+            _storage.SetValue(ns, "anonUser", "user-key");
+
+            Assert.Equal("device-key", _storage.GetValue(ns, "anonUser:ld_device"));
+            Assert.Equal("user-key", _storage.GetValue(ns, "anonUser"));
+        }
     }
 }

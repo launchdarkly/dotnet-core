@@ -1,4 +1,7 @@
-﻿using Xunit;
+﻿using System;
+using LaunchDarkly.Logging;
+using LaunchDarkly.Sdk.Client.Subsystems;
+using Xunit;
 using Xunit.Abstractions;
 
 using static LaunchDarkly.TestHelpers.JsonAssertions;
@@ -101,7 +104,7 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataStores
         public void GetGeneratedContextKey()
         {
             _persistentStore.SetValue(ExpectedGlobalNamespace, ExpectedGeneratedContextKey, "key1");
-            _persistentStore.SetValue(ExpectedGlobalNamespace, ExpectedGeneratedContextKey + ":org", "key2");
+            _persistentStore.SetValue(ExpectedGlobalNamespace, NewGeneratedContextKeyName(ContextKind.Of("org")), "key2");
             Assert.Equal("key1", _wrapper.GetGeneratedContextKey(ContextKind.Default));
             Assert.Equal("key2", _wrapper.GetGeneratedContextKey(ContextKind.Of("org")));
         }
@@ -109,10 +112,149 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataStores
         [Fact]
         public void SetGeneratedContextKey()
         {
+            var org = ContextKind.Of("org");
             _wrapper.SetGeneratedContextKey(ContextKind.Default, "key1");
-            _wrapper.SetGeneratedContextKey(ContextKind.Of("org"), "key2");
+            _wrapper.SetGeneratedContextKey(org, "key2");
+
             Assert.Equal("key1", _persistentStore.GetValue(ExpectedGlobalNamespace, ExpectedGeneratedContextKey));
-            Assert.Equal("key2", _persistentStore.GetValue(ExpectedGlobalNamespace, ExpectedGeneratedContextKey + ":org"));
+            Assert.Equal("key2", _persistentStore.GetValue(ExpectedGlobalNamespace, NewGeneratedContextKeyName(org)));
+
+            // The contract-safe name contains no ':', and the old ':' name is never written.
+            Assert.Matches("^[A-Za-z0-9_-]+$", NewGeneratedContextKeyName(org));
+            Assert.Null(_persistentStore.GetValue(ExpectedGlobalNamespace, LegacyGeneratedContextKeyName(org)));
+        }
+
+        [Fact]
+        public void GeneratedContextKeyNamesAreContractConformantForAllKinds()
+        {
+            foreach (var kind in new[] { ContextKind.Default, ContextKind.Of("ld_device"), ContextKind.Of("my.kind") })
+            {
+                Assert.Matches("^[A-Za-z0-9_-]+$", NewGeneratedContextKeyName(kind));
+            }
+        }
+
+        [Fact]
+        public void MigratesLegacyGeneratedContextKeyForwardPreservingValue()
+        {
+            var kind = ContextKind.Of("ld_device");
+            _persistentStore.SetValue(ExpectedGlobalNamespace, LegacyGeneratedContextKeyName(kind), "legacy-guid");
+
+            Assert.Equal("legacy-guid", _wrapper.GetGeneratedContextKey(kind));
+            // Copied forward to the contract-safe name...
+            Assert.Equal("legacy-guid", _persistentStore.GetValue(ExpectedGlobalNamespace, NewGeneratedContextKeyName(kind)));
+            // ...and the legacy entry is left intact (copy, not move) for downgrade safety.
+            Assert.Equal("legacy-guid", _persistentStore.GetValue(ExpectedGlobalNamespace, LegacyGeneratedContextKeyName(kind)));
+        }
+
+        [Fact]
+        public void PrefersNewGeneratedContextKeyOverLegacy()
+        {
+            var kind = ContextKind.Of("ld_device");
+            _persistentStore.SetValue(ExpectedGlobalNamespace, NewGeneratedContextKeyName(kind), "new-guid");
+            _persistentStore.SetValue(ExpectedGlobalNamespace, LegacyGeneratedContextKeyName(kind), "legacy-guid");
+
+            Assert.Equal("new-guid", _wrapper.GetGeneratedContextKey(kind));
+            Assert.Equal("new-guid", _persistentStore.GetValue(ExpectedGlobalNamespace, NewGeneratedContextKeyName(kind)));
+        }
+
+        [Fact]
+        public void TreatsEmptyGeneratedContextKeyValueAsMissing()
+        {
+            var kind = ContextKind.Of("ld_device");
+            _persistentStore.SetValue(ExpectedGlobalNamespace, NewGeneratedContextKeyName(kind), "");
+
+            Assert.Null(_wrapper.GetGeneratedContextKey(kind));
+        }
+
+        [Fact]
+        public void LegacyReadErrorIsSwallowedAndNewWriteSucceeds()
+        {
+            // Models .NET Framework IsolatedStorage, which rejects any key containing ':'.
+            var wrapper = new PersistentDataStoreWrapper(new ColonRejectingStore(), BasicMobileKey, testLogger);
+            var kind = ContextKind.Of("ld_device");
+
+            // New key absent; the legacy ':' probe throws but is swallowed.
+            Assert.Null(wrapper.GetGeneratedContextKey(kind));
+
+            // Persisting under the contract-safe (colon-free) name succeeds and is stable.
+            wrapper.SetGeneratedContextKey(kind, "new-guid");
+            Assert.Equal("new-guid", wrapper.GetGeneratedContextKey(kind));
+        }
+
+        [Fact]
+        public void ReturnsStableLegacyValueWhenCopyForwardWriteFails()
+        {
+            var wrapper = new PersistentDataStoreWrapper(new ReadableWriteFailingStore("legacy-guid"), BasicMobileKey, testLogger);
+            var kind = ContextKind.Of("ld_device");
+
+            Assert.Equal("legacy-guid", wrapper.GetGeneratedContextKey(kind));
+            Assert.Equal("legacy-guid", wrapper.GetGeneratedContextKey(kind));
+        }
+
+        [Fact]
+        public void LegacyProbeDoesNotConsumeTheOneShotStoreErrorLog()
+        {
+            var wrapper = new PersistentDataStoreWrapper(new ProbeThrowsWriteFailsStore(), BasicMobileKey, testLogger);
+            var kind = ContextKind.Of("ld_device");
+
+            // The legacy ':' probe throws and is swallowed quietly: no store error is logged, and
+            // the one-shot error slot must stay free.
+            Assert.Null(wrapper.GetGeneratedContextKey(kind));
+            Assert.False(logCapture.HasMessageWithRegex(LogLevel.Error, "Failure in persistent data store"));
+
+            // A genuine store failure afterward must still surface, proving the probe did not burn
+            // the one-shot slot (which would mask real errors).
+            wrapper.SetGeneratedContextKey(kind, "new-guid");
+            Assert.True(logCapture.HasMessageWithRegex(LogLevel.Error, "Failure in persistent data store"));
+        }
+
+        private static string NewGeneratedContextKeyName(ContextKind kind) =>
+            kind.IsDefault ? ExpectedGeneratedContextKey : ExpectedGeneratedContextKey + "_" + Base64.UrlSafeEncodeNoPadding(kind.Value);
+
+        private static string LegacyGeneratedContextKeyName(ContextKind kind) =>
+            ExpectedGeneratedContextKey + ":" + kind.Value;
+
+        // Rejects any key containing ':' by throwing, like .NET Framework IsolatedStorage paths.
+        private sealed class ColonRejectingStore : IPersistentDataStore
+        {
+            private readonly MockPersistentDataStore _inner = new MockPersistentDataStore();
+            private static void Guard(string key)
+            {
+                if (key.Contains(":"))
+                {
+                    throw new NotSupportedException("The given path's format is not supported.");
+                }
+            }
+            public string GetValue(string storageNamespace, string key) { Guard(key); return _inner.GetValue(storageNamespace, key); }
+            public void SetValue(string storageNamespace, string key, string value) { Guard(key); _inner.SetValue(storageNamespace, key, value); }
+            public void Dispose() { }
+        }
+
+        // Returns a legacy value for ':' keys but fails every write, exercising the best-effort copy.
+        private sealed class ReadableWriteFailingStore : IPersistentDataStore
+        {
+            private readonly string _legacyValue;
+            public ReadableWriteFailingStore(string legacyValue) { _legacyValue = legacyValue; }
+            public string GetValue(string storageNamespace, string key) => key.Contains(":") ? _legacyValue : null;
+            public void SetValue(string storageNamespace, string key, string value) => throw new InvalidOperationException("writes disabled");
+            public void Dispose() { }
+        }
+
+        // Throws on ':' reads (the legacy probe) and on every write (a genuine store failure),
+        // to prove the quiet probe does not consume the one-shot store-error log slot.
+        private sealed class ProbeThrowsWriteFailsStore : IPersistentDataStore
+        {
+            public string GetValue(string storageNamespace, string key)
+            {
+                if (key.Contains(":"))
+                {
+                    throw new NotSupportedException("The given path's format is not supported.");
+                }
+                return null;
+            }
+            public void SetValue(string storageNamespace, string key, string value) =>
+                throw new InvalidOperationException("writes disabled");
+            public void Dispose() { }
         }
     }
 }

@@ -321,6 +321,61 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             }
         }
 
+        [Theory]
+        [InlineData(".json")]
+        [InlineData(".yaml")]
+        public void InPlaceRewriteNeverServesAnEmptyFile(string extension)
+        {
+            // The file is empty for 300 ms, longer than the settle window after a change, so a reload
+            // reads it empty. The client must keep serving the old value until the new one is written.
+            using (var dir = TempDirectory.Create())
+            {
+                var path = dir.PathOf("flags" + extension);
+                File.WriteAllText(path, @"{""flagValues"":{""flag1"":""a""}}"); // JSON is also YAML
+                var source = FileData.DataSource().FilePaths(path).AutoUpdate(true);
+                if (extension == ".yaml")
+                {
+                    var yaml = new DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build();
+                    source.Parser(".yaml", content => yaml.Deserialize<object>(content));
+                }
+                var config = BasicConfig().DataSource(source).StartWaitTime(TimeSpan.FromSeconds(5)).Build();
+                using (var client = new LdClient(config))
+                {
+                    Assert.Equal("a", client.StringVariation("flag1", user, "default"));
+                    var served = new ConcurrentQueue<string>();
+                    var stop = 0;
+                    var sampler = new Thread(() =>
+                    {
+                        string last = null;
+                        while (Volatile.Read(ref stop) == 0)
+                        {
+                            var value = client.StringVariation("flag1", user, "default");
+                            if (value != last)
+                            {
+                                served.Enqueue(value);
+                                last = value;
+                            }
+                            Thread.Sleep(2);
+                        }
+                    });
+                    sampler.Start();
+                    try
+                    {
+                        InPlaceWrites.Rewrite(path, @"{""flagValues"":{""flag1"":""b""}}", TimeSpan.FromMilliseconds(300));
+                        // Waits for the sampler itself to see the new value, so it has recorded everything
+                        // that the client served before it.
+                        WaitUntil(() => served.Contains("b"), "the client to serve the rewritten file");
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref stop, 1);
+                        sampler.Join();
+                    }
+                    Assert.Equal(new[] { "a", "b" }, served.ToArray());
+                }
+            }
+        }
+
         private const string ValidFlagJson = @"{""flagValues"":{""flag1"":""a""}}";
         private const string TruncatedFlagJson = @"{""flagValues"": {"; // invalid as JSON and as YAML
 
@@ -376,7 +431,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 WaitForReads(reader, 2);
                 reader.Bad = false; // as if the write completed, with no further notification
                 _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
-                Assert.True(fp.Initialized);
+                // The source counts as initialized just after it delivers the data, on the retry's thread.
+                WaitUntil(() => fp.Initialized, "the source to be initialized");
             }
         }
 
@@ -616,21 +672,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             {
                 fp.Start(); // A parses, B fails
                 WaitUntil(() => reader.Reads(MultiPathB) >= 3, "3 reads of path B");
-                reader.SetBad(MultiPathA, true); // now every attempt stops at A
+                reader.SetBad(MultiPathA, true); // now every attempt fails at A first
 
                 // The run has five attempts in total, however the failing path changes, and its end
-                // is logged once.
+                // is logged once. Every attempt reads both paths.
                 WaitUntil(() => reader.Reads(MultiPathA) >= 5, "A to be read on the fifth attempt");
                 _updateSink.Inits.ExpectNoValue(TimeSpan.FromMilliseconds(1500)); // longer than two retry delays
                 Assert.Equal(5, reader.Reads(MultiPathA));
-                Assert.Equal(3, reader.Reads(MultiPathB));
+                Assert.Equal(5, reader.Reads(MultiPathB));
                 AssertLogMessageRegex(true, LogLevel.Error, "after 5 attempts");
 
                 // A new externally triggered load is a new run with a fresh budget: it fails at B,
                 // and the retry loads the data once B recovers.
                 reader.SetBad(MultiPathA, false);
                 fp.Start();
-                WaitUntil(() => reader.Reads(MultiPathB) >= 5, "the retry to reach path B");
+                WaitUntil(() => reader.Reads(MultiPathB) >= 7, "the retry to read path B");
                 reader.SetBad(MultiPathB, false);
                 _updateSink.Inits.ExpectValue(TimeSpan.FromSeconds(5));
             }

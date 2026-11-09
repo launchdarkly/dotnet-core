@@ -66,7 +66,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// The function takes the file content and returns an <c>object</c> made of the basic types that
         /// can be represented in JSON: <c>string</c>, numbers, booleans, <c>List</c>, and
         /// <c>Dictionary&lt;string, object&gt;</c>. It should throw an exception if it cannot parse the
-        /// content. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
+        /// content. A result of <c>null</c>, which YAML parsers return for an empty file, means the file
+        /// has no entries. Here is an example with the <c>YamlDotNet</c> package. The <c>DeserializerBuilder</c>
         /// configuration method tells the parser to read a property like <c>on: true</c> or
         /// <c>variation: 3</c> as a boolean or integer rather than a string; YAML syntax is flexible, and
         /// data types matter in flag definitions.
@@ -121,11 +122,10 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// This option is off by default: unless you set this option to <c>true</c>, files will only be loaded once.
         /// </para>
         /// <para>
-        /// Whenever possible, you should update a file's entire contents in one atomic operation; in Unix-like OSes,
-        /// that can be done by creating a temporary file, writing to it, and then renaming it to replace the original
-        /// file. In Windows, that is not always possible, so FileDataSource might detect an update before the file has
-        /// been fully written; in that case it will retry several times until the file can be parsed, giving up after
-        /// repeated failures until another change to the file is detected.
+        /// Files can be rewritten in place. If the data source reads a file while it is being written, it keeps the
+        /// flags it has and reads the file again shortly afterward, giving up after repeated failures until another
+        /// change to the file is detected. For a YAML file, replacing its contents in one operation, such as by
+        /// renaming a fully written temporary file over it, avoids briefly loading a partly written file.
         /// </para>
         /// <para>
         /// The data source watches the directory of each file, so a file that is created, replaced, or deleted

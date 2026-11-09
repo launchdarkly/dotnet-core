@@ -3,6 +3,13 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.10.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.2...LaunchDarkly.ClientSdk-v5.10.3) (2026-11-09)
+
+
+### Bug Fixes
+
+* persist generated context keys on .NET Framework and fix NoPersistence crash ([#399](https://github.com/launchdarkly/dotnet-core/issues/399)) ([8b08295](https://github.com/launchdarkly/dotnet-core/commit/8b082956ed8a91cff1453c0bb4c31ba075a231fa))
+
 ## [5.10.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.1...LaunchDarkly.ClientSdk-v5.10.2) (2026-10-02)
 
 

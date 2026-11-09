@@ -40,6 +40,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         internal const int MaxLoadAttempts = 5;
 
         private readonly IDataSourceUpdates _dataSourceUpdates;
+        private readonly bool _shouldPersist;
         private readonly List<string> _paths;
         private readonly bool _autoUpdate;
         private readonly Logger _logger;
@@ -73,15 +74,19 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
         /// file extension; null to parse JSON only</param>
         /// <param name="skipMissingPaths">true to skip missing files instead of failing the load</param>
         /// <param name="duplicateKeysHandling">how to handle a key that appears in more than one file</param>
+        /// <param name="shouldPersist">whether the FDv2 data system may write the file data to a persistent
+        /// store</param>
         /// <param name="logger">the destination for log output</param>
         public FileDataSource(IDataSourceUpdates dataSourceUpdates, FileDataTypes.IFileReader fileReader,
             List<string> paths, bool autoUpdate, IReadOnlyDictionary<string, Func<string, object>> parsersByExtension,
             bool skipMissingPaths,
             FileDataTypes.DuplicateKeysHandling duplicateKeysHandling,
+            bool shouldPersist,
             Logger logger)
         {
             _logger = logger;
             _dataSourceUpdates = dataSourceUpdates;
+            _shouldPersist = shouldPersist;
             _autoUpdate = autoUpdate;
             // The paths are kept as configured: a custom file reader receives them as given, and
             // the watcher resolves them against the current directory itself.
@@ -244,10 +249,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     new ItemDescriptor(version, segment)));
             }
             // Both kinds are always present, so a load with no segments clears the segments.
+            // The data set carries the persistence flag as well as the configurer, so that a configurer
+            // that wraps this data source's builder still keeps file data out of a persistent store.
             var allData = new FullDataSet<ItemDescriptor>(
                 ImmutableDictionary.Create<DataKind, KeyedItems<ItemDescriptor>>()
                     .SetItem(DataModel.Features, new KeyedItems<ItemDescriptor>(flags))
-                    .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments))
+                    .SetItem(DataModel.Segments, new KeyedItems<ItemDescriptor>(segments)),
+                _shouldPersist
             );
             _dataSourceUpdates.Init(allData);
             _lastVersion = version;

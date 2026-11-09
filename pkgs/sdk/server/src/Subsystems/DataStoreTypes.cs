@@ -303,19 +303,33 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         {
             private readonly IEnumerable<KeyValuePair<DataKind, KeyedItems<TDescriptor>>> _data;
 
+            // Stored inverted, so that a default instance of this struct means "persist".
+            private readonly bool _doNotPersist;
+
             /// <summary>
             /// The wrapped data set; may be empty, but will not be null.
             /// </summary>
             public IEnumerable<KeyValuePair<DataKind, KeyedItems<TDescriptor>>> Data => _data;
 
             /// <summary>
+            /// Whether the FDv2 data system may write this data to a persistent store. This is true
+            /// unless the data came from a source that does not request persistence.
+            /// </summary>
+            internal bool ShouldPersist => !_doNotPersist;
+
+            /// <summary>
             /// Constructs an instance of this wrapper type.
             /// </summary>
             /// <param name="data">the data set</param>
-            public FullDataSet(IEnumerable<KeyValuePair<DataKind, KeyedItems<TDescriptor>>> data)
+            public FullDataSet(IEnumerable<KeyValuePair<DataKind, KeyedItems<TDescriptor>>> data) : this(data, true)
+            {
+            }
+
+            internal FullDataSet(IEnumerable<KeyValuePair<DataKind, KeyedItems<TDescriptor>>> data, bool shouldPersist)
             {
                 _data = data ??
                         Enumerable.Empty<KeyValuePair<DataKind, KeyedItems<TDescriptor>>>();
+                _doNotPersist = !shouldPersist;
             }
 
             /// <summary>
@@ -436,15 +450,26 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
             /// </summary>
             public bool FDv1Fallback { get; }
 
+            // Stored inverted, so that a default instance of this struct means "persist".
+            private readonly bool _doNotPersist;
+
+            /// <summary>
+            /// Whether the data system may write this change to a persistent store. The data source that
+            /// produced the change decides this: LaunchDarkly data is persisted, and data from a source that
+            /// does not request persistence, such as the file data source, is not.
+            /// </summary>
+            internal bool ShouldPersist => !_doNotPersist;
+
             internal ChangeSet(ChangeSetType type, Selector selector,
                 IEnumerable<KeyValuePair<DataKind, KeyedItems<TItemDescriptor>>> data, string environmentId,
-                bool fdv1Fallback = false)
+                bool fdv1Fallback = false, bool shouldPersist = true)
             {
                 Type = type;
                 Selector = selector;
                 Data = data;
                 EnvironmentId = environmentId;
                 FDv1Fallback = fdv1Fallback;
+                _doNotPersist = !shouldPersist;
             }
         }
     }

@@ -67,7 +67,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             _metadataMemoryStore.InitWithMetadata(allData, metadata);
             MaybeSwitchStore();
 
-            if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
+            // Data from a source that does not request persistence is served from memory only.
+            if (_persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite && allData.ShouldPersist)
             {
                 _persistentStore?.Init(allData);
             }
@@ -91,6 +92,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
 
         public bool Upsert(DataStoreTypes.DataKind kind, string key, DataStoreTypes.ItemDescriptor item)
         {
+            // An upsert carries no persistence flag, so it is always written through. The FDv2 data system does
+            // not call this: every data source update reaches this store through Apply, which has the flag.
             var result = _memoryStore.Upsert(kind, key, item);
             if (_hasPersistence && _persistenceMode == DataSystemConfiguration.DataStoreMode.ReadWrite)
             {
@@ -113,7 +116,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSystem
             _txMemoryStore.Apply(changeSet);
             MaybeSwitchStore();
 
-            if (!_hasPersistence || _persistenceMode != DataSystemConfiguration.DataStoreMode.ReadWrite) return;
+            // Data from a source that does not request persistence is served from memory only.
+            if (!_hasPersistence || _persistenceMode != DataSystemConfiguration.DataStoreMode.ReadWrite ||
+                !changeSet.ShouldPersist) return;
 
             if (_persistentStore is ITransactionalDataStore txPersistentStore)
             {

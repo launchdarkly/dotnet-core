@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using LaunchDarkly.Sdk.Server.Internal.DataSystem;
 using LaunchDarkly.Sdk.Server.Internal.Model;
 using LaunchDarkly.Sdk.Server.Subsystems;
 
@@ -50,7 +51,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
     /// </code>
     /// </example>
     /// <seealso cref="FileData"/>
-    public sealed class TestData : IComponentConfigurer<IDataSource>
+    public sealed class TestData : IComponentConfigurer<IDataSource>, IDataSourcePersistence
     {
         #region Private fields
 
@@ -62,6 +63,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         private readonly Dictionary<string, FlagBuilder> _currentBuilders =
             new Dictionary<string, FlagBuilder>();
         private readonly List<DataSourceImpl> _instances = new List<DataSourceImpl>();
+        private volatile bool _shouldPersist = true;
 
         #endregion
 
@@ -234,6 +236,37 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         }
 
         /// <summary>
+        /// Specifies whether the data system may write the test data to a persistent store.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This applies when the test data source is an initializer or synchronizer of a data system
+        /// configured with <see cref="ConfigurationBuilder.DataSystem"/>, and that data system has a
+        /// persistent store in <see cref="DataSystemConfiguration.DataStoreMode.ReadWrite"/> mode. By default,
+        /// the test data is written to the store. Set this to <c>false</c> to keep the test data, including
+        /// later updates, out of the store. The client still serves it from memory.
+        /// </para>
+        /// <para>
+        /// This does not apply to a data source configured with <see cref="ConfigurationBuilder.DataSource"/>.
+        /// The data store configured there receives all data.
+        /// </para>
+        /// <para>
+        /// Set this before creating the client. The data system reads the setting each time it starts the
+        /// test data source, which can also happen in a running client, for example after the source reports
+        /// that it is off.
+        /// </para>
+        /// </remarks>
+        /// <param name="shouldPersist">true if the test data may be written to a persistent store</param>
+        /// <returns>the same <see cref="TestData"/> instance</returns>
+        public TestData ShouldPersist(bool shouldPersist)
+        {
+            _shouldPersist = shouldPersist;
+            return this;
+        }
+
+        bool IDataSourcePersistence.ShouldPersist => _shouldPersist;
+
+        /// <summary>
         /// Simulates a change in the data source status.
         /// </summary>
         /// <remarks>
@@ -284,7 +317,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                     DataModel.Segments,
                     new KeyedItems<ItemDescriptor>(_currentSegments.ToImmutableDictionary())
                     ));
-                return new FullDataSet<ItemDescriptor>(b.ToImmutable());
+                // The data set carries the persistence flag as well as the configurer; see
+                // DataSourceUpdatesV2ToV1Adapter.
+                return new FullDataSet<ItemDescriptor>(b.ToImmutable(), _shouldPersist);
             }
         }
 

@@ -246,7 +246,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             if (!(_dataSourceUpdates is ITransactionalDataSourceUpdates transactionalDataSourceUpdates))
                 throw new InvalidOperationException("Cannot apply updates to non-transactional data source");
 
-            var dataStoreChangeSet = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, _log, _environmentId, fdv1Fallback);
+            // This source delivers LaunchDarkly data, which it declares may be persisted. An initializer or
+            // synchronizer declares that for every basis and delta it returns (DATASYSTEM 1.1.7 and 1.2.8).
+            var dataStoreChangeSet = FDv2ChangeSetTranslator.ToChangeSet(fdv2ChangeSet, _log, true,
+                environmentId: _environmentId, fdv1Fallback: fdv1Fallback);
 
             // If the update fails, then we wait until the next poll and try again.
             // This is different from a streaming data source, which will need to re-start to get an initial

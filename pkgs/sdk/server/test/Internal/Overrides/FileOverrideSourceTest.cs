@@ -81,18 +81,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
 
         // Waits for an Info log line that contains every substring. The source logs after it hands the
         // snapshot to the sink, so a test that has just received a snapshot may run ahead of the line.
-        private void RequireInfoLine(params string[] substrings)
+        private void RequireInfoLine(params string[] substrings) => RequireLogLine(LogLevel.Info, substrings);
+
+        // Waits for a log line at the given level that contains every substring.
+        private void RequireLogLine(LogLevel level, params string[] substrings)
         {
             var deadline = DateTime.UtcNow + TestTimeout;
             while (DateTime.UtcNow < deadline)
             {
-                if (LogCapture.GetMessages().Any(m => m.Level == LogLevel.Info && substrings.All(s => m.Text.Contains(s))))
+                if (LogCapture.GetMessages().Any(m => m.Level == level && substrings.All(s => m.Text.Contains(s))))
                 {
                     return;
                 }
                 Thread.Sleep(10);
             }
-            Assert.True(false, "timed out waiting for an Info line containing " + string.Join(" and ", substrings)
+            Assert.True(false, "timed out waiting for a " + level + " line containing " + string.Join(" and ", substrings)
                 + "\nlog output:\n" + LogCapture);
         }
 
@@ -342,6 +345,62 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             Write(path, @"{""flagValues"": {""flag1"": false}}");
             var flags = FlagsByKey(RequireSnapshot());
             Assert.Equal(new[] { LdValue.Of(false) }, flags["flag1"].Variations);
+        }
+
+        [Theory]
+        [InlineData("flags", "flag")]
+        [InlineData("segments", "segment")]
+        public void ReloadWithADeletedEntryFailsAndKeepsTheOverridesInEffect(string property, string category)
+        {
+            var path = _dir.PathOf("overrides.json");
+            Write(path, @"{""flagValues"": {""flag1"": true}}");
+
+            StartSource(new[] { path });
+            Assert.Equal(new[] { LdValue.Of(true) }, FlagsByKey(RequireInitialSnapshot())["flag1"].Variations);
+
+            // The edit changes flag1 and adds an entry marked as deleted. The whole reload fails: the
+            // sink is not called, so the overrides in effect stay. The log names the file and the entry.
+            Write(path, @"{""flagValues"": {""flag1"": false}, """ + property +
+                @""": {""removed"": {""version"": 2, ""deleted"": true}}}");
+            File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddSeconds(2));
+            RequireLogLine(LogLevel.Error, "Unable to load flags", path,
+                category + " \"removed\" is marked as deleted; remove the entry instead");
+            RequireNoSnapshot(TimeSpan.FromMilliseconds(200));
+
+            // Removing the entry recovers, and the change to flag1 applies.
+            Write(path, @"{""flagValues"": {""flag1"": false}}");
+            File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddSeconds(4));
+            var snapshot = RequireSnapshot();
+            Assert.Equal(new[] { LdValue.Of(false) }, FlagsByKey(snapshot)["flag1"].Variations);
+            Assert.Empty(SegmentsByKey(snapshot));
+        }
+
+        [Fact]
+        public void InitialFileWithADeletedEntryLeavesTheLayerEmpty()
+        {
+            var path = _dir.PathOf("overrides.json");
+            Write(path, @"{""flagValues"": {""flag1"": true}, ""segments"": {""seg1"": {""deleted"": true}}}");
+
+            StartSource(new[] { path });
+
+            RequireNoSnapshot(TimeSpan.FromMilliseconds(100));
+            RequireLogLine(LogLevel.Error, "Unable to load flags", path, "segment \"seg1\" is marked as deleted");
+        }
+
+        [Fact]
+        public void EntriesWithDeletedFalseLoad()
+        {
+            // "deleted": false is an ordinary definition. Entries copied from LaunchDarkly data carry it.
+            var path = _dir.PathOf("overrides.json");
+            Write(path, @"{""flags"": {""flag1"": {""version"": 1, ""on"": true, ""deleted"": false}},
+                ""segments"": {""seg1"": {""version"": 1, ""deleted"": false}}}");
+
+            StartSource(new[] { path });
+
+            var snapshot = RequireInitialSnapshot();
+            Assert.True(FlagsByKey(snapshot)["flag1"].On);
+            Assert.Equal(new[] { "seg1" }, SegmentsByKey(snapshot).Keys);
+            AssertLogMessageRegex(false, LogLevel.Error, ".*");
         }
 
         [Fact]

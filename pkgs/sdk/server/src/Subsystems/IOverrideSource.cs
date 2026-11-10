@@ -86,6 +86,10 @@ namespace LaunchDarkly.Sdk.Server.Subsystems
         /// definitions. The SDK itself marks the entries as overrides.
         /// </para>
         /// <para>
+        /// A snapshot that contains a flag or segment marked as deleted is rejected: the SDK logs an
+        /// error, and the overrides in effect stay unchanged.
+        /// </para>
+        /// <para>
         /// This method is safe to call from any thread. Calls are serialized by the SDK, and the new
         /// layer contents are visible to evaluations when the call returns.
         /// </para>

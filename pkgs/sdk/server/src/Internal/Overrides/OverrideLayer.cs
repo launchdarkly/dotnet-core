@@ -13,10 +13,18 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
     /// that is replaced wholesale on each update from an override source.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The contents are an immutable map that is swapped on update, so a reader always sees exactly
     /// one snapshot. Each flag or segment is stored as a marked copy. The copy shares its immutable
     /// parts with the caller's entity, and the caller's entity is never marked. A source may retain
     /// the entities it supplied and supply them again.
+    /// </para>
+    /// <para>
+    /// The layer never holds a deleted item. An override entry defines a flag or segment; a deleted
+    /// item in the layer would hide the LaunchDarkly data for its key, although overrides only add or
+    /// replace definitions. <see cref="OverrideSink"/> rejects a snapshot that contains one before it
+    /// reaches the layer, and <see cref="SetAll"/> refuses one.
+    /// </para>
     /// </remarks>
     internal sealed class OverrideLayer : IExternalDependencies
     {
@@ -57,6 +65,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         /// <param name="data">the new contents</param>
         /// <param name="previous">receives the contents before the replacement</param>
         /// <param name="current">receives the contents after the replacement</param>
+        /// <exception cref="ArgumentException">the data set contains a deleted item (see
+        /// <see cref="FindDeletedItem"/>); the layer is unchanged</exception>
         internal void SetAll(
             FullDataSet<ItemDescriptor> data,
             out ImmutableDictionary<DataKind, ImmutableDictionary<string, ItemDescriptor>> previous,
@@ -70,6 +80,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                 var items = ImmutableDictionary.CreateBuilder<string, ItemDescriptor>();
                 foreach (var keyAndItem in kindAndItems.Value.Items)
                 {
+                    if (IsDeleted(keyAndItem.Value))
+                    {
+                        // Nothing has been swapped in yet, so the layer is unchanged.
+                        throw new ArgumentException(DescribeItem(kindAndItems.Key, keyAndItem.Key) +
+                            " is marked as deleted; the override layer does not hold deleted items", nameof(data));
+                    }
                     var copied = MarkedCopy(keyAndItem.Value);
                     items[keyAndItem.Key] = copied;
                     try
@@ -123,8 +139,73 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         internal ImmutableDictionary<string, ItemDescriptor> All(DataKind kind) =>
             _contents.TryGetValue(kind, out var items) ? items : NoItems;
 
+        /// <summary>
+        /// Finds the first deleted item in a data set: a deleted-item placeholder, whose item is null,
+        /// or a flag or segment that is marked as deleted.
+        /// </summary>
+        /// <param name="data">the data set to search</param>
+        /// <param name="kind">receives the kind of the deleted item, if there is one</param>
+        /// <param name="key">receives the key of the deleted item, if there is one</param>
+        /// <returns>true if the data set contains a deleted item</returns>
+        internal static bool FindDeletedItem(FullDataSet<ItemDescriptor> data, out DataKind kind, out string key)
+        {
+            foreach (var kindAndItems in data.Data)
+            {
+                foreach (var keyAndItem in kindAndItems.Value.Items)
+                {
+                    if (IsDeleted(keyAndItem.Value))
+                    {
+                        kind = kindAndItems.Key;
+                        key = keyAndItem.Key;
+                        return true;
+                    }
+                }
+            }
+            kind = null;
+            key = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Describes an item for a log message, for example <c>flag "my-flag"</c>.
+        /// </summary>
+        internal static string DescribeItem(DataKind kind, string key)
+        {
+            string category;
+            if (kind == DataModel.Features)
+            {
+                category = "flag";
+            }
+            else if (kind == DataModel.Segments)
+            {
+                category = "segment";
+            }
+            else
+            {
+                category = kind.Name;
+            }
+            return category + " \"" + key + "\"";
+        }
+
+        // DataKind.Deserialize turns a definition marked as deleted into a placeholder with no item. A
+        // definition that reaches the layer some other way can still carry the deleted property.
+        private static bool IsDeleted(ItemDescriptor item)
+        {
+            switch (item.Item)
+            {
+                case null:
+                    return true;
+                case FeatureFlag flag:
+                    return flag.Deleted;
+                case Segment segment:
+                    return segment.Deleted;
+                default:
+                    return false;
+            }
+        }
+
         // Returns a copy of the item whose entity carries the override marker. An item of another
-        // type, or a deleted-item placeholder, is returned as is.
+        // type is returned as is.
         internal static ItemDescriptor MarkedCopy(ItemDescriptor item)
         {
             switch (item.Item)

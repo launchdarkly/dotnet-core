@@ -2,7 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Integrations;
+using LaunchDarkly.Sdk.Server.Internal.Model;
 using Xunit;
 using Xunit.Abstractions;
 using YamlDotNet.Serialization;
@@ -143,6 +145,49 @@ namespace LaunchDarkly.Sdk.Server
                 Assert.Equal("override-value", detail.Value);
                 Assert.True(detail.Reason.OverrideAffected);
                 Assert.Equal(EvaluationReasonKind.Fallthrough, detail.Reason.Kind);
+            }
+        }
+
+        [Fact]
+        public void EditThatAddsADeletedEntryKeepsTheOverridesInEffect()
+        {
+            var path = _dir.PathOf("overrides.json");
+            File.WriteAllText(path, @"{""flagValues"": {""overridden-flag"": ""override-value""}}");
+            var launchDarklyData = new DataSetBuilder()
+                .Flags(new FeatureFlagBuilder("ld-flag").Version(1).OffWithValue(LdValue.Of("ld-value")).Build())
+                .Build();
+
+            var config = BasicConfig()
+                .StartWaitTime(TimeSpan.FromSeconds(5))
+                .DataSystem(Components.DataSystem().Custom()
+                    .Synchronizers(MockComponents.MockDataSourceWithData(launchDarklyData))
+                    .Overrides(FileOverrides.Source().FilePaths(path)))
+                .Build();
+            using (var client = new LdClient(config))
+            {
+                Assert.True(client.Initialized);
+                Assert.Equal("override-value", client.StringVariation("overridden-flag", context, "default"));
+
+                // The edit changes the override and marks the LaunchDarkly flag as deleted. The file
+                // fails to load, so neither change takes effect.
+                File.WriteAllText(path, @"{""flagValues"": {""overridden-flag"": ""changed""},
+                    ""flags"": {""ld-flag"": {""deleted"": true}}}");
+                AssertEventually(() => LogCapture.GetMessages().Any(m => m.Level == LogLevel.Error &&
+                    m.Text.Contains(path) && m.Text.Contains("flag \"ld-flag\" is marked as deleted")),
+                    "the failed load to be logged");
+
+                var overridden = client.StringVariationDetail("overridden-flag", context, "default");
+                Assert.Equal("override-value", overridden.Value);
+                Assert.True(overridden.Reason.OverrideAffected);
+                var notOverridden = client.StringVariationDetail("ld-flag", context, "default");
+                Assert.Equal("ld-value", notOverridden.Value);
+                Assert.False(notOverridden.Reason.OverrideAffected);
+
+                // Removing the deleted entry lets the rest of the edit take effect.
+                File.WriteAllText(path, @"{""flagValues"": {""overridden-flag"": ""changed""}}");
+                AssertEventually(() => client.StringVariation("overridden-flag", context, "default") == "changed",
+                    "the corrected file to take effect");
+                Assert.Equal("ld-value", client.StringVariation("ld-flag", context, "default"));
             }
         }
     }

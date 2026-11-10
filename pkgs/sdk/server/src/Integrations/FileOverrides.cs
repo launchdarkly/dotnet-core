@@ -61,7 +61,9 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         /// contributes no overrides: the file can be created later, deleting it removes its overrides, and
         /// deleting every file removes them all. A file that exists but cannot be read or parsed makes that
         /// whole reload fail. The previously loaded overrides stay in effect, the source logs the failure,
-        /// retries after a short delay, and recovers on its own once the file is readable again.
+        /// retries after a short delay, and recovers on its own once the file is readable again. A file
+        /// that contains an entry marked as deleted fails to load in the same way, and the overrides in
+        /// effect stay; to remove an override, remove its entry or delete the file.
         /// </para>
         /// <para>
         /// Whenever the set of overrides in effect changes, including at startup, the source logs the

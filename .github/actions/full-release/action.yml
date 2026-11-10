@@ -25,6 +25,9 @@ inputs:
   aws_role:
     description: 'The AWS role to assume, needed to fetch release secrets.'
     required: true
+  nuget_user:
+    description: 'nuget.org username used for the trusted-publishing OIDC login.'
+    required: true
   token:
     description: 'The GitHub token to use for publishing documentation.'
     required: true
@@ -60,8 +63,7 @@ runs:
         /production/common/releasing/digicert/api_key = DIGICERT_API_KEY,
         /production/common/releasing/digicert/client_cert_file_b64 = DIGICERT_CLIENT_CERT_FILE_B64,
         /production/common/releasing/digicert/client_cert_password = DIGICERT_CLIENT_CERT_PASSWORD,
-        /production/common/releasing/digicert/code_signing_cert_sha1_hash = DIGICERT_CODE_SIGNING_CERT_SHA1_HASH,
-        /production/common/releasing/nuget/api_key = NUGET_API_KEY'
+        /production/common/releasing/digicert/code_signing_cert_sha1_hash = DIGICERT_CODE_SIGNING_CERT_SHA1_HASH'
         s3_path_pairs: ${{ inputs.assembly_key_path_pair }}
 
     - name: Release build
@@ -81,6 +83,7 @@ runs:
       with:
         project_file: ${{ inputs.project_file }}
         dry_run: ${{ inputs.dry_run }}
+        nuget_user: ${{ inputs.nuget_user }}
 
     - name: Build Documentation
       uses: ./.github/actions/build-docs

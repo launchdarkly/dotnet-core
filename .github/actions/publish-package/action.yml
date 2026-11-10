@@ -41,9 +41,16 @@ runs:
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
       run: |
-        for pkg in $(find ./nupkgs -name '*.nupkg' -o -name '*.snupkg'); do
+        # Push the package before its symbols: nuget.org rejects a .snupkg with 404 until the
+        # matching .nupkg exists. --skip-duplicate keeps re-runs idempotent.
+        for pkg in $(find ./nupkgs -name '*.nupkg'); do
           echo "publishing ${pkg}"
-          dotnet nuget push "${pkg}" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+          dotnet nuget push "${pkg}" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          echo "published ${pkg}"
+        done
+        for pkg in $(find ./nupkgs -name '*.snupkg'); do
+          echo "publishing ${pkg}"
+          dotnet nuget push "${pkg}" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           echo "published ${pkg}"
         done
 

@@ -7,6 +7,9 @@ inputs:
   dry_run:
     description: 'Is this a dry run. If so no package will be published.'
     required: true
+  nuget_user:
+    description: 'nuget.org username used for the trusted-publishing OIDC login.'
+    required: true
 runs:
   using: composite
   steps:
@@ -27,13 +30,20 @@ runs:
         dotnet restore ${{ inputs.project_file }}
         dotnet pack --no-build --output nupkgs --configuration Release ${{ inputs.project_file }}
 
+    # Login runs even on a dry run so a dry run still validates the OIDC exchange; only the push below is gated.
+    - name: NuGet login via trusted publishing (OIDC)
+      id: login
+      uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+      with:
+        user: ${{ inputs.nuget_user }}
+
     - name: Publish Package
       if: ${{ inputs.dry_run == 'false' }}
       shell: bash
       run: |
         for pkg in $(find ./nupkgs -name '*.nupkg' -o -name '*.snupkg'); do
           echo "publishing ${pkg}"
-          dotnet nuget push "${pkg}" --api-key ${{ env.NUGET_API_KEY }} --source https://www.nuget.org
+          dotnet nuget push "${pkg}" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
           echo "published ${pkg}"
         done
 

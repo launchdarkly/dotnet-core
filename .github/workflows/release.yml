@@ -66,6 +66,7 @@ jobs:
           dll_name: ${{ env.BUILD_OUTPUT_DLL_NAME }}
           dry_run: ${{ inputs.dry_run }}
           aws_role: ${{ vars.AWS_ROLE_ARN }}
+          nuget_user: ${{ vars.NUGET_USER }}
           token: ${{ secrets.GITHUB_TOKEN }}
           run_consul: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-consul' }}
           run_dynamodb: ${{ inputs.package_path == 'pkgs/dotnet-server-sdk-dynamodb' }}

@@ -174,7 +174,6 @@ jobs:
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
-          ssm_parameter_pairs: '/production/common/releasing/nuget/api_key = NUGET_API_KEY'
           s3_path_pairs: ${{ env.ASSEMBLY_KEY_PATH_PAIR }}
 
       - name: Publish Nupkg
@@ -183,6 +182,7 @@ jobs:
         with:
           project_file: ${{ env.PROJECT_FILE }}
           dry_run: ${{ inputs.dry_run }}
+          nuget_user: ${{ vars.NUGET_USER }}
 
       - name: Attest build provenance
         if: ${{ format('{0}', inputs.dry_run) == 'false' }}

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using LaunchDarkly.Sdk.Server.Internal.FDv2Payloads;
 using LaunchDarkly.Sdk.Server.Internal.Model;
+using LaunchDarkly.Sdk.Server.Subsystems;
 using Xunit;
 
 namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
@@ -693,6 +694,27 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         #endregion
 
         #region Selector Verification
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PayloadTransferred_EmptyStateHasEmptySelector(bool withObject)
+        {
+            var handler = new FDv2ProtocolHandler();
+            handler.HandleEvent(CreateServerIntentEvent(IntentCode.TransferFull, "", 0));
+            if (withObject)
+            {
+                handler.HandleEvent(CreatePutObjectEvent("flag", "flag1", 1));
+            }
+
+            var action = handler.HandleEvent(CreatePayloadTransferredEvent("", 0));
+
+            var changeset = Assert.IsType<FDv2ActionChangeset>(action).Changeset;
+            Assert.Equal(FDv2ChangeSetType.Full, changeset.Type);
+            Assert.Equal(Selector.Empty, changeset.Selector);
+            Assert.True(changeset.Selector.IsEmpty);
+            Assert.Equal(withObject ? 1 : 0, changeset.Changes.Count);
+        }
 
         /// <summary>
         /// Tests that the selector is properly populated from payload-transferred event.

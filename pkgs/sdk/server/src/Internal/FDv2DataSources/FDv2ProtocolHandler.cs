@@ -278,7 +278,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
 
             var changeset = new FDv2ChangeSet(changeSetType, _changes.ToImmutableList(),
-                Selector.Make(payload.Version, payload.State));
+                string.IsNullOrEmpty(payload.State) ? Selector.Empty : Selector.Make(payload.Version, payload.State));
             _state = FDv2ProtocolState.Changes;
             _changes.Clear();
             return new FDv2ActionChangeset(changeset);

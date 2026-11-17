@@ -833,8 +833,11 @@ namespace LaunchDarkly.Sdk.Client
             {
                 if (checkType && !defaultJson.IsNull && flag.Value.Type != defaultJson.Type)
                 {
-                    valueJson = defaultJson;
-                    result = new EvaluationDetail<T>(defaultValue, null,
+                    // The event describes the result that the application gets: the default value,
+                    // no variation, and the WRONG_TYPE reason.
+                    SendEvaluationEventIfOnline(eventFactory.NewDefaultValueEvaluationEvent(featureKey, flag,
+                        Context, defaultJson, EvaluationErrorKind.WrongType));
+                    return new EvaluationDetail<T>(defaultValue, null,
                         EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType));
                 }
                 else

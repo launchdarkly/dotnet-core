@@ -151,6 +151,54 @@ namespace LaunchDarkly.Sdk.Client
         }
 
         [Fact]
+        public void VariationSendsFeatureEventWithDefaultValueForWrongType()
+        {
+            var flag = new FeatureFlagBuilder().Value(LdValue.Of("a")).Variation(1).Version(1000)
+                .Reason(EvaluationReason.FallthroughReason).TrackEvents(true).Build();
+            _testData.Update(_testData.Flag("flag").PreconfiguredFlag(flag));
+            using (LdClient client = MakeClient(user))
+            {
+                bool result = client.BoolVariation("flag", true);
+                Assert.True(result);
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user),
+                    e => {
+                        EvaluationEvent fe = Assert.IsType<EvaluationEvent>(e);
+                        Assert.Equal("flag", fe.FlagKey);
+                        Assert.Equal(LdValue.Of(true), fe.Value);
+                        Assert.Null(fe.Variation);
+                        Assert.Equal(1000, fe.FlagVersion);
+                        Assert.Equal(LdValue.Of(true), fe.Default);
+                        Assert.True(fe.TrackEvents);
+                        Assert.Null(fe.Reason);
+                    });
+            }
+        }
+
+        [Fact]
+        public void VariationDetailSendsFeatureEventWithWrongTypeReason()
+        {
+            var flag = new FeatureFlagBuilder().Value(LdValue.Of("a")).Variation(1).Version(1000)
+                .Reason(EvaluationReason.FallthroughReason).TrackEvents(true).Build();
+            _testData.Update(_testData.Flag("flag").PreconfiguredFlag(flag));
+            using (LdClient client = MakeClient(user))
+            {
+                var result = client.BoolVariationDetail("flag", true);
+                Assert.Equal(EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType), result.Reason);
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user),
+                    e => {
+                        EvaluationEvent fe = Assert.IsType<EvaluationEvent>(e);
+                        Assert.Equal("flag", fe.FlagKey);
+                        Assert.Equal(LdValue.Of(true), fe.Value);
+                        Assert.Null(fe.Variation);
+                        Assert.Equal(1000, fe.FlagVersion);
+                        Assert.Equal(EvaluationReason.ErrorReason(EvaluationErrorKind.WrongType), fe.Reason);
+                    });
+            }
+        }
+
+        [Fact]
         public void VariationSendsFeatureEventForDefaultValue()
         {
             var flag = new FeatureFlagBuilder().Version(1000).Build();

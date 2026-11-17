@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: echo "DOTNET_INSTALL_DIR=$RUNNER_TEMP/dotnet" >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # fetch all history, useful for docs
 
@@ -43,7 +43,7 @@ jobs:
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0
 
@@ -63,7 +63,7 @@ jobs:
           -p:AndroidSdkDirectory="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
           -p:AcceptAndroidSDKLicenses=True
 
-      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.1
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
@@ -87,14 +87,14 @@ jobs:
           workspace_path: ${{ env.WORKSPACE_PATH }}
 
       - name: Retain build artifacts
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dir-bin-release
           path: ${{ env.BUILD_OUTPUT_PATH }}
           retention-days: 1
 
       - name: Retain docs artifacts
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dir-docs
           path: ${{ env.WORKSPACE_PATH }}/docs
@@ -108,19 +108,19 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Env from project's Env file
         shell: bash
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
       - name: Restore release artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dir-bin-release
           path: ${{ env.BUILD_OUTPUT_PATH }}
 
-      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.1
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}
@@ -133,7 +133,7 @@ jobs:
           dll_name: ${{ env.BUILD_OUTPUT_DLL_NAME }}
 
       - name: Retain signed artifacts
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dir-bin-release-signed
           path: ${{ env.BUILD_OUTPUT_PATH }}
@@ -148,7 +148,7 @@ jobs:
       contents: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: ./.github/actions/xcode-select
         with:
@@ -159,18 +159,18 @@ jobs:
         run: echo "$(cat pkgs/sdk/client/github_actions.env)" >> $GITHUB_ENV
 
       - name: Restore release artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dir-bin-release-signed
           path: ${{ env.BUILD_OUTPUT_PATH }}
 
       - name: Restore docs artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dir-docs
           path: ${{ env.WORKSPACE_PATH }}/docs
 
-      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+      - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.1
         name: Get secrets
         with:
           aws_assume_role: ${{ vars.AWS_ROLE_ARN }}

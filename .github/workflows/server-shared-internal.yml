@@ -35,7 +35,7 @@ jobs:
         shell: ${{ matrix.os == 'windows-latest' && 'powershell' || 'bash' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Env from project's Env file
         shell: bash

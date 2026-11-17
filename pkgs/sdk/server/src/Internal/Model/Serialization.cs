@@ -131,7 +131,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                         version = reader.GetInt32();
                         break;
                     case "deleted":
-                        deleted = reader.GetBoolean();
+                        deleted = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
                     case "on":
                         on = reader.GetBoolean();
@@ -185,10 +185,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                         salt = reader.GetString();
                         break;
                     case "trackEvents":
-                        trackEvents = reader.GetBoolean();
+                        trackEvents = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
                     case "trackEventsFallthrough":
-                        trackEventsFallthrough = reader.GetBoolean();
+                        trackEventsFallthrough = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
                     case "debugEventsUntilDate":
                         var dt = GetLongOrNull(ref reader);
@@ -196,13 +196,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                             dt.HasValue ? UnixMillisecondTime.OfMillis(dt.Value) : (UnixMillisecondTime?) null;
                         break;
                     case "clientSide":
-                        clientSide = reader.GetBoolean();
+                        clientSide = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
                     case "samplingRatio":
-                        samplingRatio = reader.GetInt64();
+                        samplingRatio = GetLongOrNull(ref reader);
                         break;
                     case "excludeFromSummaries":
-                        excludeFromSummaries = reader.GetBoolean();
+                        excludeFromSummaries = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
                     case "migration":
                         migration = ReadMigration(ref reader);
@@ -307,7 +307,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                         clauses = SerializationHelpers.ReadClauses(ref r);
                         break;
                     case "trackEvents":
-                        trackEvents = r.GetBoolean();
+                        trackEvents = SerializationHelpers.GetBooleanOrFalse(ref r);
                         break;
                 }
             }
@@ -369,7 +369,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                                         weight = r.GetInt32();
                                         break;
                                     case "untracked":
-                                        untracked = r.GetBoolean();
+                                        untracked = SerializationHelpers.GetBooleanOrFalse(ref r);
                                         break;
                                 }
                             }
@@ -399,15 +399,21 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                 SerializationHelpers.AttrRefOrName(contextKind, bucketBy));
         }
 
-        private Migration ReadMigration(ref Utf8JsonReader r)
+        private Migration? ReadMigration(ref Utf8JsonReader r)
         {
             long? checkRatio = null;
+            if (r.TokenType == JsonTokenType.Null)
+            {
+                r.Skip();
+                return null;
+            }
+
             for (var obj = RequireObject(ref r); obj.Next(ref r);)
             {
                 switch (obj.Name)
                 {
                     case "checkRatio":
-                        checkRatio = r.GetInt64();
+                        checkRatio = GetLongOrNull(ref r);
                         break;
                 }
             }
@@ -498,7 +504,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                         version = reader.GetInt32();
                         break;
                     case "deleted":
-                        deleted = reader.GetBoolean();
+                        deleted = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
                     case "included":
                         included = SerializationHelpers.ReadStrings(ref reader);
@@ -514,7 +520,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                         break;
                     case "rules":
                         var rulesBuilder = ImmutableList.CreateBuilder<SegmentRule>();
-                        for (var arr = RequireArray(ref reader); arr.Next(ref reader);)
+                        for (var arr = RequireArrayOrNull(ref reader); arr.Next(ref reader);)
                         {
                             rulesBuilder.Add(ReadSegmentRule(ref reader));
                         }
@@ -524,7 +530,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                         salt = reader.GetString();
                         break;
                     case "unbounded":
-                        unbounded = reader.GetBoolean();
+                        unbounded = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
                     case "unboundedContextKind":
                         unboundedContextKind = SerializationHelpers.MaybeContextKind(reader.GetString());
@@ -718,13 +724,24 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                             values = ReadValues(ref r);
                             break;
                         case "negate":
-                            negate = r.GetBoolean();
+                            negate = GetBooleanOrFalse(ref r);
                             break;
                     }
                 }
                 builder.Add(new Clause(contextKind, AttrRefOrName(contextKind, attribute), op, values, negate));
             }
             return builder.ToImmutable();
+        }
+
+        // A null boolean is the same as an omitted boolean, which is false.
+        internal static bool GetBooleanOrFalse(ref Utf8JsonReader r)
+        {
+            if (r.TokenType == JsonTokenType.Null)
+            {
+                r.Skip();
+                return false;
+            }
+            return r.GetBoolean();
         }
 
         internal static ContextKind? MaybeContextKind(string s) => s is null ? (ContextKind?)null : ContextKind.Of(s);

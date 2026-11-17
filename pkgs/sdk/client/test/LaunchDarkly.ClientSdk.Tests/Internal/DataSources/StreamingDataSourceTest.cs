@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using LaunchDarkly.Sdk.Client.Interfaces;
 using LaunchDarkly.Sdk.Client.Subsystems;
 using LaunchDarkly.Sdk.Internal.Concurrent;
 using LaunchDarkly.Sdk.Internal.Events;
@@ -316,6 +317,26 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
         public void UnknownEventTypeDoesNotCauseError()
         {
             VerifyEventDoesNotCauseStreamRestart("weird", "data");
+        }
+
+        [Theory]
+        [InlineData("patch", "{sorry")]
+        [InlineData("patch", @"{""key"": ""flag1"", ""version"": ""no"", ""value"": true}")]
+        [InlineData("delete", "{sorry")]
+        [InlineData("delete", @"{""key"": ""flag1"", ""version"": ""no""}")]
+        public void InvalidPatchOrDeleteCausesStreamRestart(string eventName, string eventData)
+        {
+            // Send the invalid event after an empty put.
+            DoTestAfterEmptyPut(Handlers.SSE.Event(eventName, eventData), server =>
+            {
+                // The data source reports invalid data, and applies nothing from the event.
+                var status = _updateSink.ExpectStatusUpdate();
+                Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, status.LastError?.Kind);
+
+                // The data source opens a new stream.
+                server.Recorder.RequireRequest();
+            });
         }
 
         private void VerifyEventDoesNotCauseStreamRestart(string eventName, string eventData)

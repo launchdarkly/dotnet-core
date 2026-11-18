@@ -12,7 +12,8 @@ namespace TestService
     {
         public static void Main(string[] args)
         {
-            // An optional first argument selects the port, so that several test services can run at once.
+            // An optional first argument selects the port. In CI, port 8000 belongs to the local DynamoDB
+            // instance that the persistent store tests use.
             var port = args.Length > 0 ? int.Parse(args[0]) : 8000;
             var quitSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
             var app = new Webapp(quitSignal);
@@ -55,7 +56,11 @@ namespace TestService
             "flag-overrides",
             "file-data-source",
             "test-data-source",
-            "data-source-persist-opt-in"
+            "data-source-persist-opt-in",
+            "persistent-data-store-redis",
+            "persistent-data-store-dynamodb",
+            "persistent-data-store-consul",
+            "persistent-data-store-recovery"
         };
 
         public readonly Handler Handler;

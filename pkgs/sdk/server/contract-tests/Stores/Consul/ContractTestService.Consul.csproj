@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Consul integration of this repository, built from its sources against the local SDK for the contract test
+       service. The integration's own project references the published SDK package. -->
+  <PropertyGroup>
+    <TestFramework Condition="'$(TESTFRAMEWORK)' == ''">net8.0</TestFramework>
+    <TargetFrameworks>$(TESTFRAMEWORK)</TargetFrameworks>
+    <AssemblyName>ContractTestService.Consul</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\..\dotnet-server-sdk-consul\src\**\*.cs" Exclude="..\..\..\..\..\dotnet-server-sdk-consul\src\bin\**;..\..\..\..\..\dotnet-server-sdk-consul\src\obj\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\LaunchDarkly.ServerSdk.csproj" />
+    <!-- The same version range as the integration's project. -->
+    <PackageReference Include="Consul" Version="[1.6.1.1,]" />
+  </ItemGroup>
+
+</Project>

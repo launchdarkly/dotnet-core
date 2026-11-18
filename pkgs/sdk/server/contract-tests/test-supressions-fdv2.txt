@@ -1,1 +1,26 @@
 streaming/fdv2/disconnects on goodbye
+# The harness reads the lines below as test IDs; a line that starts with "#" matches no test.
+# Pre-existing store format defects that the persistence tests found:
+# - A deleted flag is written as {"version":N,"deleted":true}, with no "key" property (Redis, Consul), or
+#   as the placeholder "null" (DynamoDB). The harness expects a JSON tombstone with a "key" property. The
+#   store recovery tests check a deleted flag after the write back.
+persistent data store/redis/read-write/data source deletions respect versioning
+persistent data store/redis/store recovery/no cache - writes back full state on recovery
+persistent data store/redis/store recovery/ttl cache - writes back full state on recovery
+persistent data store/redis/store recovery/infinite cache - writes back full state on recovery
+persistent data store/redis/store recovery/retries write back after another failure
+persistent data store/redis/store recovery/recovers from repeated outages
+persistent data store/consul/read-write/data source deletions respect versioning
+persistent data store/consul/store recovery/no cache - writes back full state on recovery
+persistent data store/consul/store recovery/ttl cache - writes back full state on recovery
+persistent data store/consul/store recovery/infinite cache - writes back full state on recovery
+persistent data store/consul/store recovery/retries write back after another failure
+persistent data store/consul/store recovery/recovers from repeated outages
+persistent data store/dynamodb/read-write/data source deletions respect versioning
+persistent data store/dynamodb/store recovery/no cache - writes back full state on recovery
+persistent data store/dynamodb/store recovery/ttl cache - writes back full state on recovery
+persistent data store/dynamodb/store recovery/infinite cache - writes back full state on recovery
+persistent data store/dynamodb/store recovery/retries write back after another failure
+persistent data store/dynamodb/store recovery/recovers from repeated outages
+# - The Consul store fails to read a collection that has no items.
+persistent data store/consul/collection cardinality/collection holds no flags

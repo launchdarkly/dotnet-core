@@ -55,7 +55,7 @@ runs:
         run_dynamodb: ${{ inputs.run_dynamodb }}
         run_redis: ${{ inputs.run_redis }}
 
-    - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.0
+    - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.1
       name: Get secrets
       with:
         aws_assume_role: ${{ inputs.aws_role }}

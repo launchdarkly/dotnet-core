@@ -163,6 +163,34 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SelectorlessFullTransferInitializes(bool withObject)
+        {
+            using (var dataSource = MakeDataSource())
+            {
+                var startTask = dataSource.Start();
+                _mockEventSource.TriggerOpen();
+                _mockEventSource.TriggerMessage(CreateMessageEvent("server-intent",
+                    CreateServerIntentJson("xfer-full", "", 0)));
+                if (withObject)
+                {
+                    _mockEventSource.TriggerMessage(CreateMessageEvent("put-object",
+                        CreatePutObjectJson("flag", "flag1", 1, @"{""key"":""flag1"",""on"":true,""version"":1}")));
+                }
+                _mockEventSource.TriggerMessage(CreateMessageEvent("payload-transferred",
+                    CreatePayloadTransferredJson("", 0)));
+
+                Assert.True(await startTask);
+                Assert.True(dataSource.Initialized);
+                var changeSet = _updateSink.Applies.ExpectValue();
+                Assert.Equal(ChangeSetType.Full, changeSet.Type);
+                Assert.Equal(Selector.Empty, changeSet.Selector);
+                Assert.Equal(withObject ? 1 : 0, changeSet.Data.SelectMany(kv => kv.Value.Items).Count());
+            }
+        }
+
         [Fact]
         public async Task FullTransferPassesEnvironmentIdFromHeaders()
         {

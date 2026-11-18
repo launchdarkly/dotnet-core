@@ -52,7 +52,10 @@ namespace TestService
             "instance-id",
             "retry-conformance-fdv1-streaming",
             "retry-conformance-fdv1-polling",
-            "flag-overrides"
+            "flag-overrides",
+            "file-data-source",
+            "test-data-source",
+            "data-source-persist-opt-in"
         };
 
         public readonly Handler Handler;

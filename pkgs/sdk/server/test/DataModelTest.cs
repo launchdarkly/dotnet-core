@@ -151,6 +151,73 @@ namespace LaunchDarkly.Sdk.Server
             Assert.Null(segment1.Salt);
         }
 
+        [Fact]
+        public void NullOptionalFlagPropertiesAreTreatedAsOmitted()
+        {
+            // Parse flags that have null in optional boolean, number and object properties.
+            var flag1 = MustParseFlag(@"{
+                ""key"": ""flag-key"",
+                ""version"": 99,
+                ""deleted"": null,
+                ""trackEvents"": null,
+                ""trackEventsFallthrough"": null,
+                ""clientSide"": null,
+                ""samplingRatio"": null,
+                ""excludeFromSummaries"": null,
+                ""migration"": null,
+                ""rules"": [
+                    {
+                        ""id"": ""rule-id"",
+                        ""clauses"": [
+                            { ""attribute"": ""key"", ""op"": ""in"", ""values"": [ ""a"" ], ""negate"": null }
+                        ],
+                        ""rollout"": {
+                            ""variations"": [ { ""variation"": 0, ""weight"": 100000, ""untracked"": null } ]
+                        },
+                        ""trackEvents"": null
+                    }
+                ]
+            }");
+
+            var flag2 = MustParseFlag(@"{
+                ""key"": ""flag-key"",
+                ""version"": 99,
+                ""migration"": { ""checkRatio"": null }
+            }");
+
+            // Each property has the value that it has when the property is omitted.
+            Assert.False(flag1.Deleted);
+            Assert.False(flag1.TrackEvents);
+            Assert.False(flag1.TrackEventsFallthrough);
+            Assert.False(flag1.ClientSide);
+            Assert.Null(flag1.SamplingRatio);
+            Assert.False(flag1.ExcludeFromSummaries);
+            Assert.Null(flag1.Migration);
+            var rule = Assert.Single(flag1.Rules);
+            Assert.False(rule.TrackEvents);
+            Assert.False(Assert.Single(rule.Clauses).Negate);
+            Assert.False(Assert.Single(rule.Rollout.Value.Variations).Untracked);
+            Assert.Null(flag2.Migration.Value.CheckRatio);
+        }
+
+        [Fact]
+        public void NullOptionalSegmentPropertiesAreTreatedAsOmitted()
+        {
+            // Parse a segment that has null in optional boolean and array properties.
+            var segment = MustParseSegment(@"{
+                ""key"": ""segment-key"",
+                ""version"": 99,
+                ""deleted"": null,
+                ""unbounded"": null,
+                ""rules"": null
+            }");
+
+            // Each property has the value that it has when the property is omitted.
+            Assert.False(segment.Deleted);
+            Assert.False(segment.Unbounded);
+            Assert.Empty(segment.Rules);
+        }
+
         private FeatureFlag MustParseFlag(string json)
         {
             var item = DataModel.Features.Deserialize(json);

@@ -1411,6 +1411,107 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.False(mockActionable.GoToNextCalled, "GoToNext should not be called when already at first");
         }
 
+        private static async Task<bool> WaitUntil(Func<bool> condition, TimeSpan timeout)
+        {
+            var deadline = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < deadline)
+            {
+                if (condition()) return true;
+                await Task.Delay(5);
+            }
+            return condition();
+        }
+
+        private FDv2DataSource.ActionApplierTimedFallbackAndRecovery MakeApplierWithStartupFallback(
+            MockCompositeSourceActionable actionable, Func<bool> hasDataBeenApplied, TimeSpan startupFallbackTimeout) =>
+            new FDv2DataSource.ActionApplierTimedFallbackAndRecovery(
+                actionable,
+                TestLogger,
+                TimeSpan.FromHours(1),
+                TimeSpan.FromHours(1),
+                hasDataBeenApplied,
+                startupFallbackTimeout
+            );
+
+        [Fact]
+        public async Task StartupFallbackFallsBackFromASourceThatProvidesNoData()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+            MakeApplierWithStartupFallback(mockActionable, () => false, TimeSpan.FromMilliseconds(20));
+
+            Assert.True(await WaitUntil(() => mockActionable.StartCurrentCalled, TimeSpan.FromSeconds(5)),
+                "StartCurrent should be called on startup fallback");
+            Assert.Equal(new List<string> { "DisposeCurrent", "GoToNext", "StartCurrent" },
+                mockActionable.CallSequence);
+            AssertLogMessageRegex(true, LogLevel.Warn,
+                ".*Current data source has not provided data within.*falling back to next source.*");
+        }
+
+        [Fact]
+        public async Task StartupFallbackIsNotScheduledIfDataHasAlreadyBeenApplied()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+            MakeApplierWithStartupFallback(mockActionable, () => true, TimeSpan.FromMilliseconds(20));
+
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+
+            Assert.Empty(mockActionable.CallSequence);
+        }
+
+        [Fact]
+        public async Task StartupFallbackIsCancelledWhenTheSourceAppliesData()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+            var applier = MakeApplierWithStartupFallback(mockActionable, () => false, TimeSpan.FromMilliseconds(100));
+
+            applier.Apply(new ChangeSet<ItemDescriptor>(ChangeSetType.Full, Selector.Make(1, "state"),
+                new List<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>>(), null));
+
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+
+            Assert.Empty(mockActionable.CallSequence);
+        }
+
+        [Fact]
+        public async Task StartupFallbackIsCancelledWhenTheSourceIsValid()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+            mockActionable.SetIsAtFirst(true);
+            var applier = MakeApplierWithStartupFallback(mockActionable, () => false, TimeSpan.FromMilliseconds(100));
+
+            applier.UpdateStatus(DataSourceState.Valid, null);
+
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+
+            Assert.Empty(mockActionable.CallSequence);
+        }
+
+        [Fact]
+        public async Task StartupFallbackDoesNotFallBackAgainAfterTheSourceIsOff()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+            var applier = MakeApplierWithStartupFallback(mockActionable, () => false, TimeSpan.FromMilliseconds(100));
+
+            applier.UpdateStatus(DataSourceState.Off, null);
+
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+
+            Assert.Equal(1, mockActionable.GoToNextCallCount);
+        }
+
+        [Fact]
+        public async Task StartupFallbackStillAppliesWhileTheSourceIsInterrupted()
+        {
+            var mockActionable = new MockCompositeSourceActionable();
+            var applier = MakeApplierWithStartupFallback(mockActionable, () => false, TimeSpan.FromMilliseconds(20));
+
+            applier.UpdateStatus(DataSourceState.Interrupted, null);
+
+            Assert.True(await WaitUntil(() => mockActionable.StartCurrentCalled, TimeSpan.FromSeconds(5)),
+                "StartCurrent should be called on startup fallback");
+            Assert.Equal(1, mockActionable.GoToNextCallCount);
+        }
+
         private class MockCompositeSourceActionable : ICompositeSourceActionable
         {
             public bool DisposeCurrentCalled { get; private set; }

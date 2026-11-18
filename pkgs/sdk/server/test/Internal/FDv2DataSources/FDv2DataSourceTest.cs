@@ -1363,14 +1363,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             // Test 1: Interrupted state should trigger fallback after timeout
             applier.UpdateStatus(DataSourceState.Interrupted, null);
 
-            // Wait for the fallback task to complete
-            await Task.Delay(fallbackTimeout + TimeSpan.FromMilliseconds(50));
+            // Wait for the fallback task to finish its actions. It runs them on its own task after the
+            // timeout, so a fixed delay can end while the actions are still running on a slow machine.
+            await WaitForCall(mockActionable, nameof(MockCompositeSourceActionable.StartCurrent));
 
             // Verify fallback was called: DisposeCurrent, GoToNext, StartCurrent
-            Assert.True(mockActionable.DisposeCurrentCalled, "DisposeCurrent should be called on fallback");
-            Assert.True(mockActionable.GoToNextCalled, "GoToNext should be called on fallback");
-            Assert.True(mockActionable.StartCurrentCalled, "StartCurrent should be called on fallback");
-            Assert.False(mockActionable.GoToFirstCalled, "GoToFirst should not be called on fallback");
+            Assert.Equal(new List<string> { "DisposeCurrent", "GoToNext", "StartCurrent" },
+                mockActionable.CallSequence);
 
             // Verify fallback log message was written
             AssertLogMessageRegex(true, LogLevel.Warn, ".*Current data source has been interrupted for more than.*falling back to next source.*");
@@ -1382,14 +1381,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             mockActionable.SetIsAtFirst(false);
             applier.UpdateStatus(DataSourceState.Valid, null);
 
-            // Wait for the recovery task to complete
-            await Task.Delay(recoveryTimeout + TimeSpan.FromMilliseconds(50));
+            // Wait for the recovery task to finish its actions.
+            await WaitForCall(mockActionable, nameof(MockCompositeSourceActionable.StartCurrent));
 
             // Verify recovery was called: DisposeCurrent, GoToFirst, StartCurrent
-            Assert.True(mockActionable.DisposeCurrentCalled, "DisposeCurrent should be called on recovery");
-            Assert.True(mockActionable.GoToFirstCalled, "GoToFirst should be called on recovery");
-            Assert.True(mockActionable.StartCurrentCalled, "StartCurrent should be called on recovery");
-            Assert.False(mockActionable.GoToNextCalled, "GoToNext should not be called on recovery");
+            Assert.Equal(new List<string> { "DisposeCurrent", "GoToFirst", "StartCurrent" },
+                mockActionable.CallSequence);
 
             // Verify recovery log message was written
             AssertLogMessageRegex(true, LogLevel.Info, ".*Current data source has been valid for more than.*recovering to primary source.*");
@@ -1411,86 +1408,112 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
             Assert.False(mockActionable.GoToNextCalled, "GoToNext should not be called when already at first");
         }
 
+        // Waits until the mock has recorded the given call, for an action that the applier runs on its
+        // own task. The deadline is far longer than the applier's timeouts, so that only an action that
+        // never happens fails the wait.
+        private static async Task WaitForCall(MockCompositeSourceActionable mock, string call)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!mock.CallSequence.Contains(call) && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(10);
+            }
+            Assert.True(mock.CallSequence.Contains(call), "timed out waiting for " + call);
+        }
+
+        // The action appliers call this from their own tasks while the test thread reads it, so every
+        // call is recorded under a lock, and the properties are read from the recorded calls.
         private class MockCompositeSourceActionable : ICompositeSourceActionable
         {
-            public bool DisposeCurrentCalled { get; private set; }
-            public bool GoToNextCalled { get; private set; }
-            public bool GoToFirstCalled { get; private set; }
-            public bool StartCurrentCalled { get; private set; }
-            public bool BlockCurrentCalled { get; private set; }
-            public bool BlockAllCalled { get; private set; }
-            public int GoToNextCallCount { get; private set; }
-            public int BlockCurrentCallCount { get; private set; }
-            public int BlockAllCallCount { get; private set; }
-            public Predicate<CompositeEntryKind> LastBlockAllPredicate { get; private set; }
-            public List<string> CallSequence { get; } = new List<string>();
+            private readonly object _lock = new object();
+            private readonly List<string> _calls = new List<string>();
+            private Predicate<CompositeEntryKind> _lastBlockAllPredicate;
             private bool _isAtFirst = false;
 
-            public void DisposeCurrent()
+            public bool DisposeCurrentCalled => CallCount(nameof(DisposeCurrent)) > 0;
+            public bool GoToNextCalled => CallCount(nameof(GoToNext)) > 0;
+            public bool GoToFirstCalled => CallCount(nameof(GoToFirst)) > 0;
+            public bool StartCurrentCalled => CallCount(nameof(StartCurrent)) > 0;
+            public bool BlockCurrentCalled => CallCount(nameof(BlockCurrent)) > 0;
+            public bool BlockAllCalled => CallCount(nameof(BlockAll)) > 0;
+            public int GoToNextCallCount => CallCount(nameof(GoToNext));
+            public int BlockCurrentCallCount => CallCount(nameof(BlockCurrent));
+            public int BlockAllCallCount => CallCount(nameof(BlockAll));
+
+            public Predicate<CompositeEntryKind> LastBlockAllPredicate
             {
-                DisposeCurrentCalled = true;
-                CallSequence.Add(nameof(DisposeCurrent));
+                get { lock (_lock) { return _lastBlockAllPredicate; } }
             }
 
-            public void GoToNext()
+            // A copy of the calls so far, in order.
+            public List<string> CallSequence
             {
-                GoToNextCalled = true;
-                GoToNextCallCount++;
-                CallSequence.Add(nameof(GoToNext));
+                get { lock (_lock) { return new List<string>(_calls); } }
             }
 
-            public void GoToFirst()
+            private int CallCount(string name)
             {
-                GoToFirstCalled = true;
-                CallSequence.Add(nameof(GoToFirst));
+                lock (_lock)
+                {
+                    return _calls.Count(c => c == name);
+                }
             }
+
+            private void Record(string name)
+            {
+                lock (_lock)
+                {
+                    _calls.Add(name);
+                }
+            }
+
+            public void DisposeCurrent() => Record(nameof(DisposeCurrent));
+
+            public void GoToNext() => Record(nameof(GoToNext));
+
+            public void GoToFirst() => Record(nameof(GoToFirst));
 
             public Task<bool> StartCurrent()
             {
-                StartCurrentCalled = true;
-                CallSequence.Add(nameof(StartCurrent));
+                Record(nameof(StartCurrent));
                 return Task.FromResult(true);
             }
 
-            public void BlockCurrent()
-            {
-                BlockCurrentCalled = true;
-                BlockCurrentCallCount++;
-                CallSequence.Add(nameof(BlockCurrent));
-            }
+            public void BlockCurrent() => Record(nameof(BlockCurrent));
 
             public bool IsAtFirst()
             {
-                return _isAtFirst;
+                lock (_lock)
+                {
+                    return _isAtFirst;
+                }
             }
 
             public void SetIsAtFirst(bool value)
             {
-                _isAtFirst = value;
+                lock (_lock)
+                {
+                    _isAtFirst = value;
+                }
             }
 
             public void BlockAll(Predicate<CompositeEntryKind> kindMatches)
             {
-                BlockAllCalled = true;
-                BlockAllCallCount++;
-                LastBlockAllPredicate = kindMatches;
-                CallSequence.Add(nameof(BlockAll));
+                lock (_lock)
+                {
+                    _lastBlockAllPredicate = kindMatches;
+                    _calls.Add(nameof(BlockAll));
+                }
             }
 
             public void Reset()
             {
-                DisposeCurrentCalled = false;
-                GoToNextCalled = false;
-                GoToFirstCalled = false;
-                StartCurrentCalled = false;
-                BlockCurrentCalled = false;
-                BlockAllCalled = false;
-                GoToNextCallCount = 0;
-                BlockCurrentCallCount = 0;
-                BlockAllCallCount = 0;
-                LastBlockAllPredicate = null;
-                CallSequence.Clear();
-                _isAtFirst = false;
+                lock (_lock)
+                {
+                    _calls.Clear();
+                    _lastBlockAllPredicate = null;
+                    _isAtFirst = false;
+                }
             }
         }
 

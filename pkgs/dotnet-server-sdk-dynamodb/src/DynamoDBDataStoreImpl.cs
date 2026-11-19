@@ -50,7 +50,8 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         // These attribute names aren't public because application code should never access them directly
         private const string VersionAttribute = "version";
         private const string SerializedItemAttribute = "item";
-        private const string DeletedItemPlaceholder = "null"; // DynamoDB does not allow empty strings
+        // Older versions wrote this instead of the tombstone JSON for a deleted item
+        private const string LegacyDeletedItemPlaceholder = "null";
 
         // We won't try to store items whose total size exceeds this. The DynamoDB documentation says
         // only "400KB", which probably means 400*1024, but to avoid any chance of trying to store a
@@ -243,7 +244,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
         {
             var ret = MakeKeysMap(NamespaceForKind(kind), key);
             ret[VersionAttribute] = new AttributeValue() { N = item.Version.ToString() };
-            ret[SerializedItemAttribute] = new AttributeValue(item.Deleted ? DeletedItemPlaceholder : item.SerializedItem);
+            ret[SerializedItemAttribute] = new AttributeValue(item.SerializedItem);
             return ret;
         }
 
@@ -265,7 +266,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
             {
                 throw new InvalidOperationException("Invalid data in DynamoDB: non-numeric version");
             }
-            if (serializedItemAttr.S == DeletedItemPlaceholder)
+            if (serializedItemAttr.S == LegacyDeletedItemPlaceholder)
             {
                 return new SerializedItemDescriptor(version, true, null);
             }

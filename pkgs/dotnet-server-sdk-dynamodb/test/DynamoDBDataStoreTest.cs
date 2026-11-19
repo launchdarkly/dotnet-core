@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Amazon.DynamoDBv2.Model;
 using LaunchDarkly.Logging;
 using LaunchDarkly.Sdk.Server.Subsystems;
 using LaunchDarkly.Sdk.Server.SharedTests.DataStore;
@@ -109,6 +110,71 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                     @"""" + BadItemKey + @""".*was too large to store in DynamoDB and was dropped"));
 
                 AssertDataSetsEqual(MakeGoodData(), await GetAllData(store));
+            }
+        }
+
+        [Theory]
+        [InlineData("flag")]
+        [InlineData("segment")]
+        public async Task DeletedItemIsStoredAsTombstoneJson(string flagOrSegment)
+        {
+            const string prefix = "tombstone-test";
+            var dataKind = flagOrSegment == "flag" ? DataModel.Features : DataModel.Segments;
+            await ClearAllData(prefix);
+
+            var context = new LdClientContext("", null, null, null, Logs.None.Logger(""), false, null);
+            using (var store = ((IComponentConfigurer<IPersistentDataStoreAsync>)BaseBuilder().Prefix(prefix)).Build(context))
+            {
+                // The SDK's persistent store wrapper passes this descriptor for a deletion
+                var tombstone = new SerializedItemDescriptor(5, true, dataKind.Serialize(ItemDescriptor.Deleted(5)));
+                Assert.True(await store.UpsertAsync(dataKind, "key1", tombstone));
+
+                var raw = await client.GetItemAsync(new GetItemRequest(TableName, new Dictionary<string, AttributeValue>
+                {
+                    { DynamoDB.DataStorePartitionKey, new AttributeValue(prefix + ":" + dataKind.Name) },
+                    { DynamoDB.DataStoreSortKey, new AttributeValue("key1") }
+                }, true));
+                Assert.Equal(@"{""version"":5,""deleted"":true}", raw.Item["item"].S);
+                Assert.Equal("5", raw.Item["version"].N);
+
+                var result = await store.GetAsync(dataKind, "key1");
+                Assert.NotNull(result);
+                var item = dataKind.Deserialize(result.Value.SerializedItem);
+                Assert.Null(item.Item);
+                Assert.Equal(5, item.Version);
+            }
+        }
+
+        [Theory]
+        [InlineData("flag")]
+        [InlineData("segment")]
+        public async Task LegacyNullPlaceholderIsReadAsDeletedItem(string flagOrSegment)
+        {
+            const string prefix = "legacy-null-test";
+            var dataKind = flagOrSegment == "flag" ? DataModel.Features : DataModel.Segments;
+            await ClearAllData(prefix);
+
+            await client.PutItemAsync(new PutItemRequest(TableName, new Dictionary<string, AttributeValue>
+            {
+                { DynamoDB.DataStorePartitionKey, new AttributeValue(prefix + ":" + dataKind.Name) },
+                { DynamoDB.DataStoreSortKey, new AttributeValue("key1") },
+                { "version", new AttributeValue { N = "7" } },
+                { "item", new AttributeValue("null") }
+            }));
+
+            var context = new LdClientContext("", null, null, null, Logs.None.Logger(""), false, null);
+            using (var store = ((IComponentConfigurer<IPersistentDataStoreAsync>)BaseBuilder().Prefix(prefix)).Build(context))
+            {
+                var result = await store.GetAsync(dataKind, "key1");
+                Assert.NotNull(result);
+                Assert.True(result.Value.Deleted);
+                Assert.Equal(7, result.Value.Version);
+
+                var all = await store.GetAllAsync(dataKind);
+                var entry = Assert.Single(all.Items);
+                Assert.Equal("key1", entry.Key);
+                Assert.True(entry.Value.Deleted);
+                Assert.Equal(7, entry.Value.Version);
             }
         }
 

@@ -123,6 +123,14 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                     Shutdown(fallbackError);
                     return;
                 }
+
+                // A response must contain at least one event. A response with no events is not
+                // valid, so report it as invalid data. An initializer then moves to the next
+                // initializer, and a synchronizer polls again.
+                if (!response.Value.Events.Any())
+                {
+                    HandleJsonError("FDv2 polling response contains no events");
+                }
             }
             catch (UnsuccessfulResponseException ex)
             {

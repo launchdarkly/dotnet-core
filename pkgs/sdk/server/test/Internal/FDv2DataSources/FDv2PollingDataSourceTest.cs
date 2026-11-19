@@ -829,6 +829,55 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         }
 
         [Fact]
+        public void ResponseWithNoEventsUpdatesStatusToInterruptedWithInvalidData()
+        {
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(CreatePollingResponse());
+
+            using (var dataSource = MakeDataSource())
+            {
+                // Start polling against a server that answers with an empty events array.
+                var startTask = dataSource.Start();
+
+                // The response is invalid data, so the source is interrupted and does not initialize.
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Interrupted, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.Equal(DataSourceStatus.ErrorKind.InvalidData, status.LastError.Value.Kind);
+                Assert.True(status.LastError.Value.Recoverable, "Recoverable should be true for invalid data errors");
+                Assert.False(dataSource.Initialized);
+                Assert.False(startTask.IsCompleted);
+            }
+        }
+
+        [Fact]
+        public async Task ResponseWithNoEventsAndFallbackHeaderSignalsFDv1Fallback()
+        {
+            var headers = new List<KeyValuePair<string, IEnumerable<string>>>
+            {
+                new KeyValuePair<string, IEnumerable<string>>(
+                    "x-ld-fd-fallback", new[] { "true" })
+            };
+
+            _mockRequestor.Setup(r => r.PollingRequestAsync(It.IsAny<Selector>()))
+                .ReturnsAsync(CreatePollingResponseWithHeaders(new FDv2Event[0], headers));
+
+            using (var dataSource = MakeDataSource())
+            {
+                // Start polling against a server that answers with no events and the fallback header.
+                var startTask = dataSource.Start();
+
+                // The fallback directive applies, so the source turns off with FDv1Fallback set.
+                var status = _updateSink.StatusUpdates.ExpectValue();
+                Assert.Equal(DataSourceState.Off, status.State);
+                Assert.NotNull(status.LastError);
+                Assert.True(status.LastError.Value.FDv1Fallback,
+                    "FDv1Fallback should be set when the response carried the fallback header");
+                Assert.False(await startTask);
+            }
+        }
+
+        [Fact]
         public void RecoverableHttpErrorWithFallbackHeaderSetsFDv1Fallback()
         {
             // Create an HttpResponseMessage with the fallback header

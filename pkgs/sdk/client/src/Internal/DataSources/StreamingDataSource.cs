@@ -237,35 +237,20 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
                     }
                 case Constants.PATCH:
                     {
-                        try
-                        {
-                            var parsed = LdValue.Parse(messageData);
-                            var flagkey = parsed.Get(Constants.KEY).AsString;
-                            var featureFlag = DataModelSerialization.DeserializeFlag(messageData);
-                            _updateSink.Upsert(_context, flagkey, featureFlag.ToItemDescriptor());
-                        }
-                        catch (Exception ex)
-                        {
-                            LogHelpers.LogException(_log, "Error parsing PATCH message", ex);
-                            _log.Debug("Message data follows: {0}", messageData);
-                        }
+                        // Invalid data throws InvalidDataException, which restarts the stream.
+                        var parsed = ParseEventData(messageData);
+                        var flagKey = RequireString(parsed, Constants.KEY);
+                        var featureFlag = DataModelSerialization.DeserializeFlag(messageData);
+                        _updateSink.Upsert(_context, flagKey, featureFlag.ToItemDescriptor());
                         break;
                     }
                 case Constants.DELETE:
                     {
-                        try
-                        {
-                            var parsed = LdValue.Parse(messageData);
-                            int version = parsed.Get(Constants.VERSION).AsInt;
-                            string flagKey = parsed.Get(Constants.KEY).AsString;
-                            var deletedItem = new ItemDescriptor(version, null);
-                            _updateSink.Upsert(_context, flagKey, deletedItem);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogHelpers.LogException(_log, "Error parsing DELETE message", ex);
-                            _log.Debug("Message data follows: {0}", messageData);
-                        }
+                        // Invalid data throws InvalidDataException, which restarts the stream.
+                        var parsed = ParseEventData(messageData);
+                        var flagKey = RequireString(parsed, Constants.KEY);
+                        var version = RequireInt(parsed, Constants.VERSION);
+                        _updateSink.Upsert(_context, flagKey, new ItemDescriptor(version, null));
                         break;
                     }
                 case Constants.PING:
@@ -293,6 +278,46 @@ namespace LaunchDarkly.Sdk.Client.Internal.DataSources
                 default:
                     break;
             }
+        }
+
+        private const string InvalidEventDataMessage = "Stream event data was not in a recognized format";
+
+        private static LdValue ParseEventData(string messageData)
+        {
+            LdValue parsed;
+            try
+            {
+                parsed = LdValue.Parse(messageData);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidDataException(InvalidEventDataMessage, e);
+            }
+            if (parsed.Type != LdValueType.Object)
+            {
+                throw new InvalidDataException(InvalidEventDataMessage);
+            }
+            return parsed;
+        }
+
+        private static string RequireString(LdValue parsed, string propertyName)
+        {
+            var value = parsed.Get(propertyName);
+            if (!value.IsString)
+            {
+                throw new InvalidDataException(InvalidEventDataMessage);
+            }
+            return value.AsString;
+        }
+
+        private static int RequireInt(LdValue parsed, string propertyName)
+        {
+            var value = parsed.Get(propertyName);
+            if (!value.IsInt)
+            {
+                throw new InvalidDataException(InvalidEventDataMessage);
+            }
+            return value.AsInt;
         }
 
         public void Dispose()

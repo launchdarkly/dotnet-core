@@ -113,7 +113,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                 version,
                 flag.Deleted, flag.On, flag.Prerequisites, flag.Targets, flag.ContextTargets, flag.Rules, flag.Fallthrough,
                 flag.OffVariation, flag.Variations, flag.Salt, flag.TrackEvents, flag.TrackEventsFallthrough,
-                flag.DebugEventsUntilDate, flag.ClientSide, flag.SamplingRatio, flag.ExcludeFromSummaries, flag.Migration);
+                flag.DebugEventsUntilDate, flag.ClientSide, flag.ClientSideAvailability, flag.SamplingRatio, flag.ExcludeFromSummaries, flag.Migration);
 
         // Constructs a flag that always returns the same value. This is done by giving it a
         // single variation and setting the fallthrough variation to that.

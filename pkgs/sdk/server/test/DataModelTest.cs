@@ -165,6 +165,7 @@ namespace LaunchDarkly.Sdk.Server
                 ""samplingRatio"": null,
                 ""excludeFromSummaries"": null,
                 ""migration"": null,
+                ""clientSideAvailability"": null,
                 ""rules"": [
                     {
                         ""id"": ""rule-id"",
@@ -193,11 +194,89 @@ namespace LaunchDarkly.Sdk.Server
             Assert.Null(flag1.SamplingRatio);
             Assert.False(flag1.ExcludeFromSummaries);
             Assert.Null(flag1.Migration);
+            Assert.Null(flag1.ClientSideAvailability);
             var rule = Assert.Single(flag1.Rules);
             Assert.False(rule.TrackEvents);
             Assert.False(Assert.Single(rule.Clauses).Negate);
             Assert.False(Assert.Single(rule.Rollout.Value.Variations).Untracked);
             Assert.Null(flag2.Migration.Value.CheckRatio);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void SerializeAndDeserializeFlagWithClientSideAvailability(bool usingMobileKey, bool usingEnvironmentId)
+        {
+            var json = LdValue.BuildObject()
+                .Add("key", "flag-key")
+                .Add("version", 1)
+                .Add("clientSide", usingEnvironmentId)
+                .Add("clientSideAvailability", LdValue.BuildObject()
+                    .Add("usingMobileKey", usingMobileKey)
+                    .Add("usingEnvironmentId", usingEnvironmentId)
+                    .Build())
+                .Build().ToJsonString();
+            var flag = MustParseFlag(json);
+            Assert.Equal(new ClientSideAvailability(usingMobileKey, usingEnvironmentId), flag.ClientSideAvailability);
+
+            var output = LdValue.Parse(DataModel.Features.Serialize(new ItemDescriptor(flag.Version, flag)));
+            Assert.Equal(
+                LdValue.BuildObject()
+                    .Add("usingMobileKey", usingMobileKey)
+                    .Add("usingEnvironmentId", usingEnvironmentId)
+                    .Build(),
+                output.Get("clientSideAvailability"));
+            Assert.Equal(LdValue.Of(usingEnvironmentId), output.Get("clientSide"));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SerializeFlagWithoutClientSideAvailabilityWritesOnlyClientSide(bool clientSide)
+        {
+            var json = LdValue.BuildObject()
+                .Add("key", "flag-key")
+                .Add("version", 1)
+                .Add("clientSide", clientSide)
+                .Build().ToJsonString();
+            var flag = MustParseFlag(json);
+            Assert.Null(flag.ClientSideAvailability);
+            Assert.Equal(clientSide, flag.ClientSide);
+
+            var output = LdValue.Parse(DataModel.Features.Serialize(new ItemDescriptor(flag.Version, flag)));
+            Assert.Equal(LdValue.Of(clientSide), output.Get("clientSide"));
+            Assert.False(output.Dictionary.ContainsKey("clientSideAvailability"));
+        }
+
+        [Fact]
+        public void ClientSideAvailabilityPropertyThatIsMissingReadsAsFalse()
+        {
+            var flag1 = MustParseFlag(@"{
+                ""key"": ""flag-key"",
+                ""version"": 1,
+                ""clientSide"": true,
+                ""clientSideAvailability"": { ""usingEnvironmentId"": true }
+            }");
+            Assert.Equal(new ClientSideAvailability(false, true), flag1.ClientSideAvailability);
+
+            var flag2 = MustParseFlag(@"{
+                ""key"": ""flag-key"",
+                ""version"": 1,
+                ""clientSideAvailability"": { ""usingMobileKey"": true }
+            }");
+            Assert.Equal(new ClientSideAvailability(true, false), flag2.ClientSideAvailability);
+
+            var output1 = LdValue.Parse(DataModel.Features.Serialize(new ItemDescriptor(flag1.Version, flag1)));
+            Assert.Equal(LdValue.Parse(@"{""usingMobileKey"":false,""usingEnvironmentId"":true}"),
+                output1.Get("clientSideAvailability"));
+            Assert.Equal(LdValue.Of(true), output1.Get("clientSide"));
+
+            var output2 = LdValue.Parse(DataModel.Features.Serialize(new ItemDescriptor(flag2.Version, flag2)));
+            Assert.Equal(LdValue.Parse(@"{""usingMobileKey"":true,""usingEnvironmentId"":false}"),
+                output2.Get("clientSideAvailability"));
+            Assert.Equal(LdValue.Of(false), output2.Get("clientSide"));
         }
 
         [Fact]

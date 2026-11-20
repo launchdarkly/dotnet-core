@@ -22,6 +22,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
         private UnixMillisecondTime? _debugEventsUntilDate;
         private bool _deleted;
         private bool _clientSide;
+        private ClientSideAvailability? _clientSideAvailability;
         private long? _samplingRatio;
         private bool _excludeFromSummaries;
         private Migration? _migration;
@@ -49,6 +50,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             _debugEventsUntilDate = from.DebugEventsUntilDate;
             _deleted = from.Deleted;
             _clientSide = from.ClientSide;
+            _clientSideAvailability = from.ClientSideAvailability;
         }
 
         internal FeatureFlag Build()
@@ -56,7 +58,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             return new FeatureFlag(_key, _version, _deleted, _on, _prerequisites,
                 _targets.ToImmutableList(), _contextTargets.ToImmutableList(), _rules,
                 _fallthrough, _offVariation, _variations, _salt,
-                _trackEvents, _trackEventsFallthrough, _debugEventsUntilDate, _clientSide,
+                _trackEvents, _trackEventsFallthrough, _debugEventsUntilDate, _clientSide, _clientSideAvailability,
                 _samplingRatio, _excludeFromSummaries, _migration);
         }
 

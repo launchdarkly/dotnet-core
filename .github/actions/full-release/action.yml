@@ -72,7 +72,7 @@ runs:
         project_file: ${{ inputs.project_file }}
 
     - name: Sign DLLs
-      uses: launchdarkly/gh-actions/actions/sign-dlls@sign-dlls-v1.0.0
+      uses: launchdarkly/gh-actions/actions/sign-dlls@sign-dlls-v1.0.2
       with:
         build_configuration_path: ${{ inputs.build_output_path }}
         dll_name: ${{ inputs.dll_name }}

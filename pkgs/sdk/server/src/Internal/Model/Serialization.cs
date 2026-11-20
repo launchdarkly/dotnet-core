@@ -91,7 +91,22 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                 w.WriteNumber("debugEventsUntilDate", flag.DebugEventsUntilDate.Value.Value);
             }
 
-            w.WriteBoolean("clientSide", flag.ClientSide);
+            // The "clientSideAvailability" object is in the newer schema. If the flag has the object,
+            // write it and write "clientSide" with the same value as "usingEnvironmentId". Older SDKs
+            // read only "clientSide". If the flag has no object, write only "clientSide".
+            if (flag.ClientSideAvailability.HasValue)
+            {
+                var csa = flag.ClientSideAvailability.Value;
+                w.WriteStartObject("clientSideAvailability");
+                w.WriteBoolean("usingMobileKey", csa.UsingMobileKey);
+                w.WriteBoolean("usingEnvironmentId", csa.UsingEnvironmentId);
+                w.WriteEndObject();
+                w.WriteBoolean("clientSide", csa.UsingEnvironmentId);
+            }
+            else
+            {
+                w.WriteBoolean("clientSide", flag.ClientSide);
+            }
 
             WriteMigration(ref w, flag.Migration);
 
@@ -115,6 +130,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             bool trackEvents = false, trackEventsFallthrough = false;
             UnixMillisecondTime? debugEventsUntilDate = null;
             bool clientSide = false;
+            ClientSideAvailability? clientSideAvailability = null;
             bool excludeFromSummaries = false;
             long? samplingRatio = null;
             Migration? migration = null;
@@ -198,6 +214,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
                     case "clientSide":
                         clientSide = SerializationHelpers.GetBooleanOrFalse(ref reader);
                         break;
+                    case "clientSideAvailability":
+                        clientSideAvailability = ReadClientSideAvailability(ref reader);
+                        break;
                     case "samplingRatio":
                         samplingRatio = GetLongOrNull(ref reader);
                         break;
@@ -218,7 +237,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             return new FeatureFlag(key, version, deleted, on, prerequisites, targets, contextTargets, rules,
                 fallthrough,
                 offVariation, variations, salt, trackEvents, trackEventsFallthrough, debugEventsUntilDate, clientSide,
-                samplingRatio, excludeFromSummaries, migration);
+                clientSideAvailability, samplingRatio, excludeFromSummaries, migration);
         }
 
         internal static Prerequisite ReadPrerequisite(ref Utf8JsonReader r)
@@ -397,6 +416,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
 
             return new Rollout(kind, contextKind, seed, variations,
                 SerializationHelpers.AttrRefOrName(contextKind, bucketBy));
+        }
+
+        // A property that is missing from the object reads as false. A null reads as no object.
+        private ClientSideAvailability? ReadClientSideAvailability(ref Utf8JsonReader r)
+        {
+            if (r.TokenType == JsonTokenType.Null)
+            {
+                r.Skip();
+                return null;
+            }
+
+            bool usingMobileKey = false, usingEnvironmentId = false;
+            for (var obj = RequireObject(ref r); obj.Next(ref r);)
+            {
+                switch (obj.Name)
+                {
+                    case "usingMobileKey":
+                        usingMobileKey = SerializationHelpers.GetBooleanOrFalse(ref r);
+                        break;
+                    case "usingEnvironmentId":
+                        usingEnvironmentId = SerializationHelpers.GetBooleanOrFalse(ref r);
+                        break;
+                }
+            }
+
+            return new ClientSideAvailability(usingMobileKey, usingEnvironmentId);
         }
 
         private Migration? ReadMigration(ref Utf8JsonReader r)

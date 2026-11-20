@@ -26,6 +26,9 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
         public bool TrackEventsFallthrough { get; }
         public UnixMillisecondTime? DebugEventsUntilDate { get; private set; }
         public bool ClientSide { get; set; }
+
+        // This is null if the flag JSON has no "clientSideAvailability" object.
+        public ClientSideAvailability? ClientSideAvailability { get; }
         public long? SamplingRatio { get; }
         public bool ExcludeFromSummaries { get; }
 
@@ -34,7 +37,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
         internal FeatureFlag(string key, int version, bool deleted, bool on, IEnumerable<Prerequisite> prerequisites,
             ImmutableList<Target> targets, ImmutableList<Target> contextTargets, IEnumerable<FlagRule> rules, VariationOrRollout fallthrough, int? offVariation,
             IEnumerable<LdValue> variations, string salt, bool trackEvents, bool trackEventsFallthrough, UnixMillisecondTime? debugEventsUntilDate,
-            bool clientSide, long? samplingRatio, bool excludeFromSummaries, Migration? migration)
+            bool clientSide, ClientSideAvailability? clientSideAvailability, long? samplingRatio, bool excludeFromSummaries, Migration? migration)
         {
             Key = key;
             Version = version;
@@ -52,6 +55,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             TrackEventsFallthrough = trackEventsFallthrough;
             DebugEventsUntilDate = debugEventsUntilDate;
             ClientSide = clientSide;
+            ClientSideAvailability = clientSideAvailability;
             SamplingRatio = samplingRatio;
             ExcludeFromSummaries = excludeFromSummaries;
             Migration = migration;
@@ -162,6 +166,20 @@ namespace LaunchDarkly.Sdk.Server.Internal.Model
             Id = id;
             Clauses = clauses ?? Enumerable.Empty<Clause>();
             TrackEvents = trackEvents;
+        }
+    }
+
+    // ClientSideAvailability holds the properties of the "clientSideAvailability" object in the
+    // flag JSON. The SDK keeps the object so that it can write the object back to a persistent store.
+    internal struct ClientSideAvailability
+    {
+        public bool UsingMobileKey { get; }
+        public bool UsingEnvironmentId { get; }
+
+        public ClientSideAvailability(bool usingMobileKey, bool usingEnvironmentId)
+        {
+            UsingMobileKey = usingMobileKey;
+            UsingEnvironmentId = usingEnvironmentId;
         }
     }
 

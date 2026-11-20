@@ -196,7 +196,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                             version,
                             flag.Deleted, flag.On, flag.Prerequisites, flag.Targets, null, flag.Rules,
                             flag.Fallthrough, flag.OffVariation, flag.Variations, flag.Salt,
-                            flag.TrackEvents, flag.TrackEventsFallthrough, flag.DebugEventsUntilDate, flag.ClientSide,
+                            flag.TrackEvents, flag.TrackEventsFallthrough, flag.DebugEventsUntilDate, flag.ClientSide, flag.ClientSideAvailability,
                             flag.SamplingRatio, flag.ExcludeFromSummaries, flag.Migration);
                     }
                     return new ItemDescriptor(flag.Version, flag);
@@ -874,6 +874,7 @@ namespace LaunchDarkly.Sdk.Server.Integrations
                     false,
                     null,
                     false,
+                    null,
                     _samplingRatio,
                     _excludeFromSummaries,
                     migration

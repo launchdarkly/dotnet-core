@@ -1,5 +1,18 @@
 # Changelog
 
+## [9.0.0-alpha.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v9.0.0-alpha.2...LaunchDarkly.ServerSdk-v9.0.0-alpha.3) (2026-11-20)
+
+
+### Features
+
+* Let each data source decide whether FDv2 writes its data to a persistent store ([#390](https://github.com/launchdarkly/dotnet-core/issues/390)) ([6c9675c](https://github.com/launchdarkly/dotnet-core/commit/6c9675cc034fe33c3d2a77445c99795cb8665c36))
+
+
+### Bug Fixes
+
+* Keep file data and overrides through an in-place rewrite of their files ([#394](https://github.com/launchdarkly/dotnet-core/issues/394)) ([ba0281c](https://github.com/launchdarkly/dotnet-core/commit/ba0281c78167a179520446146e3afca627a1da04))
+* Reject an override snapshot that contains a deleted flag or segment ([#404](https://github.com/launchdarkly/dotnet-core/issues/404)) ([338d974](https://github.com/launchdarkly/dotnet-core/commit/338d974edc95340d67ae5a61ccb1077b8e6511ea))
+
 ## [9.0.0-alpha.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v9.0.0-alpha.1...LaunchDarkly.ServerSdk-v9.0.0-alpha.2) (2026-11-06)
 
 

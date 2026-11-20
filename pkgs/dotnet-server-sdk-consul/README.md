@@ -19,6 +19,8 @@ This version of the library is built for the following targets:
 * .NET Framework 4.6.2: works in .NET Framework of that version or higher.
 * .NET Standard 2.0: works in .NET Core 3.1, .NET 6 or higher, or in a library targeted to .NET Standard 2.x.
 
+While these are the minimum supported versions, you should use the latest patched version of a supported .NET release.
+
 The .NET build tools should automatically load the most appropriate build of the library for whatever platform your application or library is targeted to.
 
 It has a dependency on version 1.6.1.1 of [Consul.NET](https://www.nuget.org/packages/Consul). If you are using a higher version of that package, you should install it explicitly as a dependency in your application to override this minimum version.

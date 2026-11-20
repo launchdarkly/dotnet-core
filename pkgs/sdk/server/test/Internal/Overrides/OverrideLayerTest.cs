@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LaunchDarkly.Sdk.Server.Internal.DataSources;
@@ -5,6 +6,7 @@ using LaunchDarkly.Sdk.Server.Internal.Model;
 using Xunit;
 
 using static LaunchDarkly.Sdk.Server.Subsystems.DataStoreTypes;
+using static LaunchDarkly.Sdk.Server.TestUtils;
 
 namespace LaunchDarkly.Sdk.Server.Internal.Overrides
 {
@@ -29,6 +31,59 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
 
         internal static FullDataSet<ItemDescriptor> SegmentsOnly(params Segment[] segments) =>
             DataSetOf(new FeatureFlag[0], segments);
+
+        // The ways a snapshot can carry a deleted item. A placeholder is what DataKind.Deserialize
+        // returns for a definition marked as deleted, which is how a custom source would supply one. A
+        // model object marked as deleted can only come from inside the SDK.
+        public static readonly TheoryData<string> DeletedItems = new TheoryData<string>
+        {
+            "deserialized flag", "flag object", "deserialized segment", "segment object"
+        };
+
+        // Returns a snapshot with an ordinary flag, an ordinary segment, and one deleted item, and the
+        // kind and key of the deleted item.
+        internal static FullDataSet<ItemDescriptor> SnapshotWithDeletedItem(string deletedItem,
+            out DataKind kind, out string key)
+        {
+            var flags = new Dictionary<string, ItemDescriptor>
+            {
+                ["good-flag"] = DescriptorOf(new FeatureFlagBuilder("good-flag").Version(1).Build())
+            };
+            var segments = new Dictionary<string, ItemDescriptor>
+            {
+                ["good-segment"] = DescriptorOf(new SegmentBuilder("good-segment").Version(1).Build())
+            };
+            switch (deletedItem)
+            {
+                case "deserialized flag":
+                    kind = DataModel.Features;
+                    key = "deleted-flag";
+                    flags[key] = DataModel.Features.Deserialize(@"{""key"": ""deleted-flag"", ""version"": 2, ""deleted"": true}");
+                    break;
+                case "flag object":
+                    kind = DataModel.Features;
+                    key = "deleted-flag";
+                    flags[key] = DescriptorOf(new FeatureFlagBuilder(key).Version(2).Deleted(true).Build());
+                    break;
+                case "deserialized segment":
+                    kind = DataModel.Segments;
+                    key = "deleted-segment";
+                    segments[key] = DataModel.Segments.Deserialize(@"{""key"": ""deleted-segment"", ""version"": 2, ""deleted"": true}");
+                    break;
+                case "segment object":
+                    kind = DataModel.Segments;
+                    key = "deleted-segment";
+                    segments[key] = DescriptorOf(new SegmentBuilder(key).Version(2).Deleted(true).Build());
+                    break;
+                default:
+                    throw new ArgumentException("unknown case " + deletedItem, nameof(deletedItem));
+            }
+            return new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>
+            {
+                { DataModel.Features, new KeyedItems<ItemDescriptor>(flags) },
+                { DataModel.Segments, new KeyedItems<ItemDescriptor>(segments) },
+            });
+        }
 
         private static FeatureFlag RequireFlag(ItemDescriptor? item)
         {
@@ -85,15 +140,58 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         }
 
         [Fact]
-        public void MarkedCopyLeavesDeletedItemsAndOtherTypesAlone()
+        public void MarkedCopyLeavesOtherTypesAlone()
         {
-            var deleted = ItemDescriptor.Deleted(5);
-            var copy = OverrideLayer.MarkedCopy(deleted);
-            Assert.Null(copy.Item);
-            Assert.Equal(5, copy.Version);
-
             var other = new ItemDescriptor(1, "not a model object");
             Assert.Same(other.Item, OverrideLayer.MarkedCopy(other).Item);
+        }
+
+        [Theory]
+        [MemberData(nameof(DeletedItems))]
+        public void FindDeletedItemReportsTheKindAndKey(string deletedItem)
+        {
+            var data = SnapshotWithDeletedItem(deletedItem, out var expectedKind, out var expectedKey);
+
+            Assert.True(OverrideLayer.FindDeletedItem(data, out var kind, out var key));
+            Assert.Same(expectedKind, kind);
+            Assert.Equal(expectedKey, key);
+        }
+
+        [Fact]
+        public void FindDeletedItemAcceptsDefinitionsThatAreNotDeleted()
+        {
+            // "deleted": false is an ordinary definition. Entries copied from LaunchDarkly data carry it.
+            var flag = DataModel.Features.Deserialize(@"{""key"": ""flag1"", ""version"": 1, ""deleted"": false}");
+            var segment = DataModel.Segments.Deserialize(@"{""key"": ""seg1"", ""version"": 1, ""deleted"": false}");
+            var data = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>
+            {
+                { DataModel.Features, new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { ["flag1"] = flag }) },
+                { DataModel.Segments, new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { ["seg1"] = segment }) },
+            });
+
+            Assert.False(OverrideLayer.FindDeletedItem(data, out var kind, out var key));
+            Assert.Null(kind);
+            Assert.Null(key);
+            Assert.False(OverrideLayer.FindDeletedItem(FullDataSet<ItemDescriptor>.Empty(), out _, out _));
+        }
+
+        [Theory]
+        [MemberData(nameof(DeletedItems))]
+        public void SetAllRefusesADeletedItemAndKeepsItsContents(string deletedItem)
+        {
+            var layer = new OverrideLayer();
+            layer.SetAll(DataSetOf(new[] { new FeatureFlagBuilder("existing-flag").Build() },
+                new[] { new SegmentBuilder("existing-segment").Build() }), out _, out _);
+            var flagsBefore = layer.All(DataModel.Features);
+            var segmentsBefore = layer.All(DataModel.Segments);
+
+            var data = SnapshotWithDeletedItem(deletedItem, out _, out var key);
+            var e = Assert.Throws<ArgumentException>(() => layer.SetAll(data, out _, out _));
+
+            Assert.Contains("\"" + key + "\" is marked as deleted", e.Message);
+            Assert.Same(flagsBefore, layer.All(DataModel.Features));
+            Assert.Same(segmentsBefore, layer.All(DataModel.Segments));
+            Assert.Null(layer.Get(DataModel.Features, "good-flag"));
         }
 
         [Fact]

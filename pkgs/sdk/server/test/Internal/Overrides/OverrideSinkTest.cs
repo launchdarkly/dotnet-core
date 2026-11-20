@@ -103,6 +103,78 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
             Assert.Empty(TakeNotified());
         }
 
+        [Theory]
+        [MemberData(nameof(OverrideLayerTest.DeletedItems), MemberType = typeof(OverrideLayerTest))]
+        public void RejectsASnapshotThatContainsADeletedItem(string deletedItem)
+        {
+            var logCapture = Logs.Capture();
+            var baseStore = new FakeReadOnlyStore()
+                .WithFlags(new FeatureFlagBuilder("deleted-flag").Version(1).Build())
+                .WithSegments(new SegmentBuilder("deleted-segment").Version(1).Build());
+            var layer = new OverrideLayer();
+            var sink = new OverrideSink(layer, baseStore, keys => _notified.AddRange(keys), () => _listening,
+                logCapture.Logger(""));
+            sink.SetOverrides(OverrideLayerTest.DataSetOf(new[] { new FeatureFlagBuilder("existing-flag").Version(1).Build() },
+                new[] { new SegmentBuilder("existing-segment").Version(1).Build() }));
+            Assert.Equal(new[] { "existing-flag" }, TakeNotified());
+            var flagsBefore = layer.All(DataModel.Features);
+            var segmentsBefore = layer.All(DataModel.Segments);
+
+            var data = OverrideLayerTest.SnapshotWithDeletedItem(deletedItem, out _, out var key);
+            var exception = Record.Exception(() => sink.SetOverrides(data));
+
+            // The whole snapshot is rejected, including its ordinary entries. The layer keeps exactly
+            // the previous snapshot, nothing is notified, and the source is not interrupted.
+            Assert.Null(exception);
+            Assert.Same(flagsBefore, layer.All(DataModel.Features));
+            Assert.Same(segmentsBefore, layer.All(DataModel.Segments));
+            Assert.Null(layer.Get(DataModel.Features, "good-flag"));
+            Assert.Empty(TakeNotified());
+            var category = key == "deleted-flag" ? "flag" : "segment";
+            Assert.True(logCapture.HasMessageWithText(LogLevel.Error,
+                "Ignoring an override snapshot because " + category + " \"" + key + "\" is marked as deleted; " +
+                "the overrides in effect are unchanged. To remove an override, leave its entry out of the snapshot"),
+                logCapture.ToString());
+
+            // The next valid snapshot applies as usual.
+            sink.SetOverrides(OverrideLayerTest.FlagsOnly(new FeatureFlagBuilder("existing-flag").Version(1).Build()));
+            Assert.NotNull(layer.Get(DataModel.Features, "existing-flag"));
+            Assert.Null(layer.Get(DataModel.Segments, "existing-segment"));
+        }
+
+        [Fact]
+        public void RejectsASnapshotThatContainsADeletedItemWithoutListeners()
+        {
+            var sink = MakeSink(new FakeReadOnlyStore(), out var layer);
+            _listening = false;
+            sink.SetOverrides(OverrideLayerTest.FlagsOnly(new FeatureFlagBuilder("existing-flag").Version(1).Build()));
+            var flagsBefore = layer.All(DataModel.Features);
+
+            sink.SetOverrides(OverrideLayerTest.SnapshotWithDeletedItem("deserialized flag", out _, out _));
+
+            Assert.Same(flagsBefore, layer.All(DataModel.Features));
+            Assert.Empty(layer.All(DataModel.Segments));
+        }
+
+        [Fact]
+        public void AcceptsDefinitionsThatAreNotDeleted()
+        {
+            // "deleted": false is an ordinary definition. Entries copied from LaunchDarkly data carry it.
+            var sink = MakeSink(new FakeReadOnlyStore(), out var layer);
+            var flag = DataModel.Features.Deserialize(@"{""key"": ""flag1"", ""version"": 1, ""deleted"": false}");
+            var segment = DataModel.Segments.Deserialize(@"{""key"": ""seg1"", ""version"": 1, ""deleted"": false}");
+
+            sink.SetOverrides(new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>
+            {
+                { DataModel.Features, new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { ["flag1"] = flag }) },
+                { DataModel.Segments, new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor> { ["seg1"] = segment }) },
+            }));
+
+            Assert.NotNull(layer.Get(DataModel.Features, "flag1"));
+            Assert.NotNull(layer.Get(DataModel.Segments, "seg1"));
+            Assert.Equal(new[] { "flag1" }, TakeNotified());
+        }
+
         [Fact]
         public void SegmentOverrideFansOutToDependentFlags()
         {

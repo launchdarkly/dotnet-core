@@ -52,6 +52,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
         /// merged-view evaluation may have changed. Calls are serialized, so overlapping updates from
         /// a source cannot interleave.
         /// </summary>
+        /// <remarks>
+        /// A snapshot that contains a deleted item is rejected as a whole: the layer keeps its
+        /// contents, no listener is notified, and the rejection is logged. The source is not told,
+        /// the same as for a snapshot supplied after closing.
+        /// </remarks>
         public void SetOverrides(FullDataSet<ItemDescriptor> data)
         {
             lock (_lock)
@@ -59,6 +64,13 @@ namespace LaunchDarkly.Sdk.Server.Internal.Overrides
                 if (_closed)
                 {
                     _log.Debug("Ignoring an override snapshot supplied after the override source was closed");
+                    return;
+                }
+                if (OverrideLayer.FindDeletedItem(data, out var deletedKind, out var deletedKey))
+                {
+                    _log.Error("Ignoring an override snapshot because {0} is marked as deleted; the overrides " +
+                        "in effect are unchanged. To remove an override, leave its entry out of the snapshot",
+                        OverrideLayer.DescribeItem(deletedKind, deletedKey));
                     return;
                 }
                 Apply(data);

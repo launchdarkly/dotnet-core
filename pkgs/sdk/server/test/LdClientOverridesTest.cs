@@ -435,6 +435,43 @@ namespace LaunchDarkly.Sdk.Server
         }
 
         [Fact]
+        public void SnapshotWithADeletedFlagIsRejected()
+        {
+            var ldFlag = new FeatureFlagBuilder("ld-flag").Version(1).OffWithValue(LdValue.Of("ld-value")).Build();
+            var source = new TestOverrideSource(FlagsOnly(SingleValueFlag("overridden-flag", LdValue.Of("override-value"))));
+            using (var client = MakeInitializedClient(FlagsOnly(ldFlag), source))
+            {
+                var events = new EventSink<FlagChangeEvent>();
+                client.FlagTracker.FlagChanged += events.Add;
+
+                // A custom source supplies a snapshot that changes the override and holds a deleted
+                // item for the LaunchDarkly flag, the form DataKind.Deserialize gives a definition
+                // marked as deleted.
+                var snapshot = new FullDataSet<ItemDescriptor>(new Dictionary<DataKind, KeyedItems<ItemDescriptor>>
+                {
+                    {
+                        DataModel.Features, new KeyedItems<ItemDescriptor>(new Dictionary<string, ItemDescriptor>
+                        {
+                            ["overridden-flag"] = TestUtils.DescriptorOf(SingleValueFlag("overridden-flag", LdValue.Of("changed"))),
+                            ["ld-flag"] = DataModel.Features.Deserialize(@"{""key"": ""ld-flag"", ""version"": 2, ""deleted"": true}")
+                        })
+                    }
+                });
+                source.SetOverrides(snapshot);
+
+                // The whole snapshot is rejected: the previous overrides stay, the LaunchDarkly flag
+                // is still served, and no change is reported.
+                Assert.Equal("override-value", client.StringVariation("overridden-flag", context, "default"));
+                var detail = client.StringVariationDetail("ld-flag", context, "default");
+                Assert.Equal("ld-value", detail.Value);
+                Assert.False(detail.Reason.OverrideAffected);
+                Assert.Equal(LdValue.Of("ld-value"), client.AllFlagsState(context).GetFlagValueJson("ld-flag"));
+                events.ExpectNoValue(TimeSpan.FromMilliseconds(200));
+                AssertLogMessageRegex(true, LogLevel.Error, "flag \"ld-flag\" is marked as deleted");
+            }
+        }
+
+        [Fact]
         public void OverrideSourceIsStartedDuringConstructionAndDisposedWithTheClient()
         {
             var source = new TestOverrideSource();

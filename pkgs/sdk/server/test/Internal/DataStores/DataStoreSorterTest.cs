@@ -130,6 +130,32 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             Assert.Equal(selector.State, result.Selector.State);
             Assert.Equal(environmentId, result.EnvironmentId);
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SortChangeset_PreservesPersistFlag(bool shouldPersist)
+        {
+            var changeSet = new ChangeSet<ItemDescriptor>(
+                ChangeSetType.Full,
+                Selector.Empty,
+                DependencyOrderingTestData.Data,
+                null,
+                shouldPersist: shouldPersist
+            );
+
+            Assert.Equal(shouldPersist, DataStoreSorter.SortChangeset(changeSet).ShouldPersist);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SortAllCollections_PreservesPersistFlag(bool shouldPersist)
+        {
+            var data = new FullDataSet<ItemDescriptor>(DependencyOrderingTestData.Data, shouldPersist);
+
+            Assert.Equal(shouldPersist, DataStoreSorter.SortAllCollections(data).ShouldPersist);
+        }
         
         [Fact]
         public void SortChangeset_SortsPrerequisiteFlagsFirst()

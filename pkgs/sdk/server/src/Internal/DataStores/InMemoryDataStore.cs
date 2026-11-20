@@ -24,6 +24,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
         private volatile InitMetadata _metadata;
 
+        // The persistence indicator of the latest full or partial payload, exported with the data for store
+        // recovery. Like the data system spec, the store tracks a single, most recent indicator, not one per item.
+        private volatile bool _shouldPersist = true;
+
         private readonly object _selectorLock = new object();
         private Selector _selector;
 
@@ -107,10 +111,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
             switch (changeSet.Type)
             {
                 case ChangeSetType.Full:
-                    ApplyFullPayload(changeSet.Data, new InitMetadata(changeSet.EnvironmentId), changeSet.Selector);
+                    ApplyFullPayload(changeSet.Data, new InitMetadata(changeSet.EnvironmentId), changeSet.Selector,
+                        changeSet.ShouldPersist);
                     break;
                 case ChangeSetType.Partial:
-                    ApplyPartialData(changeSet.Data, changeSet.Selector);
+                    ApplyPartialData(changeSet.Data, changeSet.Selector, changeSet.ShouldPersist);
                     break;
                 case ChangeSetType.None:
                     break;
@@ -132,11 +137,11 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
         public void InitWithMetadata(FullDataSet<ItemDescriptor> data, InitMetadata metadata)
         {
-            ApplyFullPayload(data.Data, metadata, Selector.Empty);
+            ApplyFullPayload(data.Data, metadata, Selector.Empty, data.ShouldPersist);
         }
 
         private void ApplyPartialData(IEnumerable<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>> data,
-            Selector selector)
+            Selector selector, bool shouldPersist)
         {
             lock (WriterLock)
             {
@@ -165,11 +170,12 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
 
                 Items = itemsBuilder.ToImmutable();
                 Selector = selector;
+                _shouldPersist = shouldPersist;
             }
         }
 
         private void ApplyFullPayload(IEnumerable<KeyValuePair<DataKind, KeyedItems<ItemDescriptor>>> data,
-            InitMetadata metadata, Selector selector)
+            InitMetadata metadata, Selector selector, bool shouldPersist)
         {
             var itemsBuilder =
                 ImmutableDictionary.CreateBuilder<DataKind, ImmutableDictionary<string, ItemDescriptor>>();
@@ -193,6 +199,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 _metadata = metadata;
                 _initialized = true;
                 Selector = selector;
+                _shouldPersist = shouldPersist;
             }
         }
 
@@ -215,7 +222,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                     ));
                 }
 
-                return new FullDataSet<ItemDescriptor>(builder.ToImmutable());
+                return new FullDataSet<ItemDescriptor>(builder.ToImmutable(), _shouldPersist);
             }
         }
     }

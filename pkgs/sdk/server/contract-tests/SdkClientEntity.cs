@@ -25,6 +25,9 @@ namespace TestService
         private readonly Logger _log;
         private readonly Dictionary<string, EventHandler<FlagChangeEvent>> _flagListeners =
             new Dictionary<string, EventHandler<FlagChangeEvent>>();
+        // The test data source of this client, if the configuration has a testData synchronizer. The
+        // harness sends at most one.
+        private TestData _testData;
 
         public SdkClientEntity(
             SdkConfigParams sdkParams,
@@ -169,6 +172,21 @@ namespace TestService
                         _client.FlagTracker.FlagChanged -= handler;
                         _flagListeners.Remove(p.ListenerId);
                     }
+                    break;
+                }
+
+                case "updateTestData":
+                {
+                    if (_testData == null)
+                    {
+                        throw new InvalidOperationException("the client has no test data source");
+                    }
+                    var p = command.UpdateTestData;
+                    if (p?.FlagKey == null)
+                    {
+                        throw new ArgumentException("updateTestData requires a flag key");
+                    }
+                    _testData.Update(_testData.Flag(p.FlagKey).ValueForAll(p.Value));
                     break;
                 }
 
@@ -378,7 +396,7 @@ namespace TestService
             }
         }
 
-        private static Configuration BuildSdkConfig(SdkConfigParams sdkParams, ILogAdapter logAdapter, string tag)
+        private Configuration BuildSdkConfig(SdkConfigParams sdkParams, ILogAdapter logAdapter, string tag)
         {
             var builder = Configuration.Builder(sdkParams.Credential);
 
@@ -564,6 +582,10 @@ namespace TestService
                             }
                             initializers.Add(pollingBuilder);
                         }
+                        else if (initializer.File != null)
+                        {
+                            initializers.Add(CreateFileDataSource(initializer.File, false));
+                        }
                     }
                     if (initializers.Count > 0)
                     {
@@ -668,6 +690,44 @@ namespace TestService
             return source;
         }
 
+        private static FileDataSourceBuilder CreateFileDataSource(SdkConfigFileDataParams p, bool autoUpdate)
+        {
+            // A file data source with no files would load an empty data set, which hides LaunchDarkly data
+            // in memory or, when persisted, empties the store.
+            if (p.FilePaths == null || p.FilePaths.Length == 0 || p.FilePaths.Any(string.IsNullOrEmpty))
+            {
+                throw new ArgumentException("a file data source requires at least one file path");
+            }
+            var builder = FileData.DataSource().FilePaths(p.FilePaths).AutoUpdate(autoUpdate);
+            if (p.Persist.HasValue)
+            {
+                builder.ShouldPersist(p.Persist.Value);
+            }
+            return builder;
+        }
+
+        private TestData TestDataFor(SdkConfigTestDataParams p)
+        {
+            // The updateTestData command addresses the client's test data source, so there is only one.
+            if (_testData != null)
+            {
+                throw new ArgumentException("the configuration has more than one testData synchronizer");
+            }
+            _testData = TestData.DataSource();
+            if (p.Persist.HasValue)
+            {
+                _testData.ShouldPersist(p.Persist.Value);
+            }
+            if (p.Flags != null)
+            {
+                foreach (var flag in p.Flags)
+                {
+                    _testData.Update(_testData.Flag(flag.Key).ValueForAll(flag.Value));
+                }
+            }
+            return _testData;
+        }
+
         // The Redis and DynamoDB clients are configured so that a failed operation surfaces well within a
         // second, as the harness's store recovery tests require: no retries, and short timeouts. The Consul
         // client does not retry.
@@ -751,7 +811,7 @@ namespace TestService
             return builder;
         }
 
-        private static IComponentConfigurer<IDataSource> CreateSynchronizer(
+        private IComponentConfigurer<IDataSource> CreateSynchronizer(
             SdkConfigDataSynchronizerParams synchronizer,
             string payloadFilter)
         {
@@ -792,6 +852,15 @@ namespace TestService
                     // TODO: Add PayloadFilter support when available
                 }
                 return streamingBuilder;
+            }
+            else if (synchronizer.File != null)
+            {
+                // A file synchronizer reloads the files when they change.
+                return CreateFileDataSource(synchronizer.File, true);
+            }
+            else if (synchronizer.TestData != null)
+            {
+                return TestDataFor(synchronizer.TestData);
             }
             return null;
         }

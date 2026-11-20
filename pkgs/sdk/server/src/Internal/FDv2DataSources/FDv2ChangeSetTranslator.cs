@@ -17,6 +17,10 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         /// </summary>
         /// <param name="changeset">The FDv2 changeset to convert.</param>
         /// <param name="log">Logger for diagnostic messages.</param>
+        /// <param name="shouldPersist">Whether the data system may write the data to a persistent store. This is
+        /// the declaration of the source that received the changeset, which the translation carries unchanged.
+        /// The data system applies FDv2 changesets as they are, so this value is the only persistence control
+        /// for them.</param>
         /// <param name="environmentId">The environment ID to include in the changeset.</param>
         /// <param name="fdv1Fallback">Whether to mark the changeset as carrying the FDv1 fallback directive.</param>
         /// <returns>A DataStoreTypes.ChangeSet containing the converted data.</returns>
@@ -24,6 +28,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
         public static DataStoreTypes.ChangeSet<DataStoreTypes.ItemDescriptor> ToChangeSet(
             FDv2ChangeSet changeset,
             Logger log,
+            bool shouldPersist,
             string environmentId = null,
             bool fdv1Fallback = false)
         {
@@ -105,7 +110,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.FDv2DataSources
                 changeset.Selector,
                 dataBuilder.ToImmutable(),
                 environmentId,
-                fdv1Fallback);
+                fdv1Fallback,
+                shouldPersist: shouldPersist);
         }
 
         /// <summary>

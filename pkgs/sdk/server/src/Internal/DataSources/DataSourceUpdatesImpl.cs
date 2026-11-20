@@ -477,7 +477,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataSources
                     new[] { unsortedChangeset.EnvironmentId }));
             }
 
-            return InitWithHeaders(new FullDataSet<ItemDescriptor>(unsortedChangeset.Data), headers);
+            return InitWithHeaders(new FullDataSet<ItemDescriptor>(unsortedChangeset.Data, unsortedChangeset.ShouldPersist),
+                headers);
         }
 
         private bool ApplyPartialChangeSetToLegacyStore(ChangeSet<ItemDescriptor> changeSet)

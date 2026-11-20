@@ -29,7 +29,7 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 var kind = entry.Key;
                 dataOut.Add(kind, new KeyedItems<ItemDescriptor>(SortCollection(kind, entry.Value.Items)));
             }
-            return new FullDataSet<ItemDescriptor>(dataOut);
+            return new FullDataSet<ItemDescriptor>(dataOut, allData.ShouldPersist);
         }
         
         /// <summary>
@@ -49,7 +49,8 @@ namespace LaunchDarkly.Sdk.Server.Internal.DataStores
                 dataOut.Add(kind, new KeyedItems<ItemDescriptor>(SortCollection(kind, entry.Value.Items)));
             }
 
-            return new ChangeSet<ItemDescriptor>(inSet.Type, inSet.Selector, dataOut, inSet.EnvironmentId);
+            return new ChangeSet<ItemDescriptor>(inSet.Type, inSet.Selector, dataOut, inSet.EnvironmentId,
+                shouldPersist: inSet.ShouldPersist);
         }
 
         private static IEnumerable<KeyValuePair<string, ItemDescriptor>> SortCollection(DataKind kind,

@@ -49,6 +49,7 @@ namespace TestService
             "flag-change-listeners",
             "flag-value-change-listeners",
             "client-prereq-events",
+            "diagnostic-events",
             "fdv1-fallback",
             "instance-id",
             "retry-conformance-fdv1-streaming",

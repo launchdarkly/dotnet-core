@@ -2,6 +2,13 @@
 
 All notable changes to the LaunchDarkly .NET SDK DynamoDB integration will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.0.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDB-v5.0.1...LaunchDarkly.ServerSdk.DynamoDB-v5.0.2) (2026-11-23)
+
+
+### Bug Fixes
+
+* Write a JSON tombstone for deleted items in the DynamoDB store ([#409](https://github.com/launchdarkly/dotnet-core/issues/409)) ([d93f42a](https://github.com/launchdarkly/dotnet-core/commit/d93f42a9a6c8b6cad03482e0d29970b85ef97941))
+
 ## [5.0.1](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk.DynamoDB-v5.0.0...LaunchDarkly.ServerSdk.DynamoDB-v5.0.1) (2026-05-27)
 
 

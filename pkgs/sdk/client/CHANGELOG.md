@@ -3,6 +3,14 @@
 All notable changes to the LaunchDarkly Client-Side SDK for .NET will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.10.4](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.3...LaunchDarkly.ClientSdk-v5.10.4) (2026-11-23)
+
+
+### Bug Fixes
+
+* Record no variation and a WRONG_TYPE reason in events when a typed evaluation has the wrong type ([#408](https://github.com/launchdarkly/dotnet-core/issues/408)) ([42f5d8d](https://github.com/launchdarkly/dotnet-core/commit/42f5d8d20bfca8ebcbc922a608e66bc2416a6cea))
+* Restart the stream when a patch or delete event has invalid data ([#412](https://github.com/launchdarkly/dotnet-core/issues/412)) ([2e28d4b](https://github.com/launchdarkly/dotnet-core/commit/2e28d4b78ac36a7a9f960fd21e4e34412c288d76))
+
 ## [5.10.3](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ClientSdk-v5.10.2...LaunchDarkly.ClientSdk-v5.10.3) (2026-11-09)
 
 

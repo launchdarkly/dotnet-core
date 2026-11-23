@@ -1,5 +1,23 @@
 # Changelog
 
+## [8.18.0](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.2...LaunchDarkly.ServerSdk-v8.18.0) (2026-11-23)
+
+
+### Features
+
+* Let each data source decide whether FDv2 writes its data to a persistent store ([#389](https://github.com/launchdarkly/dotnet-core/issues/389)) ([fae3200](https://github.com/launchdarkly/dotnet-core/commit/fae32002e6a194e69808f9c0a120e4439a61d5f3))
+
+
+### Bug Fixes
+
+* Accept flag and segment data that has null in optional properties ([#413](https://github.com/launchdarkly/dotnet-core/issues/413)) ([75a658f](https://github.com/launchdarkly/dotnet-core/commit/75a658f5d69251b8c1d873c964debeb0e0c07644))
+* Clear empty FDv2 selectors in the server SDK ([#407](https://github.com/launchdarkly/dotnet-core/issues/407)) ([c92f5b2](https://github.com/launchdarkly/dotnet-core/commit/c92f5b2db6285eda403cc4d94d591ff23160ef2f))
+* Fall through to the next FDv2 initializer when a polling response has no events ([#415](https://github.com/launchdarkly/dotnet-core/issues/415)) ([d32bdca](https://github.com/launchdarkly/dotnet-core/commit/d32bdca26723f8f9727be9b88d7a8d355e915c72))
+* Make TestData ValueForAll return its value when targeting is off ([#400](https://github.com/launchdarkly/dotnet-core/issues/400)) ([c8fef92](https://github.com/launchdarkly/dotnet-core/commit/c8fef92a40c9cb307a94704dfb36024e4e6da787))
+* Prevent flags in a persistent store from becoming available to mobile keys ([#418](https://github.com/launchdarkly/dotnet-core/issues/418)) ([16d1c05](https://github.com/launchdarkly/dotnet-core/commit/16d1c0584eb3380c414b759e523954938ee58534))
+* Retry a file data load whose read fails, and make the retry tests and the FDv2 fallback test robust to timing ([#395](https://github.com/launchdarkly/dotnet-core/issues/395)) ([741b662](https://github.com/launchdarkly/dotnet-core/commit/741b6628039cb206cfbb81b125a20323998494ab))
+* Write a JSON tombstone for deleted items in the DynamoDB store ([#409](https://github.com/launchdarkly/dotnet-core/issues/409)) ([d93f42a](https://github.com/launchdarkly/dotnet-core/commit/d93f42a9a6c8b6cad03482e0d29970b85ef97941))
+
 ## [8.17.2](https://github.com/launchdarkly/dotnet-core/compare/LaunchDarkly.ServerSdk-v8.17.1...LaunchDarkly.ServerSdk-v8.17.2) (2026-10-05)
 
 

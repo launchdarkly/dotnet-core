@@ -55,7 +55,7 @@ runs:
         run_dynamodb: ${{ inputs.run_dynamodb }}
         run_redis: ${{ inputs.run_redis }}
 
-    - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.1
+    - uses: launchdarkly/gh-actions/actions/release-secrets@release-secrets-v1.2.2
       name: Get secrets
       with:
         aws_assume_role: ${{ inputs.aws_role }}
@@ -72,7 +72,7 @@ runs:
         project_file: ${{ inputs.project_file }}
 
     - name: Sign DLLs
-      uses: launchdarkly/gh-actions/actions/sign-dlls@sign-dlls-v1.0.2
+      uses: launchdarkly/gh-actions/actions/sign-dlls@release-secrets-v1.2.2
       with:
         build_configuration_path: ${{ inputs.build_output_path }}
         dll_name: ${{ inputs.dll_name }}

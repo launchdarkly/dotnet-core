@@ -600,6 +600,11 @@ namespace LaunchDarkly.Sdk.Server
                 _log.Warn("Track called with invalid context ({0})", context.Error);
                 return;
             }
+            if (metricValue.HasValue && (double.IsNaN(metricValue.Value) || double.IsInfinity(metricValue.Value)))
+            {
+                _log.Warn("Track called with non-finite metric value for event \"{0}\"; event was not recorded", key);
+                return;
+            }
             _eventProcessor.RecordCustomEvent(new EventProcessorTypes.CustomEvent
             {
                 Timestamp = UnixMillisecondTime.Now,

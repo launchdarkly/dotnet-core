@@ -99,6 +99,22 @@ namespace LaunchDarkly.Sdk.Client
             }
         }
 
+        [Theory]
+        [InlineData(double.NaN)]
+        [InlineData(double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity)]
+        public void TrackWithNonFiniteMetricValueSendsNoEvent(double metricValue)
+        {
+            using (LdClient client = MakeClient(user))
+            {
+                client.Track("eventkey", LdValue.Null, metricValue);
+                Assert.Collection(eventProcessor.Events,
+                    e => CheckIdentifyEvent(e, user));
+                Assert.True(logCapture.HasMessageWithRegex(Logging.LogLevel.Warn,
+                    "non-finite metric value.*eventkey"));
+            }
+        }
+
         [Fact]
         public void VariationSendsFeatureEventForValidFlag()
         {

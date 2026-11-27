@@ -888,6 +888,11 @@ namespace LaunchDarkly.Sdk.Client
         /// <inheritdoc/>
         public void Track(string eventName, LdValue data, double metricValue)
         {
+            if (double.IsNaN(metricValue) || double.IsInfinity(metricValue))
+            {
+                _log.Warn("Track called with non-finite metric value for event \"{0}\"; event was not recorded", eventName);
+                return;
+            }
             EventProcessorIfEnabled().RecordCustomEvent(new EventProcessorTypes.CustomEvent
             {
                 Timestamp = UnixMillisecondTime.Now,

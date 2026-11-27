@@ -86,6 +86,19 @@ namespace LaunchDarkly.Sdk.Server
             Assert.Equal(1.5, ce.MetricValue);
         }
 
+        [Theory]
+        [InlineData(double.NaN)]
+        [InlineData(double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity)]
+        public void TrackWithNonFiniteMetricValueSendsNoEvent(double metricValue)
+        {
+            client.Track("eventkey", context, LdValue.Null, metricValue);
+
+            Assert.Empty(eventSink.Events);
+            Assert.True(LogCapture.HasMessageWithRegex(Logging.LogLevel.Warn,
+                "non-finite metric value.*eventkey"));
+        }
+
         [Fact]
         public void TrackWithNullUserKeySendsNoEvent()
         {
